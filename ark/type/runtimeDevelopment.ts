@@ -1,6 +1,6 @@
 // arktype/runtime under the "development" condition: Node prints errors by
-// name, and a Type's member a validator never has, or that its build didn't
-// bake, throws where read
+// name, and a read of a Type's member a validator never has, or that its build
+// didn't bake, warns with the fix
 import type { StandardSchemaV1 } from "@ark/schema"
 import {
 	ArkErrors,
@@ -29,8 +29,9 @@ Object.defineProperty(
 	}
 )
 
-// a Type's members a validator never has, which a library may read, e.g. `schema.in.toJsonSchema()`
-for (const member of [
+// what a Type has but a validator never does, which a library may read, e.g.
+// `schema.in.toJsonSchema()`
+const typeMembers: ReadonlySet<string> = new Set([
 	"in",
 	"out",
 	"encode",
@@ -86,75 +87,101 @@ for (const member of [
 	"props",
 	"internal",
 	"$"
-] satisfies UnavailableMember[]) {
-	Object.defineProperty(Validator.prototype, member, {
-		get: () => {
-			throw new Error(
-				`${member} is a Type's, which this standalone validator lacks. Put // @ark-runtime before the definition it's read off, so arktype defines it, or build with runtime: "arktype".`
-			)
-		},
-		configurable: true
-	})
-}
+] satisfies UnavailableMember[])
 
-// a member a build didn't bake, which reads undefined in production
-const lacks = (member: IntrospectionMember): Error =>
-	new Error(
-		`${member} isn't precompiled: set members["${member}"] true in the precompile options`
-	)
-
-// one a build bakes is the validator's own, defined over these
-for (const member of [
+// what a build bakes as the validator's own where it sees code read it
+const introspectionMembers: ReadonlySet<string> = new Set([
 	"expression",
 	"description",
 	"json",
 	"toJSON",
 	"toJsonSchema"
-] satisfies IntrospectionMember[]) {
-	Object.defineProperty(Validator.prototype, member, {
-		get: () => {
-			throw lacks(member)
-		},
-		configurable: true
-	})
+] satisfies IntrospectionMember[])
+
+// a member a build didn't bake, which reads undefined in production
+const lacks = (member: IntrospectionMember) =>
+	`${member} isn't precompiled: set members["${member}"] true in the precompile options`
+
+const warned = new Set<string>()
+// set while a validator prints, which reads its expression where it has one
+let printing = false
+
+// once for each member, with the stack of the code reading it. Counted once
+// logged, so where console.warn throws, as a test's may, each read throws
+const warnOnce = (member: string, message: string) => {
+	if (printing || warned.has(member)) return
+	console.warn(new Error(message))
+	warned.add(member)
 }
 
+// A read of a member a validator lacks warns rather than throws, and reads
+// undefined as in production, so code testing whether a validator has a
+// member, like JSON.stringify reading toJSON or a Standard Schema library
+// asking whether `"jsonSchema" in schema["~standard"]`, behaves as it does
+// there. A getter on Validator.prototype would answer `in` and throw where
+// it's read, so the read is caught past it, by what Validator.prototype
+// inherits: a proxy of an object, whose own prototype is Object.prototype as
+// Validator.prototype's is in production, so what has no such member, like
+// `instanceof Object` or a read of hasOwnProperty, finds what it would there
+Object.setPrototypeOf(
+	Validator.prototype,
+	new Proxy(
+		{},
+		{
+			get: (target, k, receiver) => {
+				if (typeof k === "string") {
+					if (typeMembers.has(k)) {
+						warnOnce(
+							k,
+							`${k} is a Type's, which this standalone validator lacks. Put // @ark-runtime before the definition it's read off, so arktype defines it, or build with runtime: "arktype".`
+						)
+					} else if (introspectionMembers.has(k))
+						warnOnce(k, lacks(k as IntrospectionMember))
+				}
+				return Reflect.get(target, k, receiver)
+			},
+			// a validator is assigned its `~standard` as it's created, which this
+			// receives as the validator has none of its own: one with no
+			// jsonSchema baked warns where its jsonSchema is read
+			set: (target, k, value, receiver) =>
+				(
+					k === "~standard" &&
+					typeof value === "object" &&
+					value !== null &&
+					!("jsonSchema" in value)
+				) ?
+					Reflect.defineProperty(receiver, k, {
+						value: new Proxy(value as StandardSchemaV1.Props, {
+							get: (standard, k, receiver) => {
+								// a module importing the validator may bake it later
+								if (k === "jsonSchema" && !(k in standard))
+									warnOnce(
+										"~standard.jsonSchema",
+										lacks("~standard.jsonSchema")
+									)
+								return Reflect.get(standard, k, receiver)
+							}
+						}),
+						writable: true,
+						enumerable: true,
+						configurable: true
+					})
+				:	Reflect.set(target, k, value, receiver)
+		}
+	)
+)
+
 // what prints a validator reads its expression, and one without prints as it
-// does in production
+// does in production, without warning
 const { toString } = Validator.prototype
 
 Validator.prototype.toString = function (this: Validator): string {
+	printing = true
 	try {
 		return toString.call(this)
-	} catch {
-		return "Type"
+	} finally {
+		printing = false
 	}
 }
-
-// a validator is assigned its `~standard` as it's created, which this
-// receives: one with no jsonSchema baked is held as a copy whose jsonSchema
-// throws, frozen if what was assigned is
-Object.defineProperty(Validator.prototype, "~standard", {
-	set(this: Validator, standard: StandardSchemaV1.Props) {
-		let held = standard
-		if (!("jsonSchema" in standard)) {
-			held = Object.defineProperty({ ...standard }, "jsonSchema", {
-				get: () => {
-					throw lacks("~standard.jsonSchema")
-				},
-				enumerable: true,
-				configurable: true
-			})
-			if (Object.isFrozen(standard)) Object.freeze(held)
-		}
-		Object.defineProperty(this, "~standard", {
-			value: held,
-			writable: true,
-			enumerable: true,
-			configurable: true
-		})
-	},
-	configurable: true
-})
 
 export * from "./runtime.ts"

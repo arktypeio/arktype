@@ -93,6 +93,9 @@ const node = (
 		{ cwd, encoding: "utf8", timeout, env: { ...process.env, ...env } }
 	)
 
+// the first line of each warning the development runtime logged
+const warningsIn = (stderr: string) => stderr.match(/^Error: .*$/gm) ?? []
+
 // Node 22 reports a test run that isn't to a terminal as TAP
 const spec = "--test-reporter=spec"
 
@@ -299,12 +302,71 @@ try {
 				},
 				fromHere("temp", "lackedTypeMember")
 			)
-			attest(node(["main.ts"], {}, dir).stdout)
-				.snap(`in is a Type's, which this standalone validator lacks. Put // @ark-runtime before the definition it's read off, so arktype defines it, or build with runtime: "arktype".
-`)
-			attest(node(["main.ts"], {}, dir, { NODE_ENV: "production" }).stdout)
+			const development = node(["main.ts"], {}, dir)
+			const production = node(["main.ts"], {}, dir, { NODE_ENV: "production" })
+			// the read is undefined in both, and outside production warns with the fix
+			attest(development.stdout).equals(production.stdout)
+			attest(production.stdout)
 				.snap(`Cannot read properties of undefined (reading 'toJsonSchema')
 `)
+			attest(warningsIn(development.stderr)).snap([
+				"Error: in is a Type's, which this standalone validator lacks. Put // @ark-runtime before the definition it's read off, so arktype defines it, or build with runtime: \"arktype\"."
+			])
+			attest(warningsIn(production.stderr)).equals([])
+		})
+
+		it("a validator a Standard Schema library tests for members, in and outside production", () => {
+			const dir = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+import { membersOf } from "reader"
+
+console.log(membersOf(type({ a: "string" })))
+`,
+					// a dependency the build doesn't read, testing what the validator has
+					// as a library accepting any Standard Schema does
+					"node_modules/reader/package.json": `{ "name": "reader", "type": "module", "main": "index.js" }`,
+					"node_modules/reader/index.js": `export const membersOf = schema => JSON.stringify([
+	"jsonSchema" in schema["~standard"],
+	schema["~standard"].jsonSchema,
+	Object.keys({ ...schema["~standard"] }),
+	"toJsonSchema" in schema,
+	typeof schema.toJsonSchema,
+	typeof schema.in,
+	JSON.stringify(schema),
+	JSON.stringify({ schema }),
+	schema instanceof Object,
+	String(schema)
+])`,
+					"node_modules/reader/index.d.ts": `export declare const membersOf: (schema: any) => string`
+				},
+				fromHere("temp", "testedMembers")
+			)
+			// as it would read every member, which the build bakes unless told not to
+			const members = {
+				expression: false,
+				description: false,
+				json: false,
+				toJSON: false,
+				toJsonSchema: false,
+				"~standard.jsonSchema": false
+			}
+			const development = node(["main.ts"], { members }, dir)
+			const production = node(["main.ts"], { members }, dir, {
+				NODE_ENV: "production"
+			})
+			attest(development.stdout).equals(production.stdout)
+			attest(production.stdout)
+				.snap(`[false,null,["vendor","version","validate"],false,"undefined","undefined",null,"{}",true,"Type"]
+`)
+			// each member once, though toJSON is read twice
+			attest(warningsIn(development.stderr)).snap([
+				'Error: ~standard.jsonSchema isn\'t precompiled: set members["~standard.jsonSchema"] true in the precompile options',
+				'Error: toJsonSchema isn\'t precompiled: set members["toJsonSchema"] true in the precompile options',
+				"Error: in is a Type's, which this standalone validator lacks. Put // @ark-runtime before the definition it's read off, so arktype defines it, or build with runtime: \"arktype\".",
+				'Error: toJSON isn\'t precompiled: set members["toJSON"] true in the precompile options'
+			])
+			attest(warningsIn(production.stderr)).equals([])
 		})
 
 		it("a ~standard.jsonSchema read in its module and another, in and outside production", () => {

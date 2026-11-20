@@ -705,6 +705,13 @@ const ownFilesOf = (app: App, lateWritten: boolean): Record<string, string> => {
 	})
 	files["node_modules/lib/index.js"] = lib
 	files["helpers.ts"] = [
+		// the "development" runtime warns where a member no build baked is
+		// read, which each read here throws, as an observation can tell
+		`const warn = console.warn`,
+		`console.warn = (...args) => {`,
+		`\tif (/isn't precompiled: set members/.test(String(args[0]))) throw args[0]`,
+		`\twarn(...args)`,
+		`}`,
 		`export const obs = async f => {`,
 		`\ttry {`,
 		`\t\treturn { ok: await f() }`,
@@ -871,7 +878,7 @@ const lateOrderOf = (dir: string): LateOrder =>
 	:	"pre"
 
 // a production build, which prunes, whose runtime is development's, where a
-// read of a member no build baked throws
+// read of a member no build baked warns, which an app's helpers throw
 const conditions = ["ark-ts", "production", "development"]
 
 const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
@@ -1169,9 +1176,9 @@ const observationsOf = (out: string): unknown[] | undefined => {
 const normalized = (observation: unknown) =>
 	JSON.stringify(observation)?.replace(/\$ark\.\w+/g, "$ark.fn")
 
-// what a member no build baked throws under the "development" condition, which
-// each host resolves the runtime under: in production the read is undefined,
-// and what a reader makes of that is its own
+// what a member no build baked warns under the "development" condition, which
+// each host resolves the runtime under and an app's helpers throw: in
+// production the read is undefined, and what a reader makes of that is its own
 const unbakedMessage = /isn't precompiled: set members/
 const fallbackMessage = /takes only a target it was built with/
 

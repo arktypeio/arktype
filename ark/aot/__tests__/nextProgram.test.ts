@@ -149,7 +149,7 @@ contextualize(() => {
 			attest(written.includes("~standard")).equals(false)
 		})
 
-		it("keeps each validator's methods, so a read it can't see throws in development", async () => {
+		it("keeps each validator's methods, so a read it can't see warns in development", async () => {
 			// where arktype resolves, as it does from an app's units
 			const dir = project(
 				{
@@ -190,10 +190,11 @@ for (const read of [${reads.map(read => `() => ${read}`).join(", ")}]) {
 }`
 					],
 					{ cwd: dir, encoding: "utf8" }
-				).stdout
+				)
 			// a member no build baked reads undefined, and a function with no
 			// toJSON is left out of what holds it
-			attest(logged()).snap(`undefined
+			const production = logged()
+			attest(production.stdout).snap(`undefined
 undefined
 undefined
 undefined
@@ -201,15 +202,18 @@ undefined
 Type
 {}
 `)
-			attest(logged("development"))
-				.snap(`expression isn't precompiled: set members["expression"] true in the precompile options
-description isn't precompiled: set members["description"] true in the precompile options
-json isn't precompiled: set members["json"] true in the precompile options
-toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
-~standard.jsonSchema isn't precompiled: set members["~standard.jsonSchema"] true in the precompile options
-Type
-toJSON isn't precompiled: set members["toJSON"] true in the precompile options
-`)
+			// in development each warns as it's read, and reads what it does in production
+			const development = logged("development")
+			attest(development.stdout).equals(production.stdout)
+			attest(development.stderr.match(/^Error: .*$/gm)).snap([
+				'Error: expression isn\'t precompiled: set members["expression"] true in the precompile options',
+				'Error: description isn\'t precompiled: set members["description"] true in the precompile options',
+				'Error: json isn\'t precompiled: set members["json"] true in the precompile options',
+				'Error: toJsonSchema isn\'t precompiled: set members["toJsonSchema"] true in the precompile options',
+				'Error: ~standard.jsonSchema isn\'t precompiled: set members["~standard.jsonSchema"] true in the precompile options',
+				'Error: toJSON isn\'t precompiled: set members["toJSON"] true in the precompile options'
+			])
+			attest(production.stderr).equals("")
 		})
 
 		it("creates each validator as its module loads, given defers", async () => {
