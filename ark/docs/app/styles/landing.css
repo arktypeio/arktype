@@ -587,6 +587,15 @@
 				box-shadow: none;
 			}
 		}
+		.lane.is-dynamic {
+			.lane-name {
+				color: var(--ink);
+			}
+			.lane-bar {
+				min-width: 5px;
+				background: color-mix(in oklab, var(--gold) 45%, var(--bg));
+			}
+		}
 		.lane.is-incumbent {
 			.lane-name,
 			.lane-val,

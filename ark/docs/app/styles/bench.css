@@ -198,6 +198,14 @@
 			font-weight: 600;
 		}
 	}
+	.b-row.is-dynamic {
+		.bl-name {
+			color: var(--ink);
+		}
+		.b-bar {
+			background: color-mix(in oklab, var(--gold) 45%, var(--bg));
+		}
+	}
 	.b-track {
 		position: relative;
 		height: 100%;

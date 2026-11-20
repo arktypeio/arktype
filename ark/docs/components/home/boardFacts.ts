@@ -1,4 +1,4 @@
-import { formatRatio, list } from "../../lib/bench/bench.ts"
+import { formatRatio, list, versusLibrary } from "../../lib/bench/bench.ts"
 import { isWellKnown, isWrittenByUs } from "../../lib/bench/leaderboard.ts"
 import { ntwineRows } from "../../lib/bench/scoreboard.ts"
 import {
@@ -113,23 +113,21 @@ export const heroStats = (): HeroStat[] => {
 /**
  * `claims.bigApp`'s result in one line, for the head of its panel: from the
  * row that claim reads (ntwine, bundled with esbuild), the two margins over
- * Zod 4 a reader came for and the comparison ArkType loses. Each number
- * names the build it belongs to, because they are different builds: the
- * default one is the fast one, the "smallest" preset the small one.
- * Undefined unless every clause of it holds, and the panel then keeps its
- * plain description.
+ * Zod 4 a reader came for. Each number names the build it belongs to, because
+ * they are different builds: the default one is the fast one, the "smallest"
+ * preset the small one. Undefined unless every clause of it holds, and the
+ * panel then keeps its plain description.
  */
 export const bigAppLine = () => {
 	const row = ntwineRows.find(row => row.host === "esbuild")
 	if (!row) return
-	const { precompiled, smallest, zod, zod3 } = row.arms
-	if (!precompiled || !smallest || !zod || !zod3) return
+	const { precompiled, smallest, zod } = row.arms
+	if (!precompiled || !smallest || !zod) return
 	const faster = zod.hot / precompiled.hot
 	// truncated, so no margin is ever rounded up
 	const less = Math.floor((1 - smallest.gz / zod.gz) * 100)
-	const zod3ShipsLeast = zod3.gz < Math.min(smallest.gz, precompiled.gz)
-	if (faster < 2 || less < 1 || !zod3ShipsLeast) return
-	return `On ntwine, bundled with esbuild: the default build validated ${formatRatio(faster)} as fast as Zod 4, and the "smallest" preset shipped ${less}% less. Zod 3 shipped less than either.`
+	if (faster < 2 || less < 1) return
+	return `On ntwine, bundled with esbuild: the default build validated ${formatRatio(faster)} as fast as Zod 4, and the "smallest" preset shipped ${less}% less.`
 }
 
 /**
@@ -399,24 +397,36 @@ export type SpeedBar = {
 	/** scenarios it was slower on, of those both ran */
 	slower: number
 	of: number
+	/** dynamic ArkType, shown beside precompiled so readers see speed without the plugin */
+	dynamic?: boolean
 }
 
 /**
- * Each rival on the homepage's benchmark as one number and its spread: the
- * median scenario, the closest and the farthest, and how many it lost. All
- * from the per-scenario ratios the claims' medians are taken from, each
- * truncated as every ratio on the page is.
+ * Dynamic ArkType and each rival on the homepage's benchmark as one number
+ * and its spread: the median scenario, the closest and the farthest, and how
+ * many it lost. All from the per-scenario ratios the claims' medians are
+ * taken from, each truncated as every ratio on the page is.
  */
 export const speedBars = (): SpeedBar[] =>
-	categoryOf("speed").versus.map(({ name, versus }) => {
-		const ratios = versus.rows.map(row => row.speedup)
-		return {
-			name,
-			median: parseFloat(medianOf(versus)),
-			text: medianOf(versus),
-			closest: formatRatio(Math.min(...ratios)),
-			farthest: formatRatio(Math.max(...ratios)),
-			slower: versus.wins,
-			of: versus.count
-		}
-	})
+	[
+		{
+			name: "ArkType (dynamic)",
+			versus: versusLibrary("arktype"),
+			dynamic: true
+		},
+		...categoryOf("speed").versus.map(entry => ({ ...entry, dynamic: false }))
+	]
+		.map(({ name, versus, dynamic }) => {
+			const ratios = versus.rows.map(row => row.speedup)
+			return {
+				name,
+				median: parseFloat(medianOf(versus)),
+				text: medianOf(versus),
+				closest: formatRatio(Math.min(...ratios)),
+				farthest: formatRatio(Math.max(...ratios)),
+				slower: versus.wins,
+				of: versus.count,
+				...(dynamic ? { dynamic: true } : {})
+			}
+		})
+		.sort((l, r) => l.median - r.median)

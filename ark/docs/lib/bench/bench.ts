@@ -78,6 +78,13 @@ export const harness =
  */
 const arms = [
 	{ key: "standalone", label: "ArkType", note: "", copies: false },
+	{
+		key: "arktype",
+		label: "ArkType",
+		note: "dynamic",
+		copies: false,
+		variant: true
+	},
 	{ key: "typia", label: "typia", note: "aot", copies: false },
 	{ key: "typebox", label: "TypeBox", note: "aot", copies: false },
 	{ key: "ajv", label: "ajv", note: "aot", copies: false },
@@ -103,6 +110,7 @@ const competitors = [
 ]
 
 const labels: Record<string, string> = {
+	arktype: "ArkType (dynamic)",
 	typia: "typia",
 	typebox: "TypeBox",
 	ajv: "ajv",
@@ -277,6 +285,7 @@ export type BenchRow = {
 	notes: { text: string; kept: boolean }[]
 	ns: string
 	ours: boolean
+	dynamic: boolean
 	faster: boolean
 	tie: boolean
 	/** "1.36×", "3.2× faster" or "" for a tie */
@@ -346,6 +355,7 @@ const panel = (
 				notes: [],
 				ns: formatNs(ns),
 				ours: true,
+				dynamic: false,
 				faster: false,
 				tie: false,
 				ratio: "1×",
@@ -381,6 +391,7 @@ const panel = (
 			notes,
 			ns: formatNs(ns),
 			ours: false,
+			dynamic: arm.key === "arktype",
 			faster,
 			tie,
 			ratio:
@@ -429,7 +440,7 @@ export const benchPanels = (set: BenchSet): BenchPanel[] =>
 
 const tableArms = [
 	["standalone", "ArkType precompiled"],
-	["arktype", "ArkType JIT"],
+	["arktype", "ArkType (dynamic)"],
 	["typia", "typia"],
 	["typebox", "TypeBox"],
 	["ajv", "ajv"],

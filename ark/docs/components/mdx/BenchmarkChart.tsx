@@ -42,14 +42,16 @@ const Panel = ({ panel, index, entry }: PanelProps) => (
 			{panel.rows.map((row, r) => (
 				<li
 					key={[row.label, ...row.notes.map(note => note.text)].join(" ")}
-					className={
-						row.ours ? "b-row is-ours"
-						: row.tie ?
-							"b-row is-tie"
-						: row.faster ?
-							"b-row is-faster"
-						:	"b-row"
-					}
+					className={[
+						"b-row",
+						row.ours ? "is-ours"
+						: row.tie ? "is-tie"
+						: row.faster ? "is-faster"
+						: undefined,
+						row.dynamic ? "is-dynamic" : undefined
+					]
+						.filter(Boolean)
+						.join(" ")}
 					style={{ "--r": r } as CSSProperties}
 					tabIndex={
 						row.tip ?

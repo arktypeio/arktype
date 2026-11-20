@@ -31,7 +31,12 @@ export const SpeedBars = () => {
 				{bars.map(bar => (
 					<li
 						key={bar.name}
-						className={bar.name === incumbent ? "lane is-incumbent" : "lane"}
+						className={
+							bar.dynamic ? "lane is-dynamic"
+							: bar.name === incumbent ?
+								"lane is-incumbent"
+							:	"lane"
+						}
 						style={{ "--w": bar.median / longest } as CSSProperties}
 					>
 						<span className="lane-name">{bar.name}</span>

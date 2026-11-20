@@ -4,6 +4,7 @@
  * numbers beside them. The page's components and its Markdown render the
  * same cells.
  */
+import benchData from "./benchData.json" with { type: "json" }
 import {
 	independentRowsOf,
 	isWellKnown,
@@ -206,10 +207,30 @@ export type OwnTableId = keyof typeof ownTables
 /**
  * One of our own benchmark's suites, a library a row: its result on every
  * app, then its geometric mean and place over the apps every library ran.
+ * For `startupMs`, dynamic ArkType from the same run (`benchData.json`) is
+ * included beside precompiled so the cold-start cost without the plugin is
+ * visible in the same table.
  */
 export const ownTable = (id: OwnTableId): TextTable => {
 	const { suite, format } = ownTables[id]
-	const rows: ResultRow[] = rowsOfSuite(suite)
+	const baseRows: ResultRow[] = rowsOfSuite(suite)
+	const rows: ResultRow[] =
+		id === "startupMs" ?
+			baseRows.map(row => {
+				const dyn = (
+					benchData.startup as Record<
+						string,
+						Record<string, { coldMs: number }>
+					>
+				)[row.id]?.arktype?.coldMs
+				return dyn !== undefined ?
+						{
+							...row,
+							results: { ...row.results, "ArkType (dynamic)": dyn }
+						}
+					:	row
+			})
+		:	baseRows
 	const shared = sharedRows(rows)
 	const standings: UnitStanding[] = standingsOver(shared)
 	const mean =
@@ -231,7 +252,18 @@ export const ownTable = (id: OwnTableId): TextTable => {
 
 /** our benchmark's speed in one number a library: the geometric mean of the scenarios every library ran */
 export const ownSpeedTable = (): TextTable => {
-	const shared = sharedRows(rowsOfSuite("homepage"))
+	const dynamicById = new Map(
+		benchData.scenarios
+			.filter(s => s.medianNs.arktype !== undefined)
+			.map(s => [s.id, s.medianNs.arktype as number])
+	)
+	const rows = rowsOfSuite("homepage").map(row => {
+		const dyn = dynamicById.get(row.id)
+		return dyn !== undefined ?
+				{ ...row, results: { ...row.results, "ArkType (dynamic)": dyn } }
+			:	row
+	})
+	const shared = sharedRows(rows)
 	return {
 		header: [
 			"Place",
