@@ -547,4 +547,26 @@ pair[1] must be a Date`)
 			"2025-01-01T00:00:00.000Z"
 		)
 	})
+
+	it("treats recursive default-only branches as plain when encoding alongside an overlapping codec", () => {
+		const StrToObj = codec(
+			"string",
+			{ tag: "'a'", "next?": "unknown" },
+			{
+				decode: () => ({ tag: "a" as const }),
+				encode: () => "encoded"
+			}
+		)
+		const $ = scope({
+			obj: { tag: "'a' = 'a'", "next?": "obj" },
+			StrToObj,
+			entry: "obj | StrToObj"
+		}).export()
+		attest($.entry.encode({ tag: "a" })).equals({ tag: "a" })
+		attest($.entry.encode({ tag: "a", next: { tag: "a" } })).equals({
+			tag: "a",
+			next: { tag: "a" }
+		})
+		attest($.entry.encode({ tag: "a", next: 1 })).equals("encoded")
+	})
 })

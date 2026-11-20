@@ -1,7 +1,9 @@
 import { omit, throwParseError } from "@ark/util"
-import type {
-	DeepNodeTransformContext,
-	DeepNodeTransformation
+import {
+	referencesWithoutCases,
+	type BaseNode,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation
 } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
@@ -67,10 +69,29 @@ const encoderOf = (node: BaseRoot): BaseRoot => {
 	return node.transform(mapper, {
 		shouldTf: n => {
 			const tfs = n.tfs || (n.is("optional") && n.hasDef())
-			if (tfs && n.is("union")) branchTfs.push(n.branches.map(b => b.tfs))
+			if (tfs && n.is("union"))
+				branchTfs.push(n.branches.map(transformsOnEncode))
 			return tfs
 		}
 	}) as never
+}
+
+// whether a branch reaches a transform that survives encoding (morphs and
+// undeclared: "delete"), excluding defaults stripped to required/prefix
+const transformsOnEncode = (root: BaseRoot): boolean => {
+	if (!root.tfs) return false
+	const visited = new Set<BaseNode>()
+	const queue: BaseNode[] = [root]
+	for (let i = 0; i < queue.length; i++) {
+		for (const ref of referencesWithoutCases(queue[i])) {
+			if (visited.has(ref)) continue
+			visited.add(ref)
+			if (ref.is("morph")) return true
+			if (ref.is("structure") && ref.undeclared === "delete") return true
+			if (ref.is("alias") && !ref.isIo) queue.push(ref.resolution)
+		}
+	}
+	return false
 }
 
 const encodeUnion = (
