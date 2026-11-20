@@ -31,11 +31,9 @@ import { AsyncLocalStorage } from "node:async_hooks"
 import { fixturesOf, matrixOf } from "./locales/matrix.ts"
 import { reconfigure, withConfig } from "./locales/withConfig.ts"
 
-// errors described by their own nodes, which union and intersection errors list
+// errors described by their own nodes, which union errors list
 const leavesOf = (error: ArkError): ArkError[] =>
-	error.code === "union" || error.code === "intersection" ?
-		error.errors.flatMap(leavesOf)
-	:	[error]
+	error.code === "union" ? error.errors.flatMap(leavesOf) : [error]
 
 const enExpected = (error: ArkError) => {
 	const expected = en[error.code]!.expected!
@@ -83,10 +81,6 @@ const xx: Locale.Resolved = {
 			e.errors
 				.map(child => `${child.propString} ${child.expected} ${child.actual}`)
 				.join(mark("or")),
-		message: xxMessage
-	},
-	intersection: {
-		expected: e => e.errors.map(child => child.expected).join(mark("and")),
 		message: xxMessage
 	},
 	required: {
@@ -233,7 +227,7 @@ contextualize(() => {
 			})
 			const errors = T(1) as ArkErrors
 			attest(
-				errors.toLocaleString({ ...xx, min: omit(xx.min, { expected: 1 }) })
+				errors.summaryIn({ ...xx, min: omit(xx.min, { expected: 1 }) })
 			).snap("at least 5 1")
 			attest(calls).equals(["actual", "message"])
 		})
@@ -377,10 +371,10 @@ b: Unknown key b`)
 			}
 			attest<number>(rule({ rule: 1 } as never))
 			const locale: Locale = { ...xx, min, keywordPhrases: phrases }
-			attest((type("number > 1")(0) as ArkErrors).toLocaleString(locale)).snap(
+			attest((type("number > 1")(0) as ArkErrors).summaryIn(locale)).snap(
 				"⟦message⟧ > ⟦number⟧ ⟦actual⟧"
 			)
-			attest(type("string.email")("x").toLocaleString(locale)).snap(
+			attest((type("string.email")("x") as ArkErrors).summaryIn(locale)).snap(
 				"⟦message⟧ an email address ⟦actual⟧"
 			)
 		})
@@ -430,31 +424,30 @@ b: Unknown key b`)
 				c: type("string").narrow((s, ctx) => ctx.reject({ message: "Enter c" }))
 			})
 			const errors = T({ a: 1, b: 2, c: "" }) as ArkErrors
-			attest(errors.toLocaleString(xx))
-				.snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+			attest(errors.summaryIn(xx)).snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
 b ⟦custom line⟧ Enter b
 c ⟦custom line⟧ Enter c`)
 			// its line isn't written at the root
 			attest(
-				type("string")
-					.configure({ message: "Enter text" })(5)
-					.toLocaleString(xx)
+				(
+					type("string").configure({ message: "Enter text" })(5) as ArkErrors
+				).summaryIn(xx)
 			).snap("Enter text")
 		})
 	})
 
 	describe("binding", () => {
-		it("toLocaleString renders in a locale", () => {
+		it("summaryIn writes the summary in a locale", () => {
 			const errors = type({ k: "string" })({ k: 5 }) as ArkErrors
-			const error = errors.issues[0]
-			attest(errors.toLocaleString(xx)).snap(
-				"k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧"
-			)
-			attest(messageIn(error, xx)).snap("k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧")
+			attest(errors.summaryIn(xx)).snap("k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 			attest(errors.summary).snap("k must be a string")
-			attest(errors.toLocaleString()).equals(errors.summary)
-			// Array.prototype.toLocaleString passes each element its tag
-			attest([errors].toLocaleString("de")).equals(errors.summary)
+			attest(errors.summaryIn()).equals(errors.summary)
+		})
+
+		it("messageIn writes the message without its path", () => {
+			const error = (type({ k: "string" })({ k: 5 }) as ArkErrors).issues[0]
+			attest(messageIn(error, xx)).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
+			attest(messageIn(error, en)).equals(error.message)
 		})
 
 		it("messageIn throws for a copy of an error", () => {
@@ -468,7 +461,7 @@ c ⟦custom line⟧ Enter c`)
 				attest(() => messageIn(copy, xx)).throws(copiedErrorMessage)
 		})
 
-		it("toLocaleString and messageIn write a morph's returned errors as its summary", () => {
+		it("summaryIn and messageIn write a morph's returned errors as configured", () => {
 			const A = scope(
 				{ inner: { a: "string" } },
 				{ domain: { message: ctx => `A's ${ctx.expected}` } }
@@ -480,18 +473,18 @@ c ⟦custom line⟧ Enter c`)
 			const out = B.outer({ a: 1 }) as ArkErrors
 			attest([
 				out.summary,
-				out.toLocaleString(en),
+				out.summaryIn(en),
 				messageIn(out.issues[0], en)
-			]).snap(["a: B's a string", "a: B's a string", "a: B's a string"])
+			]).snap(["a: B's a string", "a: B's a string", "B's a string"])
 		})
 
-		it("toLocaleString reaches union and intersection children", () => {
+		it("summaryIn reaches the errors of unions and intersections", () => {
 			const union = type("(string >= 3) | (string <= 0)")("a") as ArkErrors
-			attest(union.toLocaleString(xx)).snap(
+			attest(union.summaryIn(xx)).snap(
 				"⟦message⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
 			)
 			const intersection = type("(number % 2) & (number > 3)")(1) as ArkErrors
-			attest(intersection.toLocaleString(xx)).snap(`⟦message⟧ ⟦divisor⟧ ⟦actual⟧
+			attest(intersection.summaryIn(xx)).snap(`⟦message⟧ ⟦divisor⟧ ⟦actual⟧
 ⟦message⟧ ⟦min⟧ ⟦actual⟧`)
 		})
 
@@ -500,7 +493,7 @@ c ⟦custom line⟧ Enter c`)
 				attest($ark.cfg!.locale).is(xx)
 				const errors = scope({}).type("string")(5) as ArkErrors
 				attest(errors.toString()).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
-				attest(errors.toLocaleString(en)).snap("must be a string")
+				attest(errors.summaryIn(en)).snap("must be a string")
 				// including errors from Types parsed before it was configured
 				attest(type("string")(5).toString()).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 			})
@@ -537,7 +530,7 @@ c ⟦custom line⟧ Enter c`)
 					)
 					// once for the errors, which their children share
 					attest(calls).equals(1)
-					attest(localized.toLocaleString(en)).snap(
+					attest(localized.summaryIn(en)).snap(
 						"must be exactly length 0 or at least length 3"
 					)
 					attest(calls).equals(1)
@@ -563,9 +556,7 @@ c ⟦custom line⟧ Enter c`)
 			const T = type({ a: type("number").describe("a count") })
 			const error = (T({ a: "x" }) as ArkErrors).issues[0]
 			const keys = Object.keys(error)
-			attest(messageIn(error, xx)).snap(
-				"a ⟦line⟧ ⟦message⟧ ⟦cite⟧ a count ⟦actual⟧"
-			)
+			attest(messageIn(error, xx)).snap("⟦message⟧ ⟦cite⟧ a count ⟦actual⟧")
 			attest(Object.keys(error)).equals(keys)
 		})
 
@@ -690,7 +681,7 @@ b ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧`)
 						k: "string",
 						j: type("number > 0").configure({ actual: "configured" })
 					})({ k: 5, j: 0 }) as ArkErrors
-				const rendered = errorsOf().toLocaleString(xx)
+				const rendered = errorsOf().summaryIn(xx)
 				attest(rendered).snap(`k ⟦custom line⟧ xx: ⟦domain⟧
 j ⟦line⟧ ⟦message⟧ ⟦cite⟧ positive! configured`)
 				attest(withConfig({ locale: xx }, () => errorsOf().toString())).equals(
@@ -705,7 +696,7 @@ j ⟦line⟧ ⟦message⟧ ⟦cite⟧ positive! configured`)
 		it("cites authored text", () => {
 			const $ = scope({}, { domain: { description: () => "a big one" } })
 			const rendered = (T: type.Any, data: unknown) =>
-				(T(data) as ArkErrors).toLocaleString(xx)
+				(T(data) as ArkErrors).summaryIn(xx)
 			attest(rendered(type("number").describe("a count"), "x")).snap(
 				"⟦message⟧ ⟦cite⟧ a count ⟦actual⟧"
 			)
@@ -746,12 +737,15 @@ j ⟦line⟧ ⟦message⟧ ⟦cite⟧ positive! configured`)
 				.snap(`a ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit x ⟦actual⟧
 b ⟦line⟧ ⟦message⟧ ⟦cite⟧ a moment ⟦actual⟧
 c ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual⟧`)
-			attest((Missing({}) as ArkErrors).toLocaleString({ ...en })).equals(
+			attest((Missing({}) as ArkErrors).summaryIn({ ...en })).equals(
 				(Missing({}) as ArkErrors).summary
 			)
 			// a phrase the locale lacks shows the keyword's English
 			attest(
-				type("string.email")("x").toLocaleString({ ...xx, keywordPhrases: {} })
+				(type("string.email")("x") as ArkErrors).summaryIn({
+					...xx,
+					keywordPhrases: {}
+				})
 			).snap("⟦message⟧ ⟦cite⟧ an email address ⟦actual⟧")
 		})
 
@@ -760,15 +754,19 @@ c ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual�
 				...xx,
 				unit: { expected: mark("unit"), message: mark("unit.message") }
 			}
-			attest(type("'a'")("b").toLocaleString(locale)).snap("⟦unit.message⟧")
-			attest(type("'a'").describe("an a")("b").toLocaleString(locale)).snap(
-				"⟦message⟧ ⟦cite⟧ an a ⟦actual⟧"
+			attest((type("'a'")("b") as ArkErrors).summaryIn(locale)).snap(
+				"⟦unit.message⟧"
 			)
 			attest(
-				type("'a'").configure({ expected: "an a" })("b").toLocaleString(locale)
+				(type("'a'").describe("an a")("b") as ArkErrors).summaryIn(locale)
+			).snap("⟦message⟧ ⟦cite⟧ an a ⟦actual⟧")
+			attest(
+				(
+					type("'a'").configure({ expected: "an a" })("b") as ArkErrors
+				).summaryIn(locale)
 			).snap("⟦message⟧ ⟦cite⟧ an a ⟦actual⟧")
 			const $ = scope({}, { unit: { expected: "an a" } })
-			attest($.type("'a'")("b").toLocaleString(locale)).snap(
+			attest(($.type("'a'")("b") as ArkErrors).summaryIn(locale)).snap(
 				"⟦message⟧ ⟦cite⟧ an a ⟦actual⟧"
 			)
 			// a keyword's phrase is not its code's expected text
@@ -776,12 +774,12 @@ c ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual�
 				...xx,
 				pattern: { expected: mark("pattern"), message: mark("pattern.message") }
 			}
-			attest(type("/^a/")("b").toLocaleString(patterned)).snap(
+			attest((type("/^a/")("b") as ArkErrors).summaryIn(patterned)).snap(
 				"⟦pattern.message⟧"
 			)
-			attest(type("string.email")("b").toLocaleString(patterned)).snap(
-				"⟦message⟧ ⟦string.email⟧ ⟦actual⟧"
-			)
+			attest(
+				(type("string.email")("b") as ArkErrors).summaryIn(patterned)
+			).snap("⟦message⟧ ⟦string.email⟧ ⟦actual⟧")
 		})
 
 		it("a partial locale renders what it lacks through en", () => {
@@ -798,7 +796,7 @@ c ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual�
 				m: "bigint"
 			} as const
 			const data = { k: 5, j: 0, m: 5 }
-			const rendered = (type(def)(data) as ArkErrors).toLocaleString(partial)
+			const rendered = (type(def)(data) as ArkErrors).summaryIn(partial)
 			attest(rendered).snap(`k must be <string>
 j <min>
 l must be boolean (was missing)
@@ -823,8 +821,8 @@ m must be a bigint`)
 			} as {} as Locale
 			const inherited = { tag: "inherited", domain: own.domain } as {} as Locale
 			attest([
-				(errors as ArkErrors).toLocaleString(own),
-				(errors as ArkErrors).toLocaleString(inherited)
+				(errors as ArkErrors).summaryIn(own),
+				(errors as ArkErrors).summaryIn(inherited)
 			]).snap([
 				'k string! (5)\nn number! ("5")',
 				"k must be string\nn must be number"
@@ -834,7 +832,7 @@ m must be a bigint`)
 		it("a slot configured as undefined renders through the locale", () => {
 			const config = { domain: { expected: undefined } } as never
 			const errors = scope({}, config).type("number")("x") as ArkErrors
-			attest(errors.toLocaleString(xx)).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
+			attest(errors.summaryIn(xx)).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 		})
 
 		it("configure rejects a locale that is neither an object nor a function", () => {
@@ -878,12 +876,7 @@ m must be a bigint`)
 					`${locale.verbatim(e.propString)} (${locale.nouns.string}) ${e.message}`
 			}
 			const errors = type({ a: "string" })({ a: 1 }) as ArkErrors
-			attest(errors.toLocaleString(partial)).snap(
-				"a (a string) must be a string"
-			)
-			attest(messageIn(errors.issues[0], partial)).snap(
-				"a (a string) must be a string"
-			)
+			attest(errors.summaryIn(partial)).snap("a (a string) must be a string")
 		})
 
 		it("a spread of en renders every fixture as en does", () => {
@@ -897,12 +890,12 @@ m must be a bigint`)
 			attest(withConfig({ locale }, () => errors.issues[0].expected)).snap(
 				"a must be a string or b must be a number"
 			)
-			attest(errors.toLocaleString(locale)).snap(
+			attest(errors.summaryIn(locale)).snap(
 				"⟦message⟧ a must be a string or b must be a number ⟦actual⟧"
 			)
 			// an untyped locale without the code at all
 			const { union: __, ...untyped } = xx
-			attest(errors.toLocaleString(untyped as {} as Locale)).snap(
+			attest(errors.summaryIn(untyped as {} as Locale)).snap(
 				"a must be a string or b must be a number"
 			)
 		})
@@ -917,7 +910,7 @@ m must be a bigint`)
 			})
 			const errors = T({}) as ArkErrors
 			attest(errors.summary).snap('a must be true, false or "x" (was missing)')
-			attest(errors.toLocaleString({ ...en })).snap(
+			attest(errors.summaryIn({ ...en })).snap(
 				'a must be true, false or "x" (was missing)'
 			)
 		})
@@ -1003,8 +996,7 @@ m must be a bigint`)
 					check(error.expected)
 					check(error.actual)
 					check(error.message)
-					if (error.code === "union" || error.code === "intersection")
-						checkErrors(error.errors)
+					if (error.code === "union") checkErrors(error.errors)
 				}
 			}
 			const checkResult = (result: unknown) => {

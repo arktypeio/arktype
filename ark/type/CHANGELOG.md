@@ -148,6 +148,30 @@ With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is
 
 Where `exactOptionalPropertyTypes` isn't enabled, TS reads `{ a?: string }` and `{ a?: string | undefined }` as the same type, so a key declared as either can be defined as `"a?": "string"` or `"a?": "string | undefined"`. The second was a type error.
 
+### Write the summary in a locale with `summaryIn`, and an error's message with `messageIn`
+
+`ArkErrors.toLocaleString(locale)` is now `summaryIn(locale)`. `toLocaleString` is ECMA-402's again, so it returns the summary as configured whatever it's passed, and `[out].toLocaleString(["de"])` no longer throws without `arktype/i18n`.
+
+`messageIn(error, locale)` returns the error's `message` in that locale, without its path, as `error.message` would be had it been configured. It returned the error's line of the summary:
+
+```ts
+import { messageIn, type } from "arktype"
+import { de } from "arktype/locales/de"
+
+const out = type({ name: "string >= 2" })({ name: "A" })
+
+if (out instanceof type.errors) {
+	// name muss mindestens 2 Zeichen lang sein
+	out.summaryIn(de)
+	// muss mindestens 2 Zeichen lang sein (before: name muss mindestens 2 Zeichen lang sein)
+	messageIn(out.issues[0], de)
+}
+```
+
+### Remove the `intersection` error code
+
+Each failed check is its own error, so nothing raised `intersection`. It's no longer an `ArkErrorCode`, so a locale has no entry for it and an exhaustive `switch` over `code` needs no case for it.
+
 ## 3.0.0-beta.1
 
 ### Summary

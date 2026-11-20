@@ -3,7 +3,6 @@ export {
 	actualAtPathOf,
 	describeCause,
 	describeMissing,
-	distinctExpectedOf,
 	groupByPath,
 	labelOf,
 	writeKeywordExpected,

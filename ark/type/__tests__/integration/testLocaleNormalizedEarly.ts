@@ -21,7 +21,9 @@ cases({
 		strictEqual(typeof normalized.cite, "function"),
 	normalizedEarlyRendersLater: () =>
 		strictEqual(
-			type({ a: "number" })({ a: "x" }).toLocaleString(partial),
+			(
+				type({ a: "number" })({ a: "x" }) as import("arktype").ArkErrors
+			).summaryIn(partial),
 			"a → must be a number"
 		)
 })

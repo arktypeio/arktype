@@ -3130,7 +3130,7 @@ import { type } from "arktype"
 const T = type("string")
 console.log(T.assert, de.tag)
 // @ark-runtime
-const D = type("string")(1).toLocaleString(de)`)
+const D = type("string")(1).summaryIn(de)`)
 			).snap([
 				"/main.ts:4:23  `de` is used outside a runtime island\n  arktype/locales/de writes arktype's errors in a locale, which needs the description writers of arktype's nodes, so a standalone validator writes its errors only in en\n  Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: \"arktype\"."
 			])

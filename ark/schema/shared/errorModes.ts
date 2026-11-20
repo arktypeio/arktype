@@ -56,7 +56,8 @@ export class UndetailedErrors extends ArkErrors {
 		)
 	}
 
-	override toLocaleString(): string {
+	// "is invalid" is arktype's own text, written in en whatever the locale
+	override summaryIn(): string {
 		return this.summary
 	}
 

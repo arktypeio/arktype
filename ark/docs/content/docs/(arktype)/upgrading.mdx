@@ -163,7 +163,7 @@ if (out instanceof type.errors) {
 
 `Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`, but `{ issues }`, as [below](#standard-schema-messages-leave-out-the-path).
 
-`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`toLocaleString(locale)`](/docs/i18n#rendering-in-a-locale). `toJSON()`, and so `JSON.stringify(out)`, now leaves out each error's `data` and `actual`, which describes it, and its `meta`, `rule`, `unit` and `proto`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read them off `out.issues`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`summaryIn(locale)`](/docs/i18n#rendering-in-a-locale). `toJSON()`, and so `JSON.stringify(out)`, now leaves out each error's `data` and `actual`, which describes it, and its `meta`, `rule`, `unit` and `proto`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read them off `out.issues`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
 
 ```ts
 import { flatMessagesByPath, type } from "arktype"
@@ -200,7 +200,7 @@ if (out instanceof type.errors) {
 ```
 
 - Read `message` where you read `problem`.
-- Where you read `message` for text naming its path, read `summary`, which has a line for each error. For one error's line, call [`messageIn(error, en)`](#errors-are-plain-objects), with `en` from `arktype/locales/en`, rather than joining `error.propString` and `error.message`: a line has a colon after the path of a `message` you configured, and no path at the root.
+- Where you read `message` for text naming its path, read `summary`, which has a line for each error. Prefer it to joining `error.propString` and `error.message`: a line has a colon after the path of a `message` you configured, and no path at the root.
 - Rename each `problem` you configure or pass to `ctx.reject()` to `message`, then check how it reads [after its path](#custom-messages-are-written-after-their-path). One TypeScript can't see, in JavaScript or behind a cast, throws `problem was removed in 3.0; write message`.
 
 ### Custom messages are written after their path
@@ -278,7 +278,7 @@ const Zip5 = type("string").narrow(
 
 ### Errors are plain objects
 
-The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had, without `problem` and with `propString` before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's line of a summary in a locale:
+The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had, without `problem` and with `propString` before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's `message` in a locale:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -290,7 +290,7 @@ if (out instanceof type.errors) {
 	for (const error of out.issues) {
 		// before: error.hasCode("divisor")
 		if (error.code === "divisor") console.log(error.rule)
-		// new: this error's line of the summary, in German
+		// new: this error's message, in German
 		messageIn(error, de)
 	}
 }
@@ -335,7 +335,7 @@ Checks failing at one path were one `intersection` error listing them. Each is n
 type("string > 0 & /^a/")("")
 ```
 
-`issues.length` counts failed checks, so count paths with `flatByPath`, which lists each error at a path, or `byPath`, which keeps the first. Code switching on the `intersection` code, or reading an error's `errors` for an intersection's, reads each error instead.
+`issues.length` counts failed checks, so count paths with `flatByPath`, which lists each error at a path, or `byPath`, which keeps the first. `intersection` is no longer an error code, so code switching on it, or reading an error's `errors` for an intersection's, reads each error instead.
 
 ### assert throws the errors' summary
 

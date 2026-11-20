@@ -26,9 +26,7 @@ const flatKeywords = (prefix: string, o: object): [string, type.Any][] =>
 const keywordTypes = flatKeywords("", ark.export())
 
 const leavesOf = (error: ArkError): ArkError[] =>
-	error.code === "union" || error.code === "intersection" ?
-		error.errors.flatMap(leavesOf)
-	:	[error]
+	error.code === "union" ? error.errors.flatMap(leavesOf) : [error]
 
 contextualize(() => {
 	it("aliases are configurable keywords", () => {

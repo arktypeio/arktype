@@ -378,8 +378,8 @@ other: must be text`)
 		attest(out.issues[0].message).snap(
 			"Pick a shape (a must be a string or b must be a number)"
 		)
-		attest(out.toLocaleString(en)).equals(out.summary)
-		attest(messageIn(out.issues[0], en)).equals(out.summary)
+		attest(out.summaryIn(en)).equals(out.summary)
+		attest(messageIn(out.issues[0], en)).equals(out.issues[0].message)
 	})
 
 	it("a union's configured expected is written after must be and its path", () => {

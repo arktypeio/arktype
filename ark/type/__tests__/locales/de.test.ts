@@ -355,7 +355,7 @@ contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/1412
 	it("writes constraints described alike once", () => {
 		const Email = type("string.email > 0", "@", "Email is not valid")
-		attest(Email("").toLocaleString(de))
+		attest((Email("") as ArkErrors).summaryIn(de))
 			.snap(`muss ein Wert gemäß der Beschreibung „Email is not valid“ sein
 muss ein Wert gemäß der Beschreibung „Email is not valid“ sein`)
 	})
@@ -365,7 +365,7 @@ muss ein Wert gemäß der Beschreibung „Email is not valid“ sein`)
 			.or({ b: "number" })
 			.configure({ expected: "eine Form" })
 		const out = type({ shape: Shape })({ shape: {} })
-		attest(out.toLocaleString(de)).snap(
+		attest((out as ArkErrors).summaryIn(de)).snap(
 			"shape muss ein Wert gemäß der Beschreibung „eine Form“ sein"
 		)
 	})
@@ -381,12 +381,13 @@ muss ein Wert gemäß der Beschreibung „Email is not valid“ sein`)
 			"a b": Email
 		})
 		const out = T({ name: 1, email: "x", emails: ["x"], "a b": "x" })
-		attest(out.toLocaleString(de)).snap(`name muss eine Zeichenkette sein
+		attest((out as ArkErrors).summaryIn(de))
+			.snap(`name muss eine Zeichenkette sein
 email: Bitte eine gültige E-Mail-Adresse eingeben
 emails[0]: Bitte eine gültige E-Mail-Adresse eingeben
 Wert an ["a b"]: Bitte eine gültige E-Mail-Adresse eingeben`)
 		// its message is the same at the root, where no line is written
-		attest(Email("x").toLocaleString(de)).snap(
+		attest((Email("x") as ArkErrors).summaryIn(de)).snap(
 			"Bitte eine gültige E-Mail-Adresse eingeben"
 		)
 	})
@@ -402,7 +403,7 @@ Wert an ["a b"]: Bitte eine gültige E-Mail-Adresse eingeben`)
 			emails: Email.array()
 		})
 		const out = T({ name: 1, email: "x", emails: ["x"] })
-		attest(out.toLocaleString(de))
+		attest((out as ArkErrors).summaryIn(de))
 			.snap(`name („Name“) muss eine Zeichenkette sein
 email („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben
 emails[0] („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben`)
@@ -415,7 +416,7 @@ emails[0] („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben`)
 			}),
 			b: type("string").configure({ message: "muss ausgefüllt sein" })
 		})
-		attest(T({ a: 1, b: 1 }).toLocaleString(de))
+		attest((T({ a: 1, b: 1 }) as ArkErrors).summaryIn(de))
 			.snap(`a muss eine Zeichenkette sein, bitte
 b: muss ausgefüllt sein`)
 	})
@@ -426,14 +427,13 @@ b: muss ausgefüllt sein`)
 			number: n => `#${n}`,
 			verbatim: text => `⟨${text}⟩`
 		} satisfies Locale
-		attest((type("1n")(2n) as ArkErrors).toLocaleString(marked)).snap(
+		attest((type("1n")(2n) as ArkErrors).summaryIn(marked)).snap(
 			"muss ⟨#1n⟩ sein"
 		)
 		const Parsed = type("string").pipe.try(() => {
 			throw new Error("kaputt")
 		})
-		attest(Parsed("x").toLocaleString(marked))
-			.snap(`konnte nicht verarbeitet werden:
+		attest(Parsed("x").summaryIn(marked)).snap(`konnte nicht verarbeitet werden:
     ⟨Error: kaputt⟩`)
 	})
 
@@ -445,26 +445,28 @@ b: muss ausgefüllt sein`)
 				message: e => `ist zu kurz (mindestens ${e.rule})`
 			}
 		} satisfies Locale.Complete
-		attest(type("string >= 3")("ab").toLocaleString(deCompact)).snap(
+		attest((type("string >= 3")("ab") as ArkErrors).summaryIn(deCompact)).snap(
 			"ist zu kurz (mindestens 3)"
 		)
 		// a described node's text is cited by the shared message
 		attest(
-			type("string >= 3")
-				.describe("ein Benutzername")("ab")
-				.toLocaleString(deCompact)
+			(
+				type("string >= 3").describe("ein Benutzername")("ab") as ArkErrors
+			).summaryIn(deCompact)
 		).snap("muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein")
 	})
 
 	it("can be spread to write descriptions as German", () => {
 		const deDescribed: Locale = { ...de, cite: text => text }
 		attest(
-			type("string >= 3")
-				.describe("ein Benutzername")("ab")
-				.toLocaleString(deDescribed)
+			(
+				type("string >= 3").describe("ein Benutzername")("ab") as ArkErrors
+			).summaryIn(deDescribed)
 		).snap("muss ein Benutzername sein")
 		attest(
-			type({ a: type("'x'").describe("ein x") })({}).toLocaleString(deDescribed)
+			(type({ a: type("'x'").describe("ein x") })({}) as ArkErrors).summaryIn(
+				deDescribed
+			)
 		).snap("a fehlt (muss ein x sein)")
 	})
 })

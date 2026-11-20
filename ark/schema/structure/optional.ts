@@ -215,7 +215,7 @@ export const checkDefault = (
 
 		if (key === null) {
 			// e.g. "Default must be assignable to number (was string)"
-			throwParseError(`Default ${errors.toLocaleString(en)}`)
+			throwParseError(`Default ${errors.summaryIn(en)}`)
 		}
 
 		const atPath = new ArkErrors(node.$.cfg)
@@ -223,7 +223,7 @@ export const checkDefault = (
 
 		// e.g. "Default for bar must be assignable to number (was string)"
 		// e.g. "Default for value at [0] must be assignable to number (was string)"
-		throwParseError(`Default for ${atPath.toLocaleString(en)}`)
+		throwParseError(`Default for ${atPath.summaryIn(en)}`)
 	}
 
 	return value

@@ -2107,10 +2107,6 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 				{ message: "no extra keys" },
 				"structure"
 			),
-			Intersected: scope(
-				{},
-				{ intersection: { message: () => "configured" } }
-			).type("string >= 5 & /^a/"),
 			// another scope's descriptions, before and after the build's own
 			OwnFirst: type({ a: { v: "number" } }),
 			KeptAfter: type({ a: lib.y }),
@@ -2134,7 +2130,6 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 			["Discriminated", { k: "c" }],
 			["Keyed", { a: true }],
 			["Undeclared", { a: "", b: 1 }],
-			["Intersected", "b"],
 			["OwnFirst", described],
 			["KeptAfter", described],
 			["KeptFirst", described],
@@ -2155,7 +2150,6 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 			"k: unknown kind",
 			"a: no a",
 			"b: no extra keys",
-			"must be matched by ^a\nmust be at least length 5",
 			"a.v must be a number",
 			"a.v must be a custom number",
 			"b.v must be a custom number",
@@ -3021,9 +3015,10 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 		const validated = artifact.Validating([1, artifact.T()])
 		attest([
 			errors.summary,
+			// a standalone validator's errors have no summaryIn
 			errors.toLocaleString(artifact.de),
-			artifact.Island(1).toLocaleString(artifact.de),
-			validated.toLocaleString(artifact.de),
+			artifact.Island(1).summaryIn(artifact.de),
+			validated.summaryIn(artifact.de),
 			artifact.messageIn(validated.issues[0], artifact.de)
 		]).snap([
 			"must be a string",
