@@ -44,7 +44,7 @@ export const getSnapshotByName = (
 	file: string,
 	name: string,
 	customPath: string | undefined
-): object => {
+): unknown => {
 	const snapshotPath = resolveSnapshotPath(file, customPath)
 	return (readSnapshotFile(snapshotPath)[basename(file)] as any)?.[name]
 }

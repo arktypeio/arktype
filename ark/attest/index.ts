@@ -16,5 +16,5 @@ export {
 	type AttestConfig,
 	type Checker
 } from "./config.ts"
-export { getChecker } from "./ts7/server.ts"
+export { getChecker } from "./checker.ts"
 export { contextualize } from "./utils.ts"

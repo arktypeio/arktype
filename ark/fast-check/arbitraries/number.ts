@@ -40,33 +40,32 @@ export const buildNumberArbitrary = (
 	const min = numberConstraints.min ?? Number.MIN_SAFE_INTEGER
 	const max = numberConstraints.max ?? Number.MAX_SAFE_INTEGER
 
-	const firstDivisibleInRange = Math.ceil(min / divisor) * divisor
+	const d = Math.abs(divisor)
+	const kMin = Math.ceil(min / d)
+	const kMax = Math.floor(max / d)
 
-	if (firstDivisibleInRange > max || firstDivisibleInRange < min) {
+	if (kMin > kMax) {
 		throw new Error(
 			`No values within range ${numberConstraints.min} - ${numberConstraints.max} are divisible by ${numberConstraints.divisor}.`
 		)
 	}
 
-	numberConstraints.min = firstDivisibleInRange
-	//fast-check defaults max to 0x7fffffff which prevents larger divisible numbers from being produced
-	numberConstraints.max = max
+	const excluded = node.is("intersection") ? node.inner.notEqual : undefined
+	if (excluded?.length && kMax - kMin <= 1024) {
+		const valid: number[] = []
+		for (let k = kMin; k <= kMax; k++) {
+			const value = k === 0 ? 0 : k * d
+			if (excluded.every(ex => ex.tAllows(value as never))) valid.push(value)
+		}
+		if (!valid.length) {
+			throw new Error(
+				`No values within range ${min} - ${max} divisible by ${divisor} satisfy != constraints.`
+			)
+		}
+		return fc.constantFrom(...valid)
+	}
 
-	const integerArbitrary = fc.integer(numberConstraints)
-
-	const integersDivisibleByDivisor = integerArbitrary.map(value => {
-		const remainder = value % divisor
-		if (remainder === 0) return value
-
-		const lowerPossibleValue = value - remainder
-		if (
-			lowerPossibleValue >= firstDivisibleInRange &&
-			lowerPossibleValue % divisor === 0
-		)
-			return lowerPossibleValue
-		return value + remainder
-	})
-	return integersDivisibleByDivisor
+	return fc.integer({ min: kMin, max: kMax }).map(k => (k === 0 ? 0 : k * d))
 }
 
 const getFastCheckNumberConstraints = (node: IntersectionNode) => {
@@ -81,7 +80,7 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 	for (const refinement of node.preStruct) {
 		if (refinement.hasKindIn("min", "max")) {
 			let rule = refinement.rule
-			if ("exclusive" in refinement)
+			if (refinement.exclusive)
 				rule = nearestFloat(refinement.rule, refinement.is("min") ? "+" : "-")
 
 			if (hasDivisor !== undefined)

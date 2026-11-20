@@ -107,6 +107,9 @@ describe("type assertions", () => {
 		const d = new Date()
 		attest(d).instanceOf(Date)
 		assert.throws(() => attest(d).instanceOf(RegExp), assert.AssertionError)
+		attest(() => attest(Object.create(null)).instanceOf(Date)).throws.snap(
+			`AssertionError [ERR_ASSERTION]: Expected an instance of Date (was [object Object])`
+		)
 	})
 
 	it("incorrect type", () => {

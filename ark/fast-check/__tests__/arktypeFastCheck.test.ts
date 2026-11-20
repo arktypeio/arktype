@@ -71,6 +71,33 @@ contextualize(() => {
 				"No values within range 53 - 57 are divisible by 10."
 			)
 		})
+		it("inclusive divisor bounds", () => {
+			const T = type("0 <= number % 7 <= 6")
+			assertProperty(arkToArbitrary(T), T)
+			attest(sample(arkToArbitrary(T), 10)).equals(Array(10).fill(0))
+		})
+		it("exclusive integer bounds", () => {
+			const T = type("1 < number.integer < 3")
+			assertProperty(arkToArbitrary(T), T)
+			attest(sample(arkToArbitrary(T), 10)).equals(Array(10).fill(2))
+		})
+		it("negative bounds with divisor", () => {
+			const T = type("-10 <= number % 7 <= -1")
+			assertProperty(arkToArbitrary(T), T)
+			attest(sample(arkToArbitrary(T), 10)).equals(Array(10).fill(-7))
+		})
+		it("divisor with notEqual", () => {
+			const satisfiable = type("0 <= number % 5 <= 5 & number != 0")
+			assertProperty(arkToArbitrary(satisfiable), satisfiable)
+			attest(sample(arkToArbitrary(satisfiable), 10)).equals(Array(10).fill(5))
+
+			const unsatisfiable = type(
+				"-1 <= number % 5 <= 6 & number != 0 & number != 5"
+			)
+			attest(() => arkToArbitrary(unsatisfiable)).throws(
+				"satisfy != constraints"
+			)
+		})
 	})
 
 	describe("string", () => {
@@ -134,6 +161,14 @@ contextualize(() => {
 			const T = type("string.email<5")
 			attest(() => arkToArbitrary(T)).throws("Bounded regex is not supported.")
 		})
+		it("zero maxLength regex", () => {
+			attest(() => arkToArbitrary(type("/^a*$/ <= 0"))).throws(
+				"Bounded regex is not supported."
+			)
+			attest(() => arkToArbitrary(type("string.alpha <= 0"))).throws(
+				"Bounded regex is not supported."
+			)
+		})
 	})
 
 	describe("misc", () => {
@@ -183,6 +218,20 @@ contextualize(() => {
 			// generated for the morph's input
 			attest<Arbitrary<string>>(arbitrary)
 			assertProperty(arbitrary, T)
+		})
+		it("morph without input", () => {
+			const T = type.schema({ morphs: [(x: unknown) => typeof x] })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("never", () => {
+			attest(() => arkToArbitrary(type("never"))).throws(
+				"Cannot generate values for an unsatisfiable type ('never')"
+			)
+		})
+		it("root exports only arkToArbitrary", async () => {
+			const rootExports = await import("@ark/fast-check")
+			attest(Object.keys(rootExports)).equals(["arkToArbitrary"])
 		})
 		it("typed as the input", () => {
 			const T = type({ name: "string", "age?": "number", role: "'a' = 'a'" })
@@ -283,6 +332,26 @@ contextualize(() => {
 			attest([1, 2, 3, 4].every(length => lengths.has(length))).equals(true)
 			return assertProperty(arkToArbitrary(T), T)
 		})
+		it("variadic tuple with length constraints", () => {
+			const atMost2 = type(["number", "...", "string[]"]).atMostLength(2)
+			assertProperty(arkToArbitrary(atMost2), atMost2)
+
+			const exact3 = type([
+				"string",
+				"boolean?",
+				"...",
+				"number[]"
+			]).exactlyLength(3)
+			assertProperty(arkToArbitrary(exact3), exact3)
+
+			const omitToFit = type([
+				"string",
+				"boolean?",
+				"...",
+				"number[]"
+			]).atMostLength(1)
+			assertProperty(arkToArbitrary(omitToFit), omitToFit)
+		})
 	})
 
 	describe("object", () => {
@@ -342,6 +411,12 @@ contextualize(() => {
 			const T = type({ "[symbol]": "number|string" })
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
+			const maxSyms = Math.max(
+				...sample(arbitrary, { numRuns: 30, seed: 1 }).map(
+					o => Object.getOwnPropertySymbols(o).length
+				)
+			)
+			attest(maxSyms > 1).equals(true)
 		})
 		it("index signature with optional key", () => {
 			const T = type({ "[/^x/]": "number", y: "string", "z?": "boolean" })
@@ -415,6 +490,11 @@ contextualize(() => {
 			}).export()
 			assertProperty(arkToArbitrary($.dict), $.dict)
 			assertProperty(arkToArbitrary($.named), $.named)
+			const namedSamples = sample(arkToArbitrary($.named), {
+				numRuns: 25,
+				seed: 1
+			})
+			attest(new Set(namedSamples).size).equals(namedSamples.length)
 		})
 		it("cycle through an optional element", () => {
 			// inferring an optional element that references its own tuple is circular
@@ -435,6 +515,8 @@ contextualize(() => {
 			const T = type({ name: "string" }).and("unknown[]")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
+			const samples = sample(arbitrary, { numRuns: 25, seed: 1 })
+			attest(new Set(samples).size).equals(samples.length)
 		})
 		it("array keyword with additional props", () => {
 			const T = type({ name: "string" }).and("Array<4")
@@ -454,6 +536,22 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("Map", () => {
+			const T = type("Map")
+			assertProperty(arkToArbitrary(T), T)
+		})
+		it("RegExp", () => {
+			const T = type("RegExp")
+			assertProperty(arkToArbitrary(T), T)
+		})
+		it("URL", () => {
+			const T = type("URL")
+			assertProperty(arkToArbitrary(T), T)
+		})
+		it("Error", () => {
+			const T = type("Error")
+			assertProperty(arkToArbitrary(T), T)
+		})
 		it("Date", () => {
 			const T = type("Date")
 			const arbitrary = arkToArbitrary(T)
@@ -467,6 +565,10 @@ contextualize(() => {
 			const T = type("d'2001-10-10'<Date<=d'2005-10-10'")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
+		})
+		it("exclusive date bounds", () => {
+			const tight = type("d'2020-01-01'<Date<d'2020-01-01T00:00:00.005Z'")
+			assertProperty(arkToArbitrary(tight), tight)
 		})
 	})
 })

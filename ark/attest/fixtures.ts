@@ -4,7 +4,7 @@ import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.ts"
 import { analyzeProjectAssertions } from "./cache/writeAssertionCache.ts"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.ts"
 import { analyzeProjectAssertions as analyzeProjectAssertionsTs7 } from "./ts7/analyze.ts"
-import { getChecker } from "./ts7/server.ts"
+import { getChecker } from "./checker.ts"
 
 export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 	const { ...config } = getConfig()

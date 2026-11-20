@@ -1,6 +1,6 @@
 import type { nodeOfKind } from "arktype/schema"
 import * as fc from "fast-check"
-import { buildStructureArbitrary } from "../arktypeFastCheck.ts"
+import { buildStructureArbitrary } from "../buildArbitrary.ts"
 import type { Ctx } from "../fastCheckContext.ts"
 import { buildDateArbitrary } from "./date.ts"
 import type { DomainInputNode } from "./domain.ts"
@@ -11,13 +11,25 @@ export const buildProtoArbitrary: BuildProtoArbitrary = {
 			fc.array(fc.anything())
 		:	buildStructureArbitrary(node as never, ctx),
 	Set: () => fc.uniqueArray(fc.anything()).map(arr => new Set(arr)),
-	Date: node => buildDateArbitrary(node)
+	Map: () =>
+		fc
+			.array(fc.tuple(fc.anything(), fc.anything()))
+			.map(entries => new Map(entries)),
+	Date: node => buildDateArbitrary(node),
+	RegExp: () =>
+		fc.string().map(s => new RegExp(s.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&"))),
+	URL: () => fc.webUrl().map(u => new URL(u)),
+	Error: () => fc.string().map(m => new Error(m))
 }
 
 type BuildProtoArbitrary = {
 	Array: ProtoArbitrary
 	Set: ProtoArbitrary<Set<unknown>>
+	Map: ProtoArbitrary<Map<unknown, unknown>>
 	Date: ProtoArbitrary<Date>
+	RegExp: ProtoArbitrary<RegExp>
+	URL: ProtoArbitrary<URL>
+	Error: ProtoArbitrary<Error>
 	[key: string]: ProtoArbitrary
 }
 

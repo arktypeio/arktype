@@ -101,15 +101,13 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	instanceOf(expected: Constructor): this {
-		if (!(this.versionableActual instanceof expected)) {
+		const actual = this.unversionedActual
+		if (!(actual instanceof expected)) {
 			throwAssertionError({
 				stack: this.ctx.assertionStack,
 				message: `Expected an instance of ${expected.name} (was ${
-					(
-						typeof this.versionableActual === "object" &&
-						this.versionableActual !== null
-					) ?
-						this.versionableActual.constructor.name
+					typeof actual === "object" && actual !== null ?
+						(actual.constructor?.name ?? this.serializedActual)
 					:	this.serializedActual
 				})`
 			})
@@ -153,11 +151,17 @@ export class ChainableAssertions implements AssertionRecord {
 				id,
 				opts?.path
 			)
-			if (!expectedSnapshot || this.ctx.cfg.updateSnapshots) {
+			if (expectedSnapshot === undefined || this.ctx.cfg.updateSnapshots) {
+				const position = caller()
+				if (this.ctx.cfg.failOnMissingSnapshots) {
+					throw new MissingSnapshotError(
+						`.snap.toFile("${id}") at ${positionToString(position)} must be populated.`
+					)
+				}
 				if (this.snapRequiresUpdate(expectedSnapshot)) {
 					updateExternalSnapshot({
 						serializedValue: this.serializedActual,
-						position: caller(),
+						position,
 						name: id,
 						customPath: opts?.path
 					})

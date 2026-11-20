@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { MissingSnapshotError } from "@ark/attest/internal/assert/assertions.ts"
 import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
 import { dirName, readJson, writeJson } from "@ark/fs"
 import * as assert from "node:assert/strict"
@@ -48,7 +49,9 @@ contextualize(() => {
 			assert.AssertionError,
 			"kt"
 		)
-		attest(1337).snap.toFile("toFileNew")
+		attestInternal(1337, {
+			cfg: { failOnMissingSnapshots: false }
+		}).snap.toFile("toFileNew")
 		const contents = readJson(defaultSnapPath)
 		attest(contents).equals({
 			[testFile]: {
@@ -60,7 +63,9 @@ contextualize(() => {
 
 	it("create file", () => {
 		rmSync(defaultSnapPath)
-		attest(o).snap.toFile("toFile")
+		attestInternal(o, {
+			cfg: { failOnMissingSnapshots: false }
+		}).snap.toFile("toFile")
 		attest(readJson(defaultSnapPath)).equals({
 			[testFile]: { toFile: o }
 		})
@@ -69,7 +74,7 @@ contextualize(() => {
 	it("update existing", () => {
 		attestInternal(
 			{ re: "dew" },
-			{ cfg: { updateSnapshots: true } }
+			{ cfg: { updateSnapshots: true, failOnMissingSnapshots: false } }
 		).snap.toFile("toFileUpdate")
 		const updatedContents = readJson(defaultSnapPath)
 		const expectedContents = {
@@ -93,7 +98,9 @@ contextualize(() => {
 			assert.AssertionError,
 			"kt"
 		)
-		attest(null).snap.toFile("toCustomFileNew", {
+		attestInternal(null, {
+			cfg: { failOnMissingSnapshots: false }
+		}).snap.toFile("toCustomFileNew", {
 			path: customFileName
 		})
 		const contents = readJson(customSnapPath)
@@ -103,5 +110,43 @@ contextualize(() => {
 				toCustomFileNew: null
 			}
 		})
+	})
+
+	it("preserves falsy snapshots without overwriting", () => {
+		const falsyCases: [string, unknown, unknown][] = [
+			["falsyFalse", false, true],
+			["falsyZero", 0, 1],
+			["falsyEmptyString", "", "nonempty"],
+			["falsyNull", null, "notNull"]
+		]
+		for (const [id, saved, mismatch] of falsyCases) {
+			attestInternal(saved, {
+				cfg: { updateSnapshots: false, failOnMissingSnapshots: false }
+			}).snap.toFile(id)
+			attestInternal(saved, {
+				cfg: { updateSnapshots: false, failOnMissingSnapshots: true }
+			}).snap.toFile(id)
+			assert.throws(
+				() =>
+					attestInternal(mismatch, {
+						cfg: { updateSnapshots: false, failOnMissingSnapshots: true }
+					}).snap.toFile(id),
+				assert.AssertionError
+			)
+			assert.equal(
+				(readJson(defaultSnapPath)[testFile] as Record<string, unknown>)[id],
+				saved
+			)
+		}
+	})
+
+	it("failOnMissingSnapshots", () => {
+		assert.throws(
+			() =>
+				attestInternal("new", {
+					cfg: { failOnMissingSnapshots: true }
+				}).snap.toFile("missingCase"),
+			MissingSnapshotError
+		)
 	})
 })
