@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type } from "arktype"
+import type { ToJsonSchema } from "@ark/schema"
+import { keywords, Module, scope, Type, type } from "arktype"
 import type { JSONSchema7 } from "json-schema"
 
 // a keyword's pattern is its source, so only its presence is asserted
@@ -374,6 +375,309 @@ contextualize(() => {
 						required: ["size"]
 					}
 				}
+			})
+		})
+	})
+
+	describe("aliasDefs", () => {
+		const types = scope({
+			Id: "string",
+			Address: { street: "string" },
+			"#Secret": { key: "string" },
+			User: {
+				id: "Id",
+				home: "Address",
+				"work?": "Address | null",
+				secret: "Secret",
+				"friends?": "User[]"
+			},
+			Order: { buyer: "User", shipTo: "Address" }
+		}).export()
+
+		it("names each alias, nested and beside a cyclic one", () => {
+			attest(types.Order.toJsonSchema({ aliasDefs: true, dialect: null })).snap(
+				{
+					$ref: "#/$defs/Order",
+					$defs: {
+						Order: {
+							type: "object",
+							properties: {
+								buyer: { $ref: "#/$defs/User" },
+								shipTo: { $ref: "#/$defs/Address" }
+							},
+							required: ["buyer", "shipTo"]
+						},
+						User: {
+							type: "object",
+							properties: {
+								home: { $ref: "#/$defs/Address" },
+								id: { type: "string" },
+								secret: {
+									type: "object",
+									properties: { key: { type: "string" } },
+									required: ["key"]
+								},
+								friends: { type: "array", items: { $ref: "#/$defs/User" } },
+								work: { anyOf: [{ $ref: "#/$defs/Address" }, { type: "null" }] }
+							},
+							required: ["home", "id", "secret"]
+						},
+						Address: {
+							type: "object",
+							properties: { street: { type: "string" } },
+							required: ["street"]
+						}
+					}
+				}
+			)
+		})
+
+		it("names only those listed", () => {
+			attest(
+				types.Order.toJsonSchema({
+					aliasDefs: ["Address", "#Secret"],
+					dialect: null
+				})
+			).snap({
+				type: "object",
+				properties: {
+					buyer: { $ref: "#/$defs/User" },
+					shipTo: { $ref: "#/$defs/Address" }
+				},
+				required: ["buyer", "shipTo"],
+				$defs: {
+					Address: {
+						type: "object",
+						properties: { street: { type: "string" } },
+						required: ["street"]
+					},
+					Secret: {
+						type: "object",
+						properties: { key: { type: "string" } },
+						required: ["key"]
+					},
+					User: {
+						type: "object",
+						properties: {
+							home: { $ref: "#/$defs/Address" },
+							id: { type: "string" },
+							secret: { $ref: "#/$defs/Secret" },
+							friends: { type: "array", items: { $ref: "#/$defs/User" } },
+							work: { anyOf: [{ $ref: "#/$defs/Address" }, { type: "null" }] }
+						},
+						required: ["home", "id", "secret"]
+					}
+				}
+			})
+		})
+
+		it("an unresolvable name throws", () => {
+			attest(() =>
+				types.Order.toJsonSchema({ aliasDefs: ["Adress"] })
+			).throws.snap("ParseError: 'Adress' is unresolvable")
+		})
+
+		it("an alias's Type used in another scope", () => {
+			attest(
+				type({ to: types.Address, "cc?": types.Address.array() }).toJsonSchema({
+					aliasDefs: true,
+					dialect: null
+				})
+			).snap({
+				type: "object",
+				properties: {
+					to: { $ref: "#/$defs/Address" },
+					cc: { type: "array", items: { $ref: "#/$defs/Address" } }
+				},
+				required: ["to"],
+				$defs: {
+					Address: {
+						type: "object",
+						properties: { street: { type: "string" } },
+						required: ["street"]
+					}
+				}
+			})
+		})
+
+		it("a keyword isn't named unless listed", () => {
+			const T = type({ email: "string.email" })
+			attest(
+				elidePatterns(T.toJsonSchema({ aliasDefs: true, dialect: null }))
+			).snap({
+				type: "object",
+				properties: {
+					email: { type: "string", pattern: "…", format: "email" }
+				},
+				required: ["email"]
+			})
+			attest(
+				elidePatterns(
+					T.toJsonSchema({ aliasDefs: ["string.email"], dialect: null })
+				)
+			).snap({
+				type: "object",
+				properties: { email: { $ref: "#/$defs/email" } },
+				required: ["email"],
+				$defs: { email: { type: "string", pattern: "…", format: "email" } }
+			})
+		})
+
+		it("aliases that resolve to the same thing share the first's name", () => {
+			const { Person } = scope({
+				Street: "string > 0",
+				Name: "string > 0",
+				Person: { street: "Street", name: "Name" }
+			}).export()
+			attest(Person.toJsonSchema({ aliasDefs: true, dialect: null })).snap({
+				$ref: "#/$defs/Person",
+				$defs: {
+					Person: {
+						type: "object",
+						properties: {
+							name: { $ref: "#/$defs/Street" },
+							street: { $ref: "#/$defs/Street" }
+						},
+						required: ["name", "street"]
+					},
+					Street: { type: "string", minLength: 1 }
+				}
+			})
+		})
+
+		it("a submodule's aliases by their own names", () => {
+			const { Shipment } = scope({
+				Geo: type.module({ root: { lat: "number" }, Zip: { code: "string" } }),
+				Shipment: { at: "Geo", zip: "Geo.Zip" }
+			}).export()
+			attest(Shipment.toJsonSchema({ aliasDefs: true, dialect: null })).snap({
+				$ref: "#/$defs/Shipment",
+				$defs: {
+					Shipment: {
+						type: "object",
+						properties: {
+							at: { $ref: "#/$defs/Geo" },
+							zip: { $ref: "#/$defs/Zip" }
+						},
+						required: ["at", "zip"]
+					},
+					Geo: {
+						type: "object",
+						properties: { lat: { type: "number" } },
+						required: ["lat"]
+					},
+					Zip: {
+						type: "object",
+						properties: { code: { type: "string" } },
+						required: ["code"]
+					}
+				}
+			})
+			attest(
+				Shipment.toJsonSchema({ aliasDefs: ["Geo.Zip"], dialect: null })
+			).snap({
+				type: "object",
+				properties: {
+					at: {
+						type: "object",
+						properties: { lat: { type: "number" } },
+						required: ["lat"]
+					},
+					zip: { $ref: "#/$defs/Zip" }
+				},
+				required: ["at", "zip"],
+				$defs: {
+					Zip: {
+						type: "object",
+						properties: { code: { type: "string" } },
+						required: ["code"]
+					}
+				}
+			})
+		})
+
+		it("input and output", () => {
+			const { Holder } = scope({
+				Size: { size: type("string").pipe(s => s.length, type("number")) },
+				Holder: { a: "Size", b: "Size[]" }
+			}).export()
+			const libraryOptions = { aliasDefs: true }
+			attest(
+				Holder["~standard"].jsonSchema.input({
+					target: "draft-2020-12",
+					libraryOptions
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/Holder",
+				$defs: {
+					Holder: {
+						type: "object",
+						properties: {
+							a: { $ref: "#/$defs/Size" },
+							b: { type: "array", items: { $ref: "#/$defs/Size" } }
+						},
+						required: ["a", "b"]
+					},
+					Size: {
+						type: "object",
+						properties: { size: { type: "string" } },
+						required: ["size"]
+					}
+				}
+			})
+			attest(
+				Holder.out.toJsonSchema({ ...libraryOptions, dialect: null })
+			).snap({
+				$ref: "#/$defs/Holder",
+				$defs: {
+					Holder: {
+						type: "object",
+						properties: {
+							a: { $ref: "#/$defs/Size" },
+							b: { type: "array", items: { $ref: "#/$defs/Size" } }
+						},
+						required: ["a", "b"]
+					},
+					Size: {
+						type: "object",
+						properties: { size: { type: "number" } },
+						required: ["size"]
+					}
+				}
+			})
+		})
+
+		it("configured on a scope", () => {
+			const { B } = scope(
+				{ A: { a: "string" }, B: { a: "A" } },
+				{ toJsonSchema: { aliasDefs: true } }
+			).export()
+			attest(B.toJsonSchema({ dialect: null })).snap({
+				$ref: "#/$defs/B",
+				$defs: {
+					B: {
+						type: "object",
+						properties: { a: { $ref: "#/$defs/A" } },
+						required: ["a"]
+					},
+					A: {
+						type: "object",
+						properties: { a: { type: "string" } },
+						required: ["a"]
+					}
+				}
+			})
+			attest(B.toJsonSchema({ dialect: null, aliasDefs: false })).snap({
+				type: "object",
+				properties: {
+					a: {
+						type: "object",
+						properties: { a: { type: "string" } },
+						required: ["a"]
+					}
+				},
+				required: ["a"]
 			})
 		})
 	})
@@ -753,6 +1057,57 @@ contextualize(() => {
 			},
 			required: ["base64", "base64url", "email", "iso"]
 		})
+	})
+
+	// RE2, which structured outputs like OpenAI's read patterns with, has neither
+	it("keyword patterns have no lookaround or backreference", () => {
+		const patterns: string[] = []
+		const collect = (schema: unknown): void => {
+			if (typeof schema !== "object" || schema === null) return
+			for (const [k, v] of Object.entries(schema)) {
+				if (k === "pattern") patterns.push(v)
+				else collect(v)
+			}
+		}
+		const walk = (module: object): void => {
+			for (const t of Object.values(module)) {
+				if (t instanceof Type)
+					collect(t.in.toJsonSchema({ fallback: ctx => ctx.base }))
+				else if (t instanceof Module) walk(t)
+			}
+		}
+		walk(keywords)
+		// so a walk that reached no keyword can't pass
+		attest(patterns.length > 30).equals(true)
+		attest(patterns.filter(p => /\(\?<?[!=]|\\[1-9]|\\k</.test(p))).equals([])
+	})
+
+	it("a negative divisor's multipleOf is positive", () => {
+		attest(type("number % -2").toJsonSchema({ dialect: null })).snap({
+			type: "integer",
+			multipleOf: 2
+		})
+	})
+
+	it("a Date's bounds are written by one call", () => {
+		const calls: ToJsonSchema.DateContext[] = []
+		const T = type("d'2000-01-01' < Date < d'2020-01-01'").and(
+			type("Date != d'2010-01-01'")
+		)
+		const schema = T.toJsonSchema({
+			dialect: null,
+			fallback: { date: ctx => (calls.push(ctx), { type: "string" }) }
+		})
+		attest(schema).snap({ type: "string" })
+		attest(calls).equals([
+			{
+				code: "date",
+				base: {},
+				before: new Date("2019-12-31T23:59:59.999Z"),
+				after: new Date("2000-01-01T00:00:00.001Z"),
+				notEqual: [new Date("2010-01-01T00:00:00.000Z")]
+			}
+		])
 	})
 
 	it("keyword formats for draft-07", () => {

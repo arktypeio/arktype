@@ -1,4 +1,3 @@
-import { isArray } from "arktype/util"
 import { parse } from "arktype/sets"
 import { type, type Type } from "arktype"
 import type { inferJsonSchema } from "./infer.ts"
@@ -10,6 +9,4 @@ export const jsonSchemaToType: <
 >(
 	schema: validateJsonSchema<schema>
 ) => r extends infer _ ? _ : never = schema =>
-	type(
-		parse(isArray(schema) ? { anyOf: schema } : (schema as never)) as never
-	) as never
+	type(parse(schema as never) as never) as never

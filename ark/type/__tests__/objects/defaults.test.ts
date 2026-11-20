@@ -394,6 +394,28 @@ contextualize(() => {
 		attest(Deleted({ a: undefined, z: 1 })).equals({ a: 5 })
 	})
 
+	it("doesn't transform an undefined its default replaces", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { exactOptionalPropertyTypes: false, jitless })
+			const inputs: unknown[] = []
+			const Length = type("string | undefined").pipe(s => {
+				inputs.push(s)
+				return s?.length ?? -1
+			})
+			const T = $.type({ a: [Length, "=", "xx"] })
+			attest(T({ a: undefined })).equals({ a: 2 })
+			attest(inputs).equals(["xx"])
+			inputs.length = 0
+			// an index signature's transform is skipped with it
+			const Indexed = $.type({
+				a: [Length, "=", "xx"],
+				"[string]": ["unknown", "=>", v => v]
+			})
+			attest(Indexed({ a: undefined, b: 1 })).equals({ a: 2, b: 1 })
+			attest(inputs).equals(["xx"])
+		}
+	})
+
 	describe("string parsing", () => {
 		it("number", () => {
 			const T = type({ key: "number = 42" })

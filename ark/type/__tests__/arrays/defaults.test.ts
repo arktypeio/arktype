@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { defaultablePostOptionalMessage } from "arktype/internal/parser/tupleLiteral.ts"
 
 contextualize(() => {
@@ -131,5 +131,43 @@ contextualize(() => {
 		const T = type(["string = 'foo'"])
 
 		attest(T([])).equals(["foo"])
+	})
+
+	describe("without exactOptionalPropertyTypes", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { exactOptionalPropertyTypes: false, jitless })
+
+			it(`replaces an undefined element${jitless ? " jitless" : ""}`, () => {
+				const T = $.type(["string", "number = 5", "boolean = true"])
+				attest(T.expression).snap(
+					"[string, (number | undefined) = 5, (undefined | false | true) = true]"
+				)
+				attest(T(["a", undefined] as never)).equals(["a", 5, true])
+				attest(T(["a", 1, undefined] as never)).equals(["a", 1, true])
+				attest(T(["a"])).equals(["a", 5, true])
+				attest(T.out.expression).snap("[string, number, boolean]")
+				attest(T.required().expression).snap("[string, number, boolean]")
+			})
+
+			it(`doesn't transform an undefined its default replaces${jitless ? " jitless" : ""}`, () => {
+				const inputs: unknown[] = []
+				const Length = type("string | undefined").pipe(s => {
+					inputs.push(s)
+					return s?.length ?? -1
+				})
+				const T = $.type(["string", [Length, "=", "xx"]])
+				attest(T(["a", undefined] as never)).equals(["a", 2])
+				attest(inputs).equals(["xx"])
+			})
+		}
+
+		it("a default can't be the undefined it replaces", () => {
+			attest(() =>
+				scope({}, { exactOptionalPropertyTypes: false }).type([
+					"string",
+					["number", "=", undefined as never]
+				])
+			).throws.snap("ParseError: Default must be a number")
+		})
 	})
 })

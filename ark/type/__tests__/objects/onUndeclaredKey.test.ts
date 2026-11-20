@@ -261,13 +261,10 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 c must be removed`)
 			attest(errors.issues.map(e => e.data)).equals([1, 2])
 			attest(errors.toJSON()[0]).snap({
-				data: 1,
 				path: ["b"],
 				code: "undeclared",
-				meta: {},
 				propString: "b",
 				expected: "removed",
-				actual: "1",
 				message: "must be removed"
 			})
 		})

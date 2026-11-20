@@ -115,6 +115,16 @@ const cases: {
 			return type({ head: Node, "tail?": Node.array() })
 		},
 		() => [{ head: { v: "a" }, tail: [{ v: "b", next: { v: "bad" } }] }]
+	],
+	"a transformed cycle": [
+		log => {
+			const Node = type({ v: narrowed(log), "next?": "this" })
+			return type({ head: Node.onDeepUndeclaredKey("reject") })
+		},
+		() => [
+			{ head: { v: "a", next: { v: "b" } } },
+			{ head: { v: "a", next: { v: "bad", extra: 1 } } }
+		]
 	]
 }
 

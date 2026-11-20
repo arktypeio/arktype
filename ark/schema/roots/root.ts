@@ -69,7 +69,12 @@ import type {
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import { tryMorph } from "../shared/traversal.ts"
+import {
+	inContext,
+	tryMorph,
+	withContextOf,
+	type ContextualTarget
+} from "../shared/traversal.ts"
 import { hasArkKind, isNode } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -124,10 +129,14 @@ export abstract class BaseRoot<
 				{
 					vendor: "arktype",
 					version: 1,
-					validate: input => {
+					validate: (input, options) => {
+						const context = options?.libraryOptions?.context
 						// Standard Schema returns its issues, so a configured onFail
 						// that throws or returns something else isn't called
-						const out = this.traverse(input)
+						const out =
+							context === undefined ?
+								this.traverse(input)
+							:	inContext(context as never, () => this.traverse(input))
 						return out instanceof ArkErrors ?
 								standardFailureOf(out as ArkErrors)
 							:	{ value: out }
@@ -461,6 +470,10 @@ export abstract class BaseRoot<
 		return this.assert(input)
 	}
 
+	withContext(context: ArkEnv.context): ContextualTarget {
+		return withContextOf(this as never, context)
+	}
+
 	protected _pipe(...morphs: Morph[]): BaseRoot {
 		const result = morphs.reduce<BaseRoot>(
 			(acc, morph) => acc.rawPipeOnce(morph),
@@ -547,6 +560,14 @@ export abstract class BaseRoot<
 		schema: Constraint.Schema<kind>
 	): BaseRoot {
 		return this._constrain("root", kind, schema)
+	}
+
+	/** constrains its output, like constrainOut, without finalizing it */
+	rawConstrainOut<kind extends Constraint.PrimitiveKind>(
+		kind: kind,
+		schema: Constraint.Schema<kind>
+	): BaseRoot {
+		return this._constrain("out", kind, schema)
 	}
 
 	private _constrain(

@@ -1,5 +1,11 @@
 # @ark/fast-check
 
+## Unreleased
+
+### Type `arkToArbitrary`'s values as the Type's input
+
+`arkToArbitrary(T)` returns an `fc.Arbitrary<typeof T.inferIn>`, where it returned `fc.Arbitrary<unknown>` to be cast.
+
 ## 0.0.22-beta.1
 
 ### Install `@ark/fast-check`, not `@arktype/fast-check`

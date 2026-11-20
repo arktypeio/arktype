@@ -58,27 +58,9 @@ export const foundErrors = issuesOf
 
 export const throwIssues = issuesOf
 
-export class TraversalError extends Error {
-	declare readonly name: "TraversalError"
-	declare arkErrors: ArkErrors
-
-	constructor(errors: ArkErrors) {
-		super(errors.summary)
-
-		// assigned, as a field's initializer compiles where the class is defined
-		this.name = "TraversalError"
-		// defined, so it's neither enumerable nor writable
-		Object.defineProperty(this, "arkErrors", { value: errors })
-	}
-}
-
-// a plain Error holds them as its cause, which the ES2020 lib lacks
-export const throwOnDefault = (errors: ArkErrors): never => {
-	throw new (Error as new (
-		message: string,
-		options: { cause: unknown }
-	) => Error)("is invalid", { cause: errors })
-}
+// the errors' own, as issues.ts's, so in source, where these are the full
+// runtime's, what's thrown is that runtime's TraversalError
+export const throwOnDefault = (errors: ArkErrors): never => errors.throw()
 
 // a merged issue is at its path, which a summary names, as a default's check
 // reports the key

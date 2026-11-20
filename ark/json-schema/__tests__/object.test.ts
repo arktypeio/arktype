@@ -67,6 +67,38 @@ contextualize(() => {
 		attest(T.expression).snap("{ foo: string } & isNonArray")
 	})
 
+	it("a key Object.prototype has is a property only if it's own", () => {
+		const Optional = jsonSchemaToType({
+			type: "object",
+			properties: { toString: { type: "string" } }
+		})
+		attest(Optional.expression).snap("{ [/^toString$/]: string } & isNonArray")
+		attest(Optional.allows({})).equals(true)
+		attest(Optional.allows({ toString: "a" })).equals(true)
+		attest(Optional.allows({ toString: 1 })).equals(false)
+
+		const Required = jsonSchemaToType({
+			type: "object",
+			properties: { constructor: {} },
+			required: ["constructor"]
+		})
+		attest(Required.allows({})).equals(false)
+		attest(Required.allows({ constructor: 1 })).equals(true)
+		attest(() => Required.assert({})).throws.snap(
+			"TraversalError: must be an object with its own constructor"
+		)
+
+		// declared, so additionalProperties doesn't apply to it
+		const Closed = jsonSchemaToType(
+			JSON.parse(
+				'{ "properties": { "__proto__": { "type": "number" } }, "additionalProperties": false }'
+			)
+		)
+		attest(Closed.allows(JSON.parse('{ "__proto__": 1 }'))).equals(true)
+		attest(Closed.allows(JSON.parse('{ "__proto__": "a" }'))).equals(false)
+		attest(Closed.allows({ a: 1 })).equals(false)
+	})
+
 	it("required keys of untyped branches", () => {
 		const T = jsonSchemaToType({
 			type: "object",

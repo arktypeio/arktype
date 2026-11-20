@@ -202,20 +202,61 @@ b must be equal to a`)
 		).equals(true)
 	})
 
-	it("can't narrow a morph in a tuple expression", () => {
+	it("a tuple expression narrows a morph's output", () => {
 		const toLength = (s: string) => s.length
 		const isEven = (n: number) => n % 2 === 0
-		// @ts-expect-error
-		attest(() => type([["string", "=>", toLength], ":", isEven]))
-			.throws("Predicate operand must be unknown (was a morph)")
-			.type.errors("Predicate operand must be unknown (was a morph)")
-		// @ts-expect-error
-		attest(() => type(["string", "=>", toLength], ":", isEven))
-			.throws("Predicate operand must be unknown (was a morph)")
-			.type.errors("Predicate operand must be unknown (was a morph)")
+		const Expected = type("string").pipe(toLength).narrow(isEven)
+		const T = type([["string", "=>", toLength], ":", isEven])
+		const Args = type(["string", "=>", toLength], ":", isEven)
+		attest<typeof Expected.t>(T.t)
+		attest<typeof Expected.t>(Args.t)
+		attest(T.json).equals(Expected.json)
+		attest(Args.json).equals(Expected.json)
+		attest(T("ab")).equals(2)
+		attest(T("abc").toString()).snap("must be valid according to isEven")
+		// a morph of itself narrowed is still a cycle
 		attest(() =>
 			scope({ b: [["b", "=>", toLength], ":", isEven] } as never).export()
-		).throws.snap("ParseError: Predicate operand must be unknown (was a morph)")
+		).throws.snap("ParseError: Alias 'b' has a shallow resolution cycle: b->b")
+	})
+
+	it("a tuple expression's predicate sees nested morphs' and defaults' output", () => {
+		const parsed: unknown[] = []
+		const Parsed = type([
+			{ a: "string.numeric.parse" },
+			":",
+			o => {
+				attest<{ a: number }>(o)
+				parsed.push(o)
+				return true
+			}
+		])
+		attest(Parsed({ a: "5" })).equals({ a: 5 })
+		attest(parsed).equals([{ a: 5 }])
+
+		const isPositive = (o: { a: number }) => o.a > 0
+		const Defaulted = type({ a: "number = 5" }, ":", o => {
+			attest<{ a: number }>(o)
+			return isPositive(o)
+		})
+		attest(Defaulted({})).equals({ a: 5 })
+		attest(Defaulted({ a: -1 }).toString()).snap(
+			"must be valid according to an anonymous predicate"
+		)
+		attest(type({ a: "number = 5" }, ":", isPositive).json).equals(
+			type({ a: "number = 5" }).narrow(isPositive).json
+		)
+	})
+
+	it("a tuple expression's type predicate narrows a morph's output", () => {
+		const T = type([
+			["string", "=>", (s: string) => `${s}!`],
+			":",
+			(s): s is "foo!" => s === "foo!"
+		])
+		attest(T.t).type.toString.snap('(In: string) => Out<"foo!">')
+		attest<"foo!">(T.infer)
+		attest<string>(T.inferIn)
 	})
 
 	it("narrows the output type of an morph within a single type", () => {

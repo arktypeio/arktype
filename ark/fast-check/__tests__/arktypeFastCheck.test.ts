@@ -109,6 +109,15 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		// their patterns have no lookahead, which fast-check can't generate from
+		it("numeric and ISO date keywords", () => {
+			for (const T of [
+				type("string.numeric"),
+				type("string.integer"),
+				type("string.date.iso")
+			])
+				assertProperty(arkToArbitrary(T), T)
+		})
 		it("sticky regex", () => {
 			const T = type(/a/y)
 			attest(() => arkToArbitrary(T)).throws(
@@ -171,7 +180,15 @@ contextualize(() => {
 		it("morph", () => {
 			const T = type(["string<5", "=>", val => `${val}`])
 			const arbitrary = arkToArbitrary(T)
+			// generated for the morph's input
+			attest<Arbitrary<string>>(arbitrary)
 			assertProperty(arbitrary, T)
+		})
+		it("typed as the input", () => {
+			const T = type({ name: "string", "age?": "number", role: "'a' = 'a'" })
+			attest<Arbitrary<{ name: string; age?: number; role?: "a" }>>(
+				arkToArbitrary(T)
+			)
 		})
 		it("unsupported class", () => {
 			class Foo {}

@@ -619,6 +619,18 @@ contextualize(() => {
 			})
 		})
 
+		it("keeps each pattern", () => {
+			const standard: StandardJSONSchemaV1 = type(/^a/).and(/z$/)
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "string",
+				pattern: "^a",
+				allOf: [{ pattern: "z$" }]
+			})
+		})
+
 		it("uses configured fallbacks", () => {
 			const T = type("bigint")
 			const standard: StandardJSONSchemaV1 = T
@@ -650,7 +662,7 @@ contextualize(() => {
 						n: {
 							type: "string",
 							pattern:
-								"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$",
+								"^(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?|\\.\\d+|-(?:[1-9]\\d*(?:\\.\\d+)?|0\\.\\d*[1-9]\\d*))(?:[Ee][+-]?\\d+)?$",
 							default: "1"
 						},
 						name: { type: "string", default: "Anon" },
@@ -717,7 +729,7 @@ contextualize(() => {
 				properties: {
 					n: {
 						type: "string",
-						pattern: "^(?:(?!^-0$)-?(?:(?:0|[1-9]\\d*)))$"
+						pattern: "^(?:0|-?[1-9]\\d*)$"
 					}
 				},
 				required: ["n"]
@@ -738,7 +750,7 @@ contextualize(() => {
 					foo: {
 						type: "string",
 						pattern:
-							"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$"
+							"^(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?|\\.\\d+|-(?:[1-9]\\d*(?:\\.\\d+)?|0\\.\\d*[1-9]\\d*))(?:[Ee][+-]?\\d+)?$"
 					}
 				},
 				required: ["foo"]

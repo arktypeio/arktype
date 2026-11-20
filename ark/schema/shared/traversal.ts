@@ -5,6 +5,7 @@ import {
 	isThunk,
 	noSuggest,
 	objectKindOf,
+	throwError,
 	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -34,8 +35,9 @@ import {
 	type UnionSite
 } from "./issues.ts"
 import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
+import type { StandardSchemaV1 } from "./standardSchema.ts"
 import { TransformErrors } from "./transform.ts"
-import { inProgress } from "./utils.ts"
+import { inProgress, removedProblemMessage } from "./utils.ts"
 
 export type FailHandler = (errors: never) => unknown
 
@@ -99,7 +101,19 @@ export class InternalTraversal implements FailureContext {
 	// a valid input's transforms write into it
 	declare inPlace?: true
 
+	/**
+	 * #### the context this validation was called with
+	 *
+	 * ✅ the same object at every path, for predicates and morphs to read
+	 * ✅ `undefined` when a call passes none
+	 * ✅ typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`
+	 */
+	declare context: ArkEnv.context | undefined
+
 	constructor(root: unknown, config: ResolvedConfig) {
+		this.context = callContext
+		if (onContextRead)
+			Object.defineProperty(this, "context", { get: onContextRead })
 		this.path = []
 		this._errors = undefined
 		this.root = root
@@ -359,6 +373,7 @@ export class Traversal extends InternalTraversal {
 	}
 
 	protected raise(input: ArkErrorInput): ArkError {
+		throwOnProblem(input)
 		const supplied: SuppliedIssue =
 			typeof input === "object" ? (input as never) : { expected: input }
 		const code = supplied.code ?? "predicate"
@@ -430,6 +445,13 @@ type SuppliedIssue = {
 	morph?: Morph
 	cause?: unknown
 	meta?: { keyword?: string }
+}
+
+// 2.x's slot, which a cast or JavaScript still passes, throws in arktype and
+// in a precompiled validator alike rather than raising a predicate's error
+export const throwOnProblem = (input: ArkErrorInput): void => {
+	if (typeof input === "object" && "problem" in input)
+		throwError(removedProblemMessage)
 }
 
 export const errorsOf = (ctx: InternalTraversal): BaseArkErrors =>
@@ -673,7 +695,85 @@ export const allowsInBranch = (
 // what a callback that only returns its reports is passed where they go unread
 export const silentCtx = {
 	mustBe: (): false => false,
-	reject: (): false => false
+	reject: (): false => false,
+	get context(): ArkEnv.context | undefined {
+		return onContextRead ? onContextRead() : callContext
+	}
+}
+
+/**
+ * the context of the validation in progress. Validation is synchronous, so
+ * one slot holds it, and every traversal the call creates reads it there:
+ * a root's, a union branch's or a cyclic continuation's, compiled or not
+ */
+let callContext: ArkEnv.context | undefined
+
+/** runs a validation, whose traversals each read `context` */
+export const inContext = <result>(
+	context: ArkEnv.context | undefined,
+	run: () => result
+): result => {
+	const outer = callContext
+	callContext = context
+	try {
+		return run()
+	} finally {
+		callContext = outer
+	}
+}
+
+// what reading ctx.context does where no call can pass one, as a Type checks
+// a literal while it's defined
+let onContextRead: (() => never) | undefined
+
+/** runs `run`, where each read of a traversal's context calls `onRead` */
+export const readingContextWith = <result>(
+	onRead: () => never,
+	run: () => result
+): result => {
+	const outer = onContextRead
+	onContextRead = onRead
+	try {
+		return run()
+	} finally {
+		onContextRead = outer
+	}
+}
+
+/** what `withContext` binds: a Type, or the validator a build precompiled from one */
+export interface ContextualTarget {
+	(data: unknown): unknown
+	assert(data: unknown): unknown
+	allows(data: unknown): boolean
+	"~standard": StandardSchemaV1.Props
+}
+
+/**
+ * a Type's validation, each run in `context`. As small as it is to create,
+ * so a form can bind what it has saved on each render to a Type that's
+ * defined, and precompiled, once
+ */
+export const withContextOf = (
+	t: ContextualTarget,
+	context: ArkEnv.context
+): ContextualTarget => {
+	const standard = t["~standard"]
+	return Object.assign((data: unknown) => inContext(context, () => t(data)), {
+		assert: (data: unknown) => inContext(context, () => t.assert(data)),
+		allows: (data: unknown) => inContext(context, () => t.allows(data)),
+		// as the Type's, with its vendor's own members like _c, but validating in context
+		"~standard": Object.defineProperties(
+			{},
+			{
+				...Object.getOwnPropertyDescriptors(standard),
+				validate: {
+					value: (value: unknown, options?: StandardSchemaV1.Options) =>
+						inContext(context, () => standard.validate(value, options)),
+					enumerable: true
+				}
+			}
+		) as StandardSchemaV1.Props
+	})
 }
 
 // takes Allows, since a precompiled validator has no node

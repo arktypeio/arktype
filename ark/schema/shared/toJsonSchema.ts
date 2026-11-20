@@ -35,6 +35,7 @@ const defaultConfig: ToJsonSchema.Context = {
 	target: "draft-2020-12",
 	dialect: "https://json-schema.org/draft/2020-12/schema",
 	useRefs: false,
+	aliasDefs: false,
 	fallback: {
 		arrayObject: throwFallback,
 		arrayPostfix: throwFallback,
@@ -72,6 +73,14 @@ const appendAnnotation = <schema extends JsonSchema>(
 		value
 	])
 
+// a schema has one pattern, so each other is a schema of allOf
+const allOfPatterns = (
+	ctx: ToJsonSchema.PatternIntersectionContext
+): JsonSchema.String => {
+	const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
+	return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
+}
+
 // writes what JSON Schema can't express as x-arktype-* keywords
 export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	arrayObject: ctx => annotate(ctx.base, "object", ctx.object),
@@ -92,10 +101,7 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 			rule: ctx.pattern,
 			flags: ctx.flags
 		}),
-	patternIntersection: ctx => {
-		const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
-		return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
-	},
+	patternIntersection: ctx => allOfPatterns(ctx),
 	predicate: ctx =>
 		appendAnnotation(ctx.base, "predicates", namedReference(ctx.predicate)),
 	proto: ctx =>
@@ -127,7 +133,11 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 			...(ctx.after && { "x-arktype-after": ctx.after.toISOString() })
 		}
 		return ctx.notEqual ?
-				appendAnnotation(base, "notEqual", ctx.notEqual.toISOString())
+				annotate(
+					base,
+					"notEqual",
+					ctx.notEqual.map(date => date.toISOString())
+				)
 			:	base
 	}
 }
@@ -154,7 +164,8 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 	},
 	morph: keepBase,
 	patternFlags: keepBase,
-	patternIntersection: keepBase,
+	// JSON Schema can require each pattern, so each is kept
+	patternIntersection: allOfPatterns,
 	predicate: keepBase,
 	proto: keepBase,
 	symbolKey: keepBase,
@@ -297,7 +308,8 @@ export declare namespace ToJsonSchema {
 	export interface DateContext extends BaseContext<"date", JsonSchema> {
 		before?: Date
 		after?: Date
-		notEqual?: Date
+		/** each Date excluded with `!=` */
+		notEqual?: readonly Date[]
 	}
 
 	export interface ContextByCode {
@@ -366,7 +378,7 @@ export declare namespace ToJsonSchema {
 
 	export type Target = satisfy<
 		StandardJSONSchemaV1.Target,
-		"draft-2020-12" | "draft-07" | "openapi-3.0"
+		"draft-2020-12" | "draft-07" | "openapi-3.0" | "openapi-3.1"
 	>
 
 	export interface Options {
@@ -386,11 +398,29 @@ export declare namespace ToJsonSchema {
 		 *  - "draft-2020-12" -> "https://json-schema.org/draft/2020-12/schema"
 		 *  - "draft-07" -> "http://json-schema.org/draft-07/schema#"
 		 *  - "openapi-3.0" -> no $schema, for an OpenAPI 3.0 Schema Object
+		 *  - "openapi-3.1" -> no $schema, for an OpenAPI 3.1 Schema Object,
+		 *    which is draft-2020-12 with its $refs into #/components/schemas
 		 *
 		 * If `dialect` is also specified, `dialect` takes precedence.
 		 */
 		target?: Target
 		useRefs?: boolean
+		/**
+		 * Which aliases of the Type's scope are written once as definitions,
+		 * named by the alias, with a `$ref` wherever they're used. A cyclic
+		 * alias always is.
+		 *
+		 *  - `true`: every exported alias, and each of a submodule's, but one
+		 *    that resolves to a basis like `string` or `"a"`
+		 *  - a list of names, private ones included, for exactly those
+		 *
+		 * A part is matched by what it is, not where it came from, so a part
+		 * equal to an alias's resolution is a `$ref` to it too, and of aliases
+		 * that resolve to the same thing, the first is its name.
+		 *
+		 * @default false
+		 */
+		aliasDefs?: boolean | readonly string[]
 		/**
 		 * whether a union written as `oneOf`, since its object branches each
 		 * require a different string at one key, names that key with OpenAPI's
@@ -399,7 +429,7 @@ export declare namespace ToJsonSchema {
 		 * JSON Schema has no `discriminator` keyword, and a strict validator
 		 * like Ajv rejects it unless configured to read it
 		 *
-		 * @default true for "openapi-3.0", otherwise false
+		 * @default true for "openapi-3.0" and "openapi-3.1", otherwise false
 		 */
 		discriminator?: boolean
 		fallback?: FallbackOption

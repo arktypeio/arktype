@@ -1,6 +1,7 @@
 import {
 	$ark,
 	foreignTypesByMorph,
+	hasArkKind,
 	mergeToJsonSchemaConfigs,
 	openApiNull,
 	ToJsonSchema,
@@ -8,9 +9,13 @@ import {
 	writeForeignArkMessage,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
+	writeUnresolvableMessage,
 	type UnionJsonSchemaWriters,
 	type Alias,
+	type BaseNode,
 	type BaseRoot,
+	type BaseScope,
+	type Intersection,
 	type JsonSchema,
 	type Prop,
 	type RefinementKind,
@@ -27,7 +32,9 @@ import {
 	appendStringifiedKey,
 	defineValue,
 	flatMorph,
+	hasOwn,
 	isEmptyObject,
+	throwParseError,
 	type dict
 } from "@ark/util"
 
@@ -40,6 +47,12 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** the ids of the nodes being converted, so one reached again is a cycle */
 	open: string[]
 	defNamesById: Record<string, string>
+	/** the alias each node aliasDefs writes as a def is named by */
+	aliasNamesById: Record<string, string>
+	/** the scopes whose aliases are in aliasNamesById */
+	aliasScopes: Set<BaseScope>
+	/** the names aliasDefs lists that a scope reached has */
+	aliasesFound: Set<string>
 	defs: Record<string, JsonSchema | undefined>
 	/** what each $ref's pointer starts with, before the name of its def */
 	refPrefix: string
@@ -55,22 +68,32 @@ export const jsonSchemaWriters: UnionJsonSchemaWriters = {
 	nullable: writeNullableJsonSchema
 }
 
+export const jsonSchemaContextOf = (
+	cfg: ToJsonSchema.Context,
+	writers: UnionJsonSchemaWriters
+): JsonSchemaContext => ({
+	...cfg,
+	path: "",
+	open: [],
+	defNamesById: {},
+	aliasNamesById: {},
+	aliasScopes: new Set(),
+	aliasesFound: new Set(),
+	defs: {},
+	refPrefix: refPrefixOf(cfg),
+	writers
+})
+
 export const rootToJsonSchema = (
 	node: BaseRoot,
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
-	const merged = mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts)
-	const ctx: JsonSchemaContext = Object.assign(merged, {
-		path: "",
-		open: [],
-		defNamesById: {},
-		defs: {},
-		refPrefix: refPrefixOf(merged),
-		writers:
-			(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
-				unionJsonSchemaWritersKey
-			] ?? jsonSchemaWriters
-	})
+	const ctx = jsonSchemaContextOf(
+		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
+		(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
+			unionJsonSchemaWritersKey
+		] ?? jsonSchemaWriters
+	)
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
 		code,
@@ -84,6 +107,11 @@ export const rootToJsonSchema = (
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {},
 		toJsonSchemaRecurse(node, ctx)
 	)
+	if (Array.isArray(ctx.aliasDefs)) {
+		const missing = ctx.aliasDefs.find(name => !ctx.aliasesFound.has(name))
+		if (missing !== undefined)
+			throwParseError(writeUnresolvableMessage(missing))
+	}
 
 	if (isEmptyObject(ctx.defs)) return schema
 	const defs = ctx.defs as Record<string, JsonSchema>
@@ -101,7 +129,8 @@ export const rootToJsonSchema = (
 const refPrefixByTarget: Record<ToJsonSchema.Target, string> = {
 	"draft-2020-12": "#/$defs/",
 	"draft-07": "#/definitions/",
-	"openapi-3.0": "#/components/schemas/"
+	"openapi-3.0": "#/components/schemas/",
+	"openapi-3.1": "#/components/schemas/"
 }
 
 // ~standard.jsonSchema returns one schema, not the document holding it, so
@@ -125,6 +154,13 @@ export const toJsonSchemaRecurse = (
 		const name = aliasNameOf(node)
 		if (name !== undefined) nameDef(node.resolution, name, ctx)
 		return toJsonSchemaRecurse(node.resolution, ctx)
+	}
+	// so is one aliasDefs names
+	if (ctx.aliasDefs) {
+		// a scope is reached before what it names, through what references it
+		if (!ctx.aliasScopes.has(node.$)) addAliasNames(node.$, ctx)
+		const aliasName = ctx.aliasNamesById[node.id]
+		if (aliasName !== undefined) nameDef(node, aliasName, ctx)
 	}
 	const i = ctx.open.lastIndexOf(node.id)
 	// a cycle through no def is named by its id, like useRefs' parts
@@ -161,6 +197,54 @@ const aliasNameOf = (node: Alias.Node): string | undefined =>
 	: node.reference === node.resolution.id ? nameOfId(node.reference)
 	: undefined
 
+// a non-cyclic alias is resolved where it's referenced, so nothing in a Type
+// says it came from one. What's written as its def is instead each part that
+// is the node it resolves to, as a scope reuses its nodes by what they are and
+// a node keeps them in a Type of another scope. Its input and output are too,
+// where they differ, as ~standard.jsonSchema.input writes a Type's input
+const addAliasNames = ($: BaseScope, ctx: JsonSchemaContext): void => {
+	ctx.aliasScopes.add($)
+	const aliasDefs = ctx.aliasDefs as true | readonly string[]
+	const listed = aliasDefs !== true
+	// a keyword isn't a name you gave anything, so ark's are defs only by name
+	if (!listed && $.isBuiltin) return
+	// a submodule's aliases are named by their own names, like cyclic ones
+	const add = (path: string, name: string): boolean => {
+		const def = path
+			.split(".")
+			.reduce<unknown>((m, k) => (m as dict | undefined)?.[k], $.aliases)
+		// the scope binds each of a module's aliases anew, so they're reached
+		// through it by their paths, and its root by its own
+		if (hasArkKind(def, "module")) {
+			for (const k in def) {
+				if (k === "root") addResolution(path, name)
+				else add(`${path}.${k}`, k)
+			}
+		} else if (def !== undefined) addResolution(path, name)
+		return def !== undefined
+	}
+	const addResolution = (path: string, name: string): void => {
+		const resolution = $.maybeResolve(path)
+		if (!hasArkKind(resolution, "root")) return
+		// finalized, as what .in and .out hold of a Type
+		const parts = [resolution, resolution.in, resolution.out] as BaseRoot[]
+		for (const part of parts) {
+			// a basis like string is everywhere, so it's a def only by name
+			if (part.alwaysExpandJsonSchema && !(listed && part === resolution))
+				continue
+			ctx.aliasNamesById[part.id] ??= name
+		}
+	}
+	for (const alias of listed ? aliasDefs : $.exportedNames) {
+		const path = alias[0] === "#" ? alias.slice(1) : alias
+		const dot = path.indexOf(".")
+		// an alias of another scope, or a keyword, isn't this one's
+		if (!hasOwn($.aliases, dot === -1 ? path : path.slice(0, dot))) continue
+		if (add(path, path.slice(path.lastIndexOf(".") + 1)) && listed)
+			ctx.aliasesFound.add(alias)
+	}
+}
+
 const nameDef = (
 	node: BaseRoot,
 	name: string,
@@ -174,15 +258,15 @@ const nameDef = (
 	ctx.defNamesById[node.id] = unique
 }
 
+// writeInner writes what its constraints imply, beside which its meta is written
 const toResolvedJsonSchema = (
 	node: BaseRoot,
-	ctx: JsonSchemaContext
+	ctx: JsonSchemaContext,
+	writeInner: () => JsonSchema = () =>
+		innerToJsonSchemaByKind[node.kind](node as never, ctx)
 ): JsonSchema => {
 	const { jsonSchema } = node.meta
-	const result: JsonSchema & dict =
-		jsonSchema ?
-			{}
-		:	(innerToJsonSchemaByKind[node.kind](node as never, ctx) as never)
+	const result: JsonSchema & dict = jsonSchema ? {} : (writeInner() as never)
 
 	for (const k in node.meta) {
 		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
@@ -268,7 +352,9 @@ const discriminantOf = (
 		return {
 			key,
 			values,
-			writesKeyword: ctx.discriminator ?? ctx.target === "openapi-3.0"
+			writesKeyword:
+				ctx.discriminator ??
+				(ctx.target === "openapi-3.0" || ctx.target === "openapi-3.1")
 		}
 	}
 }
@@ -329,9 +415,62 @@ const writeAnnotation = (
 	else if (k === "contentEncoding") {
 		if (v === "base64") annotations.format = "byte"
 	}
-	// nor $comment or contentMediaType, which it has nothing for
+	// nor $comment, or contentMediaType, whose equivalent is a request's media
+	// type, which no Schema Object holds
 	else if (k !== "$comment" && k !== "contentMediaType") annotations[k] = v
 }
+
+// a keyword's own schema, like string.json's, is written for the target, but
+// one you configure is written as configured
+const writeJsonSchemaMeta = (
+	schema: JsonSchema,
+	node: BaseNode,
+	ctx: JsonSchemaContext
+): JsonSchema => {
+	const jsonSchema = node.meta.jsonSchema as dict
+	if (!node.meta.keyword) return Object.assign(schema, jsonSchema)
+	for (const k in jsonSchema) writeAnnotation(schema, k, jsonSchema[k], ctx)
+	return schema
+}
+
+type DateBounds = Pick<
+	ToJsonSchema.DateContext,
+	"before" | "after" | "notEqual"
+>
+
+const isDateBound = (node: BaseNode): boolean =>
+	node.is("before") ||
+	node.is("after") ||
+	(node.is("notEqual") && node.rule instanceof Date)
+
+// a Date's bounds, given to one call of fallback.date with the Date itself
+const dateBoundsOf = (node: Intersection.Node): DateBounds | undefined => {
+	let before: Date | undefined
+	let after: Date | undefined
+	const notEqual: Date[] = []
+	for (const child of node.children) {
+		if (child.is("before")) before = child.rule
+		else if (child.is("after")) after = child.rule
+		else if (child.is("notEqual") && child.rule instanceof Date)
+			notEqual.push(child.rule)
+	}
+	if (!before && !after && !notEqual.length) return
+	// only the keys it has, as a handler spreading them expects
+	return {
+		...(before && { before }),
+		...(after && { after }),
+		...(notEqual.length ? { notEqual } : {})
+	}
+}
+
+// a precompiled validator's replay calls proto where date returns nullish
+// for a call writing a Date, which it finds by its empty base
+const dateToJsonSchema = (
+	bounds: DateBounds | undefined,
+	ctx: JsonSchemaContext
+): JsonSchema =>
+	ctx.fallback.date?.({ code: "date", base: {}, ...bounds }) ??
+	ctx.fallback.proto({ code: "proto", base: {}, proto: Date })
 
 // a union's true and false branches are written as one boolean
 const branchGroupsOf = (node: Union.Node): BaseRoot[] => {
@@ -406,28 +545,47 @@ const innerToJsonSchemaByKind: {
 		: ctx.target === "openapi-3.0" ?
 			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
 		:	{ type: typeof node.unit as JsonSchema.TypeName, const: node.unit },
-	intersection: (node, ctx) =>
-		node.children.reduce<JsonSchema>(
+	intersection: (node, ctx) => {
+		const dateBounds = dateBoundsOf(node)
+		// written with the Date itself, or after a subclass of it
+		let datesWritten = false
+		return node.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
-			(schema, child) =>
-				child.isBasis() ? toJsonSchemaRecurse(child, ctx)
-				: child.meta.jsonSchema ? Object.assign(schema, child.meta.jsonSchema)
-				: reduceJsonSchemaByKind[child.kind](
-						child as never,
-						schema as never,
-						ctx
-					),
+			(schema, child) => {
+				if (child.isBasis()) {
+					if (!dateBounds || !child.is("proto") || child.proto !== Date)
+						return toJsonSchemaRecurse(child, ctx)
+					return toResolvedJsonSchema(child, ctx, () => {
+						datesWritten = true
+						return dateToJsonSchema(dateBounds, ctx)
+					})
+				}
+				if (isDateBound(child)) {
+					if (datesWritten) return schema
+					datesWritten = true
+					return ctx.fallback.date({
+						code: "date",
+						base: schema,
+						...dateBounds
+					})
+				}
+				return child.meta.jsonSchema ?
+						writeJsonSchemaMeta(schema, child, ctx)
+					:	reduceJsonSchemaByKind[child.kind as ReducedKind](
+							child as never,
+							schema as never,
+							ctx
+						)
+			},
 			{}
-		),
+		)
+	},
 	proto: (node, ctx) => {
 		switch (node.builtinName) {
 			case "Array":
 				return arraySchemaOf(ctx)
 			case "Date":
-				return (
-					ctx.fallback.date?.({ code: "date", base: {} }) ??
-					ctx.fallback.proto({ code: "proto", base: {}, proto: node.proto })
-				)
+				return dateToJsonSchema(undefined, ctx)
 			default:
 				return ctx.fallback.proto({
 					code: "proto",
@@ -489,7 +647,10 @@ const writeOwn = (
 	write: StandardJSONSchemaV1.Converter["input"],
 	ctx: JsonSchemaContext
 ): JsonSchema => {
-	const { $schema, ...schema } = write({ target: ctx.target })
+	// an OpenAPI 3.1 Schema Object is draft-2020-12, which Standard JSON Schema names
+	const { $schema, ...schema } = write({
+		target: ctx.target === "openapi-3.1" ? "draft-2020-12" : ctx.target
+	})
 	return schema
 }
 
@@ -739,7 +900,8 @@ const isJsonSchemaPattern = (
 		flag =>
 			flag === "d" ||
 			flag === "g" ||
-			(flag === "u" && ctx.target === "draft-2020-12")
+			(flag === "u" &&
+				(ctx.target === "draft-2020-12" || ctx.target === "openapi-3.1"))
 	)
 
 const writeDefault = (
@@ -869,14 +1031,15 @@ type JsonSchemaOperandByKind = {
 	notEqualLength: JsonSchema.LengthBoundable
 	maxLength: JsonSchema.LengthBoundable
 	minLength: JsonSchema.LengthBoundable
-	before: JsonSchema
-	after: JsonSchema
 	structure: JsonSchema.Structure
 	predicate: JsonSchema.Constrainable
 }
 
+// a Date's bounds are written with it
+type ReducedKind = Exclude<RefinementKind, "before" | "after">
+
 const reduceJsonSchemaByKind: {
-	[kind in RefinementKind]: (
+	[kind in ReducedKind]: (
 		node: nodeOfKind<kind>,
 		schema: JsonSchemaOperandByKind[kind],
 		ctx: JsonSchemaContext
@@ -910,7 +1073,8 @@ const reduceJsonSchemaByKind: {
 
 		if (node.rule === 1) return schema
 
-		schema.multipleOf = node.rule
+		// a multiple of -n is a multiple of n, and multipleOf must be positive
+		schema.multipleOf = Math.abs(node.rule)
 
 		return schema
 	},
@@ -933,13 +1097,8 @@ const reduceJsonSchemaByKind: {
 	min: (node, schema, ctx) =>
 		writeBound(node, schema, ctx, "minimum", "exclusiveMinimum"),
 	notEqual: (node, schema, ctx) => {
-		if (node.rule instanceof Date) {
-			return ctx.fallback.date({
-				code: "date",
-				base: schema,
-				notEqual: node.rule
-			})
-		}
+		// a Date's is written with it
+		const rule = node.rule as number
 		schema.not =
 			schema.not ?
 				{
@@ -947,11 +1106,11 @@ const reduceJsonSchemaByKind: {
 						...("enum" in schema.not ?
 							(schema.not as JsonSchema.Enum).enum
 						:	[schema.not.const]),
-						node.rule
+						rule
 					]
 				}
-			: ctx.target === "openapi-3.0" ? { enum: [node.rule] }
-			: { const: node.rule }
+			: ctx.target === "openapi-3.0" ? { enum: [rule] }
+			: { const: rule }
 		return schema
 	},
 	notEqualLength: (node, schema, ctx) => {
@@ -996,10 +1155,6 @@ const reduceJsonSchemaByKind: {
 				return ToJsonSchema.throwOperandError("minLength", schema)
 		}
 	},
-	before: (node, base, ctx) =>
-		ctx.fallback.date({ code: "date", base, before: node.rule }),
-	after: (node, base, ctx) =>
-		ctx.fallback.date({ code: "date", base, after: node.rule }),
 	structure: (node, schema, ctx) => {
 		switch (schema.type) {
 			case "object":

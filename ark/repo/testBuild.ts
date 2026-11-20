@@ -256,8 +256,10 @@ if ("_at" in (await runtimeVariant("none")))
 	throw new Error("⚠️  arktype/schema/runtime/none bundles shared/issues.ts.")
 
 for (const variant of ["lean", "none-lean"]) {
-	// only the errors they replace have an arkKind
-	if (Object.getOwnPropertySymbols(await runtimeVariant(variant)).length) {
+	// only the errors they replace have an arkKind, the symbol keying a member
+	// beside Symbol.iterator, which all errors have
+	const symbols = Object.getOwnPropertySymbols(await runtimeVariant(variant))
+	if (symbols.some(symbol => symbol !== Symbol.iterator)) {
 		throw new Error(
 			`⚠️  arktype/schema/runtime/${variant} bundles the errors it replaces.`
 		)
@@ -343,24 +345,26 @@ const undetailedLogsOf = async (
 	}).stdout
 }
 
-// errors "none" runs on it as published, where errors have no throw()
+// errors "none" runs on it as published, whose errors throw a TraversalError
+// as a detailed build's do and serialize without their data
 const undetailedOutput = await undetailedLogsOf(
 	"main.ts",
 	`import { type } from "arktype"
 
 const T = type({ a: "string" })
 const errors = T({ a: 1 })
-console.log(errors instanceof type.errors, String(errors), typeof (errors as any).throw)
+console.log(errors instanceof type.errors, String(errors), JSON.stringify(errors), [...(errors as any)].length)
 try {
 	T.assert({ a: 1 })
 } catch (e) {
-	console.log(String(e), (e as any).cause instanceof type.errors)
+	console.log(String(e), (e as any).arkErrors instanceof type.errors)
 }
 `
 )
 
 if (
-	undetailedOutput !== "true is invalid undefined\nError: is invalid true\n"
+	undetailedOutput !==
+	'true is invalid [{"code":"predicate","path":[],"message":"is invalid"}] 1\nTraversalError: is invalid true\n'
 ) {
 	throw new Error(
 		`⚠️  A program built with errors: "none" logs ${JSON.stringify(undetailedOutput)}.`

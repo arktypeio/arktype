@@ -164,16 +164,13 @@ contextualize(() => {
 			const error = errorOf(type("string.integer.parse"), "9007199254740993")
 			attest(error.meta).snap({ keyword: "string.integer.parse" })
 			attest(jsonOf(type("string.integer.parse"), "9007199254740993")).snap({
-				data: "9007199254740993",
 				path: [],
 				code: "predicate",
 				description:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
-				meta: { keyword: "string.integer.parse" },
 				propString: "",
 				expected:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
-				actual: '"9007199254740993"',
 				message:
 					"must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 			})
@@ -206,14 +203,11 @@ contextualize(() => {
 			const empty = errorOf(type("string.json.parse"), "")
 			attest(empty.cause).equals(undefined)
 			attest(jsonOf(type("string.json.parse"), "")).snap({
-				data: "",
 				path: [],
 				code: "predicate",
 				description: "a JSON string",
-				meta: { keyword: "string.json.parse" },
 				propString: "",
 				expected: "a JSON string",
-				actual: '""',
 				message: "must be a JSON string"
 			})
 		})

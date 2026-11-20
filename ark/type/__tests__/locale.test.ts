@@ -19,6 +19,7 @@ import { flatMorph, omit } from "@ark/util"
 import {
 	ark,
 	configure,
+	firstIssue,
 	match,
 	scope,
 	type,
@@ -607,6 +608,18 @@ c ⟦line⟧ ⟦message⟧ ⟦boolean⟧ ⟦actual⟧`)
 				).snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
 b ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
 c ⟦line⟧ ⟦message⟧ ⟦boolean⟧ ⟦actual⟧`)
+			})
+		})
+
+		it("a function selects one locale for errors whose first was read alone", () => {
+			let calls = 0
+			withConfig({ locale: () => (calls++ % 2 ? en : xx) }, () => {
+				const errors = type({ a: "string", b: "number" })({}) as ArkErrors
+				const first = firstIssue(errors)
+				attest(errors.summary).snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+b ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧`)
+				attest(errors.issues[0]).is(first)
+				attest(calls).equals(1)
 			})
 		})
 

@@ -32,7 +32,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { copyConfig, isSameConfig } from "./shared/configured.ts"
-import { validateStandardJsonSchemaTarget } from "./shared/jsonSchema.ts"
+import { validateToJsonSchemaTarget } from "./shared/jsonSchema.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
@@ -272,7 +272,8 @@ const jsonSchemaTargetToDialect: Record<ToJsonSchema.Target, string | null> = {
 	"draft-2020-12": "https://json-schema.org/draft/2020-12/schema",
 	"draft-07": "http://json-schema.org/draft-07/schema#",
 	// an OpenAPI Schema Object has no $schema
-	"openapi-3.0": null
+	"openapi-3.0": null,
+	"openapi-3.1": null
 }
 
 type MergeToJsonSchemaConfigs = <base extends ToJsonSchema.Options | undefined>(
@@ -310,7 +311,7 @@ const resolveTargetToDialect = <T extends ToJsonSchema.Options>(
 ): T => {
 	if (userOpts?.target === undefined) return opts
 	const dialect =
-		jsonSchemaTargetToDialect[validateStandardJsonSchemaTarget(userOpts.target)]
+		jsonSchemaTargetToDialect[validateToJsonSchemaTarget(userOpts.target)]
 	// a dialect passed with the target was already merged and takes precedence
 	return userOpts.dialect === undefined ? { ...opts, dialect } : opts
 }

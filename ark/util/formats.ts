@@ -110,13 +110,20 @@ export const isIpv6 = (s: string): boolean => {
 
 // ISO 8601 date/time modernized from https://github.com/validatorjs/validator.js/blob/master/src/lib/isISO8601.js
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
-// delimiter for date/time is mandatory. Regex from validator.js strict matcher:
-// only the two groups its backreferences read capture
+// delimiter for date/time is mandatory. The language of validator.js's strict
+// matcher without its lookaheads and backreferences, since it's written as a
+// JSON Schema pattern and RE2 (e.g. LLM structured outputs) reads neither:
+// - (-?)…\1 is a day separated from its month as the month is from its year,
+//   so an extended and a basic date are alternatives
+// - (?!\d{2}\b) is YYYYMM only before a time, so that's its own alternative
+//   and the time is written twice
+// - (:?)…\2 and (?!:) are seconds after a colon only where the minutes had
+//   one and their fraction didn't come first
 export const iso8601Matcher: RegExp =
-	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
+	/^[+-]?\d{4}(?:(?:-(?:(?:0[1-9]|1[0-2])(?:-(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))|(?:0[1-9]|1[0-2])(?:[12]\d|0[1-9]|3[01])|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:[01]\d|2[0-3]):[0-5]\d(?:[,.]\d+|:[0-5]\d(?:[,.]\d+)?)?|(?:(?:(?:[01]\d|2[0-3])(?:[0-5]\d)?|24:?00)(?:[,.]\d+)?)?(?:[0-5]\d(?:[,.]\d+)?)?)(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?|(?:0[1-9]|1[0-2])T(?:(?:[01]\d|2[0-3]):[0-5]\d(?:[,.]\d+|:[0-5]\d(?:[,.]\d+)?)?|(?:(?:(?:[01]\d|2[0-3])(?:[0-5]\d)?|24:?00)(?:[,.]\d+)?)?(?:[0-5]\d(?:[,.]\d+)?)?)(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?$/
 
 // iso8601Matcher's YYYY-MM-DD and YYYY-MM-DDTHH:mm:ss with a fraction and Z or an
-// offset, without its backreferences and lookaheads
+// offset, which V8 tests faster than its alternations
 const commonIso8601 =
 	// eslint-disable-next-line unicorn/better-regex
 	/^\d\d\d\d-(?:0[1-9]|1[0-2])-(?:[12]\d|0[1-9]|3[01])(?:T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:[,.]\d+)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)?)?$/

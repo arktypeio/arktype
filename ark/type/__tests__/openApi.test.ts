@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	annotatingFallback,
+	toJsonSchemaTargets,
 	writeInvalidJsonSchemaTargetMessage,
 	type JsonSchema,
 	type ToJsonSchema
@@ -244,6 +245,20 @@ contextualize(() => {
 		})
 	})
 
+	it("contentMediaType is left out of a keyword's schema, not yours", () => {
+		attest(toOpenApi(type("string.json"))).snap({
+			type: "string",
+			description: "a JSON string"
+		})
+		const Configured = type("string").configure({
+			jsonSchema: { type: "string", contentMediaType: "application/json" }
+		})
+		attest(toOpenApi(Configured)).snap({
+			type: "string",
+			contentMediaType: "application/json"
+		})
+	})
+
 	it("tuple", () => {
 		const T = type(["string", "number"])
 		attest(() => toOpenApi(T)).throws
@@ -403,6 +418,83 @@ contextualize(() => {
 		})
 	})
 
+	it("aliasDefs to components", () => {
+		const types = scope({
+			Money: { amount: "number", currency: "string" },
+			Address: { street: "string" },
+			Customer: {
+				address: "Address",
+				"billing?": "Address | null",
+				"referrer?": "Customer"
+			},
+			Invoice: { customer: "Customer", total: "Money", lines: "Money[]" }
+		}).export()
+		const components: Record<string, object> = {}
+		const opts: ToJsonSchema.Options = {
+			aliasDefs: true,
+			fallback: {
+				defs: ctx => {
+					Object.assign(components, ctx.defs)
+					return ctx.base
+				}
+			}
+		}
+		// each of the document's schemas, so components has what any references
+		const refs = [
+			types.Money,
+			types.Address,
+			types.Customer,
+			types.Invoice
+		].map(t => toOpenApi(t, opts))
+		attest(refs).snap([
+			{ $ref: "#/components/schemas/Money" },
+			{ $ref: "#/components/schemas/Address" },
+			{ $ref: "#/components/schemas/Customer" },
+			{ $ref: "#/components/schemas/Invoice" }
+		])
+		attest(components).snap({
+			Money: {
+				type: "object",
+				properties: {
+					amount: { type: "number" },
+					currency: { type: "string" }
+				},
+				required: ["amount", "currency"]
+			},
+			Address: {
+				type: "object",
+				properties: { street: { type: "string" } },
+				required: ["street"]
+			},
+			Customer: {
+				type: "object",
+				properties: {
+					address: { $ref: "#/components/schemas/Address" },
+					billing: {
+						anyOf: [
+							{ $ref: "#/components/schemas/Address" },
+							{ type: "string", nullable: true, enum: [null] }
+						]
+					},
+					referrer: { $ref: "#/components/schemas/Customer" }
+				},
+				required: ["address"]
+			},
+			Invoice: {
+				type: "object",
+				properties: {
+					customer: { $ref: "#/components/schemas/Customer" },
+					lines: {
+						type: "array",
+						items: { $ref: "#/components/schemas/Money" }
+					},
+					total: { $ref: "#/components/schemas/Money" }
+				},
+				required: ["customer", "lines", "total"]
+			}
+		})
+	})
+
 	it("annotatingFallback", () => {
 		attest(
 			toOpenApi(type(["string", "...", "number[]"]), {
@@ -471,6 +563,86 @@ contextualize(() => {
 	it("unknown target", () => {
 		attest(() =>
 			type("string").toJsonSchema({ target: "draft-04" as never })
-		).throws(writeInvalidJsonSchemaTargetMessage("draft-04"))
+		).throws(
+			writeInvalidJsonSchemaTargetMessage("draft-04", toJsonSchemaTargets)
+		)
+	})
+
+	describe("openapi-3.1", () => {
+		const target = "openapi-3.1"
+
+		it("writes draft-2020-12 without $schema", () => {
+			const T = type({
+				pair: ["string", "number"],
+				"name?": type("string | null").configure({ examples: ["a", null] })
+			})
+			attest(T.toJsonSchema({ target })).snap({
+				type: "object",
+				properties: {
+					pair: {
+						type: "array",
+						minItems: 2,
+						prefixItems: [{ type: "string" }, { type: "number" }],
+						items: false
+					},
+					name: {
+						anyOf: [
+							{ type: "string", examples: ["a", null] },
+							{ type: "null" }
+						],
+						examples: ["a", null]
+					}
+				},
+				required: ["pair"]
+			})
+			attest(T.toJsonSchema({ target })).equals(
+				T.toJsonSchema({ target: "draft-2020-12", dialect: null })
+			)
+		})
+
+		it("defs are components", () => {
+			const types = scope({
+				Address: { street: "string" },
+				Node: { at: "Address", "next?": "Node | null" }
+			}).export()
+			attest(() => types.Node.toJsonSchema({ target })).throws(
+				'Can\'t convert "defs" to JSON Schema'
+			)
+			const components: Record<string, object> = {}
+			const schema = types.Node.toJsonSchema({
+				target,
+				aliasDefs: true,
+				fallback: {
+					defs: ctx => {
+						Object.assign(components, ctx.defs)
+						return ctx.base
+					}
+				}
+			})
+			attest(schema).snap({ $ref: "#/components/schemas/Node" })
+			attest(components).snap({
+				Node: {
+					type: "object",
+					properties: {
+						at: { $ref: "#/components/schemas/Address" },
+						next: {
+							anyOf: [{ $ref: "#/components/schemas/Node" }, { type: "null" }]
+						}
+					},
+					required: ["at"]
+				},
+				Address: {
+					type: "object",
+					properties: { street: { type: "string" } },
+					required: ["street"]
+				}
+			})
+		})
+
+		it("isn't a Standard JSON Schema target", () => {
+			attest(() =>
+				type("string")["~standard"].jsonSchema.input({ target })
+			).throws(writeInvalidJsonSchemaTargetMessage(target))
+		})
 	})
 })

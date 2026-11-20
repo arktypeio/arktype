@@ -102,10 +102,11 @@ A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema(
 
 | option | default | effect |
 | - | - | - |
-| `target` | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) |
+| `target` | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"`, [`"openapi-3.0"`](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) or [`"openapi-3.1"`](https://arktype.io/docs/json-schema/to-json-schema#openapi-31) |
 | `dialect` | the target's URL | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL |
 | `useRefs` | `false` | write every part once under `$defs`, not only [cyclic aliases](https://arktype.io/docs/json-schema/to-json-schema#cyclic-types), and point to it with `$ref` |
-| `discriminator` | `true` for `"openapi-3.0"` | name the key a [discriminated union](https://arktype.io/docs/json-schema/to-json-schema#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
+| `aliasDefs` | `false` | write [a scope's aliases](https://arktype.io/docs/json-schema/to-json-schema#named-aliases) once under `$defs`, named by the alias, not only cyclic ones |
+| `discriminator` | `true` for `"openapi-3.0"` / `"openapi-3.1"` | name the key a [discriminated union](https://arktype.io/docs/json-schema/to-json-schema#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
 | `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](https://arktype.io/docs/json-schema/to-json-schema#fallbacks) |
 
 ### target
@@ -203,6 +204,12 @@ Pair.toJsonSchema({
 
 [`jsonSchema` meta](https://arktype.io/docs/json-schema/to-json-schema#your-own-schema) is written as configured, so `string.json`'s `contentMediaType`, which OpenAPI 3.0 lacks, is too.
 
+### OpenAPI 3.1
+
+`"openapi-3.1"` writes an [OpenAPI 3.1 Schema Object](https://spec.openapis.org/oas/v3.1.1#schema-object), which is `draft-2020-12` without `$schema`, but for its `$ref`s: like OpenAPI 3.0's, they point into `#/components/schemas`, and the definitions go to [`defs`](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) for you to put there.
+
+Standard JSON Schema has no `"openapi-3.1"` target, so `~standard.jsonSchema` doesn't take it, and a [precompiled](https://arktype.io/docs/precompile) validator writes it only where it's [configured](https://arktype.io/docs/json-schema/to-json-schema#configuration).
+
 ### dialect
 
 ```ts
@@ -240,6 +247,48 @@ const schema = types.Node.toJsonSchema()
 - A name another definition already has is numbered from 2, like `Node2`, in the order the definitions are reached.
 - A cycle with no alias, like a `this` reference, is named by what ArkType calls it, like `type`.
 - `.in`, `.out` and `~standard.jsonSchema` name definitions the same way.
+
+### Named aliases
+
+`aliasDefs: true` writes every alias of a scope under `$defs`, like a cyclic one, so an OpenAPI document's components keep their names:
+
+```ts
+const types = scope({
+	Address: { street: "string" },
+	User: { home: "Address", "work?": "Address | null" }
+}).export()
+
+const schema = types.User.toJsonSchema({ aliasDefs: true })
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$ref": "#/$defs/User",
+	"$defs": {
+		"User": {
+			"type": "object",
+			"properties": {
+				"home": { "$ref": "#/$defs/Address" },
+				"work": { "anyOf": [{ "$ref": "#/$defs/Address" }, { "type": "null" }] }
+			},
+			"required": ["home"]
+		},
+		"Address": {
+			"type": "object",
+			"properties": { "street": { "type": "string" } },
+			"required": ["street"]
+		}
+	}
+}
+```
+
+- An alias of a basis, like `Id: "string"`, is written inline, since every `string` would be a `$ref` to it. So is a private alias.
+- A list of names, like `aliasDefs: ["Address", "#Secret"]`, writes exactly those, private and basis ones included. A name no scope it reaches has throws.
+- A Type of the scope used in another, like `type({ to: types.Address })`, is still named.
+- A submodule's alias is named by its own name, like `Zip` for `Geo.Zip`, and its root by the submodule's.
+- What's named is a part equal to the alias's resolution, wherever it is: a non-cyclic alias leaves no trace in what references it. Of two aliases with the same resolution, the first is the name of both, and an alias given other meta where it's used, like `Address.describe("home")`, is a new part and is inlined.
+- Set it [on a scope](https://arktype.io/docs/json-schema/to-json-schema#configuration) to write that scope's Types this way by default. For `openapi-3.0` and `openapi-3.1`, the definitions go to [`defs`](https://arktype.io/docs/json-schema/to-json-schema#openapi-30), so calling `toJsonSchema` for each of a module's Types collects every component.
 
 ## How Types map
 
@@ -450,7 +499,7 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `arrayPrefix` | for `openapi-3.0`, elements before any variadic element | `type(["string", "number"])` | `elements`, and `items` for the rest, if any |
 | `date` | a `Date`, with its bounds | `type("Date")` | `before`, `after` |
 | `defaultValue` | a default that isn't JSON. Return `undefined` to omit it | `type({ n: "bigint = 5n" })`, after `domain` | `value` |
-| `defs` | for `openapi-3.0`, the definitions `$ref`s point to | a cyclic Type | `defs`, by name |
+| `defs` | for OpenAPI, the definitions `$ref`s point to | a cyclic Type | `defs`, by name |
 | `domain` | `bigint` or `symbol` | `type("bigint")` | `domain` |
 | `indexKey` | a key `propertyNames` can't express, or `additionalProperties` can't in `openapi-3.0` | `type({ "[string <= 3]": "number" })` | `key` and `value`, as schemas |
 | `morph` | a morph | `type("string.trim")` | `out`, the output schema or `null` |
@@ -716,6 +765,8 @@ To normalize one JSON Schema into another, or to compare JSON Schemas with each 
 
 Every keyword in a schema applies, and a type's keywords constrain only that type, as JSON Schema says: `{ minimum: 5 }` accepts `"foo"`, and `{ type: ["string", "number"], minLength: 2 }` accepts `3` but not `"a"`.
 
+[`configure()`](https://arktype.io/docs/configuration) doesn't change what a schema accepts: whatever `onUndeclaredKey`, `exactOptionalPropertyTypes`, `numberAllowsNaN` and `numberAllowsInfinity` say, an object allows keys it doesn't declare, an optional property can't be `undefined`, and a number is finite.
+
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
 OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, aren't read: `nullable` and `example` are ignored, and a boolean `exclusiveMinimum` throws.
@@ -731,8 +782,8 @@ OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes,
 | `const`, `enum` | supported | objects and arrays are compared by value |
 | `$ref` | supported | `#`, a JSON Pointer like `#/$defs/Node`, an anchor or an embedded `$id`, including recursive refs |
 | `$ref` to another document | **throws** | only refs into the same document are resolved |
-| `$defs`, `definitions` | supported | read where a `$ref` points to them |
-| `$dynamicRef`, `$recursiveRef` | **throws** | |
+| `$defs`, `definitions` | supported | read where a `$ref` points to them. Each value must be a schema |
+| `$dynamicRef`, `$recursiveRef` | **throws** | ignored under a draft-07 or earlier `$schema`, which has neither |
 | `title`, `description`, `default`, `examples`, `deprecated` | annotation | `default` is not applied |
 | `$schema` | annotation | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do |
 | `$id`, `$anchor`, `$dynamicAnchor` | supported | identify a schema a `$ref` resolves to. Draft-04 reads `id` |
@@ -788,16 +839,30 @@ T(0)
 | `items` as an array, `additionalItems` | supported | draft-07's tuples |
 | `minItems`, `maxItems` | supported | |
 | `uniqueItems` | opaque | items are compared as JSON values |
-| `contains`, `minContains`, `maxContains` | opaque | |
-| `unevaluatedItems` | **throws** | |
+| `contains`, `minContains`, `maxContains` | opaque | `minContains: 0` without `maxContains` has no effect |
+| `unevaluatedItems` | **throws** | ignored under a draft-07 or earlier `$schema`, which has no such keyword |
 
 ## Objects
 
 | keyword | support | notes |
 | - | - | - |
-| `properties`, `required` | supported | a `required` key not in `properties` must be present, with any value |
+| `properties`, `required` | supported | a `required` key not in `properties` must be present, with any value. See below |
 | `patternProperties` | supported | |
 | `additionalProperties` | supported | `false` rejects other keys. A schema is an index signature alone, or opaque beside `properties` |
-| `propertyNames`, `minProperties`, `maxProperties` | opaque | |
-| `dependentRequired`, `dependentSchemas`, `dependencies` | opaque | |
-| `unevaluatedProperties` | **throws** | |
+| `propertyNames`, `minProperties`, `maxProperties` | opaque | one every object meets, like `propertyNames: { type: "string" }`, has no effect |
+| `dependentRequired`, `dependentSchemas`, `dependencies` | opaque | one every object meets, like `dependentRequired: { a: [] }`, has no effect |
+| `unevaluatedProperties` | **throws** | ignored under a draft-07 or earlier `$schema`, which has no such keyword |
+
+A JSON object's properties are its own, so `required: ["toString"]` rejects `{}`, though `{}` inherits `toString` from `Object.prototype`. A property named by a key `Object.prototype` has is read as a pattern that matches only that key, which, unlike a property, checks an own key alone:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const T = jsonSchemaToType({
+	type: "object",
+	properties: { toString: { type: "string" } }
+})
+
+T.expression // "{ [/^toString$/]: string } & isNonArray"
+T.allows({}) // true
+```

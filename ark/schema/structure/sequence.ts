@@ -43,7 +43,10 @@ import {
 	type InternalTraversal
 } from "../shared/traversal.ts"
 import { elided } from "../shared/utils.ts"
-import { assertDefaultValueAssignability } from "./optional.ts"
+import {
+	assertDefaultValueAssignability,
+	withoutUndefined
+} from "./optional.ts"
 
 export declare namespace Sequence {
 	export type DefaultableElement = [node: BaseRoot, defaultValue: unknown]
@@ -110,13 +113,16 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 						element[0].bareJson,
 						defaultValueSerializer(element[1])
 					]),
-				reduceIo: (ioKind, inner, defaultables) => {
+				reduceIo: (ioKind, inner, defaultables, node) => {
 					if (ioKind === "in") {
 						inner.optionals = defaultables!.map(d => d[0]._in)
 						return
 					}
 
-					inner.prefix = defaultables!.map(d => d[0]._out)
+					// a default replaces undefined where it's allowed, so it's not output
+					inner.prefix = defaultables!.map(
+						d => (node as SequenceNode).requiredOf(d[0])._out
+					)
 					return
 				}
 			},
@@ -169,18 +175,27 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				"minVariadicLength may not be specified without a variadic element"
 			)
 		}
-		// a set engine adds the length bounds a tuple implies to its intersection
+		// a set engine adds the length bounds a tuple implies to its intersection,
+		// and the undefined its elements allow without exactOptionalPropertyTypes
 		if (
 			!$ark.sets &&
 			(!this.inner.variadic ||
 				this.inner.prefix ||
 				this.inner.postfix ||
-				this.inner.minVariadicLength)
+				this.inner.minVariadicLength ||
+				(this.isLoose && (this.inner.optionals || this.inner.defaultables)))
 		)
 			throwParseError(missingSetEngineMessage)
 		if (this.inner.defaultables) {
-			for (const [node, value] of this.inner.defaultables)
-				assertDefaultValueAssignability(node, value, null, this)
+			// a default of undefined would replace undefined with itself
+			for (const [node, value] of this.inner.defaultables) {
+				assertDefaultValueAssignability(
+					this.requiredOf(node),
+					value,
+					null,
+					this
+				)
+			}
 		}
 		// a function default can fail as it's applied, like a morph
 		this.hasMorph ||= !!this.defaultables?.some(
@@ -257,10 +272,48 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxNode ? [this.maxNode]
 		: []
 
+	/** whether its optional and defaultable elements allow undefined, without exactOptionalPropertyTypes */
+	get isLoose(): boolean {
+		return this.$.cfg.exactOptionalPropertyTypes === false
+	}
+
+	/** whether its defaults replace undefined too, as they do without exactOptionalPropertyTypes */
+	get defaultsUndefined(): boolean {
+		return this.isLoose && this.defLen !== 0
+	}
+
+	/**
+	 * an optional or defaultable element where it's required, which without
+	 * exactOptionalPropertyTypes drops the undefined it allowed, as TS's `-?`
+	 * does
+	 */
+	requiredOf(element: BaseRoot): BaseRoot {
+		return this.isLoose ? withoutUndefined(element) : element
+	}
+
+	/** whether data has a value at `index`, a defaultable element's index, which its default leaves alone */
+	holdsElement(data: array, index: number): boolean {
+		return (
+			index < data.length &&
+			!(this.defaultsUndefined && data[index] === undefined)
+		)
+	}
+
+	/** writes whether data has a value at `index`, which its default leaves alone if it's `defaultable` */
+	jsHoldsElement(defaultable: boolean, index: string | number): string {
+		return defaultable && this.defaultsUndefined ?
+				`${index} < data.length && data[${index}] !== undefined`
+			:	`${index} < data.length`
+	}
+
 	/** the morphs writing its elements' defaults */
 	defMorphs: Morph[] =
 		this.defaultables?.map(([node, defaultValue], i) =>
-			computeDefaultValueMorph(this.preLen + i, node, defaultValue)
+			computeDefaultValueMorph(
+				this.preLen + i,
+				this.requiredOf(node),
+				defaultValue
+			)
 		) ?? []
 
 	optionalize(): SequenceNode {
@@ -280,7 +333,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		const { defaultables, optionals, ...inner } = this.inner
 		return this.$.node("sequence", {
 			...inner,
-			prefix: conflatenate(this.prefix, this.maybes)
+			prefix: conflatenate(
+				this.prefix,
+				this.maybes.map(node => this.requiredOf(node))
+			)
 		})
 	}
 
@@ -349,6 +405,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		for (let i = 0; i < data.length; i++) {
 			const node = this.atIndex(data, i).node
 			if (!node.tfs) continue
+			// an undefined a default replaces isn't transformed first
+			if (
+				i >= this.preLen &&
+				i < this.preLen + this.defLen &&
+				!this.holdsElement(data, i)
+			)
+				continue
 			const element = data[i]
 			const transformed = travKey(i, () => transform(ctx, node, element), ctx)
 			if (Object.is(transformed, element)) continue
@@ -415,7 +478,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			const dataIndex = `${i + this.preLen}`
 			if (js.trav === "Transform") {
 				if (node.tfs) {
-					js.if(`${dataIndex} < data.length`, () =>
+					js.if(this.jsHoldsElement(i < this.defLen, dataIndex), () =>
 						compileElement(dataIndex, node)
 					)
 				}

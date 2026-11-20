@@ -55,13 +55,19 @@ export interface ReaderSeed {
 }
 
 // what a production bundle leaves out of a validator where no read needs it
-export type PrunedMember = "assert" | "meta" | "~standard" | "methods"
+export type PrunedMember =
+	| "assert"
+	| "meta"
+	| "~standard"
+	| "methods"
+	| "withContext"
 
 export const prunedMembers: readonly PrunedMember[] = [
 	"assert",
 	"meta",
 	"~standard",
-	"methods"
+	"methods",
+	"withContext"
 ]
 
 const prunedMembersByName: Record<string, PrunedMember[]> = Object.assign(
@@ -73,7 +79,9 @@ const prunedMembersByName: Record<string, PrunedMember[]> = Object.assign(
 		traverse: ["methods"],
 		toString: ["methods"],
 		// from(input) returns this.assert(input)
-		from: ["methods", "assert"]
+		from: ["methods", "assert"],
+		// withContext(context) binds assert and ~standard
+		withContext: ["withContext", "assert", "~standard"]
 	}
 )
 
@@ -1880,6 +1888,7 @@ const validatorKeys = new Set([
 	"meta",
 	"traverse",
 	"from",
+	"withContext",
 	...introspectionMembers.filter(member => member !== "~standard.jsonSchema"),
 	...Object.getOwnPropertyNames(Function.prototype),
 	...Object.getOwnPropertyNames(Object.prototype)

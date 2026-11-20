@@ -377,6 +377,15 @@ export const writeReplay = (
 
 	const isDefault = (ref: Ref) => "hole" in ref && defaults.has(ref.hole)
 
+	const hasEmptyBase = (ctx: Entry[]) =>
+		ctx.some(
+			entry =>
+				"key" in entry &&
+				entry.key === "base" &&
+				"object" in entry.ref &&
+				!states[entry.ref.object].length
+		)
+
 	const expressionOf = (ref: Ref): string =>
 		"hole" in ref ? read(`h${ref.hole}`, true)
 		: "object" in ref ? objectAt(ref.object)
@@ -456,8 +465,10 @@ export const writeReplay = (
 				const ctx = objectAt(step.ctx)
 				const fallsBack = `f(${JSON.stringify(step.code)}, ${ctx}${handlerArg(handlerOf(step.code, step.call))})`
 				// arktype writes a Date with the proto handler where the date
-				// handler returns nullish
-				const isDate = step.code === "date" && states[step.ctx].length === 2
+				// handler returns nullish for the call writing the Date itself,
+				// with its bounds, whose base is empty. A subclass of Date is
+				// written by proto, then its bounds by date
+				const isDate = step.code === "date" && hasEmptyBase(states[step.ctx])
 				statements.push(
 					`const h${step.call} = ${
 						isDate ?

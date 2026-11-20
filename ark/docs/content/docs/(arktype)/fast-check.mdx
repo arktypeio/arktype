@@ -31,21 +31,7 @@ fc.assert(
 )
 ```
 
-The arbitrary is typed `fc.Arbitrary<unknown>`. To use generated values as your Type's data, cast it:
-
-```ts
-import { arkToArbitrary } from "@ark/fast-check"
-import * as fc from "fast-check"
-
-const User = type({
-	name: "string > 0",
-	age: "number.integer >= 0"
-})
-// ---cut---
-const users = arkToArbitrary(User) as fc.Arbitrary<typeof User.inferIn>
-```
-
-Values are generated for the Type's input. For a morph like `string.trim`, you get strings that haven't been trimmed yet. Checks that run inside a morph aren't seen, so a morph that can fail rejects some of what's generated.
+Values are generated for the Type's input, and the arbitrary is typed with it: `users` is an `fc.Arbitrary<typeof User.inferIn>`. For a morph like `string.trim`, you get strings that haven't been trimmed yet. Checks that run inside a morph aren't seen, so a morph that can fail rejects some of what's generated.
 
 ## What's supported
 
@@ -62,7 +48,7 @@ These generate only valid data:
 These throw when you call `arkToArbitrary`:
 
 - instances of any class other than `Array`, `Date` and `Set`, including `Map`, `Function`, `Promise`, typed arrays and `type.instanceOf(MyClass)`
-- regexes with a lookahead, which fast-check can't generate from. Several keywords use one, including `string.numeric`, `string.integer`, `string.date.iso` and their `.parse` variants.
+- regexes with a lookahead, which fast-check can't generate from
 - more than one regex on a string, like `string.email & string.alpha`
 - a regex with a length bound, like `string.email < 50`
 
@@ -70,7 +56,7 @@ These are ignored, so the arbitrary generates data your Type rejects:
 
 - `narrow` predicates, and keywords implemented as predicates rather than regexes, like `string.url`, `string.json` and `string.date`, including their `.parse` variants
 
-When the Type accepts a reasonable share of what the arbitrary generates, filter out the rest:
+A narrow written as a type predicate, like `(s): s is "a" | "b"`, narrows the arbitrary's type though not its values. When the Type accepts a reasonable share of what the arbitrary generates, filter out the rest:
 
 ```ts
 import { arkToArbitrary } from "@ark/fast-check"
