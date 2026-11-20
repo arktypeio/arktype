@@ -36,6 +36,12 @@ contextualize(() => {
 			attest(T.expression).snap("string")
 		})
 
+		it("a schema TypeScript can't see infers unknown", () => {
+			const T = fromJsonSchema(JSON.parse(`{ "type": "string" }`))
+			attest<unknown>(T.infer)
+			attest(T.expression).snap("string")
+		})
+
 		it("a Standard JSON Schema infers and reads its input", () => {
 			const T = fromJsonSchema(z.string().transform(s => s.length))
 			attest<string>(T.infer)

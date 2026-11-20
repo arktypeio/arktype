@@ -49,10 +49,20 @@ contextualize(() => {
 	})
 
 	it("defaulted key is required", () => {
-		const T = type({ at: EpochMs.default(0) })
-		attest<{ at: Date }>(T.encode.inferIn)
-		attest<{ at?: number }>(T.encode.infer)
-		attest(T.encode({}).toString()).snap("at must be a Date (was missing)")
+		const T = type({
+			at: EpochMs.default(0),
+			name: "string = 'x'",
+			"opt?": EpochMs
+		})
+		attest<{ at: Date; name: string; opt?: Date }>(T.encode.inferIn)
+		attest<{ at: number; name: string; opt?: number }>(T.encode.infer)
+		attest<{ at: number; name: string; opt?: number }>(T.encode.encode.inferIn)
+		// @ts-expect-error
+		attest(() => T.encode.encode.from({}))
+			.throws("at must be a number (was missing)")
+			.type.errors("missing the following properties")
+		attest(T.encode({}).toString()).snap(`at must be a Date (was missing)
+name must be a string (was missing)`)
 	})
 
 	it("defaulted key keeps its declared place", () => {
@@ -63,6 +73,8 @@ a must be a number (was missing)`)
 
 	it("defaulted element is required", () => {
 		const T = type([EpochMs, EpochMs.default(0)])
+		attest<[Date, Date]>(T.encode.inferIn)
+		attest<[number, number]>(T.encode.infer)
 		attest(T.encode.expression).snap(
 			"[(In: Date) => To<number % 1>, (In: Date) => To<number % 1>]"
 		)

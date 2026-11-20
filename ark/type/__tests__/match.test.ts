@@ -1049,4 +1049,23 @@ contextualize(() => {
 		attest(pruned("abc")).equals(3)
 		attest(() => pruned(5)).throws.snap("TraversalError: must be a string")
 	})
+
+	it("preserves class private members in instanceOf case", () => {
+		class Special {
+			#x = 1
+			get y(): number {
+				return this.#x
+			}
+		}
+		const takes = (s: Special) => s
+		const m = match
+			.case(type.instanceOf(Special), s => {
+				attest<Special>(s)
+				return takes(s)
+			})
+			.default("assert")
+
+		const instance = new Special()
+		attest<Special>(m(instance)).equals(instance)
+	})
 })

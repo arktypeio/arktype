@@ -40,6 +40,15 @@ export type distill<t, side extends distill.Side> =
 	// returning t as is when nothing changes preserves names like interfaces
 	[distilledSidesOf<t>] extends [undistilledOn<side>] ? t : _distill<t, side>
 
+// what a Type's encode writes: its input, with each defaulted key present,
+// since encoding an output reads every key the default filled in
+export type distillEncoded<t> =
+	[distilledSidesOf<t>] extends [undistilledOn<"in">] ? t
+	:	_distill<t, "encoded">
+
+// "encoded" stays internal so declare's side option doesn't accept it
+type DistillSide = distill.Side | "encoded"
+
 export declare namespace distill {
 	export type Side = "in" | "out" | "knownOut"
 
@@ -88,13 +97,13 @@ type undistilledOn<side extends distill.Side> =
 	| Exclude<distill.Side, side>
 	| { readonly [k: PropertyKey]: undistilledOn<side> }
 
-type _distill<t, side extends distill.Side> =
+type _distill<t, side extends DistillSide> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
 	: t extends { readonly [brand]: [infer base, unknown] } ?
-		side extends "in" ?
+		side extends "in" | "encoded" ?
 			base
 		:	t
 	: // Function is excluded from TerminallyInferredObjectKind so that
@@ -110,7 +119,7 @@ type _distill<t, side extends distill.Side> =
 	: isSafelyMappable<t> extends true ? distillMappable<t, side>
 	: t
 
-type distillMappable<o, side extends distill.Side> =
+type distillMappable<o, side extends DistillSide> =
 	side extends "in" ?
 		show<
 			{
@@ -123,9 +132,9 @@ type distillMappable<o, side extends distill.Side> =
 		>
 	:	{ [k in keyof o]: _distill<o[k], side> }
 
-type distillIo<i, o extends Out, side extends distill.Side> =
+type distillIo<i, o extends Out, side extends DistillSide> =
 	side extends "out" ? _distill<o["t"], side>
-	: side extends "in" ? _distill<i, side>
+	: side extends "in" | "encoded" ? _distill<i, side>
 	: // out.introspectable only respects To (schema-validated output)
 	o extends To<infer validatedOut> ? _distill<validatedOut, side>
 	: unknown
@@ -160,7 +169,7 @@ type isInferredDefault<v> =
 		:	true
 	:	false
 
-type distillArray<t extends array, side extends distill.Side> =
+type distillArray<t extends array, side extends DistillSide> =
 	// fast path for non-tuple arrays with no extra props
 	// this also allows TS to infer certain recursive arrays like JSON
 	t[number][] extends t ? alignReadonly<_distill<t[number], side>[], t>
@@ -177,7 +186,7 @@ type alignReadonly<result extends unknown[], original extends array> =
 type distillNonArraykeys<
 	originalArray extends array,
 	distilledArray,
-	side extends distill.Side
+	side extends DistillSide
 > =
 	keyof originalArray extends keyof distilledArray ? distilledArray
 	:	distilledArray &
@@ -191,7 +200,7 @@ type distillNonArraykeys<
 
 type distillArrayFromPrefix<
 	t extends array,
-	side extends distill.Side,
+	side extends DistillSide,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
@@ -205,7 +214,7 @@ type distillArrayFromPrefix<
 
 type distillArrayFromPostfix<
 	t extends array,
-	side extends distill.Side,
+	side extends DistillSide,
 	postfix extends array
 > =
 	t extends readonly [...infer init, infer last] ?

@@ -29,10 +29,10 @@ export type DeclarationParser<$> = <
 	ctx extends DeclareContext = {}
 >() => {
 	type: <const def>(
-		def: [preinferred] extends [unset] ?
-			[preinferred] extends [anyOrNever] ?
-				validateDeclared<preinferred, def, $, ctx>
-			:	ErrorMessage<`declare<ExternalType>() requires a generic argument`>
+		def: [preinferred] extends [anyOrNever] ?
+			validateDeclared<preinferred, def, $, ctx>
+		: [preinferred] extends [unset] ?
+			ErrorMessage<`declare<ExternalType>() requires a generic argument`>
 		:	validateDeclared<preinferred, def, $, ctx>
 	) => Type<finalizePreinferred<preinferred, def, $, ctx>, $>
 }
@@ -43,7 +43,7 @@ type finalizePreinferred<preinferred, def, $, ctx extends DeclareContext> =
 	ctx["assignable"] extends true ? type.infer<def, $>
 	: ctx["side"] extends distill.Side ?
 		ctx["side"] extends "in" ?
-			(In: preinferred) => type.infer.Out<def, $>
+			(In: preinferred) => Out<type.infer.Out<def, $>>
 		:	(In: type.infer.In<def, $>) => Out<preinferred>
 	:	preinferred
 

@@ -166,9 +166,9 @@ type _finalizeCaseArg<
 	ctxInput extends unknown ?
 		t extends unknown ?
 			distill<t, endpoint> extends infer result ?
-				ctxInput extends result ?
-					ctxInput
-				:	show<ctxInput & result>
+				unknown extends ctxInput ? result
+				: ctxInput extends result ? ctxInput
+				: show<ctxInput & result>
 			:	never
 		:	never
 	:	never
