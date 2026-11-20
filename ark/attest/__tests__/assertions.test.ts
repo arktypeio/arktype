@@ -175,6 +175,13 @@ Expected: number
 Actual: string`)
 	})
 
+	it("an object is never equal to a primitive", () => {
+		attest(() => attest({ a: 1 } as unknown).equals(1)).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference equal items
+Expected: 1
+Actual: {"a":1}`)
+	})
+
 	// node:assert's diff of these exhausted memory (#1287)
 	it("does not boom on nested Types", () => {
 		// @ts-expect-error
