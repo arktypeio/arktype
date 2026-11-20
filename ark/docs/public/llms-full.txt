@@ -6341,7 +6341,7 @@ TypeScript generics like these can be hard to get right. If yours isn't inferrin
 
 # Declare
 
-> Define a Type that must match an existing TypeScript type exactly.
+> Define a Type checked against an existing TypeScript type, exactly or as assignable to it.
 
 If your ArkType definitions are your source of truth, infer your TypeScript types from them: `type User = typeof User.infer`.
 
@@ -6406,6 +6406,41 @@ const T = type.declare<Expected, { side: "out" }>().type({
 	"b?": "number"
 })
 ```
+
+## `assignable`
+
+A form often accepts less than the API type it submits: a key the API leaves optional or nullable is required, or a string is limited to a few values. To check only that what your definition infers is assignable to the declared type, pass `{ assignable: true }`. The Type keeps the type its definition infers:
+
+```ts
+type Contact = { name: string; email?: string | null; kind: string }
+
+// email is required, and kind is narrower than string
+const ContactForm = type.declare<Contact, { assignable: true }>().type({
+	name: "string",
+	email: "string.email",
+	kind: "'person' | 'company'"
+})
+
+type ContactForm = typeof ContactForm.infer
+// type ContactForm = {
+//     name: string;
+//     email: string;
+//     kind: "person" | "company";
+// }
+
+const Bad = type.declare<Contact, { assignable: true }>().type({
+	// wider than string
+	name: "string | number",
+	// TypeScript: declared: string; inferred: string | number;
+	kind: "string"
+})
+```
+
+A key declared optional may be left out, or written optional or required. A required key must be written required, and a key the declared type doesn't have is still an error.
+
+## Index signatures
+
+A key that isn't one of the declared type's own keys is checked against its index signature, if it has one. That matters with `Omit`, which leaves only the index signature of a type like `{ name: string } & Record<string, unknown>`: each key it dropped is declared `unknown`, so `"string"` there is an error rather than a Type that infers `unknown`. Declare the keys you want, or use `{ assignable: true }` to check them against `unknown` and keep what they infer.
 
 # Validation
 

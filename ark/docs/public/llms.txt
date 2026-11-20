@@ -30,7 +30,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Codecs](https://arktype.io/docs/codecs.md): Pair a morph with its inverse to encode output back into input.
 - [Scopes](https://arktype.io/docs/scopes.md): Define aliases that reference each other, then use them in definitions or export them as a module of Types.
 - [Generics](https://arktype.io/docs/generics.md): Declare definitions with parameters and instantiate them like TypeScript generics.
-- [Declare](https://arktype.io/docs/declare.md): Define a Type that must match an existing TypeScript type exactly.
+- [Declare](https://arktype.io/docs/declare.md): Define a Type checked against an existing TypeScript type, exactly or as assignable to it.
 
 ## ArkType: Validation
 
