@@ -36,10 +36,6 @@
 		"build": "ts ../repo/build.ts",
 		"test": "node ../repo/testPackage.ts"
 	},
-	"dependencies": {
-		"@ark/schema": "workspace:*",
-		"@ark/util": "workspace:*"
-	},
 	"devDependencies": {
 		"arktype": "workspace:*"
 	},

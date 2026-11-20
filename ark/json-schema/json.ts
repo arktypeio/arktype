@@ -1,5 +1,5 @@
-import { isArray } from "@ark/util"
-import { parse } from "arksets"
+import { isArray } from "arktype/util"
+import { parse } from "arktype/sets"
 import { type, type Type } from "arktype"
 import type { inferJsonSchema } from "./infer.ts"
 import type { validateJsonSchema } from "./validate.ts"

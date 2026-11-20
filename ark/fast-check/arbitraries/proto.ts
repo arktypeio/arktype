@@ -1,4 +1,4 @@
-import type { nodeOfKind } from "@ark/schema"
+import type { nodeOfKind } from "arktype/schema"
 import * as fc from "fast-check"
 import { buildStructureArbitrary } from "../arktypeFastCheck.ts"
 import type { Ctx } from "../fastCheckContext.ts"

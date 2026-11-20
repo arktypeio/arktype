@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { configureAfterTypeMessage } from "@ark/schema"
+import { configureAfterTypeMessage } from "arktype/schema"
 import { precompileModule, renderDiagnostic } from "@ark/aot"
 import { isRuntimeExport } from "@ark/aot/internal/graph.ts"
 import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"

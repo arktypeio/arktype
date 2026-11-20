@@ -115,7 +115,7 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
-**`arktype resolves to ... rather than arktype/runtime`** or **`@ark/schema/runtime resolves to ...`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](/docs/precompile/setup#next).
+**`arktype resolves to ... rather than arktype/runtime`** or **`arktype/schema/runtime resolves to ...`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](/docs/precompile/setup#next).
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 

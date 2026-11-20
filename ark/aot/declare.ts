@@ -1,4 +1,5 @@
-import { flatMorph, throwError, type KeySet } from "@ark/util"
+import type { KeySet } from "arktype/util"
+import { flatMorph, throwError } from "./util.ts"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { dirname, relative } from "node:path/posix"

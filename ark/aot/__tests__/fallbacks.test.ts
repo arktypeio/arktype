@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { unionJsonSchemaWritersKey, type BaseRoot } from "@ark/schema"
+import { unionJsonSchemaWritersKey, type BaseRoot } from "arktype/schema"
 import { type, type Type } from "arktype"
 import {
 	traceFallbacks,

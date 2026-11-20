@@ -1,4 +1,5 @@
-import { flatMorph, throwError, type KeySet } from "@ark/util"
+import type { KeySet } from "arktype/util"
+import { flatMorph, throwError } from "./util.ts"
 import {
 	existsSync,
 	mkdirSync,
@@ -1531,7 +1532,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// Vite's 8.3 name on Windows, loading a second arktype
 				if (isRuntime && opts?.shadow) return resolveFile(id, importer)
 				// as a module's import of arktype resolves, so one a precompiled dependency writes inline loads the same runtime
-				if (id === "arktype/runtime" && isStandalone)
+				if (
+					(id === "arktype/runtime" || id === "arktype/schema/runtime") &&
+					isStandalone
+				)
 					return resolveFile(id, importer)
 			}
 		},
@@ -3188,9 +3192,9 @@ const packageOfFile = (file: string): string | undefined => {
 const externalizableSpecifiers = [
 	...runtimeSpecifiers,
 	"arktype/runtime",
-	"@ark/schema",
-	"@ark/schema/runtime",
-	"@ark/util"
+	"arktype/schema",
+	"arktype/schema/runtime",
+	"arktype/util"
 ]
 
 // Next.js leaves the pages router's dependencies external on the server

@@ -2,9 +2,9 @@ import { getShellOutput, readFile, rewriteFile, writeFile } from "@ark/fs"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import {
-	packages,
 	packagesByScope,
 	publishedVersionsOf,
+	publishOrder,
 	repoDirs,
 	type ArkPackage
 } from "./shared.ts"
@@ -26,7 +26,7 @@ const semver = /^\d+\.\d+\.\d+(-[\da-z-]+(\.[\da-z-]+)*)?$/i
 
 const publishedVersions = new Map(
 	await Promise.all(
-		packages.map(
+		publishOrder.map(
 			async pkg => [pkg, await publishedVersionsOf(pkg.name)] as const
 		)
 	)
@@ -34,9 +34,9 @@ const publishedVersions = new Map(
 
 const problems = [
 	...[...nextVersions.keys()]
-		.filter(name => !packages.some(pkg => pkg.name === name))
-		.map(name => `${name} isn't a package`),
-	...packages.flatMap(pkg => {
+		.filter(name => !publishOrder.some(pkg => pkg.name === name))
+		.map(name => `${name} isn't a published package`),
+	...publishOrder.flatMap(pkg => {
 		const next = nextVersions.get(pkg.name)
 		return (
 			next === undefined ? [`${pkg.name} needs a version (now ${pkg.version})`]
@@ -106,7 +106,7 @@ const headChangelog = (pkg: ArkPackage, next: string) => {
 	}
 }
 
-for (const pkg of packages) {
+for (const pkg of publishOrder) {
 	const next = nextVersions.get(pkg.name)!
 	rewriteFile(pkg.packageJsonPath, contents => {
 		const bumped = contents.replace(/^(\t"version": )"[^"]*"/m, `$1"${next}"`)
@@ -148,14 +148,19 @@ rewriteFile(aotVersionPath, contents => {
 })
 
 const util = packagesByScope.util
-const nextUtil = nextVersions.get(util.name)!
-// registry.ts, and the copy of its declarations the playground loads
-replaceTracked(`arkUtilVersion = `, contents =>
-	contents.replace(
-		new RegExp(`(arkUtilVersion = \\\\?")${escape(util.version)}(\\\\?")`, "g"),
-		(_, before: string, after: string) => `${before}${nextUtil}${after}`
+const nextUtil = nextVersions.get(util.name)
+if (nextUtil) {
+	// registry.ts, and the copy of its declarations the playground loads
+	replaceTracked(`arkUtilVersion = `, contents =>
+		contents.replace(
+			new RegExp(
+				`(arkUtilVersion = \\\\?")${escape(util.version)}(\\\\?")`,
+				"g"
+			),
+			(_, before: string, after: string) => `${before}${nextUtil}${after}`
+		)
 	)
-)
+}
 
 const type = packagesByScope.type
 const nextType = nextVersions.get(type.name)!

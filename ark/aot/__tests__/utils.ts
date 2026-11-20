@@ -8,7 +8,7 @@ import {
 	type PrecompileOptions
 } from "@ark/aot"
 import { fromHere } from "@ark/fs"
-import { hasArkKind } from "@ark/schema"
+import { hasArkKind } from "arktype/schema"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
@@ -217,7 +217,7 @@ try {
 			"reads/main.ts": 'import { reads } from "reads"\n\nconsole.log(reads)\n',
 			...packageFiles("reads", {
 				"index.js":
-					'import { hasArkKind } from "@ark/schema"\n\nexport const reads = typeof hasArkKind\n',
+					'import { hasArkKind } from "arktype/schema"\n\nexport const reads = typeof hasArkKind\n',
 				"index.d.ts": "export declare const reads: string\n"
 			})
 		},

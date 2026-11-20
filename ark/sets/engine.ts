@@ -25,7 +25,8 @@ export const setEngine: SetEngine = {
 			defNamesById: {},
 			defs: {},
 			writers: jsonSchemaWriters
-		})
+		}),
+	registry: $ark
 }
 
 // must precede parsing, since nodes are reduced and discriminated when parsed

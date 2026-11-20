@@ -3,10 +3,10 @@ title: Overview
 description: Read arktype Types, Standard JSON Schemas and JSON Schemas as sets of values, relate and combine them, and write them back out as JSON Schema.
 ---
 
-`arksets` treats a schema as the set of values it accepts. It reads schemas from any format, relates and combines them with the same algebra ArkType reduces its own Types with, and writes the result back out as JSON Schema:
+`arktype/sets` treats a schema as the set of values it accepts. It reads schemas from any format, relates and combines them with the same algebra ArkType reduces its own Types with, and writes the result back out as JSON Schema:
 
 ```ts
-import { intersect, isSubset, toJsonSchema } from "arksets"
+import { intersect, isSubset, toJsonSchema } from "arktype/sets"
 
 const V1 = {
 	type: "object",
@@ -50,9 +50,9 @@ Use it to check that a new version of an API schema still accepts what the old o
 
 ## Installation
 
-<InstallationTabs pkg="arksets" />
+<InstallationTabs pkg="arktype" />
 
-`arktype` depends on `arksets` already, but only imports [the engine](#the-engine). Install it yourself to import the functions on these pages.
+Import from `arktype/sets` — it ships with `arktype` and tree-shakes out of `arktype` unless you import it.
 
 ## Schemas
 
@@ -65,7 +65,7 @@ Every function takes a `Schema`, which can be any of:
 Every argument can be in a different format. Results that are sets are Roots, so you can validate with them, print them and pass them back in:
 
 ```ts
-import { intersect } from "arksets"
+import { intersect } from "arktype/sets"
 
 const Port = intersect({ type: "integer" }, type("number >= 1024"))
 
@@ -79,7 +79,7 @@ Port.allows(80) // false
 `parse` reads a schema into a Root. Every other function calls it on its arguments, so you only need it to read a schema with options:
 
 ```ts
-import { parse } from "arksets"
+import { parse } from "arktype/sets"
 
 const Query = type({
 	page: type("string").pipe(s => Number(s), type("number.integer >= 1"))
@@ -95,7 +95,7 @@ parse(Query, { io: "out" }).expression // "{ page: number % 1 >= 1 }"
 | `root` | the schema itself | the document a JSON Schema's `#/...` refs resolve against, like an OpenAPI document           |
 
 ```ts
-import { parse } from "arksets"
+import { parse } from "arktype/sets"
 
 const openApi = {
 	components: {
@@ -123,7 +123,7 @@ A schema object is read once per `io` and cached, so passing the same object to 
 ArkType's `object` includes arrays, like TypeScript's. JSON Schema's `"object"` excludes them. An arktype Type is read with its own meaning, so it accepts values a JSON Schema with the same properties doesn't:
 
 ```ts
-import { isSubset } from "arksets"
+import { isSubset } from "arktype/sets"
 
 const User = type({ name: "string" })
 

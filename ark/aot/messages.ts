@@ -1,5 +1,5 @@
-import type { ErrorDetail, MutatesInput } from "@ark/schema"
-import { capitalize, printable } from "@ark/util"
+import type { ErrorDetail, MutatesInput } from "arktype/schema"
+import { capitalize, printable } from "./util.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import {
 	packageNameOf,
@@ -81,7 +81,7 @@ export const writeVariantImportMessage = (
 	specifier: string,
 	variant: RuntimeVariant
 ): string =>
-	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
+	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of arktype/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
 
 export const writeTextlessMessage = (path: string): string =>
 	`${path} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with \`node --import ./register.ts\`, and let Node run the TypeScript rather than a loader like tsx.`
@@ -102,13 +102,7 @@ export const writeExternalizedMessage = (
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
 // each package arktype loads, which Next.js bundles one by one
-const arktypePackages = [
-	"arktype",
-	"@ark/schema",
-	"@ark/util",
-	"arkregex",
-	"arksets"
-]
+const arktypePackages = ["arktype"]
 
 export const writeNextExternalMessage = (
 	specifier: string,
@@ -183,7 +177,7 @@ export const writeAliasMessage = (
 // `resolved` is where @ark/schema/runtime resolves other than to the module
 // the loader writes as the build's copy
 export const writeRuntimeAliasMessage = (resolved: string): string =>
-	`@ark/schema/runtime resolves to ${resolved} rather than ${runtimeShimSpecifier}, which the loader writes as the runtime the build's options load. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": runtimeShimSpecifier })}.`
+	`arktype/schema/runtime resolves to ${resolved} rather than ${runtimeShimSpecifier}, which the loader writes as the runtime the build's options load. Add to turbopack.resolveAlias: ${JSON.stringify({ "arktype/schema/runtime": runtimeShimSpecifier })}.`
 
 export const runtimeShimSpecifier = "@ark/aot/turbopack/runtime"
 

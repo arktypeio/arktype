@@ -1,4 +1,4 @@
-import { hasOwn } from "@ark/util"
+import { hasOwn } from "./util.ts"
 import type { IssueFeatures } from "arktype/internal/standalone.ts"
 import type { Node } from "oxc-parser"
 import { SourceModule } from "./module.ts"
@@ -13,7 +13,7 @@ export const issueFeatureReader =
 // exporting them again, @ark/schema's for arktype and arktype's for its own
 const exportsFeatures = (specifier: unknown): boolean =>
 	typeof specifier === "string" &&
-	/(?:^@ark\/schema\/runtime(?:\/\w+)?|[/\\](?:issueFeatures|runtime)(?:\.[jt]s)?)$/.test(
+	/(?:^arktype\/schema\/runtime(?:\/[\w-]+)?|[/\\](?:issueFeatures|runtime|schemaRuntime)(?:\.[jt]s)?)$/.test(
 		specifier
 	)
 

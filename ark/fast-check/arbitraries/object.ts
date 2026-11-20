@@ -1,5 +1,5 @@
-import type { BaseNode } from "@ark/schema"
-import { throwInternalError } from "@ark/util"
+import type { BaseNode } from "arktype/schema"
+import { throwInternalError } from "arktype/util"
 import { letrec, type Arbitrary, type LetrecValue } from "fast-check"
 import type { Ctx } from "../fastCheckContext.ts"
 

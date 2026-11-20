@@ -9,8 +9,15 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type CacheReach
-} from "@ark/schema"
-import { hasDomain, ParseError, type Fn } from "@ark/util"
+} from "arktype/schema"
+import {
+	hasDomain,
+	ParseError,
+	readsOnlyData,
+	returnsReports,
+	testsOrRejects,
+	type Fn
+} from "arktype/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -80,9 +87,23 @@ import type { SourceModule } from "./module.ts"
 import {
 	isTransparent,
 	passesWithoutCtx,
-	proveFunction,
+	readsOnlyItsArgument,
+	rejectingPartsOf,
+	returnsItsReports,
 	runtimeParamsOf
 } from "./proofs.ts"
+
+const proveFunction = (
+	fn: Fn,
+	node: FunctionNode,
+	isStandalone: boolean
+): void => {
+	if (readsOnlyItsArgument(node)) readsOnlyData.add(fn)
+	else if (isStandalone && returnsItsReports(node)) {
+		returnsReports.add(fn)
+		if (rejectingPartsOf(node)) testsOrRejects.add(fn)
+	}
+}
 import {
 	isOwnEnumSeed,
 	transpiledEnumOf,

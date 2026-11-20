@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import type { Completions } from "@ark/attest/internal/cache/getCachedAssertions.ts"
-import type { autocomplete } from "@ark/util"
+import type { autocomplete } from "arktype/util"
 
 contextualize(() => {
 	it("unwraps unversioned", () => {
