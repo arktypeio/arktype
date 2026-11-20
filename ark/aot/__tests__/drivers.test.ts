@@ -467,14 +467,14 @@ console.log(String(types.user({ name: 5 })), Id("x"))
 			const root = writeFixture(
 				{
 					"package.json": JSON.stringify({ type: "module" }),
-					...packageFiles("@ark/json-schema", {
+					...packageFiles("@ark/fast-check", {
 						"index.js":
-							'import { type } from "arktype"\n\nexport const jsonSchemaToType = schema => type({ [schema.key]: schema.type })\n'
+							'import { type } from "arktype"\n\nexport const keyedType = schema => type({ [schema.key]: schema.type })\n'
 					}),
-					"main.ts": `import { jsonSchemaToType } from "@ark/json-schema"
+					"main.ts": `import { keyedType } from "@ark/fast-check"
 
 // @ark-runtime
-const Dyn = jsonSchemaToType({ key: "a", type: "string" })
+const Dyn = keyedType({ key: "a", type: "string" })
 
 console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 `

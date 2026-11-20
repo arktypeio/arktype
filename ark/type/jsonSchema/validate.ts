@@ -1,11 +1,11 @@
-import type { JsonSchema } from "arktype/schema"
+import type { JsonSchema } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
 	Digit,
 	domainOf,
 	ErrorMessage
-} from "arktype/util"
+} from "@ark/util"
 import type {
 	Anchor,
 	AnnotationKeyword,
@@ -381,7 +381,7 @@ export type SchemaKeyword =
 	| "contains"
 	| "contentSchema"
 
-/** keywords jsonSchemaToType throws on, since it can't read them exactly */
+/** keywords fromJsonSchema throws on, since it can't read them exactly */
 export type UnsupportedKeyword =
 	| "$dynamicRef"
 	| "$recursiveRef"
@@ -788,4 +788,4 @@ export type writeInvalidMultipleOfMessage<value extends number> =
 	`multipleOf must be a positive number (was ${value})`
 
 export type writeUnsupportedKeywordMessage<keyword extends string> =
-	`${keyword} isn't supported by jsonSchemaToType`
+	`${keyword} isn't supported by fromJsonSchema`

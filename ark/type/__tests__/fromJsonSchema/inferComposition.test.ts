@@ -1,8 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import type { jsonSchema } from "@ark/json-schema"
-import type { array } from "arktype/util"
+import type { array } from "@ark/util"
 import type { JsonSchema } from "arktype"
-import { inferred } from "./utils.ts"
+import { inferred, type jsonSchema } from "./utils.ts"
 
 contextualize(() => {
 	describe("allOf", () => {

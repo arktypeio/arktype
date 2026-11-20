@@ -13,14 +13,13 @@ configure({
 	numberAllowsNaN: true,
 	numberAllowsInfinity: true
 })
-const { intersect, parse } = await import("arktype/sets")
-const { jsonSchemaToType } = await import("@ark/json-schema")
-const { type } = await import("arktype")
+const { fromJsonSchema, type } = await import("arktype")
 const schema = { type: "object", properties: { a: { type: "number" } } }
 const read = {
-	parse: parse(schema),
-	jsonSchemaToType: jsonSchemaToType(schema),
-	intersect: intersect(schema, { type: "object", properties: { b: { type: "number" } } })
+	fromJsonSchema: fromJsonSchema(schema),
+	and: fromJsonSchema(schema).and(
+		fromJsonSchema({ type: "object", properties: { b: { type: "number" } } })
+	)
 }
 const allows = T => ({
 	expression: T.expression,
@@ -47,21 +46,14 @@ contextualize(() => {
 	it("reads a JSON Schema the same under any configure()", () => {
 		// an arktype Type follows the config, and a JSON Schema JSON Schema's defaults
 		attest(readConfigured()).snap({
-			parse: {
+			fromJsonSchema: {
 				expression: "{ a?: number, + (undeclared): ignore } & isNonArray",
 				extraKey: true,
 				undefinedValue: false,
 				nan: false,
 				infinity: false
 			},
-			jsonSchemaToType: {
-				expression: "{ a?: number, + (undeclared): ignore } & isNonArray",
-				extraKey: true,
-				undefinedValue: false,
-				nan: false,
-				infinity: false
-			},
-			intersect: {
+			and: {
 				expression:
 					"{ a?: number, b?: number, + (undeclared): ignore } & isNonArray",
 				extraKey: true,

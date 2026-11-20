@@ -1,8 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { type jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { array } from "arktype/util"
-import type { JsonSchema } from "arktype"
-import { inferred, type elementAt } from "./utils.ts"
+import type { array } from "@ark/util"
+import { fromJsonSchema, type JsonSchema } from "arktype"
+import { inferred, type elementAt, type jsonSchema } from "./utils.ts"
 
 // display of a hand-written (mutable) schema type
 const inferType = <schema>(): jsonSchema.infer<schema> => ({}) as never
@@ -84,7 +83,7 @@ contextualize(() => {
 		})
 
 		it("array rest", () => {
-			const T = jsonSchemaToType({
+			const T = fromJsonSchema({
 				type: "array",
 				prefixItems: [{ type: "string" }],
 				minItems: 1,
@@ -95,7 +94,7 @@ contextualize(() => {
 
 		it("draft-07 items array next to prefixItems replaces it", () => {
 			// as the runtime reads it
-			const T = jsonSchemaToType({
+			const T = fromJsonSchema({
 				type: "array",
 				prefixItems: [{ type: "string" }],
 				minItems: 1,
@@ -109,7 +108,7 @@ contextualize(() => {
 
 	describe("draft-07 items array", () => {
 		it("additionalItems schema", () => {
-			const T = jsonSchemaToType({
+			const T = fromJsonSchema({
 				type: "array",
 				items: [{ type: "string" }],
 				minItems: 1,

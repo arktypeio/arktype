@@ -1,7 +1,7 @@
 // typechecked against the built packages with each supported TypeScript
 // version in CI to ensure inference holds outside the version we test with
 import { regex } from "arkregex"
-import { match, scope, type } from "arktype"
+import { fromJsonSchema, match, scope, type } from "arktype"
 import { codec } from "arktype/codecs"
 
 type equals<l, r> =
@@ -171,3 +171,14 @@ assertEquals<typeof Id.infer, `id-${string}`>()
 
 // @ts-expect-error invalid keywords are type errors
 type({ name: "strng" })
+
+export const FromJsonSchema = fromJsonSchema({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+assertEquals<typeof FromJsonSchema.infer, { name: string; age?: number }>()

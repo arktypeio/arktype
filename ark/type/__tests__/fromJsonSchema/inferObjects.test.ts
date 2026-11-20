@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { type jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import { inferred } from "./utils.ts"
+import { fromJsonSchema } from "arktype"
+import { inferred, type jsonSchema } from "./utils.ts"
 
 // a value of type t for display assertions on hand-written schema types
 const of = <t>(): t => ({}) as never
@@ -8,7 +8,7 @@ const of = <t>(): t => ({}) as never
 contextualize(() => {
 	describe("properties and required", () => {
 		it("some required, in declaration order", () => {
-			const T = jsonSchemaToType({
+			const T = fromJsonSchema({
 				type: "object",
 				properties: {
 					z: { type: "string" },

@@ -5,8 +5,6 @@ import { regexDts } from "../../docs/components/dts/regex.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { schemaDts } from "../../docs/components/dts/schema.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { setsDts } from "../../docs/components/dts/sets.ts"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { typeDts } from "../../docs/components/dts/type.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { utilDts } from "../../docs/components/dts/util.ts"
@@ -24,7 +22,6 @@ contextualize(() => {
 		})
 		project.createSourceFile("util.d.ts", utilDts)
 		project.createSourceFile("schema.d.ts", schemaDts)
-		project.createSourceFile("sets.d.ts", setsDts)
 		project.createSourceFile("type.d.ts", typeDts)
 		project.createSourceFile("regex.d.ts", regexDts)
 

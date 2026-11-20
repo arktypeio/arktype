@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { JsonSchemaOrBoolean } from "arktype/schema"
-import type { JsonSchema } from "arktype"
+import type { JsonSchemaOrBoolean } from "@ark/schema"
+import { fromJsonSchema, type JsonSchema } from "arktype"
+import type { jsonSchema } from "./utils.ts"
 
 // checks inference without reading the schema at runtime
 const inferred = <const schema>(
@@ -193,7 +193,7 @@ contextualize(() => {
 				additionalProperties: boolean
 			}
 			attest<true, isValid<Imported>>()
-			attest<unknown>(jsonSchema({} as Imported).infer)
+			attest<unknown, jsonSchema.infer<Imported>>()
 		})
 	})
 
@@ -571,16 +571,16 @@ contextualize(() => {
 		})
 
 		it("a composed schema's relative ref resolves against the new root", () => {
-			const User = jsonSchema({
+			const User = {
 				$defs: { name: { type: "string" } },
 				type: "object",
 				properties: { name: { $ref: "#/$defs/name" } }
-			})
-			attest<{ name?: string }>(User.infer)
+			} as const
+			attest<{ name?: string }>(fromJsonSchema(User).infer)
 			// the new document has no $defs
 			attest(() =>
 				// @ts-expect-error
-				jsonSchema({ type: "array", items: User })
+				fromJsonSchema({ type: "array", items: User })
 			).type.errors(`Type '"#/$defs/name"' is not assignable to type '"#"'`)
 		})
 	})
@@ -692,8 +692,8 @@ contextualize(() => {
 					unevaluatedProperties: { type: "boolean" }
 				})
 			).type.errors
-				.snap(`Type 'true' is not assignable to type '"boolean exclusiveMinimum isn't supported by jsonSchemaToType\u200b"'.
-Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by jsonSchemaToType\u200b"'.`)
+				.snap(`Type 'true' is not assignable to type '"boolean exclusiveMinimum isn't supported by fromJsonSchema\u200b"'.
+Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`)
 		})
 	})
 
@@ -881,21 +881,11 @@ Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"
 
 	describe("generic schema parameters", () => {
 		it("a type parameter constrained to JsonSchema", () => {
-			// a deferred jsonSchema.validate<schema> can't be related to an unresolved parameter, as for arktype's type(): validate the parameter instead (below)
+			// a deferred validation can't be related to an unresolved parameter, as for arktype's type()
 			attest(<schema extends JsonSchema>(s: schema) =>
 				// @ts-expect-error
-				jsonSchemaToType(s)
+				fromJsonSchema(s)
 			).type.errors("Argument of type 'schema' is not assignable")
-		})
-
-		it("a wrapper with a validated parameter", () => {
-			const wrap = <const schema>(s: jsonSchema.validate<schema>) =>
-				jsonSchemaToType(s as never)
-			attest(() => wrap({ type: "string" })).type.errors.is("")
-			// @ts-expect-error
-			attest(() => wrap({ type: "strin" })).type.errors(
-				`Did you mean '"string"'?`
-			)
 		})
 	})
 })

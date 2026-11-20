@@ -8580,7 +8580,7 @@ const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 
 // packages reading arktype's nodes, which validators lack
 const nodePackageSpecifier =
-	/^(?:(?:arksets|@ark\/(?:json-schema|fast-check)|arktype\/(?:sets|schema|internal)|@ark\/(?:type|schema)\/internal)(?:\/|$)|@ark\/schema$)/
+	/^(?:(?:arksets|@ark\/fast-check|arktype\/(?:schema|internal)|@ark\/(?:type|schema)\/internal)(?:\/|$)|@ark\/schema$)/
 
 // @ark/schema exports the runtime shares (not ArkErrors)
 const sharedSchemaExports = Object.keys(runtimeExports).filter(

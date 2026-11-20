@@ -49,6 +49,6 @@ export const sets = (): SetEngine =>
 	$ark.sets ?? throwParseError(missingSetEngineMessage)
 
 export const missingSetEngineMessage =
-	'Set algebra is not installed (import "arktype/sets" to install it)'
+	'Set algebra is not installed (import "arktype" to install it)'
 
 export type missingSetEngineMessage = typeof missingSetEngineMessage

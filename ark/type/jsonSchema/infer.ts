@@ -4,16 +4,14 @@ import type {
 	JsonPrimitive,
 	noSuggest,
 	NonNegativeIntegerLiteral
-} from "arktype/util"
-import type { InferredJsonSchema } from "./jsonSchema.ts"
+} from "@ark/util"
 
 export type inferJsonSchema<schema, root = schema> =
 	// when the root is the schema itself, each member of a union is its own root for `$ref`
 	{ root: root; schema: schema } extends { root: schema; schema: root } ?
-		// a schema's own inference is only valid against its own root
-		schema extends InferredJsonSchema<infer t> ?
-			t
-		:	inferSchema<schema, schema, never>
+		schema extends unknown ?
+			inferSchema<schema, schema, never>
+		:	never
 	:	inferSchema<schema, root, never>
 
 /** a schema whose keywords are all optional may be `{}`, so infers `unknown` */
@@ -340,8 +338,7 @@ export type inferPart<k extends keyof schema, schema, root, seen> =
 	: inferConditional<schema, root, seen>
 
 /** object and array keywords only constrain their own domain, so without a
- * `type` every other JSON value is valid. A node without keywords may be a
- * `jsonSchema.as` value, whose asserted type is trusted */
+ * `type` every other JSON value is valid */
 export type inferBase<schema, root, seen> =
 	schema extends TypeListSchema ?
 		inferTypeName<schema["type"][number], schema, root, seen>
@@ -358,8 +355,7 @@ export type inferBase<schema, root, seen> =
 		:	inferObject<schema, root> | string | number | boolean | null | unknown[]
 	: schema extends ImpliedArraySchema ?
 		inferArray<schema, root, seen, string | number | boolean | null | object>
-	: schema extends InferredJsonSchema<infer t> ? t
-	: unknown
+	:	unknown
 
 export interface TypedSchema {
 	type: unknown
@@ -540,7 +536,7 @@ export type rejectedBy<keyword, value> =
 	: (_: rejects<keyword, value>) => void
 
 export type rejects<keyword, value> =
-	keyword extends "const" ? unitOf<value>
+	keyword extends "const" ? jsonUnitOf<value>
 	: value extends array ?
 		number extends value["length"] ?
 			never
@@ -566,7 +562,7 @@ export type rejectedByEach<keyword, value> =
 
 /** a literal that is the only JSON value of its type (TS object types are
  * open, so an object is never exact) */
-export type unitOf<value> =
+export type jsonUnitOf<value> =
 	value extends string | number ?
 		{} extends { [_ in value]: 0 } ?
 			never
@@ -1551,7 +1547,7 @@ export type inferArray<schema, root, seen, domains = never> =
 		schema extends ItemsListSchema ?
 			inferArray<Omit<schema, "prefixItems">, root, seen, domains>
 		: [Extract<schema["items" & keyof schema], array>] extends [never] ?
-			inferTuple<
+			inferTupleSchema<
 				schema["prefixItems"],
 				minItemsOf<schema>,
 				schema extends RestItemsSchema ? schema["items"] : true,
@@ -1563,7 +1559,7 @@ export type inferArray<schema, root, seen, domains = never> =
 	: schema extends UnprefixedItemsSchema ?
 		{} extends schema["items"] ? inferWidened<schema["items"]>[] | domains
 		: schema["items"] extends array ?
-			inferTuple<
+			inferTupleSchema<
 				schema["items"],
 				minItemsOf<schema>,
 				schema extends AdditionalItemsSchema ? schema["additionalItems"] : true,
@@ -1620,7 +1616,14 @@ export type inferPresentPrefix<
 	domains
 > =
 	Exclude<schema["prefixItems"], undefined> extends infer items extends array ?
-		inferTuple<items, minItemsOf<schema>, schema["items"], root, seen, domains>
+		inferTupleSchema<
+			items,
+			minItemsOf<schema>,
+			schema["items"],
+			root,
+			seen,
+			domains
+		>
 	:	unknown[] | domains
 
 export interface ItemsSchema {
@@ -1646,7 +1649,7 @@ export interface MinItemsSchema {
 /** a rest schema with subschemas may nest tuples, so its elements are an
  * `X[]`, which TS defers, after a prefix inferred on its own (spreading
  * the prefix's mapped type would cost a level of depth) */
-export type inferTuple<
+export type inferTupleSchema<
 	items extends array,
 	minItems extends number,
 	rest,

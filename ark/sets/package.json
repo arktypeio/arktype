@@ -1,6 +1,6 @@
 {
 	"name": "arksets",
-	"description": "Set algebra for schemas in any format: relate, combine and convert arktype Types, Standard JSON Schemas and JSON Schemas",
+	"description": "arktype's internal set algebra and the reader behind fromJsonSchema",
 	"version": "0.0.1-beta.1",
 	"private": true,
 	"license": "MIT",

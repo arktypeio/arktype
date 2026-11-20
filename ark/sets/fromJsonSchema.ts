@@ -70,7 +70,7 @@ const jsonSchemaScope = /* @__PURE__ */ cached((): BaseScope => {
 const jsonSchemaRoot = (schema: RootSchema): BaseRoot =>
 	jsonSchemaScope().schema(schema)
 
-const node: BaseScope["node"] = (kind, schema, opts) =>
+const jsonSchemaNode: BaseScope["node"] = (kind, schema, opts) =>
 	jsonSchemaScope().node(kind, schema, opts)
 
 // a number JSON Schema reads is finite, whatever configure() says
@@ -84,7 +84,9 @@ export const readJsonSchema = (
 	schema: JsonSchema.Input,
 	document: JsonSchema.Input = schema
 ): BaseRoot => {
-	const $schema = String(isPlainObject(document) && (document as dict).$schema)
+	const $schema = String(
+		isJsonSchemaObject(document) && (document as dict).$schema
+	)
 	const documentResource = { schema: document, uri: documentUri }
 	const ctx: ReadContext = {
 		document,
@@ -110,7 +112,7 @@ export const readJsonSchema = (
 const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (typeof schema === "boolean")
 		return schema ? $ark.kw.unknown : $ark.kw.never
-	if (!isPlainObject(schema))
+	if (!isJsonSchemaObject(schema))
 		return throwParseError(writeInvalidJsonSchemaMessage(pointer, schema))
 	const o = schema as dict
 	for (const k in o) checkKeyword(o, k, pointer, ctx)
@@ -243,7 +245,7 @@ const documentUri = "arksets:/document"
 
 // the $id that starts a new resource. One that's only a fragment is an anchor.
 const idOf = (schema: unknown, ctx: ReadContext): string | undefined => {
-	if (!isPlainObject(schema)) return
+	if (!isJsonSchemaObject(schema)) return
 	const o = schema as dict
 	if (o.$ref !== undefined && ctx.dialectBefore2019) return
 	const id = o[ctx.idKey]
@@ -271,7 +273,7 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 	}
 	const visited = new Set<unknown>()
 	const visit = (schema: unknown, enclosing: Resource): void => {
-		if (!isPlainObject(schema) || visited.has(schema)) return
+		if (!isJsonSchemaObject(schema) || visited.has(schema)) return
 		visited.add(schema)
 		const o = schema as dict
 		const id = schema === ctx.document ? undefined : idOf(o, ctx)
@@ -293,14 +295,14 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 				for (const v of isArray(o[k]) ? o[k] : [o[k]]) visit(v, resource)
 			else if (
 				(kind === "schemasByKey" || kind === "dependencies") &&
-				isPlainObject(o[k])
+				isJsonSchemaObject(o[k])
 			)
 				for (const v of Object.values(o[k])) visit(v, resource)
 		}
 		// an OpenAPI document's schemas
-		if (schema === ctx.document && isPlainObject(o.components)) {
+		if (schema === ctx.document && isJsonSchemaObject(o.components)) {
 			const { schemas } = o.components as dict
-			if (isPlainObject(schemas))
+			if (isJsonSchemaObject(schemas))
 				for (const v of Object.values(schemas)) visit(v, resource)
 		}
 	}
@@ -728,7 +730,7 @@ const basisOf = {
 const notArray = /* @__PURE__ */ cached(() => {
 	// installs the rule only once a node can carry it
 	$ark.sets!.disjointOf = disjointFromArray
-	return node("predicate", {
+	return jsonSchemaNode("predicate", {
 		predicate: isNonArray,
 		meta: { description: "not an array" }
 	})
@@ -784,7 +786,7 @@ const constRoot = (value: unknown): BaseRoot =>
 				{ proto: Array, exactLength: 0 }
 			:	{ proto: Array, sequence: { prefix: value.map(constRoot) } }
 		)
-	: isPlainObject(value) ?
+	: isJsonSchemaObject(value) ?
 		jsonSchemaRoot({
 			domain: "object",
 			predicate: [notArray()],
@@ -841,7 +843,7 @@ const readEach = (schemas: array, pointer: string, ctx: ReadContext) =>
 	schemas.map((schema, i) => read(schema, `${pointer}/${i}`, ctx))
 
 const unionOf = (roots: readonly BaseRoot[]): BaseRoot =>
-	node("union", { branches: roots.flatMap(root => root.branches) })
+	jsonSchemaNode("union", { branches: roots.flatMap(root => root.branches) })
 
 const branchesAreDisjoint = (branches: BaseRoot[]) =>
 	branches.every((l, i) =>
@@ -917,7 +919,7 @@ const jsonEquals = (l: unknown, r: unknown): boolean => {
 	)
 }
 
-export const isPlainObject = (value: unknown): value is object => {
+export const isJsonSchemaObject = (value: unknown): value is object => {
 	if (typeof value !== "object" || value === null) return false
 	const proto = Object.getPrototypeOf(value)
 	return proto === Object.prototype || proto === null
@@ -929,13 +931,13 @@ const escapePointer = (key: string) =>
 const escapeRegex = (source: string) =>
 	source.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")
 
-const isSchema = (v: unknown) => typeof v === "boolean" || isPlainObject(v)
+const isSchema = (v: unknown) => typeof v === "boolean" || isJsonSchemaObject(v)
 
 const isEvery = (v: unknown, allows: (element: unknown) => boolean) =>
 	isArray(v) && v.every(allows)
 
 const isEveryValue = (v: unknown, allows: (value: unknown) => boolean) =>
-	isPlainObject(v) && Object.values(v).every(allows)
+	isJsonSchemaObject(v) && Object.values(v).every(allows)
 
 const isString = (v: unknown) => typeof v === "string"
 
@@ -1064,7 +1066,7 @@ const checkKeyword = (
 }
 
 export const writeUnparsableSchemaMessage = (actual: string): string =>
-	`Schema must be a Root, a Standard JSON Schema or a JSON Schema (was ${actual})`
+	`Schema must be a Type, a Standard JSON Schema or a JSON Schema (was ${actual})`
 
 export const writeUnreadableStandardSchemaMessage = (
 	vendor: string,

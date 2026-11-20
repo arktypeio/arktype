@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
 contextualize(() => {
 	it("lists properties in output as the schema does", () => {
-		const T = jsonSchemaToType({
+		const T = fromJsonSchema({
 			type: "object",
 			properties: { b: { type: "string" }, a: { type: "string" } },
 			required: ["a"]
@@ -13,14 +13,14 @@ contextualize(() => {
 
 	it("properties & required", () => {
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "object",
 				properties: { foo: { type: "string" }, bar: { type: "number" } },
 				required: ["foo"]
 			}).expression
 		).snap("{ foo: string, bar?: number } & isNonArray")
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				// @ts-expect-error
@@ -28,7 +28,7 @@ contextualize(() => {
 			}).expression
 		).snap("{ bar: unknown, foo?: string } & isNonArray")
 		attest(() =>
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["foo", "foo"]
@@ -39,7 +39,7 @@ contextualize(() => {
 	})
 
 	it("patternProperties", () => {
-		const T = jsonSchemaToType({
+		const T = fromJsonSchema({
 			type: "object",
 			patternProperties: { "^[a-z]+$": { type: "string" } }
 		})
@@ -49,14 +49,14 @@ contextualize(() => {
 	})
 
 	it("minProperties of 1 message", () => {
-		const T = jsonSchemaToType({ type: "object", minProperties: 1 })
+		const T = fromJsonSchema({ type: "object", minProperties: 1 })
 		attest(() => T.assert({})).throws.snap(
 			"TraversalError: must be an object with at least 1 property"
 		)
 	})
 
 	it("required key declared by another branch", () => {
-		const T = jsonSchemaToType({
+		const T = fromJsonSchema({
 			type: "object",
 			allOf: [
 				{ properties: { foo: { type: "string" } } },
@@ -68,7 +68,7 @@ contextualize(() => {
 	})
 
 	it("a key Object.prototype has is a property only if it's own", () => {
-		const Optional = jsonSchemaToType({
+		const Optional = fromJsonSchema({
 			type: "object",
 			properties: { toString: { type: "string" } }
 		})
@@ -77,7 +77,7 @@ contextualize(() => {
 		attest(Optional.allows({ toString: "a" })).equals(true)
 		attest(Optional.allows({ toString: 1 })).equals(false)
 
-		const Required = jsonSchemaToType({
+		const Required = fromJsonSchema({
 			type: "object",
 			properties: { constructor: {} },
 			required: ["constructor"]
@@ -89,7 +89,7 @@ contextualize(() => {
 		)
 
 		// declared, so additionalProperties doesn't apply to it
-		const Closed = jsonSchemaToType(
+		const Closed = fromJsonSchema(
 			JSON.parse(
 				'{ "properties": { "__proto__": { "type": "number" } }, "additionalProperties": false }'
 			)
@@ -100,7 +100,7 @@ contextualize(() => {
 	})
 
 	it("required keys of untyped branches", () => {
-		const T = jsonSchemaToType({
+		const T = fromJsonSchema({
 			type: "object",
 			anyOf: [{ required: ["foo"] }, { required: ["bar"] }]
 		})

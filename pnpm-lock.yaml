@@ -26,12 +26,12 @@ importers:
       '@ark/attest':
         specifier: link:ark/attest
         version: link:ark/attest
+      '@ark/fast-check':
+        specifier: workspace:*
+        version: link:ark/fast-check
       '@ark/fs':
         specifier: workspace:*
         version: link:ark/fs
-      '@ark/json-schema':
-        specifier: workspace:*
-        version: link:ark/json-schema
       '@ark/repo':
         specifier: workspace:*
         version: link:ark/repo
@@ -277,9 +277,6 @@ importers:
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs
-      '@ark/json-schema':
-        specifier: workspace:*
-        version: link:../json-schema
       '@ark/repo':
         specifier: workspace:*
         version: link:../repo
@@ -534,18 +531,6 @@ importers:
 
   ark/fs: {}
 
-  ark/json-schema:
-    devDependencies:
-      '@ark/fast-check':
-        specifier: workspace:*
-        version: link:../fast-check
-      arktype:
-        specifier: workspace:*
-        version: link:../type
-      fast-check:
-        specifier: 4.10.2
-        version: 4.10.2
-
   ark/regex:
     devDependencies:
       '@ark/util':
@@ -563,9 +548,6 @@ importers:
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs
-      '@ark/json-schema':
-        specifier: workspace:*
-        version: link:../json-schema
       '@ark/schema':
         specifier: workspace:*
         version: link:../schema
@@ -700,6 +682,9 @@ importers:
       arksets:
         specifier: workspace:*
         version: link:../sets
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   ark/util: {}
 

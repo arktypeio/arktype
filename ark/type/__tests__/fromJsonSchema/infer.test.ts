@@ -1,13 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
-import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { Json } from "arktype/util"
-import type { JsonSchema } from "arktype"
-import { inferred } from "./utils.ts"
+import type { Json } from "@ark/util"
+import { fromJsonSchema, type JsonSchema } from "arktype"
+import { inferred, type jsonSchema } from "./utils.ts"
 
 contextualize(() => {
 	describe("type", () => {
 		it("integer", () => {
-			const T = jsonSchemaToType({ type: "integer" })
+			const T = fromJsonSchema({ type: "integer" })
 			attest(T.infer).type.toString.snap("number")
 		})
 
@@ -157,7 +156,7 @@ contextualize(() => {
 	describe("const and enum", () => {
 		it("const and enum", () => {
 			attest(
-				jsonSchemaToType({ const: { a: 1, b: "x" } }).infer
+				fromJsonSchema({ const: { a: 1, b: "x" } }).infer
 			).type.toString.snap('{ readonly a: 1; readonly b: "x" }')
 			const T = inferred({ enum: [{ a: 1 }, [1, 2], "x"] })
 			attest(T).type.toString.snap('"x" | { readonly a: 1 } | readonly [1, 2]')
@@ -179,7 +178,7 @@ contextualize(() => {
 
 		it("a type filters primitive values", () => {
 			attest(
-				jsonSchemaToType({ type: "string", enum: ["a", 1, "b", null] }).infer
+				fromJsonSchema({ type: "string", enum: ["a", 1, "b", null] }).infer
 			).type.toString.snap('"a" | "b"')
 			attest(inferred({ type: "string", const: 1 })).type.toString.snap("never")
 		})
@@ -333,7 +332,7 @@ contextualize(() => {
 
 		it("const from enum", () => {
 			attest(
-				jsonSchemaToType({ enum: [1, 2, 3], not: { const: 2 } }).infer
+				fromJsonSchema({ enum: [1, 2, 3], not: { const: 2 } }).infer
 			).type.toString.snap("1 | 3")
 		})
 
@@ -498,48 +497,13 @@ contextualize(() => {
 		})
 	})
 
-	describe("jsonSchema values", () => {
-		it("a spread reads the value's keywords", () => {
-			const str = jsonSchema({ type: "string" })
-			attest(jsonSchema({ ...str, type: "number" }).infer).type.toString.snap(
-				"number"
-			)
-			const asserted = jsonSchema.as<string>({ type: "string" })
-			attest(
-				jsonSchema({ ...asserted, type: "number" }).infer
-			).type.toString.snap("number")
-			const { type: _, ...rest } = jsonSchema({ type: "string", minLength: 1 })
-			attest(jsonSchema(rest).infer).type.toString.snap("unknown")
-		})
-
-		it("an asserted value as a subschema", () => {
-			const a = jsonSchema.as<{ a: 1 }>({ type: "object" })
-			const S = jsonSchema({ anyOf: [a, jsonSchema({ type: "string" })] })
-			attest(S.infer).type.toString.snap("string | { a: 1 }")
-		})
-
-		it("a value with its own infer keyword", () => {
-			const s = jsonSchema({
-				type: "object",
-				properties: { a: { type: "string" } },
-				required: ["a"],
-				infer: 5
-			})
-			attest<{ a: string }>({} as jsonSchema.infer<typeof s>)
-			// the keyword is left out of the branded type, so it doesn't intersect into the getter
-			attest(s.infer).type.toString.snap("{ a: string }")
-		})
-
-		it("a value with an $id keeps its refs", () => {
-			const leafy = jsonSchema({
-				$id: "https://example.com/leafy",
-				$defs: { leaf: { type: "string" } },
-				type: "object",
-				properties: { l: { $ref: "#/$defs/leaf" } }
-			})
-			const doc = jsonSchema({ type: "array", items: leafy })
-			attest<{ l?: string }[]>(doc.infer)
-		})
+	it("a schema declared as const", () => {
+		const Leafy = {
+			$defs: { leaf: { type: "string" } },
+			type: "object",
+			properties: { l: { $ref: "#/$defs/leaf" } }
+		} as const
+		attest(fromJsonSchema(Leafy).infer).type.toString.snap("{ l?: string }")
 	})
 
 	describe("real-world", () => {

@@ -178,15 +178,7 @@ if ("$ark2" in globalThis)
 
 // every published declaration as the strictest consumer checks it, under TS 6
 // and 7. Errors in third-party declarations are theirs
-const declaringPackages = [
-	"aot",
-	"attest",
-	"fast-check",
-	"fs",
-	"json-schema",
-	"regex",
-	"type"
-]
+const declaringPackages = ["aot", "attest", "fast-check", "fs", "regex", "type"]
 
 const consumer = fileURLToPath(new URL("temp/consumer/", import.meta.url))
 mkdirSync(consumer, { recursive: true })

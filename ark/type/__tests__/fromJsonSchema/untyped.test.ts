@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
 contextualize(() => {
 	it("keywords constrain only their own type", () => {
-		const t = jsonSchemaToType({
+		const t = fromJsonSchema({
 			properties: { a: { type: "string" } },
 			required: ["a"],
 			minLength: 2
@@ -17,7 +17,7 @@ contextualize(() => {
 	})
 
 	it("type list keeps keywords", () => {
-		const t = jsonSchemaToType({
+		const t = fromJsonSchema({
 			type: ["object", "null"],
 			properties: { a: { type: "string" } },
 			required: ["a"]
@@ -26,7 +26,7 @@ contextualize(() => {
 	})
 
 	it("arrays are disjoint from an object branch", () => {
-		const t = jsonSchemaToType({
+		const t = fromJsonSchema({
 			type: ["object", "array"],
 			allOf: [{ type: "array" }]
 		})
@@ -34,7 +34,7 @@ contextualize(() => {
 	})
 
 	it("const outside enum", () => {
-		const t = jsonSchemaToType({ const: "c", enum: ["a", "b"] })
+		const t = fromJsonSchema({ const: "c", enum: ["a", "b"] })
 		attest(t.expression).snap("never")
 	})
 })

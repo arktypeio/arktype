@@ -62,7 +62,6 @@ export const suites: SuiteSpec[] = [
 			"ark/schema/",
 			"ark/sets/",
 			"ark/regex/",
-			"ark/json-schema/",
 			"ark/fast-check/",
 			"ark/util/"
 		])
@@ -76,7 +75,6 @@ export const suites: SuiteSpec[] = [
 			"ark/schema/",
 			"ark/sets/",
 			"ark/regex/",
-			"ark/json-schema/",
 			"ark/attest/",
 			"ark/util/",
 			"ark/repo/tsCompat/",

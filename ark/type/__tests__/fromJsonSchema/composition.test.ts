@@ -1,10 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
 contextualize(() => {
 	it("allOf and anyOf reduce", () => {
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				allOf: [
 					{ type: "string", minLength: 1 },
 					{ type: "string", maxLength: 10 }
@@ -12,7 +12,7 @@ contextualize(() => {
 			}).expression
 		).snap("1 <= string <= 10")
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				anyOf: [
 					{ type: "string", minLength: 1 },
 					{ type: "string", maxLength: 10 }
@@ -22,7 +22,7 @@ contextualize(() => {
 	})
 
 	it("not", () => {
-		const T = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
+		const T = fromJsonSchema({ not: { type: "string", maxLength: 3 } })
 		attest(T.allows("1234")).equals(true)
 		attest(() => T.assert("123")).throws.snap(
 			"TraversalError: must be other than a string and at most length 3"
@@ -30,7 +30,7 @@ contextualize(() => {
 	})
 
 	it("oneOf of disjoint branches", () => {
-		const T = jsonSchemaToType({
+		const T = fromJsonSchema({
 			oneOf: [{ type: "string", minLength: 10 }, { const: "foo" }]
 		})
 		attest(T.expression).snap('string >= 10 | "foo"')
@@ -40,7 +40,7 @@ contextualize(() => {
 	})
 
 	it("then and else without if", () => {
-		const T = jsonSchemaToType({ type: "string", then: false, else: false })
+		const T = fromJsonSchema({ type: "string", then: false, else: false })
 		attest<string>(T.infer)
 		attest(T.expression).snap("string")
 	})

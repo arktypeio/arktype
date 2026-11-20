@@ -1,7 +1,6 @@
 import type * as Monaco from "monaco-editor"
 import { regexDts } from "../dts/regex.ts"
 import { schemaDts } from "../dts/schema.ts"
-import { setsDts } from "../dts/sets.ts"
 import { typeDts } from "../dts/type.ts"
 import { utilDts } from "../dts/util.ts"
 
@@ -21,7 +20,6 @@ const configureTypeScript = (monaco: typeof Monaco): void => {
 
 	monaco.typescript.typescriptDefaults.addExtraLib(utilDts)
 	monaco.typescript.typescriptDefaults.addExtraLib(schemaDts)
-	monaco.typescript.typescriptDefaults.addExtraLib(setsDts)
 	monaco.typescript.typescriptDefaults.addExtraLib(typeDts)
 	monaco.typescript.typescriptDefaults.addExtraLib(regexDts)
 }

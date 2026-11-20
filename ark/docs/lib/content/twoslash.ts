@@ -34,9 +34,7 @@ const snippetPackages = [
 	"util",
 	"regex",
 	"attest",
-	"json-schema",
 	"fast-check",
-	"sets",
 	"fs",
 	"aot"
 ]

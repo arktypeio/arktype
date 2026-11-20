@@ -68,7 +68,7 @@
 		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
 		"benchMatch": "ts ./ark/type/__tests__/match.bench.ts",
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
-		"benchJsonSchema": "ts ./ark/json-schema/__tests__/infer.bench.ts",
+		"benchJsonSchema": "ts ./ark/type/__tests__/fromJsonSchema.bench.ts",
 		"benchRuntime": "ts ./ark/type/__tests__/runtime.bench.ts --benchErrorOnThresholdExceeded types && ts ./ark/repo/bench/validate.bench.ts --benchErrorOnThresholdExceeded types && ts ./ark/repo/bench/create.bench.ts --benchErrorOnThresholdExceeded types",
 		"benchRuntimeUp": "ATTEST_updateSnapshots=1 pnpm benchRuntime",
 		"benchImport": "node ./ark/repo/bench/import.ts",
@@ -97,8 +97,8 @@
 	},
 	"devDependencies": {
 		"@ark/attest": "link:ark/attest",
+		"@ark/fast-check": "workspace:*",
 		"@ark/fs": "workspace:*",
-		"@ark/json-schema": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@eslint/js": "9.37.0",

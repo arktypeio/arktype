@@ -1,16 +1,16 @@
 import { attest, contextualize } from "@ark/attest"
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
 contextualize(() => {
 	it("items array", () => {
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "array",
 				items: [{ type: "string" }, { type: "number" }]
 			}).expression
 		).snap("[string?, number?, ...unknown[]]")
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "array",
 				items: [{ type: "string" }],
 				additionalItems: false
@@ -20,7 +20,7 @@ contextualize(() => {
 
 	it("prefixItems", () => {
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "array",
 				prefixItems: [{ type: "string" }, { type: "number" }],
 				items: { type: "boolean" }
@@ -30,14 +30,14 @@ contextualize(() => {
 
 	it("additionalItems applies only beside an items array", () => {
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "array",
 				additionalItems: { type: "string" },
 				items: { type: "number" }
 			}).expression
 		).snap("number[]")
 		attest(
-			jsonSchemaToType({
+			fromJsonSchema({
 				type: "array",
 				additionalItems: { type: "boolean" },
 				prefixItems: [{ type: "string" }]
@@ -47,7 +47,7 @@ contextualize(() => {
 
 	it("maxContains message", () => {
 		// JsonSchema.Array doesn't declare maxContains, though it's read
-		const T = jsonSchemaToType({
+		const T = fromJsonSchema({
 			type: "array",
 			contains: { type: "number" },
 			maxContains: 1
@@ -58,7 +58,7 @@ contextualize(() => {
 	})
 
 	it("uniqueItems", () => {
-		const T = jsonSchemaToType({ type: "array", uniqueItems: true })
+		const T = fromJsonSchema({ type: "array", uniqueItems: true })
 		// arrays are only equal in the same order
 		attest(
 			T.allows([

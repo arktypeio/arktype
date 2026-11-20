@@ -1,7 +1,6 @@
 import { attest, contextualize, getChecker } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
-import { jsonSchemaToType } from "@ark/json-schema"
-import { scope, type, type JsonSchema } from "arktype"
+import { fromJsonSchema, scope, type, type JsonSchema } from "arktype"
 import { anything, sample } from "fast-check"
 import { inferred } from "./utils.ts"
 
@@ -21,7 +20,7 @@ const normalizeIds = (schema: unknown): unknown => {
 }
 
 /** asserts at runtime that the pasted schema literal is still what arktype
- * emits, and that jsonSchemaToType reads it back as the same expression, but
+ * emits, and that fromJsonSchema reads it back as the same expression, but
  * for the arrays an object schema excludes that an object definition doesn't */
 const assertEmits = (
 	t: type.Any,
@@ -33,7 +32,7 @@ const assertEmits = (
 	attest(normalizeIds(emitted)).equals(normalizeIds(schema))
 	attest(
 		normalizeSynthetics(
-			jsonSchemaToType(schema as never).expression.replace(/ & isNonArray/g, "")
+			fromJsonSchema(schema as never).expression.replace(/ & isNonArray/g, "")
 		)
 	).equals(readExpression)
 }
@@ -509,7 +508,7 @@ contextualize(() => {
 		for (const target of ["draft-2020-12", "draft-07"] as const) {
 			it(target, () => {
 				for (const T of convertible) {
-					const read = jsonSchemaToType(T.toJsonSchema({ target }) as never)
+					const read = fromJsonSchema(T.toJsonSchema({ target }) as never)
 					// JSON Schema's object type excludes the arrays an arktype object
 					// allows, so only the plain members generated are checked
 					attest({

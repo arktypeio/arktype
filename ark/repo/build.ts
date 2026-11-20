@@ -37,7 +37,7 @@ const buildCurrentProject = () =>
 		`node ${fromHere("node_modules", "typescript", "lib", "tsc.js")} --project tsconfig.build.json`
 	)
 
-const dtsScopes: PackageScope[] = ["util", "schema", "sets", "regex", "type"]
+const dtsScopes: PackageScope[] = ["util", "schema", "regex", "type"]
 
 const copyDtsTree = (
 	fromDir: string,

@@ -1,9 +1,16 @@
 // a library built on arktype, exporting each shape of Type whose declaration
 // tsc writes out. testBuild.ts emits its declarations against the build.
-import { define, fn, generic, match, scope, type } from "arktype"
+import {
+	define,
+	fn,
+	fromJsonSchema,
+	generic,
+	match,
+	scope,
+	type
+} from "arktype"
 import { codec } from "arktype/codecs"
 import { regex } from "arktype/regex"
-import { intersect, parse } from "arktype/sets"
 
 export const User = type({ name: "string", age: "number" })
 export const Name = type("string")
@@ -78,5 +85,10 @@ export const join = fn(
 )((s, ...n) => s + n.join())
 
 export const pattern = regex("^a(b)?$")
-export const intersection = intersect(User, Name)
-export const fromJsonSchema = parse({ type: "string" })
+export const FromJsonSchema = fromJsonSchema({
+	type: "object",
+	properties: { name: { type: "string" } },
+	required: ["name"]
+})
+export const FromStandardSchema = fromJsonSchema(User)
+export const intersection = FromJsonSchema.and(User)

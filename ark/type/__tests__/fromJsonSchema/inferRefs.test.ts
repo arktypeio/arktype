@@ -1,6 +1,5 @@
 import { attest, contextualize, getChecker } from "@ark/attest"
-import type { jsonSchema } from "@ark/json-schema"
-import { inferred } from "./utils.ts"
+import { inferred, type jsonSchema } from "./utils.ts"
 
 contextualize(() => {
 	describe("resolution", () => {

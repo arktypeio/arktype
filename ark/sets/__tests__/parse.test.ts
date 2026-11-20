@@ -222,7 +222,7 @@ contextualize(() => {
 
 	it("throws a ParseError on a primitive", () => {
 		attest(() => parse(5 as never)).throws.snap(
-			"ParseError: Schema must be a Root, a Standard JSON Schema or a JSON Schema (was 5)"
+			"ParseError: Schema must be a Type, a Standard JSON Schema or a JSON Schema (was 5)"
 		)
 		attest(() => parse(Symbol("foo") as never)).throws(
 			writeUnparsableSchemaMessage("Symbol(foo)")

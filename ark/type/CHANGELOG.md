@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Read a JSON Schema or a Zod schema with `fromJsonSchema`
+
+`fromJsonSchema` reads a JSON Schema, or a Standard JSON Schema like a Zod schema or a Type, into a Type bound to arktype's own scope. A JSON Schema written in the call is checked and its type inferred, as `jsonSchemaToType` from `@ark/json-schema` did; a Standard Schema infers its input:
+
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+
+const V1 = fromJsonSchema(z.object({ id: z.string(), age: z.number() }))
+const V2 = fromJsonSchema({
+	type: "object",
+	properties: { id: { type: "string" }, age: { type: "number" } },
+	required: ["id"]
+})
+
+// V2 accepts everything V1 did
+V1.extends(V2) // true
+```
+
+Every Type method works on the result, so `.extends()`, `.equals()`, `.overlaps()`, `.and()`, `.or()` and `.toJsonSchema()` compare, combine and convert schemas in any of those formats. It replaces `@ark/json-schema`, which is no longer published, and the `arktype/sets` subpath, which is removed: `isSubset(l, r)` is `fromJsonSchema(l).extends(fromJsonSchema(r))`. `jsonSchema()`, `jsonSchema.as`, `StringSchema` and `JsonSchemaScope` are gone: declare a schema `as const`, annotate a widened one's result, and type one with `JsonSchema`.
+
 ### Pass a constraint its message
 
 Each constraint method, like `.atLeastLength()`, `.atMost()`, `.matching()`, `.divisibleBy()` or `.laterThan()`, takes a message as its last argument, a sentence or a function of the error, which that constraint alone says, as Zod's `.min(1, "...")` does:
