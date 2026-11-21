@@ -76,76 +76,138 @@
 	flex: none;
 	height: 44px;
 	overflow: hidden;
-	background: var(--sunk);
-	border-bottom: 1px solid var(--rule-soft);
-	font: 650 15.5px / 1 var(--sans);
+	background:
+		linear-gradient(
+				90deg,
+				var(--rule-soft) 0%,
+				var(--rule) 28%,
+				color-mix(in oklab, var(--gold) 55%, transparent) 50%,
+				var(--rule) 72%,
+				var(--rule-soft) 100%
+			)
+			bottom / 100% 1px no-repeat,
+		radial-gradient(
+			460px 90px at 50% 100%,
+			color-mix(in oklab, var(--gold) 12%, transparent),
+			transparent 72%
+		),
+		var(--sunk);
+	font: 500 14px / 1 var(--sans);
 }
 
 :root[data-banner="closed"] .banner {
 	display: none;
 }
 
-/* two bands of light drifting past each other */
+/* pointer-tracking hover spotlight (ambient glow + bottom hairline highlight);
+   quiet at rest, fades in over the centered horizon glow on hover */
 .banner::before,
 .banner::after {
 	content: "";
 	position: absolute;
-	inset: 0 0 0 -25%;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity var(--t-ui) ease;
+}
+
+.banner::before {
+	inset: 0;
 	z-index: -1;
-	background: repeating-linear-gradient(
-			60deg,
-			transparent,
-			var(--banner-ray) 12%,
-			transparent 26%,
-			transparent 40%
-		)
-		0 0 / 200% 100%;
-	mask-image: radial-gradient(ellipse at top, #000, transparent 80%);
-	animation: banner-drift 16s linear infinite alternate-reverse;
+	background: radial-gradient(
+		260px 84px at var(--mx, 50%) 50%,
+		color-mix(in oklab, var(--gold) 18%, transparent),
+		var(--banner-spot) 55%,
+		transparent 80%
+	);
 }
 
 .banner::after {
-	background-image: repeating-linear-gradient(
-		45deg,
-		transparent,
-		var(--banner-ray) 12%,
-		transparent 26%,
-		transparent 40%
+	inset: auto 0 0;
+	height: 1px;
+	background: radial-gradient(
+		180px 2px at var(--mx, 50%) 50%,
+		var(--gold),
+		transparent 100%
 	);
-	animation-duration: 20s;
-	animation-direction: alternate;
 }
 
-@keyframes banner-drift {
-	to {
-		translate: 25% 0;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.banner::before,
-	.banner::after {
-		animation: none;
+@media (hover: hover) {
+	.banner:hover::before,
+	.banner:hover::after {
+		opacity: 1;
 	}
 }
 
 .banner a {
 	position: absolute;
 	inset: 0;
-	display: grid;
-	place-items: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
 	padding: 0 48px;
-	color: var(--gold);
+	color: var(--ink-2);
 	white-space: nowrap;
 	transition: color var(--t-micro);
 }
 
 .banner a:hover {
-	color: var(--gold-hi);
+	color: var(--ink);
 }
 
 .banner a:focus-visible {
 	outline-offset: -4px;
+}
+
+.banner-pill {
+	font: 650 11.5px / 1 var(--mono);
+	letter-spacing: 0.02em;
+	color: var(--gold);
+	padding: 4px 8px;
+	border-radius: var(--r-pill);
+	background: color-mix(in oklab, var(--gold) 11%, transparent);
+	border: 1px solid color-mix(in oklab, var(--gold) 32%, transparent);
+	box-shadow: 0 0 12px -4px color-mix(in oklab, var(--gold) 45%, transparent);
+}
+
+.banner-text strong {
+	color: var(--ink);
+	font-weight: 650;
+}
+
+.banner-sep {
+	color: var(--ink-3);
+	opacity: 0.5;
+}
+
+.banner-cta {
+	color: var(--gold);
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	transition: color var(--t-micro);
+}
+
+.banner a:hover .banner-cta {
+	color: var(--gold-hi);
+}
+
+.banner-arrow {
+	display: inline-block;
+	transition: translate var(--t-micro) var(--ease-out);
+}
+
+.banner a:hover .banner-arrow {
+	translate: 3px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.banner::before,
+	.banner::after,
+	.banner-arrow {
+		transition: none;
+	}
 }
 
 /* closing needs the script, which marks html[data-banner] */
@@ -183,7 +245,17 @@
 @media (max-width: 900px) {
 	.banner {
 		height: 40px;
-		font-size: 14.5px;
+		font-size: 13.5px;
+	}
+
+	.banner a {
+		gap: 8px;
+		padding: 0 40px;
+	}
+
+	.banner-sep,
+	.banner-cta-label {
+		display: none;
 	}
 
 	.banner button {
