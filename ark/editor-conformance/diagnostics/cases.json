@@ -129,10 +129,10 @@
 		"name": "badTupleOperator",
 		"origin": "tsc",
 		"source": "sources/arktype.ts:19 TS2322",
-		"input": "Type '\"|\"' is not assignable to type '\"Token '|' requires a right operand\"'.",
-		"output": "Type '\"|\"' is not assignable to type '\"Token '|' requires a right operand\"'.",
-		"rule": null,
-		"display": "Type '\"|\"' is not assignable to type '\"Token '|' requires a right operand\"'."
+		"input": "Type '\"|\"' is not assignable to type '\"Token '|' requires a right operand​\"'.",
+		"output": "Token '|' requires a right operand​",
+		"rule": 2,
+		"display": "Token '|' requires a right operand​"
 	},
 	{
 		"name": "unknownGeneric",

@@ -8,6 +8,8 @@ const Escapes = regex("a\\\\b\\\"c\\'d")
 const Single = regex('^(?<year>\\d{4})-(?<month>\\d{2})$')
 const Template = regex(`^[A-Z]{2}\d+$`, "iu")
 const Groups = regex("(foo|bar)+?[^0-9]*", flags)
+// a member call, followed by more cases so a call TextMate leaves open shows
+const Member = ark.regex("^x$")
 const Empty = regex("")
 const WordChars = regex("^[a-z_]+é$")
 const Unicode = regex("\\p{L}+", "u")
@@ -19,6 +21,3 @@ myregex("^a$")
 regexp("^a$")
 new RegExp("^a$")
 const literal = /^[a-z]+$/
-
-// last, since TextMate never closes the member call it starts
-const Member = ark.regex("^x$")
