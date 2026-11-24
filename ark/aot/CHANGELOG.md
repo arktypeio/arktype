@@ -1,6 +1,6 @@
 # @ark/aot
 
-## Unreleased
+## 3.0.0-rc.1
 
 A build stores what it scanned in `node_modules/.cache/ark` only once it ends, so one killed partway, as by Ctrl-C, leaves nothing the next build reads. A later build was served such a scan, then scanned the program again for the check the killed build never stored, and failed with "scanned this build's program unlike an earlier build did" wherever files changed in between, as a package install relinking `node_modules` changes them. A build whose files change while it builds now fails saying so, rather than asking for a report.
 
