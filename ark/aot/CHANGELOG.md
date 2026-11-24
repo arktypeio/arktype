@@ -1,5 +1,9 @@
 # @ark/aot
 
+## 3.0.0-rc.1
+
+A build stores what it scanned in `node_modules/.cache/ark` only once it ends, so one killed partway, as by Ctrl-C, leaves nothing the next build reads. A later build was served such a scan, then scanned the program again for the check the killed build never stored, and failed with "scanned this build's program unlike an earlier build did" wherever files changed in between, as a package install relinking `node_modules` changes them. A build whose files change while it builds now fails saying so, rather than asking for a report.
+
 ## 3.0.0-beta.1
 
 Initial release: constructs arktype definitions at build time, so arktype's parser never ships (#810). It runs as a bundler plugin, as Node, Bun and Turbopack drivers, as `arktype-precompile --check`, as `arktype-precompile --emit` over what `tsc` emits and as an ESLint rule, and `arktype-precompile --declare` emits declarations sharing one file of shapes. See the [README](./README.md).

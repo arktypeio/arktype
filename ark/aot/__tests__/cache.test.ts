@@ -9,7 +9,9 @@ import {
 	createAsyncPrecompiler,
 	type BundlerResolve
 } from "@ark/aot/internal/worker.ts"
+import type { ScannedProgram } from "@ark/aot/internal/scan.ts"
 import { precompile } from "@ark/aot/unplugin"
+import { spawnSync } from "node:child_process"
 import {
 	appendFileSync,
 	existsSync,
@@ -1055,6 +1057,115 @@ contextualize(function (this: Mocha.Suite) {
 			attest(code).satisfies(/User/)
 			rmSync(cacheRootOf(dir), { recursive: true })
 			attest(await built(dir, [rewriter])).equals(code)
+		})
+
+		it("stores no scan a build was killed before ending", async () => {
+			const dir = installed(program)
+			// killed once arktype's plugin transformed a module, so it has scanned
+			const { signal } = spawnSync(
+				process.execPath,
+				["--conditions", "ark-ts", "--input-type=module"],
+				{
+					cwd: fromHere(),
+					encoding: "utf8",
+					input: `import { build } from "vite"
+import { precompile } from "@ark/aot/unplugin"
+await build({
+	root: ${JSON.stringify(dir)},
+	configFile: false,
+	logLevel: "silent",
+	mode: "production",
+	plugins: [
+		precompile.vite({ cwd: ${JSON.stringify(dir)}, conditions: ["ark-ts"] }),
+		{ name: "kill", transform: (code, id) => { if (id.endsWith("admin.ts")) process.kill(process.pid, "SIGKILL") } }
+	],
+	resolve: { conditions: ["ark-ts", "module", "browser", "development|production"] },
+	build: { write: false, minify: false, lib: { entry: "main.ts", formats: ["es"] } }
+})
+`
+				}
+			)
+			attest(signal).equals("SIGKILL")
+			// what it scanned would be given, then scanned again once the build
+			// checks what a later plugin read, which no killed build stored
+			attest(forgeScan(dir)).equals(0)
+			const code = await built(dir)
+			attest(code).satisfies(/User/)
+			attest(forgeScan(dir)).equals(2)
+			attest(forgedIn(await built(dir))).equals(2)
+		})
+
+		it("fails a build whose files changed before it scanned again, then scans anew", async () => {
+			const dir = installed({
+				"main.ts":
+					'import { User } from "./user.ts"\n\nconsole.log(User.allows({ name: "x" }))\n',
+				"user.ts":
+					'import { type } from "arktype"\nimport { shape } from "./shape.ts"\n\nexport const User = type(shape)\n',
+				"shape.ts": 'export const shape = { name: "string" } as const\n'
+			})
+			// a program whose shape.ts the precompiler reads from its file
+			const programOf = (key: string): ScannedProgram => ({
+				key,
+				entries: [join(dir, "main.ts")],
+				modules: Object.fromEntries(
+					["main.ts", "user.ts"].map(file => [
+						join(dir, file),
+						{
+							source: readFileSync(join(dir, file), "utf8"),
+							transformed: true
+						}
+					])
+				),
+				targets: {},
+				arkImports: {},
+				dynamicImports: [],
+				exposed: []
+			})
+			const user = join(dir, "user.ts")
+			// what a build gives the bundler of user.ts once it scanned, then
+			// what its check that a later plugin read nothing left out answers
+			const builtWith = async (changeAfterScan?: () => void) => {
+				const send = createAsyncPrecompiler({
+					precompilerOptions: { cwd: dir, conditions }
+				})
+				try {
+					const scanned = programOf("1")
+					await send(["scan", scanned])
+					const given = await send([
+						"transform",
+						scanned.modules[user].source,
+						user,
+						undefined,
+						"1"
+					])
+					changeAfterScan?.()
+					await send(["unseen", scanned])
+					return given
+				} catch (e) {
+					return (e as Error).message
+				} finally {
+					await send(["close"])
+				}
+			}
+			const given = await builtWith()
+			// as a build cut short before its check stored its answer
+			for (const entry of entriesOf(dir)) {
+				const text = readFileSync(entry, "utf8")
+				if (JSON.parse(text.slice(text.indexOf("\n") + 1)).answer === null)
+					rmSync(entry)
+			}
+			// as a package install relinks what it read once the cache gave user.ts
+			attest(
+				await builtWith(() =>
+					writeFileSync(
+						join(dir, "shape.ts"),
+						'export const shape = { name: "number" } as const\n'
+					)
+				)
+			).satisfies(/changed while it built, as a package install relinking/)
+			attest(json(given)).satisfies(/string/)
+			// the cache no longer gives what the first build stored
+			attest(json(await builtWith())).satisfies(/number/)
 		})
 
 		it("fails a build whose given modules a new scan writes otherwise, then scans anew", async () => {

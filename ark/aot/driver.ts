@@ -27,6 +27,7 @@ import {
 } from "./cache.ts"
 import { renderDiagnostic, type Diagnostic } from "./diagnostics.ts"
 import {
+	writeChangedScanMessage,
 	writeUnansweredResolveMessage,
 	writeUnreproducedScanMessage
 } from "./messages.ts"
@@ -130,6 +131,8 @@ export type PrecompileRequest =
 	| [kind: "readDependencies", ids: string[]]
 	| [kind: "reset"]
 	| [kind: "refresh"]
+	// the build ended, as for esbuild's onEnd, which neither resets nor closes it
+	| [kind: "ended"]
 	| [kind: "close"]
 
 export interface InlineModule extends RenderedDiagnostics {
@@ -183,12 +186,22 @@ const answerRequests = (
 	let transformedById: Record<string, KeptModule> = {}
 	// each program the build scanned, by the key its transforms name
 	let scansByProgram: Record<string, Scan> = {}
+	// the scans this build stored, written once it ends. A scan the cache gives
+	// may need a new one to scan it again, for a check the build runs once it
+	// has given every module, and a build cut short, as by a kill, never stored
+	// that check's answer, so each build after it would scan again whatever
+	// changed since, as a package install does to node_modules
+	let unended: (() => void)[] = []
+	const end = () => {
+		for (const write of unended) write()
+		unended = []
+	}
 	// the precompiler holding a scan's usage: where the cache answered it, a new
 	// one scans it again for a module unlike those the cache holds, and must
 	// write what the cache gave the bundler
 	const scanned = (scan: Scan): TrackedPrecompiler => {
 		if (scan.tracked) return viewing(scan.tracked, scan)
-		const { usage, given } = scan.served!
+		const { usage, given, snapshot } = scan.served!
 		const written = scan.written!
 		scan.served = scan.written = undefined
 		const rescanned = track()
@@ -214,13 +227,30 @@ const answerRequests = (
 		if (!reproduces) {
 			// so the next build scans it anew
 			scan.cache!.delete(scan.key)
-			throwError(writeUnreproducedScanMessage())
+			// read again, as what it read when the cache gave the scan may have
+			// changed since
+			const holds = createSnapshotCheck(
+				scan.cache!,
+				createNodeHost(rescanned.opts),
+				resolveInBundler
+			)(snapshot, tracked?.given ?? {})
+			throwError(
+				holds ? writeUnreproducedScanMessage() : writeChangedScanMessage()
+			)
 		}
 		rescanned.viewKey = scan.viewKey
 		return (scan.tracked = rescanned)
 	}
 	const answer = (request: PrecompileRequest): unknown => {
-		if (request[0] === "close") return
+		// each ends the build before
+		if (
+			request[0] === "close" ||
+			request[0] === "ended" ||
+			request[0] === "reset" ||
+			request[0] === "refresh"
+		)
+			end()
+		if (request[0] === "close" || request[0] === "ended") return
 		if (request[0] === "refresh" && tracked && !hasChanged(tracked.readTimes))
 			return false
 		if (request[0] === "reset" || request[0] === "refresh") {
@@ -378,9 +408,12 @@ const answerRequests = (
 				served: undefined,
 				isStored: false
 			})
+			let snapshot = ""
 			const cached =
 				cache &&
-				(cachedAnswerOf(tracked, cache, scan.key) as StoredScan | undefined)
+				(cachedAnswerOf(tracked, cache, scan.key, read => (snapshot = read)) as
+					| StoredScan
+					| undefined)
 			if (
 				cached &&
 				Object.entries(cached.modules).every(([id, { packages }]) =>
@@ -388,7 +421,7 @@ const answerRequests = (
 				)
 			) {
 				scan.written = writtenIn(cached)
-				scan.served = { usage: cached.usage, given: [] }
+				scan.served = { usage: cached.usage, given: [], snapshot }
 				// as scanning it would, what this precompiler analyzes next
 				// reads the program
 				tracked.unread = program
@@ -405,11 +438,16 @@ const answerRequests = (
 			tracked.viewKey = scan.viewKey
 			if (cache && isFirst && tracked.storable) {
 				scan.written = modulesWrittenIn(precompiler, program)
-				scan.isStored =
+				// as it read now, though written once the build ends
+				const snapshot =
 					Object.values(scan.written).every(
 						({ answer }) => !answer || !hasDiagnostics(answer)
-					) &&
-					store(tracked, cache, scan.key, storedScanOf(usage, scan.written))
+					) && snapshotOf(tracked, cache)
+				if (snapshot) {
+					const stored = storedScanOf(usage, scan.written)
+					unended.push(() => cache.set(scan.key, stored, snapshot))
+					scan.isStored = true
+				}
 			}
 			return usage
 		}
@@ -433,8 +471,11 @@ const answerRequests = (
 				: after === undefined ? scanning.precompiler.unseenIn(program)
 				: (scanning.precompiler.unseenIn(program) ??
 					scanning.precompiler.unseenBuiltIn(program, after))
-			if (key && scan.isStored && unseen === undefined)
+			if (key && scan.isStored && unseen === undefined) {
+				// its check passed, so the scan is stored ahead of the answer naming it
+				end()
 				store(scanning, scan.cache!, key, null)
+			}
 			return unseen
 		}
 		if (request[0] === "program") {
@@ -790,15 +831,18 @@ const cacheOf = ({ precompiler }: TrackedPrecompiler) => {
 const cachedAnswerOf = (
 	tracked: TrackedPrecompiler,
 	cache: AnswerCache,
-	key: string
+	key: string,
+	// given the snapshot it names, which a scan reads again once it can't be reproduced
+	onSnapshot?: (snapshot: string) => void
 ): unknown =>
-	cache.get(key, snapshot =>
-		(tracked.holds ??= createSnapshotCheck(
+	cache.get(key, snapshot => {
+		onSnapshot?.(snapshot)
+		return (tracked.holds ??= createSnapshotCheck(
 			cache,
 			tracked.host,
 			tracked.resolveInBundler
 		))(snapshot, tracked.given)
-	)
+	})
 
 // an answer outlives the build where nothing but what it read and resolved
 // decided it
@@ -808,7 +852,18 @@ const store = (
 	key: string,
 	answer: unknown
 ): boolean => {
-	if (!tracked.storable) return false
+	const snapshot = snapshotOf(tracked, cache)
+	if (snapshot === undefined) return false
+	cache.set(key, answer, snapshot)
+	return true
+}
+
+// what an answer stored now names as what it read, if it can outlive the build
+const snapshotOf = (
+	tracked: TrackedPrecompiler,
+	cache: AnswerCache
+): string | undefined => {
+	if (!tracked.storable) return
 	const { unsnapshotted } = tracked
 	if (
 		tracked.snapshot === undefined ||
@@ -821,8 +876,7 @@ const store = (
 		tracked.snapshot = cache.addSnapshot(unsnapshotted)
 		tracked.unsnapshotted = emptySnapshot(tracked.snapshot)
 	}
-	cache.set(key, answer, tracked.snapshot)
-	return true
+	return tracked.snapshot
 }
 
 // a program a scan read, and what the cache answered for it
@@ -837,9 +891,10 @@ interface Scan {
 	// each module the scan wrote, as the cache holds them, which a transform
 	// given the same module reads
 	written: Record<string, ProgramModule> | undefined
-	// the usage the cache answered with, and each module it gave the bundler
-	served: { usage: ScannedUsage; given: string[] } | undefined
-	// whether the scan was stored, so what reads its usage may be
+	// the usage the cache answered with, each module it gave the bundler, and
+	// the snapshot of what the build storing it read
+	served: { usage: ScannedUsage; given: string[]; snapshot: string } | undefined
+	// whether the scan is stored as the build ends, so what reads its usage may be
 	isStored: boolean
 }
 

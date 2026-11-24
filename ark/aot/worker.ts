@@ -107,7 +107,8 @@ export const createSyncPrecompiler = (
 			!worker ||
 			Atomics.compareExchange(worker.state, 0, answered, waiting) === stopped
 		) {
-			if (request[0] === "close") {
+			// one that never started stored nothing
+			if (request[0] === "close" || request[0] === "ended") {
 				worker = undefined
 				return
 			}
@@ -185,7 +186,9 @@ export const createAsyncPrecompiler = (
 	let sent = 0
 	return (request, resolve) => {
 		if (!worker) {
-			if (request[0] === "close") return Promise.resolve()
+			// one that never started stored nothing
+			if (request[0] === "close" || request[0] === "ended")
+				return Promise.resolve()
 			sent = 0
 			const channel = resolvingChannelOf(pending)
 			const started = new Worker(driverUrl, {

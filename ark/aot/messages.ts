@@ -16,6 +16,9 @@ export const writeUnreadableConfigMessage = (path: string): string =>
 export const writeUnreproducedScanMessage = (): string =>
 	"@ark/aot scanned this build's program unlike an earlier build did, whose modules its cache already gave the bundler, so it can't write the rest to match them. The next build scans it anew. Report this at https://github.com/arktypeio/arktype/issues, as a program should be written alike each time."
 
+export const writeChangedScanMessage = (): string =>
+	"Files @ark/aot read for this build's program changed while it built, as a package install relinking node_modules changes them, so it can't write the rest to match the modules its cache already gave the bundler. Build again once nothing is changing them."
+
 export const writeChangedSettingsMessage = (path: string): string =>
 	`The precompile settings in ${path} changed while Next ran, and arktype keeps what it compiled under the earlier ones for the process. Restart \`next dev\` to build with the new settings.`
 
