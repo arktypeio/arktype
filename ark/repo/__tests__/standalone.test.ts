@@ -3740,6 +3740,9 @@ export default shared`).js
 		)
 		const runtimeModules = new Set([
 			"<stdin>",
+			// regex, which arktype/runtime re-exports, writing nothing unless read
+			"regex/index.ts",
+			"regex/regex.ts",
 			"schema/runtime.ts",
 			"schema/shared/configured.ts",
 			"schema/shared/enWriters.ts",
