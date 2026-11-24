@@ -1,14 +1,10 @@
 import Link from "next/link"
 import type { CSSProperties } from "react"
-import { claims, medianOf } from "../../lib/claims.ts"
+import { claims } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
-import { categoryOf, heroLine, heroStats, methodHref } from "./boardFacts.ts"
+import { heroLine, heroStats } from "./boardFacts.ts"
 import { CheckIcon, CopyIcon } from "./icons.tsx"
-import {
-	integrations,
-	migratePromptAot,
-	userPlaygroundHref
-} from "./prompts.ts"
+import { migratePromptAot } from "./prompts.ts"
 
 export { heroLine }
 
@@ -35,113 +31,80 @@ const QuestMark = () => (
 /**
  * The first screen: the claim (scoped to @ark/aot right in the eyebrow), the
  * three headline ratios against Zod 4 in Speed -> Size -> Startup order,
- * instant copy/playground CTAs, and the Standard Schema compatibility strip.
+ * and two focused CTAs: Get started or copy the one-prompt migration.
  */
-export const Hero = () => {
-	const [, zodCompiled] = categoryOf("speed").versus
-	return (
-		<section className="hero" aria-labelledby="hero-title" data-hero>
-			<div className="eyebrow rise" style={rise(0)}>
-				<b>arktype 3.0</b>
-				<a className="eyebrow-new" href="#precompile">
-					precompiled with @ark/aot
-				</a>
-			</div>
-			<h1 id="hero-title" className="rise-fade">
-				<ClaimText claim={claims.headline} />{" "}
-				<a className="one" href="#migrate">
-					{heroLine}
-				</a>
-			</h1>
-			<div className="hero-stats rise" style={rise(1)}>
-				{heroStats().map(stat => {
-					const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(stat.value)!
-					return (
-						<a
-							key={stat.href}
-							className="hero-stat"
-							href={stat.href}
-							// its number counts up through values that aren't the claim
-							aria-label={`${stat.value} ${stat.unit} than Zod 4: ${stat.scope}`}
+export const Hero = () => (
+	<section className="hero" aria-labelledby="hero-title" data-hero>
+		<div className="eyebrow rise" style={rise(0)}>
+			<b>arktype 3.0</b>
+			<a className="eyebrow-new" href="#precompile">
+				precompiled with @ark/aot
+			</a>
+		</div>
+		<h1 id="hero-title" className="rise-fade">
+			<ClaimText claim={claims.headline} />{" "}
+			<a className="one" href="#migrate">
+				{heroLine}
+			</a>
+		</h1>
+		<div className="hero-stats rise" style={rise(1)}>
+			{heroStats().map(stat => {
+				const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(stat.value)!
+				return (
+					<a
+						key={stat.href}
+						className="hero-stat"
+						href={stat.href}
+						// its number counts up through values that aren't the claim
+						aria-label={`${stat.value} ${stat.unit} than Zod 4: ${stat.scope}`}
+					>
+						<span
+							className="stat-num"
+							data-to={digits}
+							data-decimals={digits.split(".")[1]?.length ?? 0}
+							data-suffix={suffix}
 						>
-							<span
-								className="stat-num"
-								data-to={digits}
-								data-decimals={digits.split(".")[1]?.length ?? 0}
-								data-suffix={suffix}
-							>
-								{stat.value}
-							</span>
-							<span className="hero-stat-what">
-								<b>{stat.unit}</b> than Zod 4
-							</span>
-							<span className="hero-stat-scope">{stat.scope}</span>
-						</a>
-					)
-				})}
-			</div>
-			<p className="lede rise" style={rise(2)}>
-				<a className="quest" href="#migrate">
-					<QuestMark />
-					{heroLede}
-				</a>
-				<a className="quest-peek" href="#migrate">
-					see the prompt ↓
-				</a>
-			</p>
-			<div className="ctas rise" style={rise(3)}>
-				<Link className="btn btn-gold" href="/docs/intro/setup">
-					Get started{" "}
-					<span className="arrow" aria-hidden>
-						→
-					</span>
-				</Link>
-				<button
-					type="button"
-					className="btn btn-copy-prompt"
-					data-copy={migratePromptAot}
-					title={migratePromptAot}
-				>
-					<span className="swap">
-						<span className="idle">
-							Copy migration prompt
-							<span className="visually-hidden"> (with @ark/aot)</span>{" "}
-							<CopyIcon />
+							{stat.value}
 						</span>
-						<span className="done" aria-hidden>
-							copied · paste in agent <CheckIcon />
+						<span className="hero-stat-what">
+							<b>{stat.unit}</b> than Zod 4
 						</span>
+						<span className="hero-stat-scope">{stat.scope}</span>
+					</a>
+				)
+			})}
+		</div>
+		<p className="lede rise" style={rise(2)}>
+			<a className="quest" href="#migrate">
+				<QuestMark />
+				{heroLede}
+			</a>
+		</p>
+		<div className="ctas rise" style={rise(3)}>
+			<Link className="btn btn-gold" href="/docs/intro/setup">
+				Get started{" "}
+				<span className="arrow" aria-hidden>
+					→
+				</span>
+			</Link>
+			<button
+				type="button"
+				className="btn btn-copy-prompt"
+				data-copy={migratePromptAot}
+				title={migratePromptAot}
+			>
+				<span className="swap">
+					<span className="idle">
+						Copy migration prompt
+						<span className="visually-hidden"> (with @ark/aot)</span>{" "}
+						<CopyIcon />
 					</span>
-					<span className="visually-hidden" role="status" />
-				</button>
-				<Link className="btn btn-quiet" href={userPlaygroundHref}>
-					Try in Playground{" "}
-					<span className="arrow" aria-hidden>
-						→
+					<span className="done" aria-hidden>
+						copied · paste in agent <CheckIcon />
 					</span>
-				</Link>
-				<span className="hero-foot">
-					{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
-					<code>z.compile</code> at the median, too ·{" "}
-					<Link href={methodHref}>how we measured →</Link>
 				</span>
-			</div>
-			<div className="hero-trust rise" style={rise(4)}>
-				<span className="trust-lbl">
-					<Link href="/docs/standard-schema">Standard Schema</Link> · zero
-					runtime deps · MIT
-				</span>
-				<span className="trust-sep" aria-hidden>
-					/
-				</span>
-				<nav className="trust-pills" aria-label="Integrations">
-					{integrations.map(([name, href]) => (
-						<Link key={name} href={href}>
-							{name}
-						</Link>
-					))}
-				</nav>
-			</div>
-		</section>
-	)
-}
+				<span className="visually-hidden" role="status" />
+			</button>
+		</div>
+	</section>
+)

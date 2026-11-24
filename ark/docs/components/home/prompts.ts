@@ -14,16 +14,6 @@ export const migratePromptDynamic =
 
 export const skillCommand = "npx skills add arktypeio/arktype"
 
-export const integrations: [name: string, href: string][] = [
-	["tRPC", "/docs/integrations#trpc"],
-	["Hono", "/docs/integrations#hono"],
-	["React Hook Form", "/docs/integrations#react-hook-form"],
-	["oRPC", "/docs/integrations#orpc"],
-	["Drizzle", "/docs/integrations#drizzle"],
-	["MCP SDK", "/docs/integrations#mcp-sdk"],
-	["AI SDK", "/docs/integrations#ai-sdk"]
-]
-
 // playground/execute.ts evaluates the bindings `Thing` and `out`
 const heroPlaygroundCode = `import { type } from "arktype"
 
