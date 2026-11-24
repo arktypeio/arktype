@@ -44,6 +44,7 @@
 					"source.mdx",
 					"source.svelte",
 					"source.vue",
+					"text.html.vue",
 					"source.astro",
 					"text.html.markdown"
 				],
