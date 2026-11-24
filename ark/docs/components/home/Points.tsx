@@ -187,7 +187,7 @@ export const ProofTabs = () => {
 						<b>02</b>
 						{"// live benchmarks"}
 					</div>
-					<h2 id="proof-title">Watch the margin run.</h2>
+					<h2 id="proof-title">Mind the gap.</h2>
 				</div>
 				<div
 					className="stage-tabs proof-tabs"

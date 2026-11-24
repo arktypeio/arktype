@@ -174,11 +174,12 @@ const wireStats = () => {
 }
 
 /**
- * The speed figure's counters: validations finished since it came on
- * screen, ArkType's at the figure's rate and every other library's at that
- * over its median ratio. Off screen or paused, the clock stops with them.
+ * The speed figure's counters: validations finished since the page loaded,
+ * ArkType's at the figure's rate and every other library's at that over its
+ * median ratio. Frames stop while off screen; only the pause button stops the
+ * clock.
  */
-const runCount = (figure: HTMLElement) => {
+const runCount = (figure: HTMLElement, loadedAt: number) => {
 	const rate = Number(figure.dataset.rate)
 	const lanes = [...figure.querySelectorAll<HTMLElement>(".count-num")].map(
 		el => ({
@@ -192,31 +193,33 @@ const runCount = (figure: HTMLElement) => {
 	const rest = title?.textContent
 	if (title) title.textContent = title.dataset.live!
 	const toggle = figure.querySelector<HTMLButtonElement>(".count-toggle")
-	let elapsed = 0
-	let last = performance.now()
+	let pausedMs = 0
+	let pausedAt = 0
 	let frame = 0
 	let seen = false
 	let stopped = false
-	const tick = (now: number) => {
-		elapsed += (now - last) / 1000
-		last = now
+	const render = (now: number) => {
+		const elapsed = Math.max(0, now - loadedAt - pausedMs) / 1000
 		for (const lane of lanes) {
 			const count = Math.floor((elapsed * rate) / lane.ratio)
-			if (count === lane.shown) continue
+			if (count <= lane.shown) continue
 			lane.shown = count
 			lane.el.textContent = count.toLocaleString("en-US")
 		}
+	}
+	const tick = (now: number) => {
+		render(now)
 		frame = requestAnimationFrame(tick)
 	}
-	/** the counters run while they are on screen and nobody has stopped them */
+	/** the counters paint while on screen and unpaused; the clock only stops when paused */
 	const sync = () => {
 		cancelAnimationFrame(frame)
 		if (seen && !stopped) {
 			delete figure.dataset.paused
-			last = performance.now()
 			frame = requestAnimationFrame(tick)
 		} else figure.dataset.paused = ""
 	}
+	render(performance.now())
 	const observer = new IntersectionObserver(([entry]) => {
 		seen = entry.isIntersecting
 		sync()
@@ -224,6 +227,8 @@ const runCount = (figure: HTMLElement) => {
 	observer.observe(figure)
 	const onToggle = () => {
 		stopped = !stopped
+		if (stopped) pausedAt = performance.now()
+		else pausedMs += performance.now() - pausedAt
 		if (toggle) {
 			toggle.setAttribute("aria-pressed", String(stopped))
 			toggle.textContent = stopped ? "resume" : "pause"
@@ -350,6 +355,7 @@ const holdBytes = (figure: HTMLElement) => {
 const wireStages = () => {
 	// motion went unclaimed, so every figure is showing its final state
 	if (!("motion" in document.documentElement.dataset)) return
+	const loadedAt = performance.now()
 	const cleanups = [
 		...document.querySelectorAll<HTMLElement>("[data-stage]")
 	].flatMap(figure => {
@@ -358,7 +364,7 @@ const wireStages = () => {
 		let stop: (() => void) | undefined
 		const unobserve = playWhenSeen(figure, 0.4, () => {
 			release?.()
-			if (stage === "count") stop = runCount(figure)
+			if (stage === "count") stop = runCount(figure, loadedAt)
 			if (stage === "boot") stop = runBoot(figure)
 		})
 		return [unobserve, () => stop?.()]

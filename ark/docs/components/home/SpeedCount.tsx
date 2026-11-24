@@ -36,11 +36,11 @@ const lanes = (): CountLane[] => [
 ]
 
 /**
- * Validations finished since the figure came on screen, each library's
+ * Validations finished since the page loaded, each library's
  * counter running at its median speed relative to ArkType's. HomeEffects
- * runs the counters, stops them off screen and wires the button that pauses
- * them. Where nothing moves, the markup is the same comparison at rest: what
- * each library validates in the time ArkType validates a thousand.
+ * runs the counters, stops painting them off screen and wires the button that
+ * pauses them. Where nothing moves, the markup is the same comparison at rest:
+ * what each library validates in the time ArkType validates a thousand.
  */
 export const SpeedCount = () => {
 	const all = lanes()
@@ -61,7 +61,7 @@ export const SpeedCount = () => {
 			<div className="count-head">
 				<span
 					className="count-title"
-					data-live="validated since you scrolled here"
+					data-live="validated since the page loaded"
 				>
 					validated in the same time
 				</span>
