@@ -2519,6 +2519,44 @@ true {"name":"Ada","age":1}
 			).equals(run(written))
 		})
 
+		it("reads a validator's errors by path as arktype does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { byPath, flatByPath, flatMessagesByPath, type } from "arktype"
+import * as ark from "arktype"
+
+const Order = type({
+	email: "string.email & string > 10",
+	"first-name": "string",
+	items: type({ id: "number % 2" }).array()
+})
+
+const out = Order({ email: "x", "first-name": 1, items: [{ id: 3 }, { id: "y" }] })
+if (out instanceof type.errors) {
+	// the first issue of the two at email
+	console.log(Object.entries(byPath(out)).map(([k, e]) => \`\${k}: \${e.message}\`).join("|"))
+	console.log(Object.entries(flatByPath(out)).map(([k, es]) => \`\${k}: \${es.map(e => e.code)}\`).join("|"))
+	console.log(JSON.stringify(flatMessagesByPath(out)))
+	console.log(Object.entries(ark.byAncestorPath(out)).map(([k, es]) => \`\${k}: \${es.length}\`).join("|"))
+}
+`
+				},
+				tempPath("prunedReaders")
+			)
+			const written = await bundle(
+				{ preset: undefined },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(written))
+				.snap(`email: must be an email address|["first-name"]: must be a string|items[0].id: must be even|items[1].id: must be a number
+email: pattern,minLength|["first-name"]: domain|items[0].id: divisor|items[1].id: domain
+{"email":["must be an email address","must be at least length 11"],"[\\"first-name\\"]":["must be a string"],"items[0].id":["must be even"],"items[1].id":["must be a number"]}
+: 5|email: 2|["first-name"]: 1|items: 2|items[0]: 1|items[0].id: 1|items[1]: 1|items[1].id: 1
+`)
+			// the same as arktype reads its own errors
+			attest(run(written)).equals(runPlain(files))
+		})
+
 		it("serializes a ~standard failure and result.issues with JSON.stringify when ArkErrors#toJSON is pruned", async () => {
 			const files = writeFixture(
 				{
