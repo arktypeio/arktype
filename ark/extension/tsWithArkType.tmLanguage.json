@@ -147,12 +147,15 @@
 			]
 		},
 		"arkRegexFunction": {
-			"begin": "\\b(regex)(\\()",
+			"begin": "([^\\)\\(\\s]+)?(\\.)?\\b(regex)(\\()",
 			"beginCaptures": {
-				"1": {
+				"2": {
+					"name": "punctuation.accessor.ts"
+				},
+				"3": {
 					"name": "entity.name.function.ts"
 				},
-				"2": {
+				"4": {
 					"name": "meta.brace.round.ts"
 				}
 			},
