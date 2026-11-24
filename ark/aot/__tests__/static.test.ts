@@ -791,6 +791,20 @@ export const addOption = ([key, value]: [name: string, JSONSchema7?]) => [
 			).equals([])
 		})
 
+		it("reads off an element of a readonly array annotation", () => {
+			attest(
+				diagnosticsOf(`import { type ArkError, type Type, type } from "arktype"
+export function messagesOf(base: Type, data: unknown) {
+	const out = base(data)
+	if (!(out instanceof type.errors)) return []
+	const issues: readonly ArkError[] = out.issues
+	const messages: string[] = []
+	for (const issue of issues) messages.push(issue.message)
+	return [...messages, issues[0].path]
+}`)
+			).equals([])
+		})
+
 		it("reads off an annotated interface with a function member", () => {
 			attest(
 				diagnosticsOf(
