@@ -322,6 +322,8 @@ export interface Reference {
 	binding: Binding | undefined
 	// a function read as itself or a binding nothing else writes
 	isOneValue: boolean
+	// e.g. `address` in `{ address }`, whose key a rewrite must keep
+	isShorthand: boolean
 }
 
 export interface Input {

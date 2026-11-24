@@ -13,7 +13,7 @@ import type { Node, Span } from "oxc-parser"
 import type { SourceModule } from "./module.ts"
 import { writeParseErrorThrower } from "./output.ts"
 import { operatorOf, type Binding } from "./scope.ts"
-import { isFoldable, siteNameOf, type Site } from "./sites.ts"
+import { isFoldable, siteNameOf, type Reference, type Site } from "./sites.ts"
 import type { PassedRead, RuntimeModule } from "./usage.ts"
 type FactoryImport = [specifier: string, name: string, local: string]
 
@@ -27,9 +27,9 @@ export interface PlannedSites {
 
 export interface SiteFactory {
 	params: FactoryParam[]
-	spans: Span[]
+	spans: Reference[]
 	// e.g. the second `f` in `{ a: narrow(f), b: narrow(f) }`
-	repeats: [span: Span, spanIndex: number][]
+	repeats: [span: Reference, spanIndex: number][]
 	inputs: string[]
 	// inputs set before the site runs, so reading them can't throw
 	inert: string[]

@@ -288,6 +288,7 @@ import {
 	type Helper,
 	type Hole,
 	type Input,
+	type Reference,
 	type Site,
 	type SiteCandidate,
 	type SiteRead
@@ -4735,7 +4736,7 @@ export class Precompiler {
 				proved.push(i)
 		}
 		const parameterSpans = [
-			...spans.map((span, i): [Span, number] => [span, i]),
+			...spans.map((span, i): [Reference, number] => [span, i]),
 			...(factory?.repeats ?? []).filter(
 				([repeat]) => !spans.some(span => contains(span, repeat))
 			)
@@ -4743,7 +4744,8 @@ export class Precompiler {
 		let original = ""
 		let start = site.start
 		for (const [span, i] of parameterSpans) {
-			original += `${module.textOf({ start, end: span.start })}${prefix}h${i}`
+			// `{ address }` keeps its key as `{ address: $arkh0 }`
+			original += `${module.textOf({ start, end: span.start })}${span.isShorthand ? `${module.textOf(span)}: ` : ""}${prefix}h${i}`
 			start = span.end
 		}
 		original += module.textOf({ start, end: site.end })
@@ -6922,7 +6924,11 @@ export class Precompiler {
 								.modulesDeclaring(value, state.trace)
 								.some(declaring => declaring !== module)),
 					binding: module.scopes.byId.get(read)?.binding,
-					isOneValue: this.isOneValueRead(read, value, module)
+					isOneValue: this.isOneValueRead(read, value, module),
+					isShorthand:
+						node.parent?.type === "Property" &&
+						node.parent.shorthand &&
+						node.parent.value === node
 				})
 			}
 		}
