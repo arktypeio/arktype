@@ -624,8 +624,7 @@ export const createClient = (token: string) => connect({ url: env.API_URL, token
 			).snap([
 				"3:14 accepted { name: string }",
 				"4:15 accepted",
-				"5:13 accepted",
-				"23:29 accepted"
+				"5:13 accepted"
 			])
 		})
 
