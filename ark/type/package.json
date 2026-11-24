@@ -15,8 +15,8 @@
 		"json-schema",
 		"precompile"
 	],
-	"version": "3.0.0-rc.2",
-	"arkAotVersion": "3.0.0-rc.2",
+	"version": "3.0.0-rc.3",
+	"arkAotVersion": "3.0.0-rc.3",
 	"license": "MIT",
 	"homepage": "https://arktype.io",
 	"repository": {

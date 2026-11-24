@@ -2027,6 +2027,17 @@ export class ModuleGraph {
 				return this.intersectionKindOf(type, context, module, kindOfKey, depth)
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
+			// e.g. `readonly ArkError[]`, whose elements are as `ArkError[]`'s
+			case "TSTypeOperator":
+				return type.operator === "readonly" ?
+						this.typeKindOf(
+							type.typeAnnotation,
+							context,
+							module,
+							kindOfKey,
+							depth
+						)
+					:	kinds.data
 			// e.g. data for `(typeof names)[number]`, but not `Parameters<typeof f>[0]`
 			case "TSIndexedAccessType": {
 				const object = type.objectType
