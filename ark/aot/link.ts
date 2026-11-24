@@ -910,6 +910,8 @@ interface Unit {
 	edits: MagicString
 	added: string[]
 	importsByLocal: Map<string, string>
+	// each import of a unit a link wrote every read of into it, now removed
+	unread: Node[]
 }
 
 interface Read {
@@ -934,6 +936,8 @@ class Linker {
 	private ownerByBinding = new Map<Binding, Unit>()
 	private declaresCreated = new Set<Binding>()
 	private readAsCreated = new Set<Binding>()
+	// each read a link wrote the declaration it reads over
+	private inlined = new Set<Reference>()
 	unexposed = 0
 
 	constructor(
@@ -966,7 +970,8 @@ class Linker {
 			prefix,
 			edits: new MagicString(module.source),
 			added: [],
-			importsByLocal: new Map()
+			importsByLocal: new Map(),
+			unread: []
 		}
 		this.units.push(unit)
 		this.unitsByKey.set(key, unit)
@@ -985,7 +990,10 @@ class Linker {
 			const { edits, module } = unit
 			for (const match of module.source.matchAll(virtualSource)) {
 				const specifier = match[1]
-				if (specifier in renamed) {
+				const isRemoved = unit.unread.some(
+					({ start, end }) => start <= match.index && match.index < end
+				)
+				if (specifier in renamed && !isRemoved) {
 					edits.overwrite(
 						match.index,
 						match.index + match[0].length,
@@ -1070,7 +1078,41 @@ class Linker {
 			written.add(into)
 			linked = true
 		}
+		this.removeUnread()
 		return linked
+	}
+
+	// An import of a unit whose every read a link wrote over still names it, so
+	// what decides which units a module reads, by the names its imports list,
+	// would keep its declaration, and a bundler dropping that keeps a read of
+	// each import it held, as `ns.name;`. One stays where what the link wrote
+	// names it, as a declaration of the module copied within it does
+	private removeUnread(): void {
+		for (const unit of this.units) {
+			let text: string | undefined
+			for (const statement of unit.module.program.body) {
+				if (
+					statement.type !== "ImportDeclaration" ||
+					!statement.source.value.startsWith("~arktype/") ||
+					!statement.specifiers.length ||
+					unit.unread.includes(statement)
+				)
+					continue
+				const isUnread = statement.specifiers.every(({ local }) => {
+					const binding = unit.module.scopes.bindingsById.get(local)
+					if (!binding?.references.some(read => this.inlined.has(read)))
+						return false
+					text ??= unit.edits.toString()
+					// named once, by this import
+					return namesOf(text, binding.name) === 1
+				})
+				if (!isUnread) continue
+				// its line stays, as imports a link adds are written after the
+				// last import, before the line break ending it
+				unit.edits.remove(statement.start, statement.end)
+				unit.unread.push(statement)
+			}
+		}
 	}
 
 	// a validator read only as `.allows` is read as the checker it's created from
@@ -1426,6 +1468,7 @@ class Linker {
 			id.end,
 			`${annotation ? "/* @__PURE__ */ " : ""}${text.slice(init.start, init.end)}`
 		)
+		this.inlined.add(read.reference)
 		addImports(read.unit, imports)
 		for (const name of exports) {
 			const statement = `\nexport { ${name} }`
@@ -1601,6 +1644,12 @@ const createsValidator = (owner: Unit, binding: Binding): boolean => {
 		).startsWith("create")
 	)
 }
+
+// how many times code names an identifier, whatever it binds
+const namesOf = (code: string, name: string): number =>
+	code.match(
+		new RegExp(`(?<![\\w$])${name.replace(/\$/g, "\\$")}(?![\\w$])`, "g")
+	)?.length ?? 0
 
 const addImports = (unit: Unit, imports: Map<string, string>): void => {
 	for (const [local, statement] of imports) {
