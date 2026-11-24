@@ -33,7 +33,9 @@ export default tseslint.config(
 			"ark/aot/__tests__/temp/**/*",
 			"ark/repo/temp/**/*",
 			// schemabenchmarks.dev's files, linted by its clone
-			"ark/repo/bench/external/sb/precompiled/**/*"
+			"ark/repo/bench/external/sb/precompiled/**/*",
+			// the nvim-treesitter checkout ark/neovim's tests install
+			"ark/neovim/test/.deps/**/*"
 		]
 	},
 	eslint.configs.recommended,

@@ -1,0 +1,12 @@
+{
+	"name": "@ark/neovim",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"description": "ArkType's VS Code extension for Neovim: highlighting, inline errors and completions",
+	"scripts": {
+		"test": "node test/test.ts",
+		"syncQueries": "node scripts/syncQueries.ts",
+		"writeCasefold": "node scripts/writeCasefold.ts"
+	}
+}

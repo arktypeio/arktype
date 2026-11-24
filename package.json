@@ -36,6 +36,7 @@
 		"testV8": "node --allow-natives-syntax --conditions ark-ts ./ark/repo/testV8.ts",
 		"testBuild": "node ./ark/repo/testBuild.ts",
 		"testSkill": "node ./ark/repo/testSkill.ts",
+		"testNeovim": "pnpm --filter @ark/neovim test",
 		"testNext": "node ./ark/repo/testNext.ts",
 		"testNextDev": "node ./ark/repo/testNextDev.ts",
 		"testMetro": "node ./ark/repo/testMetro.ts",

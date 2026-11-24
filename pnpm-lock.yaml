@@ -531,6 +531,8 @@ importers:
 
   ark/fs: {}
 
+  ark/neovim: {}
+
   ark/regex:
     devDependencies:
       '@ark/util':
