@@ -75,22 +75,9 @@
 		text-wrap: balance;
 	}
 	.hero .lede {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 6px 14px;
 		max-width: none;
 		margin: 34px 0 0;
 		color: var(--ink);
-	}
-	.quest-peek {
-		font: 400 13.5px / 1.4 var(--mono);
-		color: var(--sky);
-		text-decoration: none;
-		white-space: nowrap;
-		&:hover {
-			text-decoration: underline;
-		}
 	}
 	/* the lede is a quest: one link to #migrate, behind the page's one
 	   marker. Its sentence is the link's name; the marker is drawn, not read. */
@@ -133,62 +120,6 @@
 	.hero .ctas {
 		align-items: center;
 		margin-top: 20px;
-	}
-	.hero-foot {
-		flex-basis: 100%;
-		margin: 4px 0 0;
-		font: 400 13px / 1.5 var(--mono);
-		color: var(--ink-2);
-		code {
-			color: var(--gold);
-		}
-		a {
-			color: var(--sky);
-			white-space: nowrap;
-		}
-	}
-	.hero-trust {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px 12px;
-		margin-top: 28px;
-		padding-top: 18px;
-		border-top: 1px solid var(--rule-soft);
-		font: 400 13px / 1.4 var(--mono);
-		color: var(--ink-3);
-	}
-	.trust-lbl a {
-		color: var(--ink-2);
-		text-decoration: none;
-		&:hover {
-			color: var(--gold);
-		}
-	}
-	.trust-sep {
-		opacity: 0.45;
-	}
-	.trust-pills {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 6px;
-		a {
-			font: 500 13px / 1.2 var(--sans);
-			color: var(--ink-2);
-			text-decoration: none;
-			padding: 4px 10px;
-			border-radius: var(--r-pill);
-			border: 1px solid var(--rule-soft);
-			background: color-mix(in oklab, var(--surface) 55%, transparent);
-			transition:
-				color var(--t-micro),
-				border-color var(--t-micro);
-			&:hover {
-				color: var(--ink);
-				border-color: color-mix(in oklab, var(--teal) 50%, transparent);
-			}
-		}
 	}
 
 	/* read by a screen reader, not drawn */
@@ -923,6 +854,60 @@
 	.migrate-alt-lbl {
 		font: 400 12.5px / 1.3 var(--mono);
 		color: var(--ink-3);
+	}
+	.migrate-integrations {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px 14px;
+		margin-top: 24px;
+		padding-top: 20px;
+		border-top: 1px solid var(--rule-soft);
+	}
+	.migrate-integrations-lbl {
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-3);
+		a {
+			color: var(--ink-2);
+			text-decoration: none;
+			&:hover {
+				color: var(--gold);
+			}
+		}
+	}
+	.migrate-integrations-pills {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		a {
+			font: 500 13px / 1.2 var(--sans);
+			color: var(--ink-2);
+			text-decoration: none;
+			padding: 4px 10px;
+			border-radius: var(--r-pill);
+			border: 1px solid var(--rule-soft);
+			background: color-mix(in oklab, var(--surface) 55%, transparent);
+			transition:
+				color var(--t-micro),
+				border-color var(--t-micro);
+			&:hover {
+				color: var(--ink);
+				border-color: color-mix(in oklab, var(--teal) 50%, transparent);
+			}
+		}
+		.migrate-integrations-more {
+			border-color: transparent;
+			background: transparent;
+			padding-inline: 6px;
+			font: 400 13px / 1.2 var(--mono);
+			color: var(--sky);
+			&:hover {
+				color: var(--sky);
+				border-color: transparent;
+				text-decoration: underline;
+			}
+		}
 	}
 
 	/* ---------- a point: copy, figure, drill-downs ---------- */
@@ -2106,13 +2091,6 @@
 		}
 		.hero .ctas {
 			margin-top: 14px;
-		}
-		.hero-trust {
-			margin-top: 20px;
-			padding-top: 14px;
-		}
-		.trust-sep {
-			display: none;
 		}
 		.stage-tabs {
 			width: 100%;

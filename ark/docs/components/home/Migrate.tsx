@@ -5,6 +5,7 @@ import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
 import {
+	integrations,
 	migratePromptAot,
 	migratePromptDynamic,
 	skillCommand
@@ -164,6 +165,22 @@ export const Migrate = () => (
 			)
 		}
 	>
+		<div className="migrate-integrations">
+			<span className="migrate-integrations-lbl">
+				Works with your Zod stack via{" "}
+				<Link href="/docs/standard-schema">Standard Schema</Link>
+			</span>
+			<nav className="migrate-integrations-pills" aria-label="Integrations">
+				{integrations.map(([name, href]) => (
+					<Link key={name} href={href}>
+						{name}
+					</Link>
+				))}
+				<Link className="migrate-integrations-more" href="/docs/integrations">
+					all integrations →
+				</Link>
+			</nav>
+		</div>
 		<Drills
 			name="migrate"
 			links={
