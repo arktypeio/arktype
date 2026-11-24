@@ -1,5 +1,11 @@
 # @ark/aot
 
+## 3.0.0-rc.4
+
+`byPath`, `flatByPath`, `flatMessagesByPath` and `byAncestorPath` precompile: `arktype/runtime` exports them, and they read a validator's errors as they read arktype's, keying each path as arktype writes it, like `items[0].id`. A build with `runtime: "arktype/runtime"` failed where code called one, asking for it to be rewritten over `out.issues`. `messageIn`, which writes a locale, still fails the build.
+
+`regex` from `arktype` or `arktype/regex` builds a pattern known only at runtime, like `regex(source, "i")`, outside a definition: the build writes each call, and each `regex.as` call, as `new RegExp(source, "i")`, saving a call, and `arktype/runtime` exports `regex` for a read that isn't a call, like `[regex]`. A standalone build failed on either.
+
 ## 3.0.0-rc.3
 
 An annotation of a `readonly` array, like `issues: readonly ArkError[]`, tells the build what its elements are, as `ArkError[]` does, so reading `issue.message` in `for (const issue of issues)` no longer fails as a read off what may be a Type.

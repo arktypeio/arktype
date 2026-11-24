@@ -106,23 +106,23 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	{
 		ArkErrors: 1,
+		byAncestorPath: 1,
+		byPath: 1,
 		firstIssue: 1,
+		flatByPath: 1,
+		flatMessagesByPath: 1,
 		ParseError: 1,
+		regex: 1,
 		Traversal: 1,
 		TraversalError: 1
 	} satisfies { [name in ArkExportName]?: 1 },
 	null
 )
 
-// functions reading errors that arktype/runtime doesn't export
+// functions reading errors that arktype/runtime doesn't export: messageIn
+// writes a locale, which only arktype/i18n can
 export const errorReaders: Record<string, 1> = Object.setPrototypeOf(
-	{
-		byAncestorPath: 1,
-		byPath: 1,
-		flatByPath: 1,
-		flatMessagesByPath: 1,
-		messageIn: 1
-	} satisfies { [name in ArkExportName]?: 1 },
+	{ messageIn: 1 } satisfies { [name in ArkExportName]?: 1 },
 	null
 )
 

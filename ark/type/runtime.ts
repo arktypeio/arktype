@@ -63,6 +63,7 @@ import {
 	type inferred,
 	type JsonStructure
 } from "@ark/util"
+import type { regex as arkregex } from "arkregex"
 import { InternalTypedFn } from "./fn.ts"
 import type { introspectionMembers } from "./standalone.ts"
 import type { ArrayType } from "./variants/array.ts"
@@ -88,6 +89,8 @@ export {
 	applyRejected,
 	ArkErrors,
 	arrayIndexMatcher,
+	byAncestorPath,
+	byPath,
 	callMorph,
 	codedIssue,
 	computeDefaultValueMorph,
@@ -114,6 +117,8 @@ export {
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
+	flatByPath,
+	flatMessagesByPath,
 	foundErrors,
 	fixConfigured,
 	holdsOnlyIndices,
@@ -175,6 +180,17 @@ export {
 	throwParseError,
 	timeOf
 } from "@ark/util"
+const createRegex = (src: string, flags?: string) => new RegExp(src, flags)
+
+// arkregex's regex, for a read a build can't write as new RegExp, like
+// `[regex]`; written here, as importing arkregex would leave a build that
+// externalizes dependencies, like Nitro's, loading one the app can't resolve
+export const regex: typeof arkregex = /* @__PURE__ */ Object.assign(
+	createRegex,
+	{
+		as: createRegex
+	}
+) as never
 export * from "./checkers.ts"
 export * from "./keywords/functions.ts"
 
@@ -191,7 +207,7 @@ export interface ValidatorAttributes {
 export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // each precompiled module imports it, so another version's runtime fails to link
-export const precompiledForArktype_3_0_0_rc_3 = true
+export const precompiledForArktype_3_0_0_rc_4 = true
 
 // captured at load so a program can't replace them; each alone to tree-shake
 export const assign = /* @__PURE__ */ (() => Object.assign)()
