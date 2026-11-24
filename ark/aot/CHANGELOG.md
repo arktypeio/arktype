@@ -1,5 +1,9 @@
 # @ark/aot
 
+## Unreleased
+
+A webpack or Rspack compiler releases its precompiler worker once it closes, and a Vite dev server once it closes. A production build that failed never reached the hook releasing it, and a dev server's never did, so a process running several, like a test runner or a dev server restarting for a changed config, held a worker of about 150 MB for each until it exited.
+
 ## 3.0.0-rc.4
 
 `byPath`, `flatByPath`, `flatMessagesByPath` and `byAncestorPath` precompile: `arktype/runtime` exports them, and they read a validator's errors as they read arktype's, keying each path as arktype writes it, like `items[0].id`. A build with `runtime: "arktype/runtime"` failed where code called one, asking for it to be rewritten over `out.issues`. `messageIn`, which writes a locale, still fails the build.
