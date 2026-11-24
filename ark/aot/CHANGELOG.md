@@ -1,6 +1,6 @@
 # @ark/aot
 
-## Unreleased
+## 3.0.0-rc.2
 
 `arktype-precompile --check` also checks each script outside the current directory that one it checks imports, as a bundler transforms it, like a workspace package's source linked into `node_modules`. It reported every definition accepted where the build failed on a read in such a module.
 
