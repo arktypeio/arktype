@@ -339,7 +339,9 @@ jobs:
     needs: plan
     if: needs.plan.outputs.aot == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # its two steps take 30-44 minutes on a hosted runner, so 45 left no
+    # margin and timed out on some nights
+    timeout-minutes: 60
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -404,21 +406,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      actions: read
       contents: read
       issues: write
     steps:
       - env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          NEEDS: ${{ toJSON(needs) }}
+          JOBS_PATH: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           TITLE: nightly failing
           LABEL: nightly
         run: |
           set -euo pipefail
 
-          # jobs that didn't pass, including one cancelled or timed out
-          failed=$(jq -r '[to_entries[] | select(.value.result != "success" and .value.result != "skipped") | .key] | join(", ")' <<<"$NEEDS")
+          # every job but this one, by matrix leg, so the issue names the leg
+          # that failed rather than its whole job
+          jobs=$(gh api --paginate "$JOBS_PATH" --jq '.jobs[] | select(.name != "alert")' | jq -s .)
+
+          # A cancelled job with no steps never got a runner: hosted macOS
+          # runners regularly go unassigned for capacity, which says nothing
+          # about the code. Those are reported, not counted as failures.
+          unrun=$(jq -r '[.[] | select(.conclusion == "cancelled" and (.steps | length) == 0) | .name] | join(", ")' <<<"$jobs")
+
+          # jobs that ran and didn't pass, including one cancelled or timed out
+          failed=$(jq -r '[.[] | select((.conclusion | IN("failure", "cancelled", "timed_out", "startup_failure")) and (.conclusion != "cancelled" or (.steps | length) > 0)) | .name] | join(", ")' <<<"$jobs")
 
           # the open issue's number, or nothing
           issue=$(
@@ -426,8 +438,14 @@ jobs:
               jq -r --arg title "$TITLE" '[.[] | select(.title == $title)][0].number // empty'
           )
 
-          if [[ -n "$failed" ]]; then
+          if [[ -z "$failed" && -n "$unrun" ]]; then
+            # nothing failed, but not everything ran: leave the issue as it is
+            echo "::warning::No runner picked up: $unrun"
+          elif [[ -n "$failed" ]]; then
             body="The [nightly run]($RUN_URL) of \`nightly.yml\` failed in: $failed."
+            if [[ -n "$unrun" ]]; then
+              body+=" No runner picked up: $unrun."
+            fi
             if [[ -n "$issue" ]]; then
               gh issue comment "$issue" --body "$body"
             else
