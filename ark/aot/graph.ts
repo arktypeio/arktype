@@ -112,6 +112,7 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 		flatByPath: 1,
 		flatMessagesByPath: 1,
 		ParseError: 1,
+		regex: 1,
 		Traversal: 1,
 		TraversalError: 1
 	} satisfies { [name in ArkExportName]?: 1 },

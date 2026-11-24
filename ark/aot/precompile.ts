@@ -3341,6 +3341,7 @@ export class Precompiler {
 			reads
 		)
 		this.linkIslands(module, sites, s, prefix)
+		this.inlineRegexCalls(module, sites, s)
 		this.markProgress(module, sites, s, prefix)
 		if (this.checkHelpers) this.registerHelpers(module, s)
 		// esbuild loads stdin as written, which holding no site leaves it
@@ -3360,6 +3361,45 @@ export class Precompiler {
 				.join(""),
 			chosen
 		]
+	}
+
+	// arkregex's regex is `(src, flags) => new RegExp(src, flags)`, typed, so
+	// `regex(src, flags)` or `regex.as(src, flags)` outside a site is written as
+	// `new RegExp(src, flags)`, which saves a call; a bare read like `[regex]`
+	// still reads it from arktype/runtime
+	private inlineRegexCalls(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString
+	): void {
+		for (const reference of module.scopes.references) {
+			const id = reference.id
+			if (
+				isInIsland(id, module) ||
+				sites.some(site => site.status === "accepted" && contains(site, id))
+			)
+				continue
+			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
+			if (name !== "regex" || !read) continue
+			const parent = read.parent
+			const callee =
+				(
+					parent?.type === "MemberExpression" &&
+					parent.object === read &&
+					!parent.computed &&
+					!parent.optional &&
+					parent.property.name === "as"
+				) ?
+					parent
+				:	read
+			const call = callee.parent
+			if (
+				call?.type === "CallExpression" &&
+				call.callee === callee &&
+				!call.optional
+			)
+				s.overwrite(callee.start, callee.end, "new RegExp")
+		}
 	}
 
 	// `type.errors` is `ArkErrors`, which leaves `type`, a frozen object holding

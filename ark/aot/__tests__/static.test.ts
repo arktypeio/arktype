@@ -2514,6 +2514,17 @@ export const readers = [ark.flatByPath, ark.byAncestorPath]`)
 			).equals([])
 		})
 
+		it("regex called with a pattern known only at runtime", () => {
+			attest(
+				diagnosticsOf(`import { regex } from "arktype"
+import { regex as fromArkregex } from "arkregex"
+import * as ark from "arktype/regex"
+export const matcherOf = (source: string) => regex(source, "i")
+export const exact = (source: string) => fromArkregex(\`^\${source}$\`)
+export const makers = [ark.regex, regex.as]`)
+			).equals([])
+		})
+
 		it("a value only known at runtime, named in the fix", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

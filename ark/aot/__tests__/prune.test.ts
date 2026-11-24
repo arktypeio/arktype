@@ -2557,6 +2557,44 @@ email: pattern,minLength|["first-name"]: domain|items[0].id: divisor|items[1].id
 			attest(run(written)).equals(runPlain(files))
 		})
 
+		it("builds a regex from a pattern known only at runtime as arktype does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { regex, type } from "arktype"
+import * as ark from "arktype"
+import { regex as fromArkregex } from "arktype/regex"
+
+const Slug = type({ slug: regex("^[a-z]+$") })
+const matcherOf = (source: string) => regex(source, "i")
+const exact = (source: string) => fromArkregex(\`^\${source}$\`)
+
+console.log(matcherOf(process.argv[2] ?? "ab+").test("xABBy"))
+console.log(exact("a.c").test("abc"), exact("a.c").test("abcd"))
+console.log(ark.regex.as("^(?<id>\\\\d+)$").exec("12")?.groups?.id)
+console.log(Slug.allows({ slug: "ok" }), Slug.allows({ slug: "No" }))
+// a bare read, which arktype/runtime serves
+const makers = [ark.regex]
+console.log(makers[0]("x+", "g").flags)
+`
+				},
+				tempPath("prunedRegex")
+			)
+			const written = await bundle(
+				{ preset: undefined },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(written)).snap(`true
+true false
+12
+true false
+g
+`)
+			attest(run(written)).equals(runPlain(files))
+			// each call written as new RegExp, minified as `g=e=>new RegExp(e,"i")`
+			attest(/=>new RegExp\(\w+,"i"\)/.test(written)).equals(true)
+			attest(written.includes('new RegExp("^(?<id>\\\\d+)$")')).equals(true)
+		})
+
 		it("serializes a ~standard failure and result.issues with JSON.stringify when ArkErrors#toJSON is pruned", async () => {
 			const files = writeFixture(
 				{

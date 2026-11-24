@@ -179,6 +179,8 @@ export {
 	throwParseError,
 	timeOf
 } from "@ark/util"
+// arkregex's regex is new RegExp, so a program can build one at run time
+export { regex } from "arkregex"
 export * from "./checkers.ts"
 export * from "./keywords/functions.ts"
 
