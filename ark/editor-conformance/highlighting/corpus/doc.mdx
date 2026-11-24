@@ -1,0 +1,13 @@
+import { type } from "arktype"
+
+export const User = type({ name: "string", age: "number >= 0" })
+
+# Using type("string | number") in prose
+
+Prose that mentions type("string") or a quoted "string | number".
+
+```ts
+const Fenced = type({ id: "string.uuid" })
+```
+
+<Example schema={type("string[]")} label="string | number" />

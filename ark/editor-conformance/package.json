@@ -1,0 +1,21 @@
+{
+	"name": "@ark/editor-conformance",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"scripts": {
+		"build": "echo No build required!"
+	},
+	"devDependencies": {
+		"@shikijs/engine-oniguruma": "4.6.0",
+		"@shikijs/langs": "4.6.0",
+		"@shikijs/vscode-textmate": "10.1.0",
+		"arkregex": "workspace:*",
+		"arktype": "workspace:*",
+		"typescript-6": "npm:typescript@6.0.3"
+	},
+	"exports": {
+		"./*.ts": "./*.ts",
+		"./*.json": "./*.json"
+	}
+}

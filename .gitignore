@@ -25,3 +25,5 @@ ark/docs/public/live
 # social cards drawn from claims.ts and blog frontmatter, see ark/docs/lib/writeOgImages.ts
 ark/docs/public/image/og.png
 ark/docs/public/image/blog
+# the Markdown grammar ark/tree-sitter's tests build, since its package ships no .wasm
+ark/tree-sitter/test/.wasm

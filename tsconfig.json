@@ -32,6 +32,9 @@
 		"**/node_modules",
 		"./ark/docs",
 		"**/*.scratch.ts",
+		// editor fixtures, written to be highlighted or to fail typechecking
+		"./ark/editor-conformance/highlighting/corpus",
+		"./ark/editor-conformance/diagnostics/sources",
 		// programs and fixtures the tests write, untyped by design
 		"./ark/aot/__tests__/temp",
 		// their cyclic scopes have inferred types TypeScript 7 can't declare

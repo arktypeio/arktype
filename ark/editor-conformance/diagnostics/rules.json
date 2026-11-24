@@ -1,0 +1,27 @@
+{
+	"$comment": "The VS Code extension's errorLens.replace rules (ark/extension/package.json) and how ErrorLens v3.30.0 applies them. cases.json holds inputs and expected outputs; errorLens.ts is a reference implementation.",
+	"semantics": {
+		"flags": "iu",
+		"order": "Rules are tried in order on the whole message; the first whose matcher matches anywhere wins and no later rule runs.",
+		"substitution": "The output starts as the rule's message. For each group N from 0 to the last, every `$N` in it is replaced, as JavaScript's String.prototype.replace(new RegExp('\\\\$N', 'gu'), groupN) does: replacement patterns in the group's text ($&, $$, $`, $') are expanded, and a group that didn't participate becomes the text 'undefined'.",
+		"noMatch": "A message no rule matches is shown unchanged.",
+		"input": "The diagnostic message as VS Code's TypeScript extension gives it: tsserver flattens a message chain with '\\n', indenting each level two more spaces.",
+		"display": "ErrorLens then draws the message after the line: with its defaults, each run of \\n, \\r and \\t becomes ⏎ and a message over 500 code points is cut to 500 and ends with …."
+	},
+	"rules": [
+		{ "matcher": ".*'ErrorType<\"?(.*?)\"?>'.*$", "message": "$1" },
+		{ "matcher": ".*brand\": \"ErrorType\"; (.*) \\}'\\.$", "message": "$1" },
+		{ "matcher": ".*'\"(.*[\\u200A\\u200B])\"'\\.$", "message": "$1" },
+		{
+			"matcher": "^(?:Type|Argument of type) '\"(.*)\"' is not assignable to (?:parameter of )?type '(\"\\1.*\")'\\.",
+			"message": "$2"
+		},
+		{ "matcher": "[^]*\n([^\n]*)$", "message": "$1" }
+	],
+	"displayDefaults": {
+		"messageTemplate": "$message",
+		"removeLinebreaks": true,
+		"replaceLinebreaksSymbol": "⏎",
+		"messageMaxChars": 500
+	}
+}
