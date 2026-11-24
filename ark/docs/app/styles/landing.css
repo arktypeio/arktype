@@ -1736,9 +1736,15 @@
 	.closer-go {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: stretch;
+		align-items: center;
 		gap: 12px;
 		margin-top: 32px;
+		.cmd {
+			max-width: min(100%, 560px);
+			justify-content: space-between;
+			padding: 10px 10px 10px 16px;
+			line-height: 1.5;
+		}
 	}
 }
 
