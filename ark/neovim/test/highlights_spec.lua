@@ -3,15 +3,9 @@ local highlights = require("highlights")
 local treesitter = require("arktype.treesitter")
 
 local deps = os.getenv("ARKTYPE_TEST_DEPS") or ""
-local conformance = os.getenv("ARKTYPE_CONFORMANCE_DIR") or (h.repo_root .. "/ark/editor-conformance")
+local conformance = h.repo_root .. "/ark/editor-conformance"
 local corpus = conformance .. "/highlighting/corpus"
 local out_dir = h.data_dir .. "/highlights"
-local grammar_dir = os.getenv("ARKTYPE_GRAMMAR_DIR")
-if grammar_dir then
-	treesitter.grammar_dir = function()
-		return grammar_dir
-	end
-end
 
 local categories
 
@@ -147,7 +141,7 @@ return {
 		end,
 	},
 	{
-		"Vue and Astro, which the oracle can't read, highlight like Svelte's checked lines",
+		"Vue and Astro scripts and templates highlight like Svelte's checked lines",
 		function()
 			prepare()
 			local svelte, svelte_lines = fixture_spans("Component.svelte")

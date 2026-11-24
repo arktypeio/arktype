@@ -218,9 +218,21 @@ M.config = vim.deepcopy(M.defaults)
 --- The text ErrorLens would show for a message, with the current config.
 ---@param message string
 ---@return string
+local prepared, prepared_count = {}, 0
+
 function M.prepare(message)
+	local cached = prepared[message]
+	if cached then
+		return cached
+	end
 	local config = M.config
-	return M.inline(M.rewrite(message, config.rules), config)
+	local text = M.inline((M.rewrite(message, config.rules)), config)
+	-- the closest problem is redrawn on every cursor move
+	if prepared_count >= 1000 then
+		prepared, prepared_count = {}, 0
+	end
+	prepared[message], prepared_count = text, prepared_count + 1
+	return text
 end
 
 --- A `format` function for `vim.diagnostic.config()`'s `virtual_text`,
@@ -393,6 +405,7 @@ local augroup
 ---@param config? arktype.diagnostics.Config
 function M.setup(config)
 	M.config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), config or {})
+	prepared, prepared_count = {}, 0
 	-- lists replace rather than merge
 	if config and config.rules then
 		M.config.rules = config.rules

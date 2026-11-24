@@ -8,5 +8,8 @@
 		"test": "node test/test.ts",
 		"syncQueries": "node scripts/syncQueries.ts",
 		"writeCasefold": "node scripts/writeCasefold.ts"
+	},
+	"devDependencies": {
+		"@ark/editor-conformance": "workspace:*"
 	}
 }

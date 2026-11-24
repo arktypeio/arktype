@@ -1,8 +1,7 @@
 // Compares Neovim's highlight dump with the reference tree-sitter target's
 // (ark/tree-sitter/test/dump.ts): the same grammar and queries under plain
 // tree-sitter, so any character they color differently is a Neovim layering
-// effect. Every such run must be listed, with a reason, in
-// referenceDifferences.json.
+// effect, and fails the suite.
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
@@ -21,7 +20,6 @@ export type ReferenceDifference = {
 	text: string
 	neovim: string
 	reference: string
-	reason?: string
 }
 
 const charMap = (spans: Span[]) => {
@@ -82,27 +80,5 @@ export const compareReference = (
 	return differences
 }
 
-const key = (d: ReferenceDifference) =>
-	`${d.fixture}:${d.line}:${d.column}:${d.text}:${d.neovim}:${d.reference}`
-
-/** Prints unlisted and stale differences; returns whether none are. */
-export const reportReference = (
-	differences: ReferenceDifference[],
-	listedFile: string
-): boolean => {
-	const listed: ReferenceDifference[] =
-		existsSync(listedFile) ? JSON.parse(readFileSync(listedFile, "utf8")) : []
-	const listedKeys = new Set(listed.map(key))
-	const found = new Set(differences.map(key))
-	const unexpected = differences.filter(d => !listedKeys.has(key(d)))
-	const stale = listed.filter(d => !found.has(key(d)))
-	const format = (d: ReferenceDifference) =>
-		`${d.fixture}:${d.line + 1}:${d.column + 1} ${JSON.stringify(d.text)} neovim ${d.neovim}, tree-sitter ${d.reference}`
-	for (const d of unexpected) console.error(`unexpected: ${format(d)}`)
-	for (const d of stale)
-		console.error(`stale (no longer differs): ${format(d)}`)
-	console.log(
-		`neovim vs tree-sitter: ${differences.length} known differences, ${unexpected.length} unexpected, ${stale.length} stale`
-	)
-	return unexpected.length === 0 && stale.length === 0
-}
+export const formatReferenceDifference = (d: ReferenceDifference): string =>
+	`${d.fixture}:${d.line + 1}:${d.column + 1} ${JSON.stringify(d.text)} neovim ${d.neovim}, tree-sitter ${d.reference}`

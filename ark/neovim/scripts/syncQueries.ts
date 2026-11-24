@@ -14,8 +14,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 
 const pluginDir = join(import.meta.dirname, "..")
-const grammarDir =
-	process.env.ARKTYPE_GRAMMAR_DIR ?? join(pluginDir, "..", "tree-sitter")
+const grammarDir = join(pluginDir, "..", "tree-sitter")
 const check = process.argv.includes("--check")
 
 const header = (source: string) =>

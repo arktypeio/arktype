@@ -6,8 +6,11 @@
 // random messages and patterns with the outputs V8 gives for them) to
 // test/temp, installs the host parsers through a pinned nvim-treesitter into
 // test/.deps (once), runs test/run.lua with `nvim --clean`, then checks the
-// highlights it dumped against the TextMate oracle with
-// ark/editor-conformance/highlighting/check.ts.
+// highlights it dumped against the TextMate oracle (@ark/editor-conformance's
+// checker, with differences/neovim.json) and against the reference
+// tree-sitter target (ark/tree-sitter/test/dump.ts), which must match exactly.
+// --write-differences rewrites differences/neovim.json from this run,
+// keeping the reasons of entries that still occur.
 //
 // Needs `nvim` (0.11+), `git`, a C compiler and the `tree-sitter` CLI.
 import { spawnSync } from "node:child_process"
@@ -19,8 +22,20 @@ import {
 	writeFileSync
 } from "node:fs"
 import { join } from "node:path"
-import { compareReference, reportReference } from "./compareReference.ts"
-import { inline, rewrite, type ErrorLensRule } from "./errorLens.ts"
+import {
+	display,
+	replaceRules
+} from "@ark/editor-conformance/diagnostics/errorLens.ts"
+import {
+	checkTarget,
+	readActualDir,
+	report,
+	writeDifferences
+} from "@ark/editor-conformance/highlighting/check.ts"
+import {
+	compareReference,
+	formatReferenceDifference
+} from "./compareReference.ts"
 import { fuzzCases } from "./fuzzDiagnostics.ts"
 import { fuzzRegexCases } from "./fuzzRegex.ts"
 
@@ -29,11 +44,8 @@ const pluginDir = join(testDir, "..")
 const repoDir = join(pluginDir, "..", "..")
 const dataDir = join(testDir, "temp")
 const depsDir = join(testDir, ".deps")
-const conformanceDir =
-	process.env.ARKTYPE_CONFORMANCE_DIR ??
-	join(repoDir, "ark", "editor-conformance")
-const grammarDir =
-	process.env.ARKTYPE_GRAMMAR_DIR ?? join(repoDir, "ark", "tree-sitter")
+const conformanceDir = join(repoDir, "ark", "editor-conformance")
+const grammarDir = join(repoDir, "ark", "tree-sitter")
 
 // nvim-treesitter's main branch, which pins every parser's revision
 const nvimTreesitterRevision = "52773f0d13a0c11d0c3ef33c14ab6ecc1c17148b"
@@ -66,12 +78,6 @@ mkdirSync(dataDir, { recursive: true })
 const writeData = (name: string, data: unknown) =>
 	writeFileSync(join(dataDir, name), JSON.stringify(data))
 
-const manifest = JSON.parse(
-	readFileSync(join(repoDir, "ark", "extension", "package.json"), "utf8")
-)
-const rules: ErrorLensRule[] =
-	manifest.contributes.configurationDefaults["errorLens.replace"]
-
 type ConformanceCase = {
 	name: string
 	input: string
@@ -80,33 +86,18 @@ type ConformanceCase = {
 	display: string
 }
 
-const conformancePath = join(conformanceDir, "diagnostics", "cases.json")
-const conformance: ConformanceCase[] =
-	existsSync(conformancePath) ?
-		JSON.parse(readFileSync(conformancePath, "utf8"))
-	:	[]
-for (const testCase of conformance) {
-	// the fixtures are the spec; this only guards against a stale oracle
-	const oracle = rewrite(testCase.input, rules)
-	if (
-		oracle.output !== testCase.output ||
-		oracle.rule !== testCase.rule ||
-		inline(oracle.output) !== testCase.display
-	) {
-		throw new Error(
-			`conformance case ${testCase.name} disagrees with V8: ${JSON.stringify(oracle)}`
-		)
-	}
-}
+const conformance: ConformanceCase[] = JSON.parse(
+	readFileSync(join(conformanceDir, "diagnostics", "cases.json"), "utf8")
+)
 writeData(
 	"conformanceCases.json",
 	conformance.map(testCase => ({ ...testCase, inline: testCase.display }))
 )
 writeData(
 	"fuzzDiagnostics.json",
-	fuzzCases(rules, fuzzCount, seed).map(testCase => ({
+	fuzzCases(replaceRules, fuzzCount, seed).map(testCase => ({
 		...testCase,
-		inline: inline(testCase.output)
+		inline: display(testCase.output)
 	}))
 )
 writeData("fuzzRegex.json", fuzzRegexCases(fuzzCount, seed))
@@ -166,7 +157,6 @@ const nvim = spawnSync(
 			...process.env,
 			ARKTYPE_TEST_DATA: dataDir,
 			ARKTYPE_TEST_DEPS: depsDir,
-			ARKTYPE_CONFORMANCE_DIR: conformanceDir,
 			...(grep ? { ARKTYPE_TEST_GREP: grep } : {})
 		}
 	}
@@ -177,36 +167,20 @@ let failed = nvim.status !== 0 || sync.status !== 0
 const highlightsDir = join(dataDir, "highlights")
 if (existsSync(highlightsDir)) {
 	console.log("\nhighlights against the TextMate oracle:")
-	const check = spawnSync(
-		"node",
-		[
-			join(conformanceDir, "highlighting", "check.ts"),
-			"--target",
-			"neovim",
-			"--actual",
-			highlightsDir,
-			...args.filter(arg => arg === "--code" || arg === "--write-differences")
-		],
-		{ stdio: "inherit" }
-	)
-	if (check.error) throw check.error
-	if (check.status !== 0) failed = true
+	const result = checkTarget("neovim", readActualDir(highlightsDir), {
+		code: args.includes("--code")
+	})
+	if (args.includes("--write-differences"))
+		await writeDifferences("neovim", result)
+	else if (!report("neovim", result)) failed = true
 
+	console.log("\nhighlights against the reference tree-sitter target:")
 	const referenceDir = join(dataDir, "tree-sitter")
-	const dump = spawnSync(
-		"node",
-		[join(grammarDir, "test", "dump.ts"), referenceDir],
-		{ stdio: ["ignore", "ignore", "inherit"] }
-	)
-	if (dump.error) throw dump.error
-	if (dump.status !== 0) failed = true
-	else {
-		console.log("\nhighlights against the reference tree-sitter target:")
-		const matches = reportReference(
-			compareReference(highlightsDir, referenceDir),
-			join(testDir, "referenceDifferences.json")
-		)
-		if (!matches) failed = true
-	}
+	run("node", [join(grammarDir, "test", "dump.ts"), referenceDir])
+	const differences = compareReference(highlightsDir, referenceDir)
+	for (const difference of differences)
+		console.error(`differs: ${formatReferenceDifference(difference)}`)
+	console.log(`neovim vs tree-sitter: ${differences.length} differences`)
+	if (differences.length) failed = true
 }
 process.exit(failed ? 1 : 0)

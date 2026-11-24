@@ -1,7 +1,10 @@
 // Random diagnostic messages built from the pieces ErrorLens's replace rules
 // key on (and the characters JS regex semantics single out), each with the
 // output V8 gives for them, so the Lua port is checked well past the fixtures.
-import { rewrite, type ErrorLensRule } from "./errorLens.ts"
+import {
+	rewrite,
+	type ReplaceRule
+} from "@ark/editor-conformance/diagnostics/errorLens.ts"
 
 export type FuzzCase = {
 	input: string
@@ -92,7 +95,7 @@ const templates = [
 ]
 
 export const fuzzCases = (
-	rules: readonly ErrorLensRule[],
+	rules: ReplaceRule[],
 	count: number,
 	seed = 1
 ): FuzzCase[] => {
@@ -105,7 +108,8 @@ export const fuzzCases = (
 		let s = ""
 		for (let j = 0; j < length; j++) s += pick(pieces)
 		const input = pick(templates)(s)
-		cases.push({ input, ...rewrite(input, rules) })
+		const { message, rule } = rewrite(input, rules)
+		cases.push({ input, output: message, rule })
 	}
 	return cases
 }
