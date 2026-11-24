@@ -1838,6 +1838,9 @@ export class Precompiler {
 		// units written for size, where the bundle is one chunk, are one module
 		const isOneChunk = !!program.isOneChunk && usage.sizes
 		const sharesCreators = !!usage.combines
+		// each module as written, before a link writes the units a site reads
+		// once into it
+		let unlinked = { ...wrote.written }
 		let link = this.linkWritten(wrote.written, sources, {
 			exposesAllows: usage.readsAllows,
 			isOneChunk,
@@ -1850,6 +1853,7 @@ export class Precompiler {
 			const exposed = this.writeProgram(program, plan)
 			if (exposed) {
 				Object.assign(wrote, exposed)
+				unlinked = { ...wrote.written }
 				link = this.linkWritten(wrote.written, sources, {
 					exposesAllows: true,
 					isOneChunk,
@@ -1882,6 +1886,10 @@ export class Precompiler {
 		}
 		// each decision above weighs each call, so what they share is shared last
 		if (usage.combines) {
+			// from the units as written, as the links above wrote each unit a
+			// site of many chunks reads once into it, where it reads none of
+			// what they share. One chunk's links declared each in its module
+			if (!isOneChunk) Object.assign(wrote.written, unlinked)
 			const shared = this.linkWritten(wrote.written, sources, {
 				exposesAllows: usage.readsAllows,
 				isOneChunk,

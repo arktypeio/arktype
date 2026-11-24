@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { linkBundle } from "@ark/aot/internal/link.ts"
+import { productionDefaults } from "@ark/aot/internal/presets.ts"
 import { emitPrecompiled } from "@ark/aot/internal/emit.ts"
 import { writeIssueFeaturesInto } from "@ark/aot/internal/features.ts"
 import {
@@ -116,18 +117,9 @@ const importingAgain = (code: string) =>
 const assertingFrom = (types: string) =>
 	`import { User } from "${types}"\n\ntry {\n\tUser.assert({ name: 5 })\n} catch (e) {\n\tconsole.log(e.message)\n}\n`
 
-// what a production build for size reads of a program from /main.ts, or the
-// errors failing its build
-const usageFrom = async (
-	files: Record<string, string>,
-	opts?: PrecompileOptions
-) => {
-	const precompiler = new Precompiler(memoryHost(files), {
-		preset: "smallest",
-		cwd: "/",
-		...opts
-	})
-	const scanned = await scanProgram("test", [{ id: "/main.ts" }], {
+// the program from /main.ts, as a bundle's scan reads it
+const programFrom = (files: Record<string, string>) =>
+	scanProgram("test", [{ id: "/main.ts" }], {
 		resolve: async (specifier, importer) => {
 			// a package installed in /node_modules, or one left external
 			if (!specifier.startsWith(".")) {
@@ -142,6 +134,19 @@ const usageFrom = async (
 		idOf: id => id,
 		cwd: "/"
 	})
+
+// what a production build for size reads of a program from /main.ts, or the
+// errors failing its build
+const usageFrom = async (
+	files: Record<string, string>,
+	opts?: PrecompileOptions
+) => {
+	const precompiler = new Precompiler(memoryHost(files), {
+		preset: "smallest",
+		cwd: "/",
+		...opts
+	})
+	const scanned = await programFrom(files)
 	if (typeof scanned === "string") return scanned
 	// a module that fails its build would hide what the scan read
 	for (const id in scanned.modules) {
@@ -151,6 +156,35 @@ const usageFrom = async (
 		if (errors.length) return errors.map(error => error.message)
 	}
 	return precompiler.scan(scanned)
+}
+
+// what a production build writes of `id` in the program from /main.ts, then
+// each module of units that reads
+const writtenFrom = async (
+	files: Record<string, string>,
+	id: string,
+	opts: PrecompileOptions
+) => {
+	const precompiler = new Precompiler(memoryHost(files), {
+		cwd: "/",
+		...productionDefaults,
+		...opts
+	})
+	const scanned = await programFrom(files)
+	if (typeof scanned === "string") return scanned
+	precompiler.scan(scanned)
+	const { code, modules } = precompiler.precompile(
+		files[id],
+		id,
+		undefined,
+		scanned.key
+	)
+	return normalized([
+		code,
+		...Object.entries(modules).map(
+			([specifier, code]) => `// ${specifier}\n${code}`
+		)
+	])
 }
 
 // the members a production build for size leaves out of the program's
@@ -3031,8 +3065,7 @@ export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
 			)!.sites["/main.ts"].code
 
 		it("writes a checker read once where it's read", () => {
-			attest(linkedMain(main))
-				.snap(`import { aAllows as $ark_aAllows } from "~arktype/a"
+			attest(linkedMain(main)).snap(`
 import { create as $ark_create } from "~arktype/create"
 import * as $ark_runtime from "arktype/runtime"
 
@@ -3108,7 +3141,7 @@ import { create as $ark_create } from "~arktype/create"
 import * as $ark_runtime from "arktype/runtime"
 
 export { $ark_aAllows as A }
-import { bAllows as $ark_bAllows } from "~arktype/b-#1"
+
 
 export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: /* @__PURE__ */ $ark_runtime.allowsOf($ark_aAllows) }))
 `)
@@ -3123,7 +3156,7 @@ import { create as $ark_create } from "~arktype/create"
 import * as $ark_runtime from "arktype/runtime"
 
 export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
-import { bAllows as $ark_bAllows } from "~arktype/b"
+
 
 export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: $ark_aAllows }))
 `)
@@ -3676,7 +3709,7 @@ export const C = /* @__PURE__ */ $ark_create($ark_bAllows)
 			).snap([
 				'// ~arktype/a\nimport * as runtime from "arktype/runtime"\n\nconst aAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\n\nexport { aAllows }\n',
 				"// ~arktype/create\nexport const create = allows => data => allows(data)\n",
-				'// ~arktype/b-#0\nimport * as runtime from "arktype/runtime"\nimport { aAllows } from "~arktype/a"\n\nconst bAllows = /* @__PURE__ */ runtime.props({ a: /* @__PURE__ */ runtime.props({ name: runtime.string }) })\n\nexport { bAllows }\n'
+				'// ~arktype/b-#0\nimport * as runtime from "arktype/runtime"\n\n\nconst bAllows = /* @__PURE__ */ runtime.props({ a: /* @__PURE__ */ runtime.props({ name: runtime.string }) })\n\nexport { bAllows }\n'
 			])
 			attest(normalized(linked.sites["/main.ts"].code))
 				.snap(`import { bAllows as $ark_bAllows } from "~arktype/b-#0"
@@ -3685,6 +3718,44 @@ import { create as $ark_create } from "~arktype/create"
 export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 export const C = /* @__PURE__ */ $ark_create($ark_bAllows)
 `)
+		})
+
+		it("shares what a program of many chunks writes often before writing a unit into the site reading it once", async () => {
+			// eight pages, each loaded by import() as a chunk of its own, of a
+			// Type of eight non-empty strings and one optional: enough to be
+			// written as checkers
+			const files: Record<string, string> = { "/main.ts": "" }
+			for (let i = 0; i < 8; i++) {
+				const keys = Array.from(
+					{ length: 8 },
+					(_, k) => `k${i}_${k}: "string > 0"`
+				)
+				files["/main.ts"] +=
+					`import("./p${i}.ts").then(m => m.P${i}["~standard"].validate({}))\n`
+				files[`/p${i}.ts`] =
+					`import { type } from "arktype"\n\nexport const P${i} = type({ ${keys.join(", ")}, note: "string | undefined" })\n`
+			}
+			attest(
+				await writtenFrom(files, "/p0.ts", {
+					optimize: "size",
+					lazy: false,
+					members: {
+						expression: false,
+						description: false,
+						json: false,
+						toJSON: false,
+						toJsonSchema: false,
+						"~standard.jsonSchema": false,
+						assert: false,
+						methods: false,
+						withContext: false
+					}
+				})
+			).snap([
+				'import "arktype"\nimport { #0 as $ark_#0 } from "~arktype/#1-#2"\n\nimport * as $ark_runtime from "arktype/runtime"\nimport { #3 as $ark_#3 } from "~arktype/#4"\nimport { #5 as $ark_#5 } from "~arktype/#4"\n\nexport const P0 = /* @__PURE__ */ $ark_#0(/* @__PURE__ */ $ark_runtime.props({ k0_0: $ark_#3, k0_1: $ark_#3, k0_2: $ark_#3, k0_3: $ark_#3, k0_4: $ark_#3, k0_5: $ark_#3, k0_6: $ark_#3, k0_7: $ark_#3, note: $ark_#5 }))\n',
+				'// ~arktype/#1-#2\nimport { precompiledForArktype_$version as precompiledForArktype_$version } from "arktype/runtime"\nimport { #0 as #0 } from "~arktype/#4"\n() => precompiledForArktype_$version;\nexport { #0 }',
+				'// ~arktype/#4\nimport * as runtime from "arktype/runtime"\nconst #0 = (allows, meta = runtime.emptyMeta) => {\n\tconst validator = (data, pipedFromCtx, onFail) => allows(data) ? allows.t?.(data) ?? data : runtime.foundErrors(allows, data, (pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail))\n\tvalidator.meta = meta\n\tvalidator.allows = allows\n\tvalidator["~standard"] = {\n\t\tvendor: "arktype",\n\t\tversion: 1,\n\t\tvalidate: (input, options) => runtime.standardValidated(validator, input, options)\n\t}\n\treturn validator\n}\nconst #3 = /* @__PURE__ */ runtime.intersection(runtime.stringCheck, [/* @__PURE__ */ runtime.minLength(1)])\nconst #5 = /* @__PURE__ */ runtime.domains({ string: 1, undefined: 1 })\nexport { #0, #3, #5 }'
+			])
 		})
 	})
 
