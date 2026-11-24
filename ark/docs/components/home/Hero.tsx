@@ -1,16 +1,20 @@
 import Link from "next/link"
 import type { CSSProperties } from "react"
-import { preview } from "../../lib/bench/bench.ts"
 import { claims, medianOf } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
 import { categoryOf, heroLine, heroStats, methodHref } from "./boardFacts.ts"
+import { CheckIcon, CopyIcon } from "./icons.tsx"
+import {
+	integrations,
+	migratePromptAot,
+	userPlaygroundHref
+} from "./prompts.ts"
 
 export { heroLine }
 
 /**
  * The quest the hero offers, under its numbers: a link to #migrate, which is
- * where "one prompt" is spelled out. It promises nothing the prompt has to
- * do, so the prompt it leads to is the short one.
+ * where "one prompt" is spelled out.
  */
 export const heroLede = "Level up your Zod schemas."
 
@@ -29,25 +33,25 @@ const QuestMark = () => (
 )
 
 /**
- * The first screen: the claim, then the three numbers that back it at the
- * size of a headline, each against Zod 4, scoped in its own caption and
- * linked to the section that measures it.
+ * The first screen: the claim (scoped to @ark/aot right in the eyebrow), the
+ * three headline ratios against Zod 4 in Speed -> Size -> Startup order,
+ * instant copy/playground CTAs, and the Standard Schema compatibility strip.
  */
 export const Hero = () => {
 	const [, zodCompiled] = categoryOf("speed").versus
 	return (
 		<section className="hero" aria-labelledby="hero-title" data-hero>
 			<div className="eyebrow rise" style={rise(0)}>
-				<b>arktype</b>
-				{preview && (
-					<Link className="eyebrow-new" href="/docs/precompile">
-						precompile <span className="next-tag">next release</span>
-					</Link>
-				)}
+				<b>arktype 3.0</b>
+				<a className="eyebrow-new" href="#precompile">
+					precompiled with @ark/aot
+				</a>
 			</div>
 			<h1 id="hero-title" className="rise-fade">
 				<ClaimText claim={claims.headline} />{" "}
-				<span className="one">{heroLine}</span>
+				<a className="one" href="#migrate">
+					{heroLine}
+				</a>
 			</h1>
 			<div className="hero-stats rise" style={rise(1)}>
 				{heroStats().map(stat => {
@@ -81,6 +85,9 @@ export const Hero = () => {
 					<QuestMark />
 					{heroLede}
 				</a>
+				<a className="quest-peek" href="#migrate">
+					see the prompt ↓
+				</a>
 			</p>
 			<div className="ctas rise" style={rise(3)}>
 				<Link className="btn btn-gold" href="/docs/intro/setup">
@@ -89,23 +96,51 @@ export const Hero = () => {
 						→
 					</span>
 				</Link>
-				<span className="quest-cta">
-					<a className="btn" href="#migrate">
-						Migrate from Zod
-					</a>
-					{/* what taking the quest does: landing.css sends these up past the button */}
-					<span className="level-up" aria-hidden>
-						<i />
-						<i />
-						<i />
-						<i />
+				<button
+					type="button"
+					className="btn btn-copy-prompt"
+					data-copy={migratePromptAot}
+					title={migratePromptAot}
+				>
+					<span className="swap">
+						<span className="idle">
+							Copy migration prompt
+							<span className="visually-hidden"> (with @ark/aot)</span>{" "}
+							<CopyIcon />
+						</span>
+						<span className="done" aria-hidden>
+							copied · paste in agent <CheckIcon />
+						</span>
 					</span>
-				</span>
+					<span className="visually-hidden" role="status" />
+				</button>
+				<Link className="btn btn-quiet" href={userPlaygroundHref}>
+					Try in Playground{" "}
+					<span className="arrow" aria-hidden>
+						→
+					</span>
+				</Link>
 				<span className="hero-foot">
 					{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
 					<code>z.compile</code> at the median, too ·{" "}
 					<Link href={methodHref}>how we measured →</Link>
 				</span>
+			</div>
+			<div className="hero-trust rise" style={rise(4)}>
+				<span className="trust-lbl">
+					<Link href="/docs/standard-schema">Standard Schema</Link> · zero
+					runtime deps · MIT
+				</span>
+				<span className="trust-sep" aria-hidden>
+					/
+				</span>
+				<nav className="trust-pills" aria-label="Integrations">
+					{integrations.map(([name, href]) => (
+						<Link key={name} href={href}>
+							{name}
+						</Link>
+					))}
+				</nav>
 			</div>
 		</section>
 	)

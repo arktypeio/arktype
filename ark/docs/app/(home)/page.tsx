@@ -2,23 +2,22 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Board } from "../../components/home/Board.tsx"
 import { BoardGraphs } from "../../components/home/BoardGraphs.tsx"
+import { BoardTable } from "../../components/home/BoardTable.tsx"
 import {
 	CopyCommand,
 	InstallButton
 } from "../../components/home/CopyCommand.tsx"
 import { Drill, Drills, Point } from "../../components/home/Drill.tsx"
 import { Hero, heroLede, heroLine } from "../../components/home/Hero.tsx"
-import { heroStats } from "../../components/home/boardFacts.ts"
-import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
+import { HomeCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { Migrate } from "../../components/home/Migrate.tsx"
-import { BoardTable } from "../../components/home/BoardTable.tsx"
+import { Precompile, ProofTabs } from "../../components/home/Points.tsx"
+import { heroStats } from "../../components/home/boardFacts.ts"
 import {
-	Precompile,
-	Size,
-	Speed,
-	Startup
-} from "../../components/home/Points.tsx"
+	migratePromptAot,
+	userPlaygroundHref
+} from "../../components/home/prompts.ts"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import { claims, draftOf } from "../../lib/claims.ts"
@@ -52,143 +51,8 @@ const snippets = {
 	email: "string.email",
 	"age?": "number.integer >= 0",
 	role: "'admin' | 'member'"
-})`,
-	agent: `import { type } from "arktype"
-
-export const SearchArgs = type({
-	query: "string > 0",
-	"limit?": "1 <= number.int <= 50"
 })`
 }
-
-const integrations = [
-	["tRPC", "/docs/integrations#trpc"],
-	["Hono", "/docs/integrations#hono"],
-	["React Hook Form", "/docs/integrations#react-hook-form"],
-	["oRPC", "/docs/integrations#orpc"],
-	["Drizzle", "/docs/integrations#drizzle"],
-	["MCP SDK", "/docs/integrations#mcp-sdk"],
-	["AI SDK", "/docs/integrations#ai-sdk"]
-]
-
-/** an agent's session, scripted around what tsc and ArkType really print; HomeEffects plays its steps in order */
-const Transcript = () => (
-	<figure
-		className="term"
-		data-term
-		aria-label="An agent session: tsc reports number.int should be number.integer, the agent fixes it, and a bad tool call is rejected with readable messages"
-	>
-		<div className="term-bar">
-			<span className="dots" aria-hidden>
-				<i />
-				<i />
-				<i />
-			</span>
-			<span>agent · ~/app</span>
-			<button className="term-replay" type="button">
-				replay
-			</button>
-		</div>
-		<ol className="term-body">
-			<li className="t-user" data-step="0">
-				<span className="t-prompt">›</span>add a search tool: a query and an
-				optional limit, at most 50
-			</li>
-			<li className="t-call" data-step="1">
-				<span className="t-dot" />
-				<b>Write</b> src/tools/search.ts
-			</li>
-			<li className="t-code" data-step="1">
-				<PlainCode code={snippets.agent} />
-			</li>
-			<li className="t-call" data-step="2">
-				<span className="t-dot" />
-				<b>Bash</b> <span className="t-cmd">tsc --noEmit</span>
-			</li>
-			<li className="t-out t-err" data-step="2">
-				<span className="t-loc">src/tools/search.ts:5:2</span> -{" "}
-				<span className="t-errc">error TS2322</span>: Type '"1 &lt;={" "}
-				<mark>number.int</mark> &lt;= 50"' is not assignable to type '"1 &lt;={" "}
-				<mark className="fix">number.integer</mark>"'.
-			</li>
-			<li className="t-call" data-step="3">
-				<span className="t-dot" />
-				<b>Edit</b> src/tools/search.ts
-			</li>
-			<li className="t-diff" data-step="3">
-				<span className="d-del">{'-\t"limit?": "1 <= number.int <= 50"'}</span>
-				<span className="d-add">
-					{'+\t"limit?": "1 <= '}
-					<span className="fix-target">number.integer</span>
-					{' <= 50"'}
-				</span>
-			</li>
-			<li className="t-call" data-step="4">
-				<span className="t-dot" />
-				<b>Bash</b> <span className="t-cmd">tsc --noEmit</span>
-			</li>
-			<li className="t-out t-ok" data-step="4">
-				✓ no errors
-			</li>
-			<li className="t-call" data-step="5">
-				<span className="t-dot" />
-				<b>Bash</b>{" "}
-				<span className="t-cmd">
-					{`node scripts/call.ts search '{"query":"","limit":99}'`}
-				</span>
-			</li>
-			<li className="t-out t-rt" data-step="5">
-				query must be non-empty
-				<br />
-				limit must be at most 50
-			</li>
-		</ol>
-		<figcaption className="term-foot">
-			scripted around real output from tsc and ArkType
-		</figcaption>
-	</figure>
-)
-
-/** 06: what an agent reads back, as a session that fixes itself from the error */
-const Agentic = () => (
-	<Point
-		id="agentic"
-		n="06"
-		kicker="agents"
-		layout="flip"
-		title="Every error names its fix."
-		deck={
-			<>
-				A typo fails <code>tsc</code> where it was written. The message is the
-				fix.
-			</>
-		}
-		aside={
-			<div className="point-ctas">
-				<CopyCommand
-					text="npx skills add arktypeio/arktype"
-					label="Copy the command that adds the ArkType skill to your agent"
-				>
-					<span className="comment"># add the skill to your agent</span>
-					<br />
-					<span className="p">$</span> npx skills add arktypeio/arktype
-				</CopyCommand>
-			</div>
-		}
-		figure={<Transcript />}
-	>
-		<Drills
-			name="agentic"
-			links={
-				<Link className="drill-link" href="/docs/agents">
-					ArkType for agents →
-				</Link>
-			}
-		>
-			{null}
-		</Drills>
-	</Point>
-)
 
 /** a payload that breaks both of the lines TypeScript can't check */
 const badUser = '{ name: "Ada", email: "ada@", age: -1, role: "admin" }'
@@ -244,49 +108,44 @@ const Mirror = () => (
 	</figure>
 )
 
-/** 05: the syntax, as the TypeScript type it replaces */
+/** 01: the syntax, as the TypeScript type it replaces — right after the board */
 const Write = () => (
 	<Point
 		id="write"
-		n="05"
+		n="01"
 		kicker="write"
 		layout="split"
 		title="Same type. Now it runs."
-		deck="TypeScript syntax, in a string. The inferred type is the one you'd have written."
-		figure={
-			<>
-				<Mirror />
-				<div className="works">
-					<span className="lbl">
-						{"// works with anything that takes Standard Schema"}
+		deck="TypeScript syntax, in a string. Autocomplete, hover types and squiggles as you type — and the inferred type is the one you'd have written."
+		aside={
+			<div className="ctas point-ctas">
+				<Link className="btn" href={userPlaygroundHref}>
+					Open in Playground{" "}
+					<span className="arrow" aria-hidden>
+						→
 					</span>
-					{integrations.map(([name, href]) => (
-						<Link key={name} href={href}>
-							{name}
-						</Link>
-					))}
-				</div>
-			</>
-		}
-	>
-		<Drills
-			name="write"
-			links={
-				<Link className="drill-link" href="/playground">
-					try it in the playground →
 				</Link>
-			}
-		>
-			{null}
-		</Drills>
-	</Point>
+				<Link className="link" href="/docs/intro/your-first-type">
+					read the syntax guide{" "}
+					<span className="arrow" aria-hidden>
+						→
+					</span>
+				</Link>
+			</div>
+		}
+		figure={<Mirror />}
+	/>
 )
 
 export default function HomePage() {
 	return (
 		<>
 			<noscript>
-				<style>{".home .drill-panel[data-closed]{display:block}"}</style>
+				<style>
+					{
+						".home .drill-panel[data-closed],.home .stage-panel[data-closed]{display:block}.home .stage-tabs{display:none}.home .proof-stage .stage-panel+.stage-panel{margin-top:56px;padding-top:48px;border-top:1px solid var(--rule-soft)}"
+					}
+				</style>
 			</noscript>
 			<div className="wrap">
 				<Hero />
@@ -307,12 +166,9 @@ export default function HomePage() {
 						</Drill>
 					</Drills>
 				</Board>
-				<Speed />
-				<Size />
-				<Startup />
-				<Precompile />
 				<Write />
-				<Agentic />
+				<ProofTabs />
+				<Precompile />
 				<Migrate />
 			</div>
 
@@ -325,12 +181,8 @@ export default function HomePage() {
 					</h2>
 					<div className="closer-go">
 						<InstallButton />
-						<CopyCommand
-							text="Migrate this project from Zod to ArkType."
-							label="Copy migration prompt"
-						>
-							<span className="p">›</span> Migrate this project from Zod to
-							ArkType.
+						<CopyCommand text={migratePromptAot} label="Copy migration prompt">
+							<span className="p">›</span> {migratePromptAot}
 						</CopyCommand>
 					</div>
 					<SiteFooter />

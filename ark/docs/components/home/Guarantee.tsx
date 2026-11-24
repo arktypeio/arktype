@@ -1,5 +1,5 @@
 import { Fragment } from "react"
-import { diagnostic } from "./guarantee.ts"
+import { diagnostic, refused } from "./guarantee.ts"
 
 const directive = "// @ark-runtime"
 
@@ -7,30 +7,24 @@ const directive = "// @ark-runtime"
  * What precompiling promises, as two things a reader can see: the validator
  * a build writes answers as the Type it replaces does, and a definition the
  * build can't precompile stops it with an error that says what to change.
- * The error is the tool's own (guarantee.ts), not a description of one.
+ * The source and error are the tool's own (guarantee.ts), verified by test.
  */
 export const Guarantee = () => (
 	<figure className="guarantee" id="guarantee">
-		<pre
-			className="guarantee-plugin"
-			aria-label="vite.config.ts, the line added"
-		>
-			<span className="guarantee-file">vite.config.ts</span>
-			<span className="guarantee-add">
-				<span className="diff-mark" aria-hidden>
-					+
-				</span>
-				plugins: [precompile.vite()]
-			</span>
-		</pre>
+		<div className="guarantee-src">
+			<span className="guarantee-file">{refused.file}</span>
+			<pre aria-label={`${refused.file}: a dynamic definition`}>
+				<code>{refused.source.trim()}</code>
+			</pre>
+		</div>
 		<div className="guarantee-body">
 			<h3>Same results. Same messages.</h3>
 			<p>
 				A precompiled validator accepts and rejects what the Type it replaces
-				does, with the same error messages. If the build can't precompile a
-				definition, it stops and says what to change:
+				does, with the same error messages. If <code>@ark/aot</code> can't
+				precompile a definition, the build stops and says what to change:
 			</p>
-			<pre className="diag" aria-label="A build error from arktype-precompile">
+			<pre className="diag" aria-label="A build error from @ark/aot">
 				<span className="diag-at">{diagnostic.at}</span>
 				{"  "}
 				<span className="diag-what">{diagnostic.what}</span>

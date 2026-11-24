@@ -75,9 +75,22 @@
 		text-wrap: balance;
 	}
 	.hero .lede {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 6px 14px;
 		max-width: none;
-		margin: 36px 0 0;
+		margin: 34px 0 0;
 		color: var(--ink);
+	}
+	.quest-peek {
+		font: 400 13.5px / 1.4 var(--mono);
+		color: var(--sky);
+		text-decoration: none;
+		white-space: nowrap;
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 	/* the lede is a quest: one link to #migrate, behind the page's one
 	   marker. Its sentence is the link's name; the marker is drawn, not read. */
@@ -117,76 +130,13 @@
 		);
 		transition: filter var(--t-ui);
 	}
-	/* its own stacking context, so what rises behind a button is under that
-	   button and over nothing else */
 	.hero .ctas {
 		align-items: center;
-		margin-top: 22px;
-		isolation: isolate;
-	}
-	/* the button that takes the quest, and the level it gains */
-	.quest-cta {
-		position: relative;
-		display: inline-flex;
-		/* beside the other button its label fills it, so it is filled with the
-		   page it sits on: an arrow passes behind the label, never through it */
-		@media (min-width: 761px) {
-			.btn {
-				background: var(--bg);
-				&:hover {
-					background: color-mix(in oklab, var(--ink) 4%, var(--bg));
-				}
-			}
-		}
-	}
-	/* four chevrons that start under the button, pass behind it and fade out
-	   above it, short of the lede. Drawn only where motion is welcome (see the
-	   end of this file); the layer takes no clicks and no room, and nothing it
-	   paints leaves its box. */
-	.level-up {
-		--rise: 86px;
-		--pace: 1;
-		position: absolute;
-		inset: -22px 0 -28px;
-		z-index: -1;
-		contain: strict;
-		pointer-events: none;
-		i {
-			position: absolute;
-			bottom: 0;
-			left: var(--x);
-			width: 8px;
-			height: 8px;
-			margin-left: -4px;
-			border: solid var(--green);
-			border-width: 2px 0 0 2px;
-			rotate: 45deg;
-			opacity: 0;
-			/* lanes clear of the pill's round ends, at speeds that never line up */
-			&:nth-child(1) {
-				--x: 23%;
-				--t: 5.3s;
-				--d: -0.6s;
-			}
-			&:nth-child(2) {
-				--x: 41%;
-				--t: 6.7s;
-				--d: -3.9s;
-			}
-			&:nth-child(3) {
-				--x: 60%;
-				--t: 5.9s;
-				--d: -2.3s;
-			}
-			&:nth-child(4) {
-				--x: 78%;
-				--t: 7.3s;
-				--d: -5.6s;
-			}
-		}
+		margin-top: 20px;
 	}
 	.hero-foot {
-		margin-left: 10px;
+		flex-basis: 100%;
+		margin: 4px 0 0;
 		font: 400 13px / 1.5 var(--mono);
 		color: var(--ink-2);
 		code {
@@ -195,6 +145,49 @@
 		a {
 			color: var(--sky);
 			white-space: nowrap;
+		}
+	}
+	.hero-trust {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+		margin-top: 28px;
+		padding-top: 18px;
+		border-top: 1px solid var(--rule-soft);
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-3);
+	}
+	.trust-lbl a {
+		color: var(--ink-2);
+		text-decoration: none;
+		&:hover {
+			color: var(--gold);
+		}
+	}
+	.trust-sep {
+		opacity: 0.45;
+	}
+	.trust-pills {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		a {
+			font: 500 13px / 1.2 var(--sans);
+			color: var(--ink-2);
+			text-decoration: none;
+			padding: 4px 10px;
+			border-radius: var(--r-pill);
+			border: 1px solid var(--rule-soft);
+			background: color-mix(in oklab, var(--surface) 55%, transparent);
+			transition:
+				color var(--t-micro),
+				border-color var(--t-micro);
+			&:hover {
+				color: var(--ink);
+				border-color: color-mix(in oklab, var(--teal) 50%, transparent);
+			}
 		}
 	}
 
@@ -228,6 +221,8 @@
 		margin-top: 26px;
 	}
 	.graph {
+		display: flex;
+		flex-direction: column;
 		min-width: 0;
 		h4 {
 			margin: 0;
@@ -242,6 +237,22 @@
 			padding: 0;
 			list-style: none;
 		}
+	}
+	.graph-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+	.graph-rank {
+		flex: none;
+		padding: 3px 10px;
+		border-radius: var(--r-pill);
+		background: color-mix(in oklab, var(--gold-fill) 14%, transparent);
+		box-shadow: inset 0 0 0 1px
+			color-mix(in oklab, var(--gold-fill) 55%, transparent);
+		font: 700 12.5px / 1.2 var(--mono);
+		color: var(--gold);
 	}
 	/* two lines in every graph, so the three sets of lanes start level */
 	.graph-of {
@@ -464,7 +475,8 @@
 	.graph-axis {
 		position: relative;
 		height: 16px;
-		margin-top: 9px;
+		margin-top: auto;
+		padding-top: 9px;
 		font: 400 12px / 1 var(--mono);
 		color: var(--ink-3);
 		span {
@@ -480,20 +492,25 @@
 	/* ArkType's place across every result of the category */
 	.graph-badge {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: baseline;
-		gap: 10px;
+		justify-content: space-between;
+		gap: 6px 10px;
 		margin: 16px 0 0;
 		font: 400 13px / 1.5 var(--mono);
-		color: var(--ink);
+		color: var(--ink-2);
 	}
-	.graph-badge-place {
-		flex: none;
-		padding: 1px 9px;
-		border-radius: var(--r-pill);
-		box-shadow: inset 0 0 0 1px
-			color-mix(in oklab, var(--gold-fill) 70%, transparent);
-		font-weight: 700;
+	.graph-badge-inline {
 		color: var(--gold);
+		font-weight: 700;
+	}
+	.graph-jump {
+		color: var(--sky);
+		text-decoration: none;
+		white-space: nowrap;
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 	.graphs-foot {
 		display: flex;
@@ -623,29 +640,25 @@
 			color: var(--ink-2);
 		}
 	}
-	.guarantee-plugin {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 4px 6px;
-		margin: 0;
-		padding: 11px 22px;
+	.guarantee-src {
 		border-bottom: 1px solid var(--rule-soft);
-		background: var(--add);
-		font: 400 13.5px / 1.5 var(--mono);
-		font-variant-ligatures: none;
-		color: var(--ink);
-		.diff-mark {
-			width: auto;
-			margin-right: 1ch;
+		background: var(--sunk);
+		.guarantee-file {
+			display: block;
+			padding: 9px 22px;
+			border-bottom: 1px solid var(--rule-soft);
+			font: 400 12.5px / 1.2 var(--mono);
+			color: var(--ink-2);
 		}
-	}
-	.guarantee-add {
-		margin-left: auto;
-		white-space: nowrap;
-	}
-	.guarantee-file {
-		color: var(--ink-2);
+		pre {
+			margin: 0;
+			padding: 12px 22px;
+			overflow-x: auto;
+			font: 400 13px / 1.65 var(--mono);
+			font-feature-settings: "calt" 0;
+			font-variant-ligatures: none;
+			color: var(--ink);
+		}
 	}
 	.guarantee-body {
 		padding: 24px 24px 22px;
@@ -696,6 +709,220 @@
 	}
 	.board > .drills {
 		margin-top: 18px;
+	}
+
+	/* ---------- tabbed stages (benchmarks & @ark/aot) ---------- */
+	.stage-tabs {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 5px;
+		border-radius: var(--r-md);
+		border: 1px solid var(--rule);
+		background: color-mix(in oklab, var(--surface) 72%, var(--bg));
+	}
+	.stage-tab {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 8px;
+		padding: 9px 15px;
+		border-radius: calc(var(--r-md) - 4px);
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--ink-2);
+		font: 500 14px / 1.2 var(--sans);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			background var(--t-micro),
+			border-color var(--t-micro);
+		b {
+			color: var(--ink);
+			font-weight: 700;
+		}
+		span {
+			font: 400 12.5px / 1.2 var(--mono);
+			color: var(--ink-3);
+		}
+		&:hover {
+			color: var(--ink);
+			background: color-mix(in oklab, var(--ink) 5%, transparent);
+		}
+		&[aria-selected="true"] {
+			border-color: color-mix(in oklab, var(--gold) 45%, transparent);
+			background: color-mix(in oklab, var(--gold) 10%, var(--surface));
+			b {
+				color: var(--gold);
+			}
+			span {
+				color: var(--ink-2);
+			}
+		}
+	}
+	.stage-panel[data-closed] {
+		display: none;
+	}
+
+	/* ---------- 02: @ark/aot live workbench & plugin snippet ---------- */
+	.aot-aside {
+		display: grid;
+		gap: 18px;
+		margin-top: 24px;
+		.point-ctas {
+			margin-top: 0;
+		}
+	}
+	.aot-snippet {
+		margin: 0;
+		border-radius: var(--r-md);
+		border: 1px solid var(--rule);
+		background: var(--sunk);
+		overflow: hidden;
+		code {
+			display: block;
+			padding: 12px 16px;
+			font: 400 13px / 1.7 var(--mono);
+			color: var(--ink);
+			background: var(--add);
+			overflow-x: auto;
+		}
+		.diff-mark {
+			display: inline-block;
+			width: 2ch;
+			color: var(--teal);
+			user-select: none;
+		}
+	}
+	.aot-snippet-head {
+		display: block;
+		padding: 8px 16px;
+		border-bottom: 1px solid var(--rule-soft);
+		font: 400 12.5px / 1.2 var(--mono);
+		color: var(--ink-2);
+	}
+	.aot-stage {
+		display: grid;
+		gap: 12px;
+		.stage-tabs {
+			justify-self: start;
+		}
+		.compile {
+			margin: 0;
+		}
+		.compile-pipe {
+			height: 24px;
+		}
+		.compile .code-card pre.shiki {
+			padding: 12px 18px;
+		}
+		.compile-in {
+			--edit-h: calc(var(--rows) * var(--edit-lh) * var(--edit-fs) + 24px);
+		}
+		.compile-edit {
+			padding: 12px 18px;
+		}
+		.compile-real {
+			padding: 14px 18px 8px;
+		}
+		.compile-out[data-live] .compile-result {
+			height: 20rem;
+		}
+	}
+
+	/* ---------- 03: unified tabbed benchmarks ---------- */
+	.proof-stage {
+		scroll-margin-top: calc(var(--top) + 12px);
+	}
+	.proof-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 18px 28px;
+		margin-bottom: 36px;
+		h2 {
+			margin-top: 12px;
+		}
+	}
+	.proof-body {
+		.point-main {
+			grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+			gap: 56px;
+			align-items: start;
+		}
+		.stat {
+			margin-top: 0;
+		}
+		.point-words h3 {
+			margin: 26px 0 0;
+			font: 750 clamp(1.7rem, 1.25rem + 1.3vw, 2.45rem) / 1.08 var(--sans);
+			letter-spacing: -0.028em;
+		}
+	}
+
+	/* ---------- 05: unified 1-prompt migration ---------- */
+	.migrate-box {
+		display: grid;
+		gap: 12px;
+		margin-top: 24px;
+		padding: 18px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: color-mix(in oklab, var(--surface) 74%, transparent);
+		.cmd {
+			width: 100%;
+			justify-content: space-between;
+			padding: 12px 12px 12px 16px;
+			line-height: 1.5;
+		}
+	}
+	.migrate-bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px 14px;
+	}
+	.migrate-label {
+		font: 700 14.5px / 1.2 var(--sans);
+		color: var(--ink);
+	}
+	.migrate-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 4px 10px;
+		border-radius: var(--r-pill);
+		border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--rule));
+		background: color-mix(in oklab, var(--gold) 7%, transparent);
+		font: 400 12.5px / 1.2 var(--mono);
+		color: var(--ink-2);
+		cursor: pointer;
+		input {
+			accent-color: var(--gold);
+			cursor: pointer;
+		}
+		code {
+			color: var(--gold);
+		}
+	}
+	.migrate-alt {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+		padding-top: 8px;
+		border-top: 1px dashed var(--rule-soft);
+		.cmd {
+			width: auto;
+			padding: 5px 6px 5px 12px;
+			min-height: 36px;
+			font-size: 12.5px;
+		}
+	}
+	.migrate-alt-lbl {
+		font: 400 12.5px / 1.3 var(--mono);
+		color: var(--ink-3);
 	}
 
 	/* ---------- a point: copy, figure, drill-downs ---------- */
@@ -1030,7 +1257,7 @@
 			"bar bar";
 		align-items: end;
 		column-gap: 16px;
-		padding: 12px 0 13px;
+		padding: 9px 0 10px;
 		font: 400 13px / 1.3 var(--mono);
 		color: var(--ink-2);
 		& + & {
@@ -1132,7 +1359,13 @@
 		}
 	}
 	.boot-done {
+		color: var(--ink-2);
+	}
+	.boot-lane.is-ours .boot-done {
 		color: var(--teal);
+	}
+	.boot-lane.is-incumbent .boot-done {
+		color: var(--zod-ink);
 	}
 	.boot-val {
 		grid-area: val;
@@ -1340,11 +1573,6 @@
 		user-select: none;
 	}
 	/* ---------- one card, one file, before and after ---------- */
-	.point .moves {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 12px;
-		margin-top: 28px;
-	}
 	.morph-stack {
 		position: relative;
 		display: grid;
@@ -1473,9 +1701,6 @@
 		&::before {
 			content: "✗ ";
 		}
-	}
-	.works {
-		margin-top: 28px;
 	}
 
 	/* ---------- 07: the transcript's one beat ---------- */
@@ -1659,10 +1884,6 @@
 	.home .quest-mark {
 		animation: quest-bob 2.2s ease-in-out infinite alternate;
 	}
-	.home .level-up i {
-		animation: level-up calc(var(--t) * var(--pace)) linear
-			calc(var(--d) * var(--pace)) infinite;
-	}
 	:root[data-motion] .home {
 		/* a number waits for itself to be on screen, and for nothing else */
 		.stat-num[data-to]:not([data-in]) {
@@ -1825,44 +2046,45 @@
 
 @media (max-width: 1080px) {
 	.home {
-		.point:is(.is-split, .is-flip) .point-main {
+		.point:is(.is-split, .is-flip) .point-main,
+		.proof-body .point-main {
 			grid-template-columns: minmax(0, 1fr);
 			gap: 36px;
 		}
 		.point.is-flip .point-main .point-copy {
 			order: 0;
 		}
-		.hero-foot {
-			flex-basis: 100%;
-			margin-left: 0;
-		}
-		/* the foot is under the buttons now: the arrows start in the gap above it */
-		.level-up {
-			--rise: 70px;
-			bottom: -12px;
-		}
 	}
 }
 
 @media (max-width: 760px) {
 	.home {
+		.hero .eyebrow {
+			font-size: 12.5px;
+			gap: 8px;
+		}
+		.eyebrow-new {
+			margin-left: 0;
+			padding: 3px 9px;
+			font-size: 12px;
+		}
 		/* a row each: the number, then what it is a number of */
 		.hero-stats {
 			grid-template-columns: minmax(0, 1fr);
-			gap: 14px;
-			margin-top: 26px;
+			gap: 10px;
+			margin-top: 18px;
 		}
 		.hero-stat {
-			grid-template-columns: 5.4rem minmax(0, 1fr);
+			grid-template-columns: 5rem minmax(0, 1fr);
 			grid-template-areas:
 				"num what"
 				"num scope";
-			column-gap: 14px;
+			column-gap: 12px;
 			align-items: center;
 			align-content: center;
 			.stat-num {
 				grid-area: num;
-				font-size: 3.5rem;
+				font-size: 3.1rem;
 				line-height: 0.9;
 			}
 		}
@@ -1870,47 +2092,45 @@
 			grid-area: what;
 			align-self: end;
 			margin-top: 0;
-			font-size: 1.06rem;
+			font-size: 1rem;
 		}
 		.hero-stat-scope {
 			grid-area: scope;
 			align-self: start;
-			margin-top: 3px;
-			font-size: 13px;
-			line-height: 1.35;
+			margin-top: 2px;
+			font-size: 12.5px;
+			line-height: 1.3;
 		}
 		.hero .lede {
-			margin-top: 26px;
-		}
-		.hero .ctas {
 			margin-top: 18px;
 		}
-		/* stacked, the button fills its row and has room either side of its
-		   label: the arrows rise there, inside the pill, a shorter way in less
-		   time, and are gone before its edge */
-		.quest-cta {
-			flex: 1 1 auto;
+		.hero .ctas {
+			margin-top: 14px;
 		}
-		.level-up {
-			--rise: 30px;
-			--pace: 0.62;
-			inset: 0;
-			border-radius: var(--r-pill);
-			i {
-				bottom: 3px;
-				&:nth-child(1) {
-					--x: 7%;
-				}
-				&:nth-child(2) {
-					--x: 19%;
-				}
-				&:nth-child(3) {
-					--x: 81%;
-				}
-				&:nth-child(4) {
-					--x: 93%;
-				}
+		.hero-trust {
+			margin-top: 20px;
+			padding-top: 14px;
+		}
+		.trust-sep {
+			display: none;
+		}
+		.stage-tabs {
+			width: 100%;
+		}
+		.stage-tab {
+			flex: 1 1 auto;
+			justify-content: center;
+			padding: 8px 10px;
+			font-size: 13px;
+			span {
+				display: none;
 			}
+		}
+		.proof-head {
+			margin-bottom: 24px;
+		}
+		.migrate-box {
+			padding: 14px;
 		}
 		/* a graph a row: each keeps the card's width for its bars */
 		.graphs {
@@ -1951,12 +2171,10 @@
 		.graphs-method {
 			margin-left: 0;
 		}
-		.guarantee-plugin,
+		.guarantee-src .guarantee-file,
+		.guarantee-src pre,
 		.guarantee figcaption {
 			padding-inline: 16px;
-		}
-		.guarantee-add {
-			margin-left: 0;
 		}
 		.guarantee-body {
 			padding: 20px 16px 18px;

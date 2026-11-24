@@ -98,7 +98,7 @@
 	.btn-gold {
 		background: var(--gold-fill);
 		color: var(--on-gold);
-		border-color: transparent;
+		border-color: color-mix(in oklab, var(--copper) 28%, transparent);
 		font-family: var(--mono);
 		font-weight: 600;
 		box-shadow: var(--shadow-cta);
@@ -107,6 +107,17 @@
 			box-shadow:
 				0 0 0 4px color-mix(in oklab, var(--gold-fill) 16%, transparent),
 				0 8px 28px -10px color-mix(in oklab, var(--gold-fill) 60%, transparent);
+		}
+	}
+	.btn-quiet {
+		border-color: transparent;
+		background: transparent;
+		color: var(--ink-2);
+		padding-inline: 14px;
+		&:hover {
+			color: var(--ink);
+			border-color: var(--rule);
+			background: color-mix(in oklab, var(--ink) 4%, transparent);
 		}
 	}
 	/* idle and done share one grid cell, so a copy button never resizes */
@@ -206,6 +217,65 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
+	}
+	.nav-quick,
+	.home-menu {
+		display: none;
+	}
+	.nav-quick {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--ink-2);
+		text-decoration: none;
+		padding: 6px 8px;
+		border-radius: var(--r-xs);
+		transition: color var(--t-micro);
+		&:hover {
+			color: var(--ink);
+		}
+	}
+	.home-menu {
+		position: relative;
+		> summary {
+			list-style: none;
+			cursor: pointer;
+			&::-webkit-details-marker {
+				display: none;
+			}
+		}
+		&[open] > summary {
+			color: var(--gold);
+			background: color-mix(in oklab, var(--gold) 10%, transparent);
+		}
+	}
+	.home-menu-panel {
+		position: absolute;
+		top: calc(100% + 8px);
+		right: 0;
+		min-width: 220px;
+		padding: 8px;
+		border-radius: var(--r-md);
+		border: 1px solid color-mix(in oklab, var(--gold) 24%, var(--rule));
+		background: var(--raised);
+		box-shadow: var(--shadow-pop, var(--shadow-deep));
+		display: grid;
+		gap: 2px;
+		z-index: var(--z-nav);
+		a {
+			padding: 10px 12px;
+			border-radius: var(--r-sm);
+			font-size: 14.5px;
+			font-weight: 500;
+			color: var(--ink-2);
+			text-decoration: none;
+			transition:
+				color var(--t-micro),
+				background var(--t-micro);
+			&:hover {
+				color: var(--ink);
+				background: color-mix(in oklab, var(--ink) 6%, transparent);
+			}
+		}
 	}
 	.search-pill {
 		display: inline-flex;
@@ -311,8 +381,8 @@
 		);
 		border: 1px solid var(--rule);
 		box-shadow: var(--shadow-card);
-		> figcaption,
-		> footer {
+		&:where(:not(.compile .code-card)) > figcaption,
+		&:where(:not(.compile .code-card)) > footer {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
@@ -352,8 +422,8 @@
 			linear-gradient(#000 0 0);
 		mask-composite: exclude;
 	}
-	/* code from the docs' pipeline, at home sizes */
-	.code-card pre.shiki {
+	/* code from the docs' pipeline, at home sizes (compile.css owns .compile cards) */
+	.code-card:where(:not(.compile .code-card)) pre.shiki {
 		--pre-x: 20px;
 		margin: 0;
 		padding: 16px var(--pre-x);
@@ -361,7 +431,8 @@
 		container-type: inline-size;
 		overflow-x: auto;
 		font: 400 var(--fs-code) / 1.72 var(--mono);
-		font-feature-settings: "calt";
+		font-feature-settings: "calt" 0;
+		font-variant-ligatures: none;
 		tab-size: 2;
 		background: transparent !important;
 		/* ArkDark's cursive: functions and declared names */
@@ -677,34 +748,6 @@
 			color: var(--teal);
 		}
 	}
-	.works {
-		margin-top: 56px;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-		.lbl {
-			flex-basis: 100%;
-			font: 400 13px / 1.4 var(--mono);
-			color: var(--ink-2);
-			margin-bottom: 6px;
-		}
-		a {
-			font-size: 14px;
-			color: var(--ink-2);
-			text-decoration: none;
-			padding: 6px 12px;
-			border-radius: var(--r-pill);
-			border: 1px solid var(--line);
-			transition:
-				color var(--t-micro),
-				border-color var(--t-micro);
-			&:hover {
-				color: var(--ink);
-				border-color: color-mix(in oklab, var(--teal) 50%, transparent);
-			}
-		}
-	}
 
 	/* ---------- closer and footer ---------- */
 	.closer {
@@ -866,6 +909,17 @@
 		.search-pill .label,
 		.search-pill .kbds {
 			display: none;
+		}
+		.nav-quick {
+			display: inline-flex;
+		}
+		.home-menu {
+			display: block;
+		}
+		@media (max-width: 480px) {
+			.nav-quick {
+				display: none;
+			}
 		}
 		.search-pill {
 			min-width: 0;
@@ -1206,46 +1260,6 @@
 		}
 	}
 
-	/* 02: migrate */
-	.moves {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 16px;
-		margin: 40px 0 0;
-		padding: 0;
-		list-style: none;
-		li {
-			display: grid;
-			grid-template-columns: max-content minmax(0, 1fr);
-			align-items: center;
-			gap: 14px 12px;
-			min-width: 0;
-			padding: 20px;
-			border-radius: var(--r-lg);
-			border: 1px solid var(--rule-soft);
-			background: color-mix(in oklab, var(--surface) 70%, transparent);
-		}
-		h3 {
-			font: 700 17px / 1.3 var(--sans);
-		}
-		.cmd,
-		.url {
-			grid-column: 1 / -1;
-			justify-self: stretch;
-			justify-content: space-between;
-		}
-	}
-	.move-n {
-		display: inline-grid;
-		place-items: center;
-		width: 26px;
-		height: 26px;
-		border-radius: 50%;
-		background: var(--gold-fill);
-		color: var(--on-gold);
-		font: 700 13px / 1 var(--mono);
-		box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 14%, transparent);
-	}
 	.guide {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1295,7 +1309,6 @@
 			grid-template-rows: none;
 		}
 		.sides,
-		.moves,
 		.guide {
 			grid-template-columns: minmax(0, 1fr);
 		}

@@ -114,7 +114,7 @@
 	border-top: 1px solid var(--rule-soft);
 }
 
-.prose .compile .code-card > footer code {
+:is(.prose, .home) .compile .code-card > footer code {
 	padding: 0;
 	border: 0;
 	background: none;
@@ -127,7 +127,8 @@
 	padding: 16px 20px;
 	overflow-x: auto;
 	font: 400 14px / 1.75 var(--mono);
-	font-feature-settings: "calt";
+	font-feature-settings: "calt" 0;
+	font-variant-ligatures: none;
 	tab-size: 2;
 	background: transparent !important;
 }
@@ -293,11 +294,11 @@
 }
 
 /* the checks that one calls, a press away */
-.prose .compile details.compile-helpers {
+:is(.prose, .home) .compile details.compile-helpers {
 	margin: 0;
 }
 
-.prose .compile details.compile-helpers > summary {
+:is(.prose, .home) .compile details.compile-helpers > summary {
 	display: flex;
 	align-items: center;
 	gap: 1ch;
@@ -310,7 +311,7 @@
 	cursor: pointer;
 }
 
-.prose .compile details.compile-helpers > summary:hover {
+:is(.prose, .home) .compile details.compile-helpers > summary:hover {
 	background: color-mix(in oklab, var(--gold) 9%, transparent);
 }
 
@@ -321,7 +322,7 @@
 	color: var(--ink-2);
 }
 
-.prose .compile p.compile-fail {
+:is(.prose, .home) .compile p.compile-fail {
 	margin: 0;
 	padding: 20px 22px;
 	font: 400 14px / 1.6 var(--mono);

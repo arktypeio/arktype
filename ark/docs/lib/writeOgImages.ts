@@ -82,6 +82,7 @@ const styles = {
 		tracking: -0.01
 	},
 	site: { family: "mono", weight: 500, size: 22, fill: colors.ink3 },
+	pill: { family: "mono", weight: 500, size: 17, fill: colors.gold },
 	headline: {
 		family: "sans",
 		weight: 800,
@@ -219,24 +220,42 @@ const logo = readFileSync(join(publicDir, "image", "favicon.svg"), "utf8")
 
 const brandSize = 42
 
-/** the logo and name on the left and where the card links on the right */
-const header = (site: string) => {
+/** the logo and name on the left, optional badge beside it, and where the card links on the right */
+const header = (site: string, badge?: string) => {
 	const middle = padY + brandSize / 2
 	const centered = (style: Style) => {
 		const lineHeight = normalLineHeight(style)
 		return baselineOf(middle - lineHeight / 2, lineHeight, style)
+	}
+	const brandX = padX + brandSize + 14
+	let pillSvg = ""
+	if (badge) {
+		const pillX = brandX + widthOf("ArkType", styles.brand) + 18
+		const textW = widthOf(badge, styles.pill)
+		const padLeft = 14
+		const dotR = 3.5
+		const dotGap = 9
+		const padRight = 14
+		const pillH = 30
+		const pillW = padLeft + dotR * 2 + dotGap + textW + padRight
+		const pillY = middle - pillH / 2
+		pillSvg =
+			`<rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="${colors.gold}" fill-opacity="0.09" stroke="${colors.gold}" stroke-opacity="0.45" stroke-width="1"/>` +
+			`<circle cx="${pillX + padLeft + dotR}" cy="${middle}" r="${dotR}" fill="${colors.gold}"/>` +
+			outline(
+				badge,
+				styles.pill,
+				pillX + padLeft + dotR * 2 + dotGap,
+				centered(styles.pill)
+			)
 	}
 	return (
 		logo.replace(
 			"<svg ",
 			`<svg x="${padX}" y="${padY}" width="${brandSize}" height="${brandSize}" `
 		) +
-		outline(
-			"ArkType",
-			styles.brand,
-			padX + brandSize + 14,
-			centered(styles.brand)
-		) +
+		outline("ArkType", styles.brand, brandX, centered(styles.brand)) +
+		pillSvg +
 		outline(
 			site,
 			styles.site,
@@ -307,12 +326,27 @@ const homeCard = () => {
 		return glow + num.svg + what.svg + scope.svg
 	})
 
-	if (maxBottom > height - padY) {
+	if (maxBottom > height - padY - 38) {
 		throw new Error(
-			`the homepage's card overflows by ${maxBottom - height + padY}px`
+			`the homepage's card overflows by ${maxBottom - height + padY + 38}px`
 		)
 	}
-	return card(header("arktype.io") + h1.svg + line.svg + stats.join(""))
+	const footY = height - padY - 8
+	const footRule = `<line x1="${padX}" y1="${footY - 22}" x2="${width - padX}" y2="${footY - 22}" stroke="${colors.ink3}" stroke-opacity="0.22" stroke-width="1"/>`
+	const footText = outline(
+		"Standard Schema · zero runtime deps · MIT · Vite, Next.js, esbuild, Bun",
+		styles.statScope,
+		padX,
+		footY
+	)
+	return card(
+		header("arktype.io", "3.0 · @ark/aot") +
+			h1.svg +
+			line.svg +
+			stats.join("") +
+			footRule +
+			footText
+	)
 }
 
 /** a post's card: its title, an "Announcing" title's version in gold, and its description */

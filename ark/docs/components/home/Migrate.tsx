@@ -4,6 +4,11 @@ import { bigAppLine } from "./boardFacts.ts"
 import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
+import {
+	migratePromptAot,
+	migratePromptDynamic,
+	skillCommand
+} from "./prompts.ts"
 
 // The two panes accept and reject the same inputs: run against 26 of them,
 // valid and invalid at every bound, before this was written. Messages and
@@ -112,38 +117,42 @@ const Pairs = ({ pairs }: PairsProps) => (
 	</dl>
 )
 
-/** migrating with the skill: one command, one prompt, and the conversion it makes */
+/** migrating with one universal prompt: installs the skill, converts Zod, and wires @ark/aot by default */
 export const Migrate = () => (
 	<Point
 		id="migrate"
-		n="07"
+		n="04"
 		kicker="migrate"
 		title="Migrate your schemas with one prompt."
+		deck="Paste once into Claude Code, Codex or Cursor. It installs the skill, converts your schemas, checks types and tests, and wires up @ark/aot."
 		layout="split"
 		aside={
-			<ol className="moves">
-				<li>
-					<span className="move-n">1</span>
-					<h3>Add the skill</h3>
-					<CopyCommand
-						text="npx skills add arktypeio/arktype"
-						label="Copy skill install command"
-					>
-						<span className="p">$</span> npx skills add arktypeio/arktype
+			<div
+				className="migrate-box"
+				data-migrate
+				data-prompt-aot={migratePromptAot}
+				data-prompt-dynamic={migratePromptDynamic}
+			>
+				<div className="migrate-bar">
+					<span className="migrate-label">Paste into your agent</span>
+					<label className="migrate-toggle">
+						<input type="checkbox" defaultChecked data-migrate-aot />
+						<span>
+							include <code>@ark/aot</code>
+						</span>
+					</label>
+				</div>
+				<CopyCommand text={migratePromptAot} label="Copy migration prompt">
+					<span className="p">›</span>{" "}
+					<span data-migrate-text>{migratePromptAot}</span>
+				</CopyCommand>
+				<div className="migrate-alt">
+					<span className="migrate-alt-lbl">or install the skill directly</span>
+					<CopyCommand text={skillCommand} label="Copy skill install command">
+						<span className="p">$</span> {skillCommand}
 					</CopyCommand>
-				</li>
-				<li>
-					<span className="move-n">2</span>
-					<h3>Ask your agent</h3>
-					<CopyCommand
-						text="Migrate this project from Zod to ArkType."
-						label="Copy migration prompt"
-					>
-						<span className="p">›</span> Migrate this project from Zod to
-						ArkType.
-					</CopyCommand>
-				</li>
-			</ol>
+				</div>
+			</div>
 		}
 		figure={<Conversion />}
 		caveat={
@@ -158,9 +167,14 @@ export const Migrate = () => (
 		<Drills
 			name="migrate"
 			links={
-				<Link className="drill-link" href="/docs/migrating">
-					the migration guide →
-				</Link>
+				<>
+					<Link className="drill-link" href="/docs/migrating">
+						the migration guide →
+					</Link>
+					<Link className="drill-link" href="/docs/agents">
+						ArkType for agents →
+					</Link>
+				</>
 			}
 		>
 			<Drill

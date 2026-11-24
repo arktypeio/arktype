@@ -103,16 +103,16 @@ export const heroStats = (): HeroStat[] => {
 			scope: `median of ${zod.versus.count} scenarios`
 		},
 		{
-			href: "#start",
-			value: startupFacts().zodRatio,
-			unit: "fewer startup instructions",
-			scope: "a login app, import to first validation"
-		},
-		{
 			href: "#size",
 			value: zodSizeRatio(),
 			unit: "smaller",
 			scope: `${loginKb("Zod")} → ${loginKb("ArkType (precompiled)")} kB gzipped, on Valibot's own login form`
+		},
+		{
+			href: "#start",
+			value: startupFacts().zodRatio,
+			unit: "fewer startup instructions",
+			scope: "a login app, import to first validation"
 		}
 	]
 }
@@ -134,7 +134,7 @@ export const bigAppLine = () => {
 	// truncated, so no margin is ever rounded up
 	const less = Math.floor((1 - smallest.gz / zod.gz) * 100)
 	if (faster < 2 || less < 1) return
-	return `On ntwine, bundled with esbuild: the default build validated ${formatRatio(faster)} as fast as Zod 4, and the "smallest" preset shipped ${less}% less.`
+	return `On a real multi-schema app (ntwine, bundled with esbuild): the default build validated ${formatRatio(faster)} as fast as Zod 4, and the "smallest" preset shipped ${less}% less.`
 }
 
 /**
@@ -229,17 +229,19 @@ export const captionOf = (board: UnitBoard) => {
 }
 
 /**
- * The line under ArkType's bar: the same build on our own benchmark, in the
- * unit most readers think in, or the login-form comparison for size so all
- * three gold cards share the same height and the rival lanes stay level.
+ * The line under ArkType's bar: our own benchmark's figure in the same unit
+ * the section leads with, so every column stays aligned with the hero and
+ * ProofTabs (avoiding Node boot wall-clock noise on Startup).
  */
 const subOf = (board: UnitBoard) => {
-	const own = ownFigures[board.id].ArkType
-	if (!own)
+	if (board.id === "size")
 		return `${loginKb("ArkType (precompiled)")} kB on Valibot's login form · ${zodSizeRatio()} smaller than Zod`
-	return board.id === "speed" ?
-			`${own.text} · ${own.rate} validations a second on our benchmark`
-		:	`${own.text} from import to first validation on our apps`
+	if (board.id === "startup") {
+		const { category, ours, zodRatio } = startupFacts()
+		return `${category.format(ours.value)} instructions on our login app · ${zodRatio} fewer than Zod`
+	}
+	const own = ownFigures[board.id].ArkType
+	return `${own!.text} · ${own!.rate} validations a second on our benchmark`
 }
 
 /**
@@ -279,8 +281,12 @@ const axisOver = (value: number) => {
  * other libraries the site names, and Zod, which most readers are choosing
  * against, wherever it places.
  */
+/** matches Board.tsx's "Speed. Size. Startup.", Hero stats, og.png, and ProofTabs */
+const boardDisplayOrder: Category["id"][] = ["speed", "size", "startup"]
+
 export const boardGraphs = (): BoardGraph[] =>
-	categories.map(category => {
+	boardDisplayOrder.map(id => {
+		const category = categoryOf(id)
 		const board = unitBoards[category.id]
 		const indexOf = (library: string) =>
 			board.standings.findIndex(s => s.library === library)
@@ -315,7 +321,9 @@ export const boardGraphs = (): BoardGraph[] =>
 					: "rival"
 				const sub = kind === "ours" ? subOf(board) : undefined
 				const beside =
-					kind === "ours" ? undefined : ownFigures[board.id][library]?.text
+					kind === "ours" || board.id === "startup" ?
+						undefined
+					:	ownFigures[board.id][library]?.text
 				return {
 					library,
 					kind,

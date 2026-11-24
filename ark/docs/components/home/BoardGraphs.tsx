@@ -13,6 +13,12 @@ const asOf = standingsAsOf.text
 	.replace(/\.$/, "")
 	.replace(/^./, first => first.toLowerCase())
 
+const proofHrefOf: Record<BoardGraph["id"], string> = {
+	speed: "#run",
+	startup: "#start",
+	size: "#size"
+}
+
 type GapProps = {
 	bar: BoardBar
 }
@@ -68,7 +74,10 @@ type GraphProps = {
 
 const Graph = ({ graph }: GraphProps) => (
 	<div className="graph" style={{ "--mark": graph.mark } as CSSProperties}>
-		<h4>{graph.title}</h4>
+		<div className="graph-head">
+			<h4>{graph.title}</h4>
+			<span className="graph-rank">{graph.badge.place}</span>
+		</div>
 		<p className="graph-of">{graph.caption}</p>
 		<ol>
 			{graph.bars.map((bar, row) => (
@@ -86,8 +95,13 @@ const Graph = ({ graph }: GraphProps) => (
 			))}
 		</div>
 		<p className="graph-badge">
-			<span className="graph-badge-place">{graph.badge.place}</span>
-			<span>{graph.badge.text}</span>
+			<span>
+				<b className="graph-badge-inline">{graph.badge.place}</b>{" "}
+				{graph.badge.text}
+			</span>
+			<a className="graph-jump" href={proofHrefOf[graph.id]}>
+				watch live ↓
+			</a>
 		</p>
 	</div>
 )
@@ -95,9 +109,8 @@ const Graph = ({ graph }: GraphProps) => (
 /**
  * The board: a graph a category, each in the unit its results were measured
  * in. The results are other projects' benchmarks, the bars and places
- * lib/bench/units.ts's, and under each graph is ArkType's place across every
- * result of its category. The same numbers as a table are the drill-down
- * beside it, and how each was measured is a link away.
+ * lib/bench/units.ts's, and each graph leads with ArkType's place in its
+ * header so the 3-for-3 sweep reads in a glance.
  */
 export const BoardGraphs = () => (
 	<figure
@@ -120,7 +133,9 @@ export const BoardGraphs = () => (
 				<span className="graph-cut-key" aria-hidden /> past the axis: the bar is
 				cut, the number is exact
 			</span>
-			<span>ArkType precompiled, default build, in all three</span>
+			<span>
+				<code>@ark/aot</code> default build, in all three
+			</span>
 			<span className="graphs-method">
 				<time dateTime={standingsAsOf.date}>{asOf}</time>
 				<Link href={methodHref}>how we measured →</Link>

@@ -31,6 +31,8 @@ export type CompileLiveProps = {
 	/** what the precompiler wrote for it when the site was built */
 	initial: Emitted
 	tries: Try[]
+	/** filename shown in the input card's header */
+	fileName?: string
 }
 
 type StepProps = {
@@ -110,7 +112,8 @@ export const CompileLive = ({
 	source,
 	input,
 	initial,
-	tries
+	tries,
+	fileName = "shape.ts"
 }: CompileLiveProps) => {
 	const [editing, setEditing] = useState(false)
 	const [text, setText] = useState(source)
@@ -211,12 +214,16 @@ export const CompileLive = ({
 			<figure
 				className="code-card compile-in"
 				data-editing={editing ? "" : undefined}
-				style={{ "--rows": linesOf(source) + 1 } as CSSProperties}
+				style={
+					{
+						"--rows": Math.max(4, linesOf(editing ? text : source) + 1)
+					} as CSSProperties
+				}
 			>
 				<figcaption>
 					<Step n={1}>write a Type</Step>
 					<span className="compile-file">
-						shape.ts
+						{fileName}
 						{editing ?
 							<button type="button" className="compile-act" onClick={reset}>
 								reset
@@ -235,7 +242,7 @@ export const CompileLive = ({
 						spellCheck={false}
 						autoComplete="off"
 						autoCapitalize="off"
-						aria-label="shape.ts: a Type's declaration, compiled as you type"
+						aria-label={`${fileName}: a Type's declaration, compiled as you type`}
 						onChange={e => {
 							setText(e.target.value)
 							compile(e.target.value)

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { reducedMotion, sleep } from "../motion.ts"
+import { reducedMotion } from "../motion.ts"
 
 /** buttons with `data-copy` copy it and swap to their "copied" face for 1.6s */
 const wireCopy = () => {
@@ -127,7 +127,8 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	const suffix = el.dataset.suffix ?? ""
 	const final = el.textContent
 	// the final width, held, so counting never moves what follows
-	el.style.minWidth = `${el.getBoundingClientRect().width}px`
+	const width = el.getBoundingClientRect().width
+	if (width > 0) el.style.minWidth = `${width}px`
 	const from = to * countFrom
 	el.textContent = `${from.toFixed(decimals)}${suffix}`
 	const start = performance.now() + delay
@@ -301,6 +302,16 @@ const runBoot = (figure: HTMLElement) => {
 /** kilobytes to three figures, as ByteGrid writes them */
 const kbText = (kb: number) => kb.toPrecision(3)
 
+/** decodes a URL hash fragment safely without throwing URIError on malformed escapes */
+const hashId = (hash: string) => {
+	const raw = hash.startsWith("#") ? hash.slice(1) : hash
+	try {
+		return decodeURIComponent(raw)
+	} catch {
+		return raw
+	}
+}
+
 /**
  * The byte grid's number, held at the dynamic bundle's size until its blocks
  * start to leave, then counted down to the precompiled one's as they go.
@@ -316,9 +327,10 @@ const holdBytes = (figure: HTMLElement) => {
 	const to = Number(num.dataset.to)
 	delete figure.dataset.done
 	num.textContent = kbText(from)
-	// the wider number's width, held, so counting never moves what follows
-	num.style.minWidth = `${num.getBoundingClientRect().width}px`
 	return () => {
+		// measure once visible (the Size tab is display:none on initial mount)
+		const width = num.getBoundingClientRect().width
+		if (width > 0) num.style.minWidth = `${width}px`
 		// as landing.css lets the blocks go: from a second in, evenly, for two more
 		const start = performance.now() + 1000
 		const frame = (now: number) => {
@@ -353,6 +365,152 @@ const wireStages = () => {
 	})
 	return () => {
 		for (const cleanup of cleanups) cleanup?.()
+	}
+}
+
+/**
+ * Tabbed stages (`data-tabs`): clicking a tab switches the visible panel and
+ * reveals any hidden target anchored by a hash or link (like #run, #size,
+ * #start, #loses, or #guarantee). Keyboard arrows move between tabs.
+ */
+const wireTabs = () => {
+	const groups = [...document.querySelectorAll<HTMLElement>("[data-tabs]")]
+	if (!groups.length) return
+	const activate = (group: HTMLElement, key: string) => {
+		const tabs = group.querySelectorAll<HTMLButtonElement>("[data-tab]")
+		const panels = group.querySelectorAll<HTMLElement>("[data-panel]")
+		for (const tab of tabs) {
+			const active = tab.dataset.tab === key
+			tab.setAttribute("aria-selected", String(active))
+			tab.tabIndex = active ? 0 : -1
+		}
+		for (const panel of panels) {
+			const active = panel.dataset.panel === key
+			panel.toggleAttribute("data-closed", !active)
+		}
+	}
+	for (const group of groups) {
+		const selected = group.querySelector<HTMLButtonElement>(
+			'[data-tab][aria-selected="true"]'
+		)
+		if (selected?.dataset.tab) activate(group, selected.dataset.tab)
+	}
+	const scrollTargetOf = (
+		group: HTMLElement,
+		panel: HTMLElement,
+		target: HTMLElement
+	) => (group.id === "proof" && target === panel ? group : target)
+	const reveal = (id: string) => {
+		const target = id ? document.getElementById(id) : null
+		if (!target) return
+		const panel = target.closest<HTMLElement>("[data-panel]")
+		const group = panel?.closest<HTMLElement>("[data-tabs]")
+		if (!panel || !group || !panel.dataset.panel) return
+		activate(group, panel.dataset.panel)
+		const scrollTo = scrollTargetOf(group, panel, target)
+		requestAnimationFrame(() => scrollTo.scrollIntoView())
+	}
+	const fromHash = () => reveal(hashId(location.hash))
+	const onClick = (e: MouseEvent) => {
+		if (!(e.target instanceof Element)) return
+		const tab = e.target.closest<HTMLButtonElement>("[data-tab]")
+		if (tab) {
+			const group = tab.closest<HTMLElement>("[data-tabs]")
+			if (group && tab.dataset.tab) activate(group, tab.dataset.tab)
+			return
+		}
+		if (
+			e.defaultPrevented ||
+			e.button !== 0 ||
+			e.metaKey ||
+			e.ctrlKey ||
+			e.shiftKey ||
+			e.altKey
+		)
+			return
+		const link = e.target.closest<HTMLAnchorElement>('a[href^="#"]')
+		if (link) {
+			const id = hashId(link.hash)
+			const target = id ? document.getElementById(id) : null
+			const panel = target?.closest<HTMLElement>("[data-panel]")
+			const group = panel?.closest<HTMLElement>("[data-tabs]")
+			if (panel && group && panel.dataset.panel) {
+				e.preventDefault()
+				activate(group, panel.dataset.panel)
+				const scrollTo = scrollTargetOf(group, panel, target!)
+				if (location.hash !== `#${id}`) history.pushState(null, "", `#${id}`)
+				requestAnimationFrame(() => scrollTo.scrollIntoView())
+			}
+		}
+	}
+	const onKeyDown = (e: KeyboardEvent) => {
+		if (!(e.target instanceof Element)) return
+		const tab = e.target.closest<HTMLButtonElement>("[data-tab]")
+		if (!tab) return
+		const group = tab.closest<HTMLElement>("[data-tabs]")
+		if (!group) return
+		const tabs = [...group.querySelectorAll<HTMLButtonElement>("[data-tab]")]
+		const i = tabs.indexOf(tab)
+		let next = -1
+		if (e.key === "ArrowRight") next = (i + 1) % tabs.length
+		else if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length
+		else if (e.key === "Home") next = 0
+		else if (e.key === "End") next = tabs.length - 1
+		if (next < 0) return
+		e.preventDefault()
+		const target = tabs[next]
+		if (target.dataset.tab) activate(group, target.dataset.tab)
+		target.focus()
+	}
+	fromHash()
+	addEventListener("hashchange", fromHash)
+	document.addEventListener("click", onClick)
+	document.addEventListener("keydown", onKeyDown)
+	return () => {
+		removeEventListener("hashchange", fromHash)
+		document.removeEventListener("click", onClick)
+		document.removeEventListener("keydown", onKeyDown)
+	}
+}
+
+/** switches the migrate card's copyable prompt between @ark/aot and dynamic-only */
+const wireMigrateToggle = () => {
+	const box = document.querySelector<HTMLElement>("[data-migrate]")
+	const toggle = box?.querySelector<HTMLInputElement>("[data-migrate-aot]")
+	const text = box?.querySelector<HTMLElement>("[data-migrate-text]")
+	const button = text?.closest<HTMLElement>("[data-copy]")
+	if (!box || !toggle || !text || !button) return
+	const sync = () => {
+		const prompt =
+			toggle.checked ? box.dataset.promptAot! : box.dataset.promptDynamic!
+		text.textContent = prompt
+		button.dataset.copy = prompt
+	}
+	sync()
+	toggle.addEventListener("change", sync)
+	return () => toggle.removeEventListener("change", sync)
+}
+
+/** closes the mobile navigation menu on outside click, Escape or link press */
+const wireMobileMenu = () => {
+	const menu = document.querySelector<HTMLDetailsElement>("[data-home-menu]")
+	const summary = menu?.querySelector<HTMLElement>("summary")
+	if (!menu) return
+	const onClick = (e: MouseEvent) => {
+		if (!menu.open || !(e.target instanceof Element)) return
+		if (!menu.contains(e.target) || e.target.closest("a")) menu.open = false
+	}
+	const onKeyDown = (e: KeyboardEvent) => {
+		if (e.key === "Escape" && menu.open) {
+			menu.open = false
+			summary?.focus()
+		}
+	}
+	document.addEventListener("click", onClick)
+	document.addEventListener("keydown", onKeyDown)
+	return () => {
+		document.removeEventListener("click", onClick)
+		document.removeEventListener("keydown", onKeyDown)
 	}
 }
 
@@ -402,13 +560,13 @@ const wireDrills = () => {
 		// the browser has scrolled to where the target wasn't yet
 		requestAnimationFrame(() => target.scrollIntoView())
 	}
-	const fromHash = () => reveal(decodeURIComponent(location.hash.slice(1)))
+	const fromHash = () => reveal(hashId(location.hash))
 	const onClick = (e: MouseEvent) => {
 		if (!(e.target instanceof Element)) return
 		const chip = e.target.closest(".drill-chip")
 		if (chip) return toggle(chip)
 		const link = e.target.closest<HTMLAnchorElement>('a[href^="#"]')
-		if (link) reveal(decodeURIComponent(link.hash.slice(1)))
+		if (link) reveal(hashId(link.hash))
 	}
 	fromHash()
 	addEventListener("hashchange", fromHash)
@@ -438,12 +596,17 @@ const wireChipRows = () => {
 	const onResize = () => {
 		for (const row of rows) mark(row)
 	}
+	const ro = new ResizeObserver(entries => {
+		for (const { target } of entries) mark(target as HTMLElement)
+	})
 	for (const row of rows) {
 		mark(row)
+		ro.observe(row)
 		row.addEventListener("scroll", onScroll, { passive: true })
 	}
 	addEventListener("resize", onResize, { passive: true })
 	return () => {
+		ro.disconnect()
 		for (const row of rows) row.removeEventListener("scroll", onScroll)
 		removeEventListener("resize", onResize)
 	}
@@ -451,132 +614,6 @@ const wireChipRows = () => {
 
 const wirePickThree = () =>
 	playWhenSeen(document.querySelector<HTMLElement>("[data-pick3]"), 0.5)
-
-/** the step whose output is the tsc error, and the one whose diff applies it */
-const errorStep = 2
-const fixStep = 3
-
-/**
- * The agent transcript's steps appear in order once it is half visible. Its
- * one beat is held: the name tsc suggests lifts out of the error and lands
- * in the diff, where the typo was. A press finishes it and "replay" plays it
- * again. The markup is the final state, so without JS or with reduced
- * motion it simply reads.
- */
-const wireTranscript = () => {
-	const term = document.querySelector<HTMLElement>("[data-term]")
-	if (!term) return
-	let run = 0
-	const items = [...term.querySelectorAll<HTMLElement>("[data-step]")]
-	const body = term.querySelector<HTMLElement>(".term-body")
-	const fix = term.querySelector<HTMLElement>(".fix")
-	const target = term.querySelector<HTMLElement>(".fix-target")
-	let flying: HTMLElement | undefined
-	const settle = () => {
-		flying?.remove()
-		flying = undefined
-		fix?.classList.remove("is-lifted")
-		target?.classList.remove("is-unset")
-	}
-	const finish = () => {
-		run++
-		delete term.dataset.playing
-		for (const li of items) li.classList.remove("is-waiting")
-		target?.classList.remove("is-landed")
-		settle()
-	}
-	/** the suggested name, from the error to where the diff uses it */
-	const fly = async () => {
-		if (!body || !fix || !target) return
-		const area = body.getBoundingClientRect()
-		const from = fix.getBoundingClientRect()
-		const to = target.getBoundingClientRect()
-		const ghost = document.createElement("span")
-		ghost.className = "fix-fly"
-		ghost.textContent = fix.textContent
-		ghost.style.left = `${from.x - area.x}px`
-		ghost.style.top = `${from.y - area.y}px`
-		body.append(ghost)
-		flying = ghost
-		fix.classList.add("is-lifted")
-		await ghost.animate(
-			[
-				{ translate: "0 0", scale: 1 },
-				{ scale: 1.12, offset: 0.35 },
-				{ translate: `${to.x - from.x}px ${to.y - from.y}px`, scale: 1 }
-			],
-			{
-				duration: 820,
-				easing: "cubic-bezier(0.6, 0, 0.2, 1)",
-				fill: "forwards"
-			}
-		).finished
-	}
-	const play = async () => {
-		const id = ++run
-		settle()
-		term.dataset.playing = ""
-		target?.classList.remove("is-landed")
-		target?.classList.add("is-unset")
-		for (const li of items) li.classList.add("is-waiting")
-		const steps = [...new Set(items.map(li => Number(li.dataset.step)))]
-		for (const step of steps) {
-			if (id !== run) return
-			for (const li of items)
-				if (Number(li.dataset.step) === step) li.classList.remove("is-waiting")
-			if (step === errorStep) {
-				// long enough to read the error and find the name in it
-				await sleep(1500)
-			} else if (step === fixStep) {
-				await sleep(450)
-				if (id !== run) return
-				await fly()
-				if (id !== run) return
-				settle()
-				target?.classList.add("is-landed")
-				await sleep(1300)
-			} else await sleep(520)
-		}
-		if (id === run) delete term.dataset.playing
-	}
-	let observer: IntersectionObserver | undefined
-	if (!reducedMotion() && term.getBoundingClientRect().top > innerHeight) {
-		observer = new IntersectionObserver(
-			([entry]) => {
-				// half of it, or half a screen of it where it is taller than one
-				if (
-					entry.intersectionRatio < 0.5 &&
-					entry.intersectionRect.height < innerHeight * 0.5
-				)
-					return
-				observer?.disconnect()
-				void play()
-			},
-			{ threshold: Array.from({ length: 11 }, (_, i) => i / 20) }
-		)
-		observer.observe(term)
-	}
-	const onPointerDown = (e: PointerEvent) => {
-		const replay =
-			e.target instanceof Element && e.target.closest(".term-replay")
-		if (replay) return
-		if (term.dataset.playing !== undefined) finish()
-	}
-	const onClick = (e: MouseEvent) => {
-		if (!(e.target instanceof Element && e.target.closest(".term-replay")))
-			return
-		if (reducedMotion()) finish()
-		else void play()
-	}
-	term.addEventListener("pointerdown", onPointerDown)
-	term.addEventListener("click", onClick)
-	return () => {
-		observer?.disconnect()
-		term.removeEventListener("pointerdown", onPointerDown)
-		term.removeEventListener("click", onClick)
-		finish()
-	}
-}
 
 /** html[data-motion] (see the home layout), kept now that something will play it */
 const claimMotion = () => {
@@ -625,9 +662,11 @@ export const HomeEffects = () => {
 		const cleanups = [
 			wireCopy(),
 			wireReveal(),
-			wireTranscript(),
 			wireStats(),
 			wireStages(),
+			wireTabs(),
+			wireMigrateToggle(),
+			wireMobileMenu(),
 			wireIdle(),
 			wireDrills(),
 			wireChipRows(),

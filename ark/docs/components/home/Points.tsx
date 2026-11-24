@@ -1,4 +1,5 @@
 import Link from "next/link"
+import type { ReactNode } from "react"
 import { benchFacts, type BenchFacts } from "../../lib/bench/bench.ts"
 import { claims, medianOf, presetSizeRows } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
@@ -12,8 +13,8 @@ import {
 } from "./boardFacts.ts"
 import { BootLog } from "./BootLog.tsx"
 import { ByteGrid } from "./ByteGrid.tsx"
-import { Drill, Drills, Point } from "./Drill.tsx"
-import { Guarantee } from "./Guarantee.tsx"
+import { Drill, Drills, Point, Stat } from "./Drill.tsx"
+import { HomePrecompile } from "./HomePrecompile.tsx"
 import { SpeedBars } from "./SpeedBars.tsx"
 import { SpeedCount } from "./SpeedCount.tsx"
 
@@ -80,85 +81,41 @@ const Measured = () => (
 	</Link>
 )
 
-/** 01: validation speed, as validations finished at each library's median */
-export const Speed = () => {
-	const facts = benchFacts()
-	const [zod, zodCompiled] = categoryOf("speed").versus
-	const swept = zod.versus.wins === zod.versus.count
-	const sweptCompiled = zodCompiled.versus.wins === zodCompiled.versus.count
-	return (
-		<Point
-			id="run"
-			n="01"
-			kicker="run"
-			layout="split"
-			stat={{
-				value: medianOf(zod.versus),
-				unit: "faster than Zod 4, at the median scenario"
-			}}
-			title={
-				swept ?
-					`${zod.versus.count} scenarios against Zod 4. ${zod.versus.wins} wins.`
-				:	<>
-						Precompiled, it was <ClaimText claim={claims.zodSpec} />.
-					</>
-			}
-			deck={
-				sweptCompiled ?
-					<>
-						{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
-						<code>z.compile</code> at the median, too.
-					</>
-				:	<>
-						And faster than Zod 4's <code>z.compile</code> in{" "}
-						{zodCompiled.versus.wins} of {zodCompiled.versus.count}, by a median
-						of {medianOf(zodCompiled.versus)}.
-					</>
-			}
-			figure={<SpeedCount />}
-			caveat={
-				<p className="loses" id="loses">
-					<b>Where it loses.</b> <ClaimText claim={claims.speedScope} />
-				</p>
-			}
-		>
-			<Drills name="run" links={<Measured />}>
-				<Drill
-					chip={`all ${zod.versus.count} scenarios`}
-					verdict="A bar is a library's median scenario. Under it: its closest scenario, its farthest, and how many it was slower on."
-				>
-					<SpeedBars />
-				</Drill>
-				<Drill
-					chip="where we lose"
-					verdict={
-						<>
-							ajv is faster where the hot path reports errors: on{" "}
-							{facts.ajvFasterCount} of {facts.errorCount} such rows.
-						</>
-					}
-				>
-					<p className="drill-p">
-						We raced it against the ahead-of-time compilers (typia, TypeBox,
-						ajv) and the libraries you'd otherwise write schemas with (Zod 4,
-						compiled or not, and Valibot), on the same inputs.{" "}
-						{facts.mostFaster ?
-							"On valid data, no other library was faster in more than "
-						:	"On valid data, it was fastest or tied in "}
-						{validShare(facts)}.
-					</p>
-					<Losses facts={facts} />
-					<p className="note">
-						{
-							"// prefer no build step? dynamic ArkType runs the same definitions, "
-						}
-						<ClaimText claim={claims.dynamicSpec} />
-					</p>
-				</Drill>
-			</Drills>
-		</Point>
-	)
+type ProofBodyProps = {
+	statValue: string
+	statUnit: ReactNode
+	title: ReactNode
+	deck: ReactNode
+	figure: ReactNode
+	caveat?: ReactNode
+	children: ReactNode
 }
+
+/** one tab body inside the unified benchmark stage */
+const ProofBody = ({
+	statValue,
+	statUnit,
+	title,
+	deck,
+	figure,
+	caveat,
+	children
+}: ProofBodyProps) => (
+	<div className="proof-body">
+		<div className="point-main">
+			<div className="point-copy">
+				<Stat value={statValue} unit={statUnit} />
+				<div className="point-words">
+					<h3>{title}</h3>
+					<p className="deck">{deck}</p>
+				</div>
+			</div>
+			<div className="point-figure">{figure}</div>
+		</div>
+		{caveat && <div className="point-caveat">{caveat}</div>}
+		{children}
+	</div>
+)
 
 /** the "smallest" preset's table, its apps named so none reads as Valibot's login form */
 const presetAppNames: Record<string, string> = {
@@ -196,131 +153,304 @@ const PresetRows = () => (
 	</div>
 )
 
-/** 02: bundle size, as the blocks a precompiled build leaves behind */
-export const Size = () => (
-	<Point
-		id="size"
-		n="02"
-		kicker="ship"
-		layout="flip"
-		stat={{
-			value: zodSizeRatio(),
-			unit: "smaller than Zod 4, on Valibot's own login form"
-		}}
-		title="Ship the checks, not the parser."
-		deck={`Valibot's own login form, messages included: ${loginKb("ArkType (precompiled)")} kB gzipped. Valibot ships ${loginKb("Valibot")}. Zod ships ${loginKb("Zod")}.`}
-		figure={<ByteGrid />}
-	>
-		<Drills
-			name="size"
-			links={
-				<>
-					<Link className="drill-link" href="/docs/precompile/size-at-scale">
-						as your app grows →
-					</Link>
-					<Measured />
-				</>
-			}
-		>
-			<Drill
-				chip={'big frontend? the "smallest" preset'}
-				verdict={<ClaimText claim={claims.buildChoice} />}
-			>
-				<p className="drill-p">
-					<ClaimText claim={claims.sizePreset} />
-				</p>
-				<PresetRows />
-				<p className="note">
-					{
-						"// these are other apps than Valibot's login form above, and their schemas have no custom messages or narrows; these results don't carry over to apps of forms, which we measured separately"
-					}
-				</p>
-				<p className="drill-p">
-					<ClaimText claim={claims.smallestSpeed} />{" "}
-					<Link className="link" href="/docs/precompile/options">
-						The options
-					</Link>
-				</p>
-			</Drill>
-		</Drills>
-	</Point>
-)
+/**
+ * 02: all three deep-dive benchmark animations (Speed, Size, Startup) in one
+ * tabbed stage so readers see every live animation and honest caveat without
+ * scrolling through three separate benchmark walls. Hero stats (#run, #size,
+ * #start) and board links (#loses) activate the matching tab and scroll here.
+ */
+export const ProofTabs = () => {
+	const facts = benchFacts()
+	const [zod, zodCompiled] = categoryOf("speed").versus
+	const swept = zod.versus.wins === zod.versus.count
+	const sweptCompiled = zodCompiled.versus.wins === zodCompiled.versus.count
+	const sizeRatio = zodSizeRatio()
+	const {
+		zodRatio: startupRatio,
+		valibotPercent,
+		rivals,
+		category
+	} = startupFacts()
+	const zodStartup = rivals.find(bar => bar.name === "Zod")!
+	const zodCompiledStartup = rivals.find(bar => bar.name === "Zod (compiled)")
 
-/** 03: cold start, as a boot log every library runs at once */
-export const Startup = () => {
-	const { zodRatio, valibotPercent, rivals, category } = startupFacts()
-	const zod = rivals.find(bar => bar.name === "Zod")!
-	const zodCompiled = rivals.find(bar => bar.name === "Zod (compiled)")
 	return (
-		<Point
-			id="start"
-			n="03"
-			kicker="start"
-			layout="split"
-			stat={{
-				value: zodRatio,
-				unit: "fewer startup instructions than Zod 4, on a login app"
-			}}
-			title="Nothing to parse at startup."
-			deck={
-				<>
-					<ClaimText claim={claims.noInit} /> On the same app, that's{" "}
-					{valibotPercent}% fewer startup instructions than Valibot.
-				</>
-			}
-			figure={<BootLog />}
-			caveat={
-				zodCompiled &&
-				zodCompiled.value > zod.value && (
-					<p className="loses">
-						<b>Compiling Zod costs it startup.</b> Zod (compiled) ran{" "}
-						{category.format(zodCompiled.value)} instructions to Zod's{" "}
-						{category.format(zod.value)}.
-					</p>
-				)
-			}
+		<section
+			className="block proof-stage"
+			id="proof"
+			aria-labelledby="proof-title"
+			data-tabs="proof"
 		>
-			<Drills name="start" links={<Measured />}>
-				{null}
-			</Drills>
-		</Point>
+			<div className="proof-head">
+				<div>
+					<div className="sec-label">
+						<b>02</b>
+						{"// live benchmarks"}
+					</div>
+					<h2 id="proof-title">Watch the margin run.</h2>
+				</div>
+				<div
+					className="stage-tabs proof-tabs"
+					role="tablist"
+					aria-label="Benchmark categories"
+				>
+					<button
+						type="button"
+						role="tab"
+						className="stage-tab"
+						id="proof-tab-run"
+						aria-selected="true"
+						aria-controls="run"
+						data-tab="run"
+					>
+						<b>Speed</b>
+						<span>{medianOf(zod.versus)} faster</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						className="stage-tab"
+						id="proof-tab-size"
+						aria-selected="false"
+						aria-controls="size"
+						tabIndex={-1}
+						data-tab="size"
+					>
+						<b>Size</b>
+						<span>{sizeRatio} smaller</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						className="stage-tab"
+						id="proof-tab-start"
+						aria-selected="false"
+						aria-controls="start"
+						tabIndex={-1}
+						data-tab="start"
+					>
+						<b>Startup</b>
+						<span>{startupRatio} fewer ops</span>
+					</button>
+				</div>
+			</div>
+
+			<div
+				className="stage-panel"
+				id="run"
+				role="tabpanel"
+				aria-labelledby="proof-tab-run"
+				data-panel="run"
+			>
+				<ProofBody
+					statValue={medianOf(zod.versus)}
+					statUnit="faster than Zod 4, at the median scenario"
+					title={
+						swept ?
+							`${zod.versus.count} scenarios against Zod 4. ${zod.versus.wins} wins.`
+						:	<>
+								Precompiled, it was <ClaimText claim={claims.zodSpec} />.
+							</>
+					}
+					deck={
+						sweptCompiled ?
+							<>
+								{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
+								<code>z.compile</code> at the median, too.
+							</>
+						:	<>
+								And faster than Zod 4's <code>z.compile</code> in{" "}
+								{zodCompiled.versus.wins} of {zodCompiled.versus.count}, by a
+								median of {medianOf(zodCompiled.versus)}.
+							</>
+					}
+					figure={<SpeedCount />}
+					caveat={
+						<p className="loses" id="loses">
+							<b>Where it loses.</b> <ClaimText claim={claims.speedScope} />
+						</p>
+					}
+				>
+					<Drills name="run" links={<Measured />}>
+						<Drill
+							chip={`all ${zod.versus.count} scenarios`}
+							verdict="A bar is a library's median scenario. Under it: its closest scenario, its farthest, and how many it was slower on."
+						>
+							<SpeedBars />
+						</Drill>
+						<Drill
+							chip="where we lose"
+							verdict={
+								<>
+									ajv is faster where the hot path reports errors: on{" "}
+									{facts.ajvFasterCount} of {facts.errorCount} such rows.
+								</>
+							}
+						>
+							<p className="drill-p">
+								We raced it against the ahead-of-time compilers (typia, TypeBox,
+								ajv) and the libraries you'd otherwise write schemas with (Zod
+								4, compiled or not, and Valibot), on the same inputs.{" "}
+								{facts.mostFaster ?
+									"On valid data, no other library was faster in more than "
+								:	"On valid data, it was fastest or tied in "}
+								{validShare(facts)}.
+							</p>
+							<Losses facts={facts} />
+							<p className="note">
+								{
+									"// prefer no build step? dynamic ArkType runs the same definitions, "
+								}
+								<ClaimText claim={claims.dynamicSpec} />
+							</p>
+						</Drill>
+					</Drills>
+				</ProofBody>
+			</div>
+
+			<div
+				className="stage-panel"
+				id="size"
+				role="tabpanel"
+				aria-labelledby="proof-tab-size"
+				data-panel="size"
+				data-closed=""
+			>
+				<ProofBody
+					statValue={sizeRatio}
+					statUnit="smaller than Zod 4, on Valibot's own login form"
+					title="Ship the checks, not the parser."
+					deck={`Valibot's own login form, messages included: ${loginKb("ArkType (precompiled)")} kB gzipped. Valibot ships ${loginKb("Valibot")}. Zod ships ${loginKb("Zod")}.`}
+					figure={<ByteGrid />}
+				>
+					<Drills
+						name="size"
+						links={
+							<>
+								<Link
+									className="drill-link"
+									href="/docs/precompile/size-at-scale"
+								>
+									as your app grows →
+								</Link>
+								<Measured />
+							</>
+						}
+					>
+						<Drill
+							chip={'big frontend? the "smallest" preset'}
+							verdict={<ClaimText claim={claims.buildChoice} />}
+						>
+							<p className="drill-p">
+								<ClaimText claim={claims.sizePreset} />
+							</p>
+							<PresetRows />
+							<p className="note">
+								{
+									"// these are other apps than Valibot's login form above, and their schemas have no custom messages or narrows; these results don't carry over to apps of forms, which we measured separately"
+								}
+							</p>
+							<p className="drill-p">
+								<ClaimText claim={claims.smallestSpeed} />{" "}
+								<Link className="link" href="/docs/precompile/options">
+									The options
+								</Link>
+							</p>
+						</Drill>
+					</Drills>
+				</ProofBody>
+			</div>
+
+			<div
+				className="stage-panel"
+				id="start"
+				role="tabpanel"
+				aria-labelledby="proof-tab-start"
+				data-panel="start"
+				data-closed=""
+			>
+				<ProofBody
+					statValue={startupRatio}
+					statUnit="fewer startup instructions than Zod 4, on a login app"
+					title="Nothing to parse at startup."
+					deck={
+						<>
+							<ClaimText claim={claims.noInit} /> On the same app, that's{" "}
+							{valibotPercent}% fewer startup instructions than Valibot.
+						</>
+					}
+					figure={<BootLog />}
+					caveat={
+						zodCompiledStartup &&
+						zodCompiledStartup.value > zodStartup.value && (
+							<p className="loses">
+								<b>Compiling Zod costs it startup.</b> Zod (compiled) ran{" "}
+								{category.format(zodCompiledStartup.value)} instructions to
+								Zod's {category.format(zodStartup.value)}.
+							</p>
+						)
+					}
+				>
+					<Drills name="start" links={<Measured />}>
+						{null}
+					</Drills>
+				</ProofBody>
+			</div>
+		</section>
 	)
 }
 
 /**
- * 04: the build step, as one beat. What it is, the line that adds it, and
- * what it promises: a validator that answers as the Type it replaces does,
- * and a build that stops, with the fix, on anything it can't precompile.
- * What the build writes, and the editor to try it in, are the docs'.
+ * 03: @ark/aot live on the homepage. Shows the 2-line Vite plugin import,
+ * interactive Type -> plain JS precompilation right in the browser, and the
+ * verified build-refusal diagnostic one tab away.
  */
 export const Precompile = () => (
 	<Point
 		id="precompile"
-		n="04"
-		kicker="precompile"
+		n="03"
+		kicker="@ark/aot"
 		layout="flip"
 		title="Your type in. Plain JavaScript out."
 		deck={
 			<>
-				One Vite plugin. No parser, no <code>new Function</code>. Your
-				definitions don't change.
+				One plugin from <code>@ark/aot</code>. No parser, no{" "}
+				<code>new Function</code>. Your definitions don't change.
 			</>
 		}
-		figure={<Guarantee />}
+		figure={<HomePrecompile />}
 		aside={
-			<div className="ctas point-ctas">
-				<Link className="btn" href="/docs/precompile/setup">
-					Set up precompile{" "}
-					<span className="arrow" aria-hidden>
-						→
-					</span>
-				</Link>
-				<Link className="link" href="/docs/precompile#what-ships">
-					see what it emits{" "}
-					<span className="arrow" aria-hidden>
-						→
-					</span>
-				</Link>
+			<div className="aot-aside">
+				<pre
+					className="aot-snippet"
+					aria-label="Adding @ark/aot to vite.config.ts"
+				>
+					<span className="aot-snippet-head">vite.config.ts</span>
+					<code>
+						<span className="diff-mark" aria-hidden>
+							+
+						</span>
+						{'import { precompile } from "@ark/aot/unplugin"\n'}
+						<span className="diff-mark" aria-hidden>
+							+
+						</span>
+						{"plugins: [precompile.vite()]"}
+					</code>
+				</pre>
+				<div className="ctas point-ctas">
+					<Link className="btn" href="/docs/precompile/setup">
+						Set up @ark/aot{" "}
+						<span className="arrow" aria-hidden>
+							→
+						</span>
+					</Link>
+					<Link className="link" href="/docs/precompile">
+						all bundlers &amp; Next.js{" "}
+						<span className="arrow" aria-hidden>
+							→
+						</span>
+					</Link>
+				</div>
 			</div>
 		}
 	>

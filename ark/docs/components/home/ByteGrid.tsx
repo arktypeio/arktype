@@ -96,7 +96,7 @@ export const ByteGrid = () => {
 								without precompile
 							</span>
 							<span className="byte-after">
-								precompiled · {kbDigits(dynamic.bytes)} kB without
+								precompiled · down from {kbDigits(dynamic.bytes)} kB with parser
 							</span>
 						</span>
 					</span>
