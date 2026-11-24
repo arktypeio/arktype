@@ -14,6 +14,7 @@ type SuiteId =
 	| "ci:history"
 	| "ci:ts"
 	| "ci:compat"
+	| "ci:neovim"
 
 type SuiteSpec = {
 	id: SuiteId
@@ -96,6 +97,18 @@ export const suites: SuiteSpec[] = [
 			"package.json",
 			"pnpm-lock.yaml",
 			".github/"
+		])
+	},
+	{
+		id: "ci:neovim",
+		name: "Neovim parity",
+		description:
+			"`pnpm testNeovim`: arktype.nvim against the VS Code extension's highlighting and inline errors",
+		matches: prefixMatch([
+			"ark/neovim/",
+			"ark/tree-sitter/",
+			"ark/editor-conformance/",
+			"ark/extension/"
 		])
 	}
 ]

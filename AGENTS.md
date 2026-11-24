@@ -21,6 +21,7 @@ pnpm prChecks # lint, build, typecheck and test, except @ark/aot (run before PRs
 pnpm testAot # @ark/aot's tests, which prChecks leaves out, in up to eight shards at once
 pnpm testAot --jobs 4 # in four shards at once; --jobs 1 runs them in one process
 ARK_SHARD=3/8 pnpm testAot # the third of the eight shards CI runs them in
+pnpm testNeovim # arktype.nvim's parity suite in headless Neovim (needs nvim 0.11+, a C compiler, the tree-sitter CLI)
 ```
 
 Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
@@ -37,10 +38,10 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 `pr.yml` also runs `suggest` (`ark/repo/suggestCiSuites.ts`) on non-fork PRs to post or update a single comment recommending relevant extended suites based on modified folders.
 
-`nightly.yml` runs the extended suites offloaded from `pr.yml` — OS/Node `compatibility` (`pnpm testRepoCompat`), `history` (`pnpm testHistory --jobs 4`), full `typescript` version matrix, `environments` (Deno, Bun, Chrome, Firefox), and `@ark/aot`'s derived suites (`testDifferential`, `testCache`, `testPerturbation`, `testPrograms`). It runs:
+`nightly.yml` runs the extended suites offloaded from `pr.yml` — OS/Node `compatibility` (`pnpm testRepoCompat`), `history` (`pnpm testHistory --jobs 4`), full `typescript` version matrix, `environments` (Deno, Bun, Chrome, Firefox), `@ark/aot`'s derived suites (`testDifferential`, `testCache`, `testPerturbation`, `testPrograms`), and `neovim` (`pnpm testNeovim`, arktype.nvim's parity with the VS Code extension in headless Neovim). It runs:
 
 - nightly on `main`. A failing night opens the issue "nightly failing", labelled `nightly`, or comments on it, and the next passing night closes it.
-- on a PR labelled `aot:full`, `ci:compat`, `ci:history`, `ci:ts`, `ci:environments` or `ci:all`, when the label is added and on each push after.
+- on a PR labelled `aot:full`, `ci:compat`, `ci:history`, `ci:ts`, `ci:environments`, `ci:neovim` or `ci:all`, when the label is added and on each push after.
 - on a PR when a maintainer comments `/run <suite...>` (e.g. `/run aot:full ci:history` or `/run all`), via `pr-commands.yml`.
 - on demand from the Actions tab (`workflow_dispatch`), and from another workflow through `workflow_call`.
 
