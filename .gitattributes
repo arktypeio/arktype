@@ -1,2 +1,6 @@
 # Prettier writes LF, so a Windows checkout keeps it
 * text=auto eol=lf
+# generated: tree-sitter generate, and the oracle and generators in ark/editor-conformance
+ark/tree-sitter/src/** linguist-generated
+ark/editor-conformance/highlighting/expected/** linguist-generated
+ark/editor-conformance/diagnostics/cases.json linguist-generated

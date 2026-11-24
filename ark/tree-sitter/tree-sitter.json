@@ -1,0 +1,22 @@
+{
+	"$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+	"grammars": [
+		{
+			"name": "arktype",
+			"camelcase": "ArkType",
+			"title": "ArkType",
+			"scope": "source.arktype",
+			"file-types": [],
+			"injection-regex": "^arktype$",
+			"highlights": "queries/highlights.scm"
+		}
+	],
+	"metadata": {
+		"version": "0.1.0",
+		"license": "MIT",
+		"description": "ArkType definitions, held 1:1 with the VS Code extension",
+		"links": {
+			"repository": "https://github.com/arktypeio/arktype"
+		}
+	}
+}

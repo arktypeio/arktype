@@ -1,0 +1,13 @@
+---
+import { type } from "arktype"
+
+const User = type({ name: "string", "age?": "number.integer" })
+const notADefinition = "string | number"
+---
+
+<p title="string | number">{type("string | number").expression}</p>
+
+<script>
+	import { type } from "arktype"
+	const Client = type({ id: "string.uuid" })
+</script>
