@@ -1,11 +1,51 @@
 ---
 title: Integrations
-description: Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, Fastify, the MCP SDK, the AI SDK and the OpenAI and Anthropic SDKs.
+description: Use a Type directly with TanStack, tRPC, oRPC, Drizzle, React Hook Form, Hono, Elysia, Fastify, T3 Env, the MCP SDK, the AI SDK and the OpenAI and Anthropic SDKs.
 ---
 
 Most libraries on this page accept a [Standard Schema](/docs/standard-schema), so you pass a Type as-is with no adapter. Where a library also publishes an ArkType-specific adapter, its section shows the Standard Schema route first.
 
 Any other library that accepts a Standard Schema works the same way. [standardschema.dev](https://standardschema.dev/schema#what-tools-frameworks-accept-speccompliant-schemas) keeps a list.
+
+## TanStack
+
+[TanStack Form](https://tanstack.com/form) and [TanStack Router](https://tanstack.com/router) accept a Type directly with no adapter.
+
+In TanStack Form, pass a Type as a form or field validator:
+
+```ts
+// @noErrors
+import { useForm } from "@tanstack/react-form"
+import { type } from "arktype"
+
+const User = type({
+	name: type.string.atLeastLength(1, "Name is required"),
+	age: "number.integer >= 0"
+})
+
+export const useUserForm = () =>
+	useForm({
+		defaultValues: { name: "", age: 0 },
+		validators: { onChange: User }
+	})
+```
+
+In TanStack Router (and TanStack Start), pass a Type directly to `validateSearch`:
+
+```ts
+// @noErrors
+import { createFileRoute } from "@tanstack/react-router"
+import { type } from "arktype"
+
+const Search = type({
+	page: "number.integer >= 1 = 1",
+	"filter?": "string"
+})
+
+export const Route = createFileRoute("/users")({
+	validateSearch: Search
+})
+```
 
 ## tRPC
 
@@ -189,6 +229,27 @@ app.post(
 
 To generate an OpenAPI document from your routes, [`hono-openapi`](https://github.com/rhinobase/hono-openapi) has a `validator` that accepts a Type, and a `resolver` for describing responses with one.
 
+## Elysia
+
+[Elysia](https://elysiajs.com) accepts a Type directly for a route's `body`, `query`, `params`, `headers`, `cookie` or `response`:
+
+```ts
+// @noErrors
+import { type } from "arktype"
+import { Elysia } from "elysia"
+
+const User = type({
+	name: "string",
+	age: "number.integer >= 0"
+})
+
+const app = new Elysia().post("/users", ({ body }) => body, {
+	body: User
+})
+```
+
+With [`@elysiajs/openapi`](https://elysiajs.com/plugins/openapi), Elysia reads the Type's JSON Schema from [`~standard.jsonSchema`](/docs/standard-schema#standard-json-schema) automatically.
+
 ## Fastify
 
 [Fastify](https://fastify.dev/docs/latest/Reference/Type-Providers/) validates with any function it's given, so two compilers and a type provider make a route's `schema` take Types:
@@ -237,6 +298,26 @@ app.post(
 ```
 
 An invalid `body`, `querystring`, `params` or `headers` gets Fastify's 400, with the errors' [summary](/docs/errors#summary-lines) as its `message`, like `age must be non-negative`. A response is validated before it's sent, and one that fails is a 500. Where Fastify's own serializer leaves out keys the schema doesn't list, a Type sends them unless it [deletes undeclared keys](/docs/configuration#onundeclaredkey).
+
+## T3 Env
+
+[T3 Env](https://env.t3.gg) accepts a Type for each environment variable:
+
+```ts
+// @noErrors
+import { createEnv } from "@t3-oss/env-core"
+import { type } from "arktype"
+
+export const env = createEnv({
+	server: {
+		PORT: type("string.integer.parse"),
+		DATABASE_URL: type("string.url")
+	},
+	runtimeEnv: process.env
+})
+```
+
+Each variable is validated alone and gets `undefined` when unset. `@t3-oss/env-core` lists `arktype@^2` as an optional peer dependency, so npm needs a [peer override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) beside ArkType 3.
 
 ## MCP SDK
 

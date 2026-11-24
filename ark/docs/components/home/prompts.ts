@@ -15,13 +15,16 @@ export const migratePromptDynamic =
 export const skillCommand = "npx skills add arktypeio/arktype"
 
 export const integrations: [name: string, href: string][] = [
+	["TanStack", "/docs/integrations#tanstack"],
 	["tRPC", "/docs/integrations#trpc"],
 	["Hono", "/docs/integrations#hono"],
 	["React Hook Form", "/docs/integrations#react-hook-form"],
+	["Elysia", "/docs/integrations#elysia"],
 	["oRPC", "/docs/integrations#orpc"],
 	["Drizzle", "/docs/integrations#drizzle"],
+	["AI SDK", "/docs/integrations#ai-sdk"],
 	["MCP SDK", "/docs/integrations#mcp-sdk"],
-	["AI SDK", "/docs/integrations#ai-sdk"]
+	["T3 Env", "/docs/integrations#t3-env"]
 ]
 
 // playground/execute.ts evaluates the bindings `Thing` and `out`

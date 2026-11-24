@@ -1,6 +1,4 @@
 import Link from "next/link"
-import { claims, isPending } from "../../lib/claims.ts"
-import { bigAppLine } from "./boardFacts.ts"
 import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
@@ -156,18 +154,10 @@ export const Migrate = () => (
 			</div>
 		}
 		figure={<Conversion />}
-		caveat={
-			!isPending(claims.bigApp) &&
-			bigAppLine() && (
-				<p className="loses">
-					<b>A real app, migrated.</b> {bigAppLine()}
-				</p>
-			)
-		}
 	>
 		<div className="migrate-integrations">
 			<span className="migrate-integrations-lbl">
-				Works with your Zod stack via{" "}
+				Works with the tools you already use via{" "}
 				<Link href="/docs/standard-schema">Standard Schema</Link>
 			</span>
 			<nav className="migrate-integrations-pills" aria-label="Integrations">

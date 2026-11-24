@@ -1,11 +1,14 @@
 {
 	"title": "Integrations",
 	"pages": [
+		"[TanStack](/docs/integrations#tanstack)",
 		"[tRPC](/docs/integrations#trpc)",
 		"[oRPC](/docs/integrations#orpc)",
 		"[Drizzle](/docs/integrations#drizzle)",
 		"[React Hook Form](/docs/integrations#react-hook-form)",
 		"[Hono](/docs/integrations#hono)",
+		"[Elysia](/docs/integrations#elysia)",
+		"[T3 Env](/docs/integrations#t3-env)",
 		"[MCP SDK](/docs/integrations#mcp-sdk)",
 		"[AI SDK](/docs/integrations#ai-sdk)"
 	]

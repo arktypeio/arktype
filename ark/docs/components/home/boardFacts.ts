@@ -1,6 +1,5 @@
 import { formatRatio, list, versusLibrary } from "../../lib/bench/bench.ts"
 import { isWellKnown, isWrittenByUs } from "../../lib/bench/leaderboard.ts"
-import { ntwineRows } from "../../lib/bench/scoreboard.ts"
 import {
 	incumbent,
 	ownFigures,
@@ -115,26 +114,6 @@ export const heroStats = (): HeroStat[] => {
 			scope: "a login app, import to first validation"
 		}
 	]
-}
-
-/**
- * `claims.bigApp`'s result in one line, for the head of its panel: from the
- * row that claim reads (ntwine, bundled with esbuild), the two margins over
- * Zod 4 a reader came for. Each number names the build it belongs to, because
- * they are different builds: the default one is the fast one, the "smallest"
- * preset the small one. Undefined unless every clause of it holds, and the
- * panel then keeps its plain description.
- */
-export const bigAppLine = () => {
-	const row = ntwineRows.find(row => row.host === "esbuild")
-	if (!row) return
-	const { precompiled, smallest, zod } = row.arms
-	if (!precompiled || !smallest || !zod) return
-	const faster = zod.hot / precompiled.hot
-	// truncated, so no margin is ever rounded up
-	const less = Math.floor((1 - smallest.gz / zod.gz) * 100)
-	if (faster < 2 || less < 1) return
-	return `On a real multi-schema app (ntwine, bundled with esbuild): the default build validated ${formatRatio(faster)} as fast as Zod 4, and the "smallest" preset shipped ${less}% less.`
 }
 
 /**
