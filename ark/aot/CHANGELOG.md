@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+`arktype-precompile --check` also checks each script outside the current directory that one it checks imports, as a bundler transforms it, like a workspace package's source linked into `node_modules`. It reported every definition accepted where the build failed on a read in such a module.
+
 Shadow mode passes arktype a value written as a shorthand property under its key, so `Contact.merge({ address })` no longer compares against arktype validating a key named for the placeholder, like `$arkh0`, and reporting it missing.
 
 ## 3.0.0-rc.1

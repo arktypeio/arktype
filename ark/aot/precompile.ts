@@ -166,6 +166,7 @@ import {
 	runtimeSpecifiers,
 	runtimeVariantOf,
 	scriptExtensions,
+	transformedFilterOf,
 	transformedId,
 	type DependencyModes,
 	type PrecompileHost,
@@ -3024,6 +3025,33 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// each script the modules import that a build transforms too, as a
+	// workspace package's source a bundler resolves past its node_modules link
+	transformedImportsOf(ids: string[], packages: string[]): string[] {
+		const { include, exclude } = transformedFilterOf(packages)
+		const imported: string[] = []
+		const seen = new Set(ids)
+		for (const id of ids) {
+			const source = this.graph.host.readFile(id)
+			if (source === undefined) continue
+			for (const [, specifier] of source.matchAll(loadedSpecifier)) {
+				if (arkPackageSpecifier.test(specifier)) continue
+				const target = this.graph.host.resolve(specifier, id)
+				if (
+					target &&
+					!seen.has(target) &&
+					include.test(target) &&
+					!exclude.test(target) &&
+					!/\.d\.[cm]?ts$/.test(target)
+				) {
+					seen.add(target)
+					imported.push(target)
+				}
+			}
+		}
+		return imported
 	}
 
 	private packageOf(

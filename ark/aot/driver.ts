@@ -129,6 +129,7 @@ export type PrecompileRequest =
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
 	| [kind: "readDependencies", ids: string[]]
+	| [kind: "transformedImports", ids: string[], packages: string[]]
 	| [kind: "reset"]
 	| [kind: "refresh"]
 	// the build ended, as for esbuild's onEnd, which neither resets nor closes it
@@ -278,6 +279,8 @@ const answerRequests = (
 			return precompiler.readDependency(request[1])
 		if (request[0] === "readDependencies")
 			return precompiler.readDependenciesOf(request[1])
+		if (request[0] === "transformedImports")
+			return precompiler.transformedImportsOf(request[1], request[2])
 		const cache = cacheOf(tracked)
 		if (request[0] === "transform") {
 			const [, source, id, mappings, program] = request
