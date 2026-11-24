@@ -7,7 +7,7 @@ import {
 	writeSkippedSourcesMessage
 } from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
-import { readFileSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { runCli, tempDir, writeFixture } from "./utils.ts"
 
@@ -422,6 +422,33 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(check(["src/**"], { cwd: root }).lines).equals(expected)
 		attest(check(["src"], { cwd: root }).lines).equals(expected)
 		attest(check(["src", "src/**/*.ts"], { cwd: root }).lines).equals(expected)
+	})
+
+	it("checks a script outside cwd that a checked one imports, as the build transforms it", () => {
+		const helpers = `import { type Type, type } from "arktype"\n\nexport const checked = (base: Type, match?: Type) =>\n\t(match ?? type.unknown).narrow(data => base.allows(data))\n`
+		const root = writeFixture({
+			"lib/package.json": `{ "name": "lib", "exports": "./helpers.ts" }`,
+			"lib/helpers.ts": helpers,
+			"shared/helpers.ts": helpers,
+			"app/package.json": `{ "dependencies": { "lib": "workspace:*" } }`,
+			"app/main.ts": `import { type } from "arktype"\nimport { checked } from "lib"\nimport { checked as shared } from "../shared/helpers.ts"\n\nexport const A = checked(type("string"))\nexport const B = shared(type("number"))\n`
+		})
+		// as a workspace links it
+		mkdirSync(join(root, "app", "node_modules"))
+		symlinkSync(join(root, "lib"), join(root, "app", "node_modules", "lib"))
+		attest(
+			check([], { cwd: join(root, "app") }).lines.map(
+				line => line.split("\n")[0]
+			)
+		).snap([
+			"main.ts:5:26  accepted",
+			"main.ts:6:25  accepted",
+			"../lib/helpers.ts:4:2  (match ?? type.unknown).narrow reads narrow, which a standalone validator lacks",
+			"../lib/helpers.ts:4:12  accepted",
+			"../shared/helpers.ts:4:2  (match ?? type.unknown).narrow reads narrow, which a standalone validator lacks",
+			"../shared/helpers.ts:4:12  accepted",
+			"4 sites in 3 files: 4 accepted (100.0%), 2 errors outside a site"
+		])
 	})
 
 	it("fails the patterns among several that name no script, naming only them", () => {

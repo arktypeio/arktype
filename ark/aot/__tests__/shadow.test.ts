@@ -96,6 +96,25 @@ $arkm = 4;
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/main.ts": { __proto__: null, "nullable": nullable } })`)
 	})
 
+	it("keeps a shorthand property's key", () => {
+		const { code } = precompile(
+			`import { type } from "arktype"
+import { address } from "./address.ts"
+export const Contact = type({ name: "string" }).merge({ address })`,
+			{
+				"/address.ts": `import { type } from "arktype"
+export const address = type("string").pipe(s => s.trim())`
+			},
+			{ shadow: true }
+		)
+		attest(normalized(code))
+			.snap(`import { shadow as $arkshadow } from "@ark/aot/shadow"
+import { type } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { address } from "./address.ts"
+export const Contact = $arkshadow("/main.ts:3:24  type({ name: \\"string\\" }).merge({ address })", $ark#0, ($arkh0) => (type({ name: "string" }).merge({ address: $arkh0 })), [], [], address)`)
+	})
+
 	describe("a program", () => {
 		let plain: Record<string, unknown>
 		// what the Node driver prints, which the other drivers must observe too

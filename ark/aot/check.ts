@@ -1,12 +1,13 @@
 import { throwError } from "arktype/util"
 import { existsSync, globSync, readFileSync, statSync } from "node:fs"
-import { dirname, resolve, sep } from "node:path"
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path"
 import type {
 	CheckedModule,
 	PrecompilePluginOptions,
 	RenderedDiagnostics
 } from "./driver.ts"
 import {
+	optedInPackagesOf,
 	printablePathOf,
 	realPathOf,
 	scriptExtensions,
@@ -183,16 +184,37 @@ export const check = (
 	}
 	// each key of schemas that chose for a definition of some file
 	const choosing = new Set<string>()
+	// a script outside cwd the build transforms as one checked here imports it,
+	// like a workspace package's source, whose refusals fail the build too
+	const packages = optedInPackagesOf(
+		cwd,
+		precompilerOptions.dependencies,
+		() => {}
+	)
+	const root = realPathOf(cwd)
+	const isOutside = (file: string) => {
+		const path = relative(root, file)
+		return path.startsWith("..") || isAbsolute(path)
+	}
+	const reached = new Set<string>()
 	try {
-		for (const file of files) {
-			const result = request(
-				"check",
-				readFileSync(file, "utf8"),
-				file
-			) as CheckedModule
-			reportModule(report, result, file, cwd)
-			for (const key of result.schemaKeys) choosing.add(key)
+		for (let batch = files; batch.length; ) {
+			for (const file of batch) {
+				const result = request(
+					"check",
+					readFileSync(file, "utf8"),
+					file
+				) as CheckedModule
+				reportModule(report, result, file, cwd)
+				for (const key of result.schemaKeys) choosing.add(key)
+			}
+			batch = (
+				request("transformedImports", batch, packages) as string[]
+			).filter(file => isOutside(file) && !reached.has(file))
+			for (const file of batch) reached.add(file)
+			files.push(...batch)
 		}
+		report.files = files.length
 		// a key every file of which was checked, and none found to define a Type
 		if (precompilerOptions.runtime !== "arktype") {
 			const definitionless = new SchemaStrategies(

@@ -166,6 +166,7 @@ import {
 	runtimeSpecifiers,
 	runtimeVariantOf,
 	scriptExtensions,
+	transformedFilterOf,
 	transformedId,
 	type DependencyModes,
 	type PrecompileHost,
@@ -288,6 +289,7 @@ import {
 	type Helper,
 	type Hole,
 	type Input,
+	type Reference,
 	type Site,
 	type SiteCandidate,
 	type SiteRead
@@ -3025,6 +3027,33 @@ export class Precompiler {
 		return result
 	}
 
+	// each script the modules import that a build transforms too, as a
+	// workspace package's source a bundler resolves past its node_modules link
+	transformedImportsOf(ids: string[], packages: string[]): string[] {
+		const { include, exclude } = transformedFilterOf(packages)
+		const imported: string[] = []
+		const seen = new Set(ids)
+		for (const id of ids) {
+			const source = this.graph.host.readFile(id)
+			if (source === undefined) continue
+			for (const [, specifier] of source.matchAll(loadedSpecifier)) {
+				if (arkPackageSpecifier.test(specifier)) continue
+				const target = this.graph.host.resolve(specifier, id)
+				if (
+					target &&
+					!seen.has(target) &&
+					include.test(target) &&
+					!exclude.test(target) &&
+					!/\.d\.[cm]?ts$/.test(target)
+				) {
+					seen.add(target)
+					imported.push(target)
+				}
+			}
+		}
+		return imported
+	}
+
 	private packageOf(
 		name: string,
 		entry: string
@@ -4735,7 +4764,7 @@ export class Precompiler {
 				proved.push(i)
 		}
 		const parameterSpans = [
-			...spans.map((span, i): [Span, number] => [span, i]),
+			...spans.map((span, i): [Reference, number] => [span, i]),
 			...(factory?.repeats ?? []).filter(
 				([repeat]) => !spans.some(span => contains(span, repeat))
 			)
@@ -4743,7 +4772,8 @@ export class Precompiler {
 		let original = ""
 		let start = site.start
 		for (const [span, i] of parameterSpans) {
-			original += `${module.textOf({ start, end: span.start })}${prefix}h${i}`
+			// `{ address }` keeps its key as `{ address: $arkh0 }`
+			original += `${module.textOf({ start, end: span.start })}${span.isShorthand ? `${module.textOf(span)}: ` : ""}${prefix}h${i}`
 			start = span.end
 		}
 		original += module.textOf({ start, end: site.end })
@@ -6922,7 +6952,11 @@ export class Precompiler {
 								.modulesDeclaring(value, state.trace)
 								.some(declaring => declaring !== module)),
 					binding: module.scopes.byId.get(read)?.binding,
-					isOneValue: this.isOneValueRead(read, value, module)
+					isOneValue: this.isOneValueRead(read, value, module),
+					isShorthand:
+						node.parent?.type === "Property" &&
+						node.parent.shorthand &&
+						node.parent.value === node
 				})
 			}
 		}
