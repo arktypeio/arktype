@@ -1,6 +1,6 @@
 # @ark/aot
 
-## Unreleased
+## 3.0.0-rc.4
 
 `byPath`, `flatByPath`, `flatMessagesByPath` and `byAncestorPath` precompile: `arktype/runtime` exports them, and they read a validator's errors as they read arktype's, keying each path as arktype writes it, like `items[0].id`. A build with `runtime: "arktype/runtime"` failed where code called one, asking for it to be rewritten over `out.issues`. `messageIn`, which writes a locale, still fails the build.
 
