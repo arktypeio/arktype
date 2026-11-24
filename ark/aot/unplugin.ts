@@ -1217,7 +1217,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			}
 			return { warnings }
 		})
-		build.onEnd(result => {
+		build.onEnd(async result => {
+			// stored once the build ends, before it returns
+			await request("ended").catch(() => undefined)
 			if (
 				!scan.scanned ||
 				(!scan.verifies && !esbuildScan?.replaced.size) ||
@@ -1751,6 +1753,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					)
 				}
 			}
+			// what it scanned is stored once the build ends, before it returns, so
+			// one killed before then leaves nothing the next build reads
+			await request("ended").catch(() => undefined)
 			const native = this.getNativeBuildContext?.()
 			const isWatching =
 				native && "compiler" in native ?
