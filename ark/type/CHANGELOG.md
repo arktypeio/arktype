@@ -1,6 +1,6 @@
 # arktype
 
-## Unreleased
+## 3.0.0-rc.7
 
 ### Name a field in its messages with `.label()`
 
