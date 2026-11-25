@@ -19,7 +19,7 @@ The changes most code meets are to errors. The [checklist](#checklist) covers th
 | `out.message`, `out.toTraversalError()`                                                              | [`out.summary`, `new TraversalError(out)`](#arkerrors-is-no-longer-an-array)                                          |
 | `error.hasCode("min")`, `error instanceof ArkError`                                                  | [`error.code === "min"`, and `ArkError` is only a type](#errors-are-plain-objects)                                    |
 | `ctx.errors.add(error)`                                                                              | [`ctx.error(...)` or `ctx.reject(...)`](#arkerrors-is-no-longer-an-array)                                             |
-| `ctx.reject("a valid zip code")`                                                                     | [`ctx.mustBe("a valid zip code")`, or a sentence as `ctx.reject({ message })`](#ctxreject-takes-no-string)            |
+| `ctx.reject("a future date")`                                                                        | [`ctx.mustBe("a future date")`, or a sentence as `ctx.reject({ message })`](#ctxreject-takes-no-string)               |
 | `message: ctx => ...`, reading `ctx.problem`                                                         | [`message: (error, locale) => ...`](#error-writers-receive-the-error-and-the-locale), from `error.expected`           |
 | a snapshot ending `(was a number)`                                                                   | [the same text without it](#messages-leave-out-the-value)                                                             |
 | `configure()` after a Type exists, `clone`                                                           | [a config file imported first](#configure-before-any-type-is-created); [remove `clone`](#the-clone-option-is-removed) |
@@ -253,23 +253,22 @@ const T = type({ name: "string > 1" })
 T["~standard"].validate({ name: "x" })
 ```
 
-A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Enter a valid zip code" })`.
+A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Choose a future date" })`.
 
 Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
 
 ### ctx.reject takes no string
 
-A string passed to `ctx.reject()` was what the value must be, as one passed to `ctx.mustBe()` is, so a sentence read `must be Enter a valid zip code`. Now that a form shows each issue's `message`, `ctx.reject()` takes only an object, and TypeScript flags a string:
+A string passed to `ctx.reject()` was what the value must be, as one passed to `ctx.mustBe()` is, so a sentence read `must be Choose a future date`. Now that a form shows each issue's `message`, `ctx.reject()` takes only an object, and TypeScript flags a string:
 
 ```ts
-const Zip = type("string").narrow(
-	(s, ctx) =>
-		/^\d{5}$/.test(s) || ctx.reject({ message: "Enter a valid zip code" })
+const Deadline = type("Date").narrow(
+	(d, ctx) => d > new Date() || ctx.reject({ message: "Choose a future date" })
 )
 
-// before: ctx.reject("a valid zip code"), or with a sentence, which read "must be Enter a valid zip code"
-const Zip5 = type("string").narrow(
-	(s, ctx) => /^\d{5}$/.test(s) || ctx.mustBe("a valid zip code")
+// before: ctx.reject("a future date"), or with a sentence, which read "must be Choose a future date"
+const FutureDate = type("Date").narrow(
+	(d, ctx) => d > new Date() || ctx.mustBe("a future date")
 )
 ```
 

@@ -28,13 +28,15 @@ const Unfalse = type.keywords.Exclude("boolean", "false")
 Pass a string of parameter names in angle brackets, then a definition that references them:
 
 ```ts
-const BoxOf = type("<t>", { box: "t" })
+const Page = type("<t>", { items: "t[]", total: "number" })
 
-// Type<{ box: string }>
-const StringBox = BoxOf("string")
+const User = type({ name: "string" })
+
+// Type<{ items: { name: string }[]; total: number }>
+const UserPage = Page(User)
 ```
 
-`type.generic("t")({ box: "t" })` is equivalent.
+`type.generic("t")({ items: "t[]", total: "number" })` is equivalent.
 
 ### Constraints
 

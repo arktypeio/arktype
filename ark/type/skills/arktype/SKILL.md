@@ -161,7 +161,7 @@ Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Add
 
 - `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
 - `.merge()`, `"..."`, `.pick()`, `.omit()` and `.partial()` drop a `.narrow()` on the object they read, or throw if the object also transforms its input: deletes undeclared keys, or has a default or a morph at a key. Keep the keys in a Type of their own, derive from that, and add each `.narrow()` last.
-- To share keys between types, merge a base Type, or `.pick()` them: `User.get("nick")` is the key's Type without its `?` or its default, plus `| undefined` when the key is optional or defaulted. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`. In a Generic's body, `Omit`, `Pick`, `Partial`, `Required` and `Merge` do what the methods of those names do: `const Create = type("<t extends object>", "Omit<t, 'id'>")`.
+- To share keys between types, merge a base Type or `.pick()` them. `User.get("nick")` is one key's Type, without its `?` or its default, plus `| undefined` when the key is optional or defaulted. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`. In a Generic's body, `Omit`, `Pick`, `Partial`, `Required` and `Merge` do what the methods of those names do: `const Create = type("<t extends object>", "Omit<t, 'id'>")`.
 - `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
 - A definition built at runtime goes to `type.raw`, which infers nothing, then gets its type: `type.raw(Object.fromEntries(FLAGS.map(flag => [flag, "boolean"]))).as<Record<Flag, boolean>>()`.
 
@@ -223,7 +223,7 @@ Other morph keywords: `string.trim`, `string.lower`, `string.upper`, `string.num
 
 ## Custom rules
 
-Use `.narrow()` only for conditions ArkType's built-in constraints can't express (like cross-field rules or custom logic) — not just to add custom error messages to length, range, divisor or regex checks, which belong on chained constraint methods like `type.string.atLeastLength(1, "Name is required.")`. Return `true` to accept, or `ctx.reject()` to say what was wrong and where: a `message`, one whole sentence like `"Passwords must match"`, at a `relativePath` from the value being narrowed.
+Use `.narrow()` only for what a constraint can't express, like a rule across keys; [Error messages](#error-messages) has the order to choose in. Return `true` to accept, or `ctx.reject()` to say what was wrong and where: a `message`, one whole sentence like `"Passwords must match"`, at a `relativePath` from the value being narrowed.
 
 ```ts
 const Signup = type({
@@ -244,16 +244,19 @@ const Signup = type({
 - For several errors, call `ctx.error({ message, relativePath })` for each, then return `true`.
 - A narrow on an object runs only once every key is valid, so its error is never reported alongside a key's.
 - A rule that depends on what the caller has, like a form's saved values, reads `ctx.context`. Declare its shape once on arktype's `ArkEnv` (`declare module "arktype" { interface ArkEnv { context(): { savedStreet?: string } } }`, in a file that imports or exports something) and validate with `T.withContext(context)`, a Standard Schema a form library takes as is. Don't create a Type for each value: one Type defined once can be precompiled. A narrow on literals can't read it, since ArkType checks them as the Type is defined.
-- A narrow can't give a literal its own text. ArkType calls it on each literal the Type allows, like `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `type("boolean").narrow((v, ctx) => v || ctx.reject({ message: "Accept the terms" }))` reads `must be true`. Write the values allowed, with the message: `type("true").configure({ message: "Accept the terms" })`.
+- A narrow can't give a literal its own text. ArkType calls it on each literal the Type allows, like `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `type("boolean").narrow((v, ctx) => v || ctx.reject({ message: "Accept the terms" }))` reads `must be true`. Write the values allowed, with the message: `type("true").message("Accept the terms")`.
 
 ## Error messages
 
-Follow this hierarchy when deciding how to report errors:
+Choose in this order:
 
-1. **Use ArkType's built-in error messages first.** They're specific out of the box (`must be non-empty`, `must be an email address`, `must be even`) and compose automatically across unions (`"string.email | string.uuid"` reports `must be an email address or a UUID`). Don't add custom error messages unless the caller, UI or existing schema actually requires custom copy.
-2. **Use `.describe(...)` when you want custom wording that still composes.** If `must be ...` wording fits and the Type may be reused in unions or intersections, pass a description like `.describe("a valid email")` so ArkType can merge it into natural-language union errors (`must be a phone number, a username or a valid email`) and reuse it in JSON Schema.
-3. **Chain constraint methods with a `message` for custom per-check sentences.** Most Types aren't composed into unions where errors need to compose, so when you need full custom messages, pass them directly to chained constraint methods (`type.string.atLeastLength(1, "Name is required.").matching(/^[a-z]+$/i, "Enter a valid name.")`) rather than reaching for `.narrow()`. Use `.message(...)` for a whole Type or a keyword's error code.
-4. **Reserve `.narrow()` for conditions built-in constraints don't cover**, not just to attach custom messages to built-in checks.
+1. **Built-in messages.** They're specific (`must be non-empty`, `must be an email address`, `must be even`) and compose across unions: `"string.email | string.uuid"` reads `must be an email address or a UUID`. Customize only when the UI or an existing schema needs its own copy.
+2. **`.describe()`, for wording that still composes.** `.describe("a valid email")` reads `must be a valid email`, joins a union's error (`must be a phone number, a username or a valid email`) and is the JSON Schema `description`.
+3. **`.label()`, to name a field in its messages.** `unitPriceCents: type("number > 0").label("Unit price")` reads `Unit price must be positive`, or `Unit price must be a number (was missing)`, in the issue's `message` and the summary, while its `path` stays `unitPriceCents`. One call replaces a message per check written only to say which field failed. It names the value it's on, not Types nested in it.
+4. **A constraint method's `message`, for a sentence per check**: `type.string.atLeastLength(1, "Name is required").matching(/^[a-z]+$/i, "Enter a valid name")`. `.message()` gives a whole Type, a keyword or a union one sentence. Write `.message()` and `.describe()`, not `.configure({ message })` or `.configure({ description })`.
+5. **`.narrow()`, only for what constraints can't express**: a rule across keys, a conditional rule, a check from another library. Never rewrite a length, range, pattern, non-empty array or keyword like `string.email` as a `.narrow()`.
+
+Put each check on the value it checks, never on the object or array holding it: `countries: type.string.array().atLeastLength(1, "Pick a country")`, not `.narrow(v => v.countries.length > 0)`, and `limit: Money.merge({ amount_cents: type.number.moreThan(0, "Enter a limit above zero") })`, not a narrow reading `v.limit.amount_cents`. To check a value computed from the data, when the output can carry it, pipe to a Type that checks it: `Order.pipe(totalOf, type({ total: type.number.moreThan(0, "Add something to the order") }))`.
 
 There are two ways to write custom text. Choose by the text you have:
 
@@ -264,10 +267,10 @@ There are two ways to write custom text. Choose by the text you have:
 
 - A message from Zod, or any sentence a user reads, is always a `message`. Passed to `ctx.mustBe()`, as a string to `ctx.error()`, to `.describe()`, as `expected` or as a string after `"@"`, it would read `must be Enter a valid email`. `ctx.reject()` takes no string, so TypeScript flags `ctx.reject("Enter a valid email")`: write `ctx.reject({ message: "Enter a valid email" })`.
 - An issue's `message` is what a form library, or anything else reading the Type through Standard Schema, shows beside the field. `out.summary`, and the `TraversalError` `.assert()` throws, write a line for each error with its path.
-- A `message` isn't composed into other text. What a Type is `expected` to be is: a union lists it, as in `must be a valid email or null`. So with `| null` or `| undefined`, configure the whole union, as in `["string.email | null", "@", { message }]`: a message on one branch is lost for a value of the wrong type. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so write `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a message on an enum, a literal or a boolean alone is never said there.
+- A `message` isn't composed into other text. What a Type is `expected` to be is: a union lists it, as in `must be a valid email or null`. So with `| null` or `| undefined`, give the whole union the message, as in `type("string.email | null").message(text)`: a message on one branch is lost for a value of the wrong type. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so write `"role?": type("'admin' | 'user' | undefined").message(text)`: a message on an enum, a literal or a boolean alone is never said there.
 - A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` isn't said for a string that fails to parse. Check, then convert: `type("string.date").pipe(s => new Date(s)).message(text)`.
 
-Pass a message as the last argument to a constraint method, like `atLeastLength`, `atMostLength`, `matching`, `atLeast`, `lessThan` or `divisibleBy`, and only that check says it, as with Zod's `.min(1, "Name is required")`. A check with no method, like a keyword's, takes its error code (`minLength`, `maxLength`, `pattern`, `min`, `max`, `divisor`) as `.message()`'s second argument. `.message(text)` alone sets the whole Type's message, as `.describe(text)` sets what it must be:
+Pass a message as the last argument to a constraint method, like `atLeastLength`, `atMostLength`, `matching`, `atLeast`, `lessThan` or `divisibleBy`, and only that check says it, as with Zod's `.min(1, "Name is required")`. A check with no method, like a keyword's, takes its error code (`minLength`, `maxLength`, `pattern`, `min`, `max`, `divisor`) as `.message()`'s second argument:
 
 ```ts
 const Invite = type({
@@ -286,12 +289,35 @@ const out = Invite({ name: "", email: "x", password: "short" })
 ```
 
 - A check's message leaves other errors with ArkType's text, like `name must be a string (was missing)`, as Zod's did. To give those their own, add `.message(text, "self")` for a missing key and `.message(text, "domain")` for a wrong type, after the constraints.
-- A whole-value message, `.message(text)` or `["string", "@", { message }]` in a definition, is said for every failure, a wrong type and a missing key included, as Zod's `z.string({ error })` is. Configure it last, after any `.pipe()` or `.to()`, and never after checks' messages, which it replaces.
+- A whole-value message, `.message(text)`, is said for every failure, a wrong type and a missing key included, as Zod's `z.string({ error })` is. Configure it last, after any `.pipe()` or `.to()`, and never after checks' messages, which it replaces.
 - A code names every check of that kind in the Type, nested keys' included. A message passed to a constraint method is that check's alone, so two patterns, or an array's length and its elements', keep their own: `Tag.array().atLeastLength(1, "Add a tag")`.
 - After a `.pipe()` or `.to()`, a code doesn't reach the Type the output is checked with, and a whole-value or `"self"` message on the transformed Type replaces the ones inside it. Give that Type its messages before passing it: `type("string.trim").to(type.string.atLeastLength(1, "Name is required"))`.
-- Several failed checks report a pattern before a length. For an empty field to say `Email is required` first, as Zod's `.min(1, "...").email("...")` did, leave out the `>= 1` and choose by the value: `.message(e => (e.data === "" ? "Email is required" : "Enter a valid email"), "pattern")`. For a length's message to come before a pattern's, write the pattern as a `.narrow()`, which runs once the length passes.
+- Several failed checks report a pattern before a length. For an empty field to say `Email is required` first, as Zod's `.min(1, "...").email("...")` did, leave out the `>= 1` and choose by the value: `.message(e => (e.data === "" ? "Email is required" : "Enter a valid email"), "pattern")`.
 
-To show each message beside its field, group `out.issues` by `issue.path.join(".")`, keeping the first `issue.message` for each key.
+To show each message beside its field, `flatMessagesByPath(out)` from `arktype` gives each path's messages, like `{ password: ["Include a number", "Use 8 or more characters"] }`.
+
+## Forms
+
+A form library like TanStack Form, or react-hook-form through `standardSchemaResolver`, takes a Type as a Standard Schema and shows each issue's `message` beside its field.
+
+| A field that                              | Write                                                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| reads well with ArkType's own text        | `type("string > 0").label("Name")`: `Name must be non-empty`, `Name must be a string`                      |
+| is required, empty as `""` or `undefined` | `type("string > 0").message("Name is required")`                                                           |
+| must hold more than whitespace            | `type(/\S/).message("Name is required")`, which keeps the value; `string.trim` morphs it                   |
+| is optional, left as `""`                 | `type("string.email \| ''").message("Enter a valid email or leave it blank")`                              |
+| is a number above zero                    | `type.number.moreThan(0, "Enter an amount")`                                                               |
+| is a choice that must be made             | `type.boolean.message("Choose yes or no")`                                                                 |
+| is a web link, or a plain `1.2.3` version | `type("string.url").matching(/^https?:\/\//i, "...")`, `type("string.semver").matching(/^[\d.]+$/, "...")` |
+
+- `type.string.atLeastLength(1, "Name is required")` says its message only for a string. `undefined`, a field's state before it's touched, reads `must be a string`. A whole-value `.message()` says it for both.
+- Without a message, `"string.email | ''"` reads `must be an email address or ""`.
+- A pattern chained beside a length, like `type("0 < string <= 50").matching(...)`, also fails `""`. Match `""` in the pattern, with `*` rather than `+`, so an empty field says only `must be non-empty`.
+- Label every field a user reads about, then write a message only where the copy must differ from ArkType's: `price: type.number.moreThan(0, "Enter a price").label("Price")` says `Enter a price` for `0` and `Price must be a number` for anything else. A message, given or set with `.message()`, is never labeled.
+- Don't wrap these in helpers like `nonEmptyString(name)`, `positiveNumber(message)` or `requiredBoolean(message)`: each is one expression, and the helper hides which of a constraint's message or a whole-value message the field gets.
+- Name a nested object's Type and reuse it, as `beneficiary: Beneficiary.or("undefined")`, rather than writing `type({ ... })` inline at the key. Export the inferred type under the same name: `export const Beneficiary = type({ ... })` beside `export type Beneficiary = typeof Beneficiary.infer`, and annotate defaults and values with `Beneficiary`.
+- Form state whose keys are present but may be `undefined` is `"string | undefined"` at each key. `.partial()` makes keys optional instead, which rejects `undefined` under `exactOptionalPropertyTypes`, the default.
+- When the TypeScript type comes first, like an API's DTO, check the Type against it with `type.declare<Dto>().type({ ... })`, which must match exactly. Add `{ assignable: true }` only when the form accepts less than the DTO, like required keys where it allows `undefined` or `null`. Don't declare a primitive: `type("string")` is already `Type<string>`.
 
 ## Recursive and cyclic types
 

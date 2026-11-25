@@ -134,6 +134,49 @@ const missingConfig = `import { configure } from "arktype/config"
 configure({ required: { message: "Required" } })
 `
 
+// a value named by its label (.label()) in each message written by default
+const labeled: Record<string, string> = {
+	"names a value by its label, after the path before the key it names": `
+		const Price = type("number > 0").label("Unit price")
+		const LineItem = type({ unitPriceCents: Price })
+		show(LineItem, { unitPriceCents: 0 }, { unitPriceCents: "1" }, {})
+		show(Price, 0)
+		show(type({ billing: LineItem, items: LineItem.array(), prices: type("number > 0").label("Price").array() }), { billing: { unitPriceCents: 0 }, items: [{ unitPriceCents: 0 }], prices: [0] })
+		standard(LineItem, { unitPriceCents: 0 })
+	`,
+	"says a message configured for it as written": `
+		show(type({ k: type("number > 0").label("K").message("Enter a K") }), { k: 0 }, {})
+		show(type({ k: type("number").moreThan(0, "Enter a K").label("K") }), { k: 0 }, { k: "1" })
+	`,
+	"names a union's value by its label, and lists each branch's by its own": `
+		show(type({ k: type("string | number").label("K") }), { k: true })
+		show(type({ k: type("string > 3 | string.email").label("K") }), { k: "ab" })
+		show(type({ k: type("string").label("K").or(type("number").label("K")) }), { k: true })
+		show(type({ k: type("string").describe("an id").label("K") }), { k: 1 })
+		show(type({ a: type("string").label("A") }).or({ b: "number" }), { a: 1, b: "x" })
+		show(type({ k: type({ a: type("string").label("A") }).or({ b: "number" }) }), { k: {} })
+	`,
+	"keeps a label through a pipe and the validator a morph calls": `
+		const LineItem = type({ unitPriceCents: type("number > 0").label("Unit price") })
+		show(LineItem.pipe(o => o), { unitPriceCents: 0 })
+		show(type({ p: type("string").pipe(s => LineItem(JSON.parse(s))) }), { p: '{"unitPriceCents":0}' })
+		show(type({ p: type("string.json.parse").to(LineItem) }), { p: '{"unitPriceCents":0}' })
+	`
+}
+
+// a label where a function configured for its code writes what it expects
+const labeledWritten: Record<string, string> = {
+	"names a value by its label beside text a function writes": `
+		show(type({ k: type("number > 0").label("K") }), { k: 0 })
+		show(type({ k: type("number > 0").label("K").message("Enter a K") }), { k: 0 })
+	`
+}
+
+const writtenConfig = `import { configure } from "arktype/config"
+
+configure({ min: { expected: ctx => \`over \${ctx.rule}\` } })
+`
+
 const appOf = (
 	rows: Record<string, string>,
 	imports = ""
@@ -299,6 +342,32 @@ console.log(JSON.stringify({
 				}
 			})
 		}
+	)
+
+	itWritesAsArktype(
+		"a label",
+		labeled,
+		{ "main.ts": appOf(labeled) },
+		{},
+		bundles => {
+			it("is noted on its issue by its site", () => {
+				attest(
+					bundles.production.includes(
+						'labelSiteOf("min", "positive", "Unit price must be positive", "Unit price")'
+					)
+				).equals(true)
+			})
+		}
+	)
+
+	itWritesAsArktype(
+		"a label beside text a function writes",
+		labeledWritten,
+		{
+			"config.ts": writtenConfig,
+			"main.ts": appOf(labeledWritten, 'import "./config.ts"\n')
+		},
+		{ config: "config.ts" }
 	)
 
 	itWritesAsArktype(

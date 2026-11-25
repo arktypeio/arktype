@@ -30,6 +30,7 @@ var listsUnions = true
 var appliesValues = true
 var transformsBranches = true
 var failsInBranches = true
+var labelsValues = true
 var readsSummary = true
 var readsErrors = true
 var namesTraversalError = true
@@ -299,7 +300,9 @@ var mergeIssues = (errors, merged, prefix) => {
 }
 var codedIssue = issue => Object.defineProperty(issue, "_c", { value: 2 })
 var notedAs = (issue, copy) =>
-	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
+	labelsValues && issue._n !== void 0 ? labeledIssue(copy, issue._n)
+	: listsUnions && writesText && issue._c ? codedIssue(copy)
+	: copy
 var movedIssue = (issue, path) =>
 	notedAs(issue, {
 		code: issue.code,
@@ -325,6 +328,7 @@ var lineOf = issue => {
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== void 0 ? issue._l
+		: labelsValues && issue._n !== void 0 ? labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
@@ -354,6 +358,17 @@ var ThrownIssues = /* @__PURE__ */ (() =>
 			Object.defineProperty(this, "arkErrors", { value: errors })
 		}
 	}))()
+var labeledIssue = (issue, label) =>
+	Object.defineProperty(issue, "_n", { value: label, configurable: true })
+var labeledPathOf = issue => {
+	const { path } = issue
+	const prefix = pathOf(
+		typeof path[path.length - 1] === "string" ?
+			{ path: path.slice(0, -1) }
+		:	issue
+	)
+	return prefix && prefix + ": "
+}
 
 // ark/schema/shared/transform.ts
 var TransformErrors = class _TransformErrors {

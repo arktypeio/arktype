@@ -323,21 +323,21 @@ const Form = type({
 	(data, ctx) =>
 		data.password === data.confirmPassword ||
 		ctx.reject({
-			expected: "identical to password",
+			message: "Passwords must match",
 			relativePath: ["confirmPassword"]
 		})
 )
 
-// ArkErrors: confirmPassword must be identical to password
+// ArkErrors: confirmPassword: Passwords must match
 Form({ password: "arktype", confirmPassword: "artkype" })
 
-// ArkErrors: [0].confirmPassword must be identical to password
+// ArkErrors: [0].confirmPassword: Passwords must match
 Form.array()([{ password: "arktype", confirmPassword: "artkype" }])
 ```
 
 `path` sets the error's whole path from the root of the data instead, so prefer `relativePath`, which stays right when the Type is nested in another.
 
-A narrow is called on each literal its Type allows, like `true`, `null` or `'a'`, when the Type is defined, and a literal it rejects is removed from the Type. `type("boolean").narrow(b => b)` is `true`, so `false` reads `must be true` rather than what the narrow says. To give a literal its own text, [configure](/docs/configuration#message) the Type instead: `type("true").configure({ message: "Accept the terms" })`.
+A narrow is called on each literal its Type allows, like `true`, `null` or `'a'`, when the Type is defined, and a literal it rejects is removed from the Type. `type("boolean").narrow(b => b)` is `true`, so `false` reads `must be true` rather than what the narrow says. To give a literal its own text, give the Type a [message](/docs/configuration#message) instead: `type("true").message("Accept the terms")`.
 
 If a narrow's return type is a type predicate, the `Type` infers it:
 

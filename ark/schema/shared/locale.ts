@@ -19,6 +19,8 @@ import {
 	type MessageContext
 } from "./errors.ts"
 import type { ArkEnv } from "./declare.ts"
+import { labeledPathOf } from "./issues.ts"
+import { labelSharedBy } from "./listed.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 
@@ -264,6 +266,16 @@ export interface PathGroup {
 	readonly propString: string
 	/** the title of the value at the path */
 	readonly label: string | undefined
+	/**
+	 * the label each error's message names the value at the path by
+	 * (`.label()`), if they agree, which is the subject in place of its key
+	 */
+	readonly named: string | undefined
+	/**
+	 * the path written before `named`, as a summary's line writes it: the
+	 * path without the key it names, then a colon, or "" where that's all
+	 */
+	readonly namedAfter: string
 	/** each error's expected text, once */
 	readonly expected: readonly string[]
 	/** the errors' actual text, unless they differ */
@@ -294,12 +306,15 @@ export const groupByPath = (
 		}
 		const actual = group[0].actual
 		const propString = group[0].propString
+		const named = labelSharedBy(group)
 		return {
 			propString,
 			// the union's title is its own value's, whatever its branches'
 			label:
 				(propString === union.propString ? labelOf(union) : undefined) ??
 				sharedLabelOf(group),
+			named,
+			namedAfter: named === undefined ? "" : labeledPathOf(group[0]),
 			expected,
 			actual:
 				group.every(error => error.actual === actual) ? actual : undefined,

@@ -61,7 +61,8 @@ const typeApiGroups = {
 		"meta",
 		"configure",
 		"describe",
-		"message"
+		"message",
+		"label"
 	],
 	Composition: ["and", "or", "intersect", "array", "optional", "default"],
 	Morphs: ["narrow", "filter", "pipe", "to", "in", "out", "encode"],

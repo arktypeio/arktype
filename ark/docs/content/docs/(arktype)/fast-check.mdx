@@ -61,9 +61,13 @@ A narrow written as a type predicate, like `(s): s is "a" | "b"`, narrows the ar
 ```ts
 import { arkToArbitrary } from "@ark/fast-check"
 
-const Even = type("number.integer").narrow(n => n % 2 === 0)
+const Range = type({ min: "number", max: "number" }).narrow(
+	(r, ctx) =>
+		r.min <= r.max ||
+		ctx.reject({ message: "Max must be at least min", relativePath: ["max"] })
+)
 
-const evens = arkToArbitrary(Even).filter(n => Even.allows(n))
+const ranges = arkToArbitrary(Range).filter(r => Range.allows(r))
 ```
 
 When it doesn't, fast-check gives up after too many rejected values, and you'll need to write that arbitrary yourself.

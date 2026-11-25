@@ -362,6 +362,7 @@ export interface IssueFeatures {
 	transformsBranches: boolean
 	failsInBranches: boolean
 	discriminatesBooleans: boolean
+	labelsValues: boolean
 	readsSummary: boolean
 	readsErrors: boolean
 	holdsExpression: boolean
@@ -381,6 +382,7 @@ export const noIssueFeatures: IssueFeatures = {
 	transformsBranches: false,
 	failsInBranches: false,
 	discriminatesBooleans: false,
+	labelsValues: false,
 	readsSummary: false,
 	readsErrors: false,
 	holdsExpression: false,

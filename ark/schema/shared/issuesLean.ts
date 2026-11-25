@@ -12,6 +12,7 @@ import type {
 import {
 	bracketsKeys,
 	callsSiteText,
+	labelsValues,
 	listsUnions,
 	namesTraversalError,
 	readsErrors,
@@ -349,18 +350,23 @@ export const mergeIssues = (
 
 // whether an issue's message is a sentence of its own, as issues.ts's isCustomIssue
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	listsUnions && issue._l !== undefined ?
+	(
+		(listsUnions && issue._l !== undefined) ||
+		(labelsValues && issue._n !== undefined)
+	) ?
 		false
 	:	writesText &&
 		issue.message !== undefined &&
 		!issue.message.startsWith(messageOf(issue))
 
-// as issues.ts's codedIssue, notedAs and movedIssue
+// as issues.ts's codedIssue, labeledIssue, notedAs and movedIssue
 export const codedIssue = <issue extends ArkIssue>(issue: issue): issue =>
 	Object.defineProperty(issue, "_c", { value: 2 })
 
 export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue =>
-	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
+	labelsValues && issue._n !== undefined ? labeledIssue(copy, issue._n)
+	: listsUnions && writesText && issue._c ? codedIssue(copy)
+	: copy
 
 export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
 	notedAs(issue, {
@@ -394,6 +400,7 @@ export const lineOf = (issue: ArkIssue): string => {
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
+		: labelsValues && issue._n !== undefined ? labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
@@ -446,3 +453,25 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues =
 		}))()
 
 export { ThrownIssues as TraversalError }
+
+// declared last, so a build labeling nothing drops them without splitting the
+// declarations around them in two, which costs it bytes
+
+export const labeledIssue = <issue extends ArkIssue>(
+	issue: issue,
+	label: string
+): issue =>
+	Object.defineProperty(issue, "_n", { value: label, configurable: true })
+
+// as issues.ts's labeledPathOf
+export const labeledPathOf = (issue: {
+	readonly path: readonly PropertyKey[]
+}): string => {
+	const { path } = issue
+	const prefix = pathOf(
+		typeof path[path.length - 1] === "string" ?
+			{ path: path.slice(0, -1) }
+		:	issue
+	)
+	return prefix && prefix + ": "
+}

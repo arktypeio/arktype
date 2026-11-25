@@ -238,10 +238,10 @@ A union of objects is checked by one key where a key tells its branches apart. A
 
 ```ts
 // one switch on kind: { kind: "c" } fails with kind must be "a" or "b"
-const Event = type({ kind: "'a'", x: "number" }).or({
-	kind: "'b'",
-	y: "string"
-})
+const Event = type.or(
+	{ kind: "'a'", x: "number" },
+	{ kind: "'b'", y: "string" }
+)
 ```
 
 ### Minifiers

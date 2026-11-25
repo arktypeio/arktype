@@ -183,9 +183,8 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * is invoked with invalid input.
 	 *
 	 * @example
-	 * const out = myType(data)
-	 *
-	 * if(out instanceof type.errors) console.log(out.summary)
+	 * const out = User(data)
+	 * if (out instanceof type.errors) console.log(out.summary)
 	 */
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
@@ -209,27 +208,40 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	schema: SchemaParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to the argument passed to this function.
-	 * @example const foo = type.unit('foo') // {@link Type}<'foo'>
-	 * @example const sym: unique symbol = Symbol(); type.unit(sym) // {@link Type}<typeof sym>
+	 * @example
+	 * // Type<"foo">
+	 * const Foo = type.unit("foo")
+	 * const sym: unique symbol = Symbol()
+	 * // Type<typeof sym>
+	 * const Sym = type.unit(sym)
 	 */
 	unit: UnitTypeParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to one of the arguments passed to this function.
-	 * @example const enum = type.enumerated('foo', 'bar', obj) // obj is a by-reference object
-	 * @example const TupleForm = type(['===', 'foo', 'bar', obj])
-	 * @example const ArgsForm = type('===', 'foo', 'bar', obj)
+	 * @example
+	 * const fallback = { size: 0 }
+	 * // Type<"auto" | 0 | { size: number }>, allowing fallback itself but no copy of it
+	 * const Size = type.enumerated("auto", 0, fallback)
+	 * // the same Type as a tuple expression and as spread arguments
+	 * const SizeTuple = type(["===", "auto", 0, fallback])
+	 * const SizeArgs = type("===", "auto", 0, fallback)
 	 */
 	enumerated: EnumeratedTypeParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by one of the Object.values() of the argument passed to this function.
 	 *
 	 * ⚠️ For TypeScript enum compatibility, values at numeric keys with corresponding numeric values will not be included.
-	 * @example const myEnum = type.valueOf(myTsEnum)
+	 * @example
+	 * enum Direction { Up, Down }
+	 * // Type<Direction>, allowing 0 and 1 but not "Up" or "Down"
+	 * const DirectionValue = type.valueOf(Direction)
 	 */
 	valueOf: ValueOfTypeParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by a value of a specific class.
-	 * @example const array = type.instanceOf(Array)
+	 * @example
+	 * // Type<Map<unknown, unknown>>
+	 * const MapType = type.instanceOf(Map)
 	 */
 	instanceOf: InstanceOfTypeParser<$>
 	/**
@@ -246,7 +258,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * Create a {@link Type} by merging object definitions, with later
 	 * definitions having precedence for overlapping keys
 	 * @example
-	 * // Type<{ a: "3", b: "2", c: "4" }>
+	 * // Type<{ a: 3; b: 2; c: 4 }>
 	 * const T = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
 	 */
 	merge: NaryMergeParser<$>
@@ -262,8 +274,8 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * @example
 	 * const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 	 * len("foo") // 3
-	 * // TypeScript: boolean is not assignable to string | unknown[]
-	 * // Runtime (throws): [0] must be a string or an array
+	 * // TypeScript: Argument of type 'boolean' is not assignable to parameter of type 'string | unknown[]'
+	 * // throws TraversalError: [0] must be a string or an array
 	 * len(true)
 	 */
 	fn: FnParser<$>

@@ -406,9 +406,12 @@ export const de: Locale.Complete = {
 			if (groups.length === 0) return locale.nouns.never
 			return locale.list(
 				groups.map(group => {
+					// a labeled value is its label, after the path before its key
 					const subject =
-						group.propString &&
-						`${subjectOf(group.propString, group.label, locale)} `
+						group.named !== undefined ?
+							`${group.namedAfter}${locale.verbatim(group.named)} `
+						:	group.propString &&
+							`${subjectOf(group.propString, group.label, locale)} `
 					const expected = locale.list(group.expected, "or")
 					// a missing key reads as its own error does
 					if (group.actual === absent)

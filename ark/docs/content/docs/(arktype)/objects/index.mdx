@@ -366,11 +366,12 @@ Like the other [structural transformations](/docs/objects#properties-structural)
 
 ```ts
 const Dates = type({
-	issued: "string.date",
-	due: "string.date"
+	issued: "string.date.iso",
+	due: "string.date.iso"
 }).narrow(
 	(dates, ctx) =>
-		dates.due >= dates.issued || ctx.mustBe("due on or after issued")
+		dates.due >= dates.issued ||
+		ctx.reject({ expected: "on or after issued", relativePath: ["due"] })
 )
 
 // the properties are spread, the narrow is not
@@ -383,14 +384,15 @@ Invoice({ issued: "2026-02-01", due: "2026-01-01", total: 100 })
 Spread the properties, then narrow the result:
 
 ```ts
-const Dates = type({ issued: "string.date", due: "string.date" })
+const Dates = type({ issued: "string.date.iso", due: "string.date.iso" })
 
 const Invoice = type({ "...": Dates, total: "number" }).narrow(
 	(invoice, ctx) =>
-		invoice.due >= invoice.issued || ctx.mustBe("due on or after issued")
+		invoice.due >= invoice.issued ||
+		ctx.reject({ expected: "on or after issued", relativePath: ["due"] })
 )
 
-// ArkErrors: must be due on or after issued
+// ArkErrors: due must be on or after issued
 Invoice({ issued: "2026-02-01", due: "2026-01-01", total: 100 })
 ```
 
@@ -565,27 +567,41 @@ Before using `get`, `pick` or `omit` on a type you defined, consider defining th
 Anything attached to the object itself is dropped: most importantly a root [narrow](/docs/expressions#narrow) or [filter](/docs/expressions#filter), but also [metadata](/docs/configuration#metadata) like `.describe(...)`. Constraints on the properties are kept.
 
 ```ts
-const User = type({
-	name: "string",
-	email: "string"
-}).narrow(user => user.email.includes("@"))
+const Signup = type({
+	password: "string",
+	confirmPassword: "string"
+}).narrow(
+	(signup, ctx) =>
+		signup.password === signup.confirmPassword ||
+		ctx.reject({
+			message: "Passwords must match",
+			relativePath: ["confirmPassword"]
+		})
+)
 
-// the narrow is not a property, so PartialUser doesn't have it
-const PartialUser = User.partial()
+// the narrow is not a property, so SignupDraft doesn't have it
+const SignupDraft = Signup.partial()
 
-// { email: "not an email" }
-PartialUser({ email: "not an email" })
+// { password: "a", confirmPassword: "b" }
+SignupDraft({ password: "a", confirmPassword: "b" })
 ```
 
 Reapply what you still need to the result:
 
 ```ts
-const PartialUser = type({
-	name: "string",
-	email: "string"
+const SignupDraft = type({
+	password: "string",
+	confirmPassword: "string"
 })
 	.partial()
-	.narrow(user => user.email?.includes("@") ?? true)
+	.narrow(
+		(draft, ctx) =>
+			draft.password === draft.confirmPassword ||
+			ctx.reject({
+				message: "Passwords must match",
+				relativePath: ["confirmPassword"]
+			})
+	)
 ```
 
 A root [morph](/docs/expressions#pipe) can't be reduced to properties, so transforming a type like `type({ name: "string" }).pipe(user => user)` throws a `ParseError` instead of dropping it: `partial operand must be an object (was (In: { name: string }) => Out<...>)`. An object that [deletes undeclared keys](#properties-undeclared) is a morph too, so once it has a narrow, these methods throw. Call them first, then add the narrow, as above.
@@ -642,14 +658,16 @@ const RequiredUser = User.required()
 const PartialUser = User.partial()
 ```
 
+`partial` makes keys optional, which isn't the same as allowing `undefined`: under [`exactOptionalPropertyTypes`](/docs/configuration#exactoptionalpropertytypes), the default, a key may be missing but not set to `undefined`. To match a type whose keys are present but may be `undefined`, like a form's state `{ name: string | undefined }`, add `| undefined` to each value instead.
+
 `required` also removes defaults, so a defaulted key becomes a plain required key:
 
 ```ts
-// Type<{ foo: string }>
-const T = type({ foo: "string = 'bar'" }).required()
+// Type<{ locale: string }>
+const Settings = type({ locale: "string = 'en'" }).required()
 
-// ArkErrors: foo must be a string (was missing)
-T({})
+// ArkErrors: locale must be a string (was missing)
+Settings({})
 ```
 
 In a definition, use the `Required` and `Partial` [generics](/docs/generics#keywords), e.g. `"Partial<User>"` in a scope.
@@ -738,8 +756,8 @@ for (const prop of User.props) {
 	<SyntaxTab string>
 
 ```ts
-const Arrays = type({
-	key: "string[]"
+const Post = type({
+	tags: "string[]"
 })
 ```
 
@@ -748,8 +766,8 @@ const Arrays = type({
     <SyntaxTab fluent>
 
 ```ts
-const Arrays = type({
-	key: type.string.array()
+const Post = type({
+	tags: type.string.array()
 })
 ```
 
@@ -758,8 +776,8 @@ const Arrays = type({
     <SyntaxTab tuple>
 
 ```ts
-const Arrays = type({
-	key: ["string", "[]"]
+const Post = type({
+	tags: ["string", "[]"]
 })
 ```
 
@@ -768,8 +786,8 @@ const Arrays = type({
     <SyntaxTab args>
 
 ```ts
-const Arrays = type({
-	key: type("string", "[]")
+const Post = type({
+	tags: type("string", "[]")
 })
 ```
 

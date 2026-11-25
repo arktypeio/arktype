@@ -1366,6 +1366,7 @@ o.run()`
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				labelsValues: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
@@ -1388,6 +1389,7 @@ o.run()`
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				labelsValues: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
@@ -1413,6 +1415,7 @@ o.run()`
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				labelsValues: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
@@ -1499,6 +1502,7 @@ o.run()`
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				labelsValues: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
@@ -1528,6 +1532,28 @@ o.run()`
 					`type({ a: type("string").configure({ message: ctx => "Enter " + ctx.expected }) })`
 				)
 			).equals([true, true])
+		})
+
+		it("a label only where a message names one, as one configured says it as written", async () => {
+			const labels = async (definition: string) => {
+				const issues = await issuesOf(
+					`import { type } from "arktype"\n\nexport const T = ${definition}\n`
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) && [issues.labelsValues, issues.callsSiteText]
+				)
+			}
+			attest(await labels(`type({ a: "string" })`)).equals([false, false])
+			attest(await labels(`type({ a: type("string").label("A") })`)).equals([
+				true,
+				true
+			])
+			attest(
+				await labels(
+					`type({ a: type("string").label("A").message("Enter text") })`
+				)
+			).equals([false, false])
 		})
 
 		it("a validator's expression only where one holds it, as one that's printed does", async () => {

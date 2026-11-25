@@ -8913,6 +8913,7 @@ const anyIssues: IssueFeatures = {
 	transformsBranches: true,
 	failsInBranches: true,
 	discriminatesBooleans: true,
+	labelsValues: true,
 	readsSummary: true,
 	readsErrors: true,
 	holdsExpression: true,

@@ -31,6 +31,7 @@ const featureNames = Object.keys({
 	transformsBranches: 1,
 	failsInBranches: 1,
 	discriminatesBooleans: 1,
+	labelsValues: 1,
 	readsSummary: 1,
 	readsErrors: 1,
 	holdsExpression: 1,

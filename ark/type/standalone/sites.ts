@@ -11,6 +11,7 @@ import {
 	describesData,
 	errorWriters,
 	errorWritersByCode,
+	messageOf,
 	type FailureSite,
 	type SiteContext,
 	type UnionSite
@@ -206,6 +207,7 @@ export const addIssueFeatures = (
 			const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
 			if (contexts.some(writesText)) features.writesText = true
 			if (contexts.some(callsText)) features.callsSiteText = true
+			if (contexts.some(labels)) features.labelsValues = true
 		}
 	}
 }
@@ -233,10 +235,14 @@ const writesText = (context: IssueContext | undefined) =>
 	!!context?.c || !!context?.written
 
 // a site whose `text` is called on its issue: one whose text a function
-// writes, or one noting that its message is its code's. A message that's its
-// Type's is the issue's as the site holds it, with no call
+// writes, or one noting that its message is its code's or names a label. A
+// message that's its Type's is the issue's as the site holds it, with no call
 const callsText = (context: IssueContext | undefined) =>
-	context?.c === 2 || !!context?.written
+	context?.c === 2 || context?.label !== undefined || !!context?.written
+
+// a site whose message names its value by a label, which its issue notes
+const labels = (context: IssueContext | undefined) =>
+	context?.label !== undefined
 
 // code naming what writes or passes such a site
 const callsTextIn = /runtime\.(?:codeSiteOf|writtenSiteOf|codedIssue)\b/
@@ -264,6 +270,7 @@ const siteWords = new Set([
 	"void",
 	"siteOf",
 	"codeSiteOf",
+	"labelSiteOf",
 	"keySiteOf",
 	"requiredSiteOf",
 	"v",
@@ -285,20 +292,24 @@ export const withoutStrings = (code: string): string =>
 
 // a key's site expects its value's brief where the key is missing, unless that's its basis's
 export const writeSiteOf = (
-	{ code, description, message, c }: IssueContext,
+	{ code, description, message, c, label }: IssueContext,
 	emit: (s: string) => string,
 	writer = "siteOf",
 	missing?: string
 ): string => {
+	// a message naming a label, or configured for its code, is noted on its
+	// issue: labelSiteOf's or codeSiteOf's
+	if (writer === "siteOf") {
+		if (label !== undefined) writer = "labelSiteOf"
+		else if (c === 2) writer = "codeSiteOf"
+	}
 	const args =
 		writer === "keySiteOf" ?
 			[code, description, missing === description ? undefined : missing]
-		:	[code, description, message]
+		: writer === "labelSiteOf" ? [code, description, message, label]
+		: [code, description, message]
 	while (args[args.length - 1] === undefined) args.pop()
-	// a message configured for its code is noted on its issue: codeSiteOf's
-	return `runtime.${
-		writer === "siteOf" && c === 2 ? "codeSiteOf" : writer
-	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
+	return `runtime.${writer}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
 }
 
 // its value's brief, as arktype's is, unless the program configures required's expected
@@ -354,12 +365,14 @@ type Custom = 1 | 2
 export interface IssueContext extends SiteContext {
 	message?: string
 	c?: Custom | undefined
+	/** what its message names its value by, before what's written from its expected */
+	label?: string | undefined
 	written?: {
 		context: object
 		writers: Writer[]
 		// 1 if the issue takes expected, 4 if its actual describes its data,
-		// which a default message leaves out, and 2 if its message is
-		// configured for its code
+		// which a default message leaves out, 2 if its message is configured
+		// for its code and 8 if its default message names a label
 		keeps: number
 	}
 }
@@ -367,8 +380,33 @@ export interface IssueContext extends SiteContext {
 const keepsOf = (
 	takesExpected: boolean,
 	c: Custom | undefined,
-	describes: boolean
-): number => +takesExpected | (c === 2 ? 2 : 0) | (+describes << 2)
+	describes: boolean,
+	labeled = false
+): number =>
+	+takesExpected | (c === 2 ? 2 : 0) | (+describes << 2) | (+labeled << 3)
+
+// the label a site's default message names its value by, as arktype's errors
+// read it: a missing key's value's, not that of the object around an
+// undeclared key, nor that of a union listing its branches' errors, each
+// named by its own, nor one written from what its bases are, which the union
+// names only where each base's issue does
+const labelOf = (
+	context: TextContext,
+	meta: Record<string, unknown>
+): string | undefined => {
+	const label =
+		context.code === "required" ? context.valueMeta?.label
+		: context.code === "undeclared" ? undefined
+		: context.code === "union" ?
+			(
+				(meta.description !== undefined && meta.keyword === undefined) ||
+				meta.expected !== undefined
+			) ?
+				meta.label
+			:	undefined
+		:	meta.label
+	return typeof label === "string" ? label : undefined
+}
 
 // what a default actual writes: what arktype describes data with, where a
 // configured message reads it, shipped as the runtime's
@@ -409,6 +447,9 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		: meta.message !== undefined || custom.message === ofValue ? 1
 		: 2
 	const locale = $ark.cfg!.locale
+	// a message configured or written out says what it says
+	const label =
+		custom.message === undefined ? labelOf(context, meta) : undefined
 	const issueContext: IssueContext = {
 		code,
 		description:
@@ -443,8 +484,14 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		issueContext.written = {
 			context,
 			writers: describingKeys.map(writerOf),
-			keeps: keepsOf(custom.expected !== undefined, c, !!describer)
+			keeps: keepsOf(
+				custom.expected !== undefined,
+				c,
+				!!describer,
+				label !== undefined
+			)
 		}
+		if (label !== undefined) issueContext.label = label
 		return issueContext
 	}
 	// a union with no description says the message configured for it, a
@@ -477,6 +524,13 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 			{ expected: issueContext.description, actual: custom.actual } as never,
 			locale
 		)
+	}
+	if (label !== undefined) {
+		issueContext.message = `${locale.verbatim(label)} ${
+			issueContext.message ??
+			messageOf({ code, expected: issueContext.description })
+		}`
+		issueContext.label = label
 	}
 	return issueContext
 }

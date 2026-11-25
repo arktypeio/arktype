@@ -338,9 +338,12 @@ const writeNodeAnnotations = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
 ): void => {
-	for (const k in node.meta) {
+	for (const metaKey in node.meta) {
+		// a label names the value as a title does, written as one where none is
+		const k =
+			metaKey === "label" && node.meta.title === undefined ? "title" : metaKey
 		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
-		const v = (node.meta as dict)[k]
+		const v = (node.meta as dict)[metaKey]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue
 		let jsonValue: unknown

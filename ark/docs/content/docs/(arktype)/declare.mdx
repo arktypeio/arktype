@@ -9,36 +9,38 @@ If the TypeScript type comes first, `type.declare` checks that a definition matc
 
 ```ts
 // @errors: 2322
-type Expected = { a: string; b?: number }
+type User = { name: string; age?: number }
 
-const T = type.declare<Expected>().type({
-	a: "string",
-	"b?": "number"
+const User = type.declare<User>().type({
+	name: "string",
+	"age?": "number"
 })
 
-const Bad = type.declare<Expected>().type({
-	a: "string",
+const Bad = type.declare<User>().type({
+	name: "string",
 	// narrower than number
-	"b?": "1"
+	"age?": "18"
 })
 ```
 
 Optionality can also be expressed in the value instead of the key:
 
 ```ts
-type Expected = { a: string; b?: number }
+type User = { name: string; age?: number }
 
-const T = type.declare<Expected>().type({
-	a: "string",
-	// same as "b?": "number"
-	b: "number?"
+const User = type.declare<User>().type({
+	name: "string",
+	// same as "age?": "number"
+	age: "number?"
 })
 ```
 
 `declare` works with any definition, not only objects:
 
 ```ts
-const Name = type.declare<string>().type("string")
+type Role = "admin" | "member"
+
+const Role = type.declare<Role>().type("'admin' | 'member'")
 
 const Entry = type.declare<[string, number]>().type(["string", "number"])
 ```
@@ -53,17 +55,17 @@ By default, `declare` compares your definition to the declared type as a whole, 
 
 ```ts
 // @errors: 2322
-type Expected = { a: number; b?: number }
+type Query = { page: number; limit?: number }
 
-const Bad = type.declare<Expected>().type({
-	a: "string.numeric.parse",
-	"b?": "number"
+const Bad = type.declare<Query>().type({
+	page: "string.numeric.parse",
+	"limit?": "number"
 })
 
-// the output must match Expected
-const T = type.declare<Expected, { side: "out" }>().type({
-	a: "string.numeric.parse",
-	"b?": "number"
+// the output must match Query
+const Query = type.declare<Query, { side: "out" }>().type({
+	page: "string.numeric.parse",
+	"limit?": "number"
 })
 ```
 
@@ -93,6 +95,8 @@ const Bad = type.declare<Contact, { assignable: true }>().type({
 ```
 
 A key declared optional may be left out, or written optional or required. A required key must be written required, and a key the declared type doesn't have is still an error.
+
+Declare a type exactly wherever the definition can match it, so a change on either side is an error. Save `assignable` for a definition that accepts less than the declared type, like a form for an API type whose every key allows `undefined` or `null`. A primitive like `string` needs no declaration: `type("string")` is already `Type<string>`.
 
 ## Index signatures
 

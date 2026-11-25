@@ -4,6 +4,7 @@ import {
 	bracketsKeys,
 	callsSiteText,
 	findsOnRead,
+	labelsValues,
 	listsUnions,
 	namesTraversalError,
 	readsErrors,
@@ -30,6 +31,8 @@ export interface ArkIssue {
 	readonly _l?: string | undefined
 	/** @internal 2 where its message is one configured for its code: see codedIssue */
 	readonly _c?: 2 | undefined
+	/** @internal the label its message names its value by: see labeledIssue */
+	readonly _n?: string | undefined
 	/** @internal a union's, its text written again at a path before its own */
 	_m?(prefix: array<PropertyKey>): ArkIssue
 }
@@ -722,7 +725,10 @@ export const mergeIssues = (
  * its path as that would. A union listing its errors wrote its own line
  */
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	listsUnions && issue._l !== undefined ?
+	(
+		(listsUnions && issue._l !== undefined) ||
+		(labelsValues && issue._n !== undefined)
+	) ?
 		false
 	:	writesText &&
 		issue.message !== undefined &&
@@ -742,11 +748,13 @@ export const codedIssue = <issue extends ArkIssue>(issue: issue): issue =>
 	Object.defineProperty(issue, "_c", { value: 2 })
 
 /**
- * @internal a copy of an issue, noted as it was. Only a union reads the note,
- * and only of a message that was written
+ * @internal a copy of an issue, noted as it was. A union reads a code's note,
+ * only of a message that was written, and a summary a label's
  */
 export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue =>
-	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
+	labelsValues && issue._n !== undefined ? labeledIssue(copy, issue._n)
+	: listsUnions && writesText && issue._c ? codedIssue(copy)
+	: copy
 
 /** @internal an issue at another path, saying what it did */
 export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
@@ -780,7 +788,8 @@ export const pathOf = (issue: {
 /**
  * @internal an issue's line of a summary: its message after its path, one
  * configured or supplied as a sentence (isCustomIssue) after a colon. A union
- * listing its branches' issues names each one's path instead. Each flag is read in the
+ * listing its branches' issues names each one's path instead, and a labeled
+ * one's message names its own value (labeledPathOf). Each flag is read in the
  * one expression returned: a bundler that inlines a flag as it prints folds
  * an expression it's in, and leaves a statement testing it, and a function
  * returning it, as they are. A listed issue's message is set as it's created
@@ -793,6 +802,7 @@ export const lineOf = (issue: ArkIssue): string => {
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
+		: labelsValues && issue._n !== undefined ? labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
@@ -857,4 +867,39 @@ export const throwIssues = (apply: CompactApply, data: unknown): never => {
 	apply(data, errors)
 	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors.throw()
+}
+
+// declared last, so a build labeling nothing drops them without splitting the
+// declarations around them in two, which costs it bytes
+
+/**
+ * @internal notes that an issue's message names its value by a label, as
+ * `.label("Unit price")` writes `Unit price must be positive`: what its Type
+ * expects, said of the label rather than after its path. A summary writes it
+ * after the path it failed at without the key the label names, and a union
+ * lists it under its label. Defined on the issue so it isn't enumerable, as
+ * codedIssue's note is, and configurable, as a union whose errors share a
+ * sentence says that in place of its own labeled message
+ */
+export const labeledIssue = <issue extends ArkIssue>(
+	issue: issue,
+	label: string
+): issue =>
+	Object.defineProperty(issue, "_n", { value: label, configurable: true })
+
+/**
+ * @internal the path a labeled issue's line writes before its message, then a
+ * colon: its own, without the key its label names in its place. An index
+ * names no value, so it's kept, as in `prices[0]: Price must be positive`
+ */
+export const labeledPathOf = (issue: {
+	readonly path: readonly PropertyKey[]
+}): string => {
+	const { path } = issue
+	const prefix = pathOf(
+		typeof path[path.length - 1] === "string" ?
+			{ path: path.slice(0, -1) }
+		:	issue
+	)
+	return prefix && prefix + ": "
 }

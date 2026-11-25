@@ -32,10 +32,13 @@ import {
 	writeMessage
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
+import { labelSharedBy } from "./listed.ts"
 import { findsOnRead } from "./issueFeatures.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
+	labeledIssue,
+	labeledPathOf,
 	pathOf,
 	issueAt,
 	messageOf,
@@ -267,6 +270,7 @@ export const errorOfIssue = (
 	)
 	// its line is the validator's, which wrote it as arktype would have
 	if (!isCustomIssue(issue)) templated.add(error)
+	if (issue._n !== undefined) labeledIssue(error, issue._n)
 	return error
 }
 
@@ -1059,6 +1063,22 @@ export const asTemplated = <error extends ArkIssue>(
 }
 
 /**
+ * @internal marks an error raised with a message another copy of arktype
+ * wrote from what it expected of a value it names by `label`, so a summary
+ * writes it as it does its own labeled errors
+ */
+export const asLabeled = <error extends ArkIssue>(
+	error: error,
+	label: string
+): error => {
+	if (isArkError(error)) templated.add(error)
+	labeledIssue(error, label)
+	const unlabeled = error.message?.slice(label.length + 1)
+	if (unlabeled?.startsWith("must be ")) error.expected = unlabeled.slice(8)
+	return error
+}
+
+/**
  * @internal whether an error's message was configured for its Type or code or
  * supplied where it was raised, rather than written from what it expected
  */
@@ -1146,6 +1166,9 @@ const lineOf = (error: ArkError, locale: Locale.Resolved): string => {
 	if (error.path.length === 0) return error.message
 	const listed = (error as ArkIssue)._l
 	if (listed !== undefined) return listed
+	// a labeled message names its value, so the key naming it is left out
+	const label = (error as ArkIssue)._n
+	if (label !== undefined) return labeledPathOf(error) + error.message
 	// a sentence of its own unless it begins as the locale's own would, so
 	// one configured as that text reads on from its path
 	const custom = isCustom(error) && !beginsAsOwn(error, locale)
@@ -1301,6 +1324,44 @@ export const writeText = (
 			message === writeMessage && described ? `must be ${expected}`
 			: typeof message === "function" ? message(error as never, locale)
 			: message
+		if (message === defaultConfig[code].message) labelMessage(error, locale)
+	}
+}
+
+/**
+ * @internal names the value in a message its code's default writer wrote, by
+ * the label its Type was configured with, as `Unit price must be positive`. A
+ * message configured or supplied says what it says, so it's never labeled
+ */
+export const labelMessage = (error: ArkError, locale: Locale.Info): void => {
+	const label = labelOfValue(error)
+	if (label === undefined) return
+	error.message = `${locale.verbatim(label)} ${error.message}`
+	labeledIssue(error, label)
+}
+
+/**
+ * the label of the value an error is about: a missing key's value's, or the
+ * label each base of a union failing at them shares, as a standalone
+ * validator's union of them can read only that. A union listing its errors
+ * names each by its own label, and an undeclared key or the key a
+ * discriminant misses isn't the value its meta is about
+ */
+const labelOfValue = (error: ArkError): string | undefined => {
+	switch (error.code) {
+		case "required":
+			return error.valueMeta.label
+		case "undeclared":
+			return
+		case "discriminant":
+			return error.onKey ? undefined : error.meta?.label
+		case "union": {
+			if (listsErrors(error)) return
+			const bases = basesByUnion.get(error)
+			return bases ? labelSharedBy(bases) : error.meta?.label
+		}
+		default:
+			return error.meta?.label
 	}
 }
 

@@ -3,6 +3,7 @@ import type { ResolvedConfig } from "../config.ts"
 import {
 	configuredMessageOf,
 	defaultConfig,
+	labelMessage,
 	registerLocaleRenderer,
 	suppliedText,
 	unrenderedLocaleMessage,
@@ -86,7 +87,14 @@ const write = (
 			:	writeSlot(error, "expected", expected, locale)
 	}
 	error.actual ??= render(error, "actual", expected, cited, config, locale)
-	error.message ??= render(error, "message", expected, cited, config, locale)
+	if (error.message === undefined || error.message === null) {
+		error.message = render(error, "message", expected, cited, config, locale)
+		// the locale's own message names a labeled value, as en's does
+		if (
+			configOf(error, "message", config) === defaultConfig[error.code].message
+		)
+			labelMessage(error, locale)
+	}
 }
 
 const render = (

@@ -67,19 +67,19 @@ type User = typeof User.infer
 
 The inferred type never rejects a value the schema accepts, but it can be wider: constraints like `minimum` and `pattern` don't narrow it, and a `$ref` that isn't a JSON Pointer, like one to an anchor, infers `unknown`. Inference follows `$ref`s into `$defs`, `definitions` and OpenAPI `components.schemas`, including recursive ones, and composition, `if`/`then`/`else` and `not`.
 
-A Standard Schema infers its input, as `StandardSchemaV1.InferInput` does. A JSON Schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, annotate the result:
+A Standard Schema infers its input, as `StandardSchemaV1.InferInput` does. A JSON Schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, give it with `.as<t>()`:
 
 ```ts
-import { fromJsonSchema, type Type } from "arktype"
+import { fromJsonSchema } from "arktype"
 declare const userJson: object
 // ---cut---
-const User: Type<{ name: string }> = fromJsonSchema(userJson) as never
+const User = fromJsonSchema(userJson).as<{ name: string }>()
 
 // { name: string }
 const user = User.assert({ name: "Ada" })
 ```
 
-The annotation isn't checked against the schema, so keep the two in sync yourself.
+The type isn't checked against the schema, so keep the two in sync yourself.
 
 ## How it reads JSON Schema
 

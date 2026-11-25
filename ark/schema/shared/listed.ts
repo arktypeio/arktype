@@ -1,8 +1,10 @@
 import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
-import { rewritesUnions, writesText } from "./issueFeatures.ts"
+import { labelsValues, rewritesUnions, writesText } from "./issueFeatures.ts"
 import {
 	isCustomIssue,
+	labeledIssue,
+	labeledPathOf,
 	lineOf,
 	messageOf,
 	pathOf,
@@ -27,14 +29,18 @@ const alternativesOf = (issues: ArkIssue[]): string[] =>
 		:	[expected]
 	)
 
-// each path as its own issue's message writes it, as arktype's union does
+// each path as its own issue's message writes it, as arktype's union does: a
+// labeled one's by its label, after the path before the key it names
 export const writeListed = (errors: readonly ArkIssue[]): string => {
 	// keyed by what `must be` ends, so no key is an object's own or an index
 	const atSubject: Record<string, ArkIssue[]> = {}
 	for (const error of errors) {
 		error.message ??= messageOf(error)
-		const path = pathOf(error)
-		;(atSubject[(path && path + " ") + "must be "] ??= []).push(error)
+		const subject =
+			labelsValues && error._n !== undefined ?
+				labeledPathOf(error) + error._n
+			:	pathOf(error)
+		;(atSubject[(subject && subject + " ") + "must be "] ??= []).push(error)
 	}
 	return writeBranches(
 		Object.entries(atSubject).map(
@@ -114,11 +120,17 @@ export type UnionIssueOf = (
 	errors: readonly ArkIssue[]
 ) => ArkIssue
 
-// issues at other paths, each saying what it did
+// issues at other paths, each saying what it did, by its label where it has one
 const movedBy = (
 	errors: readonly ArkIssue[],
 	path: (error: ArkIssue) => PropertyKey[]
-): ArkIssue[] => errors.map(error => ({ ...error, path: path(error) }))
+): ArkIssue[] =>
+	errors.map(error => {
+		const moved = { ...error, path: path(error) }
+		return labelsValues && error._n !== undefined ?
+				labeledIssue(moved, error._n)
+			:	moved
+	})
 
 // what write lists of errors, each path written from a union's at path
 export const writeFromPath = (
@@ -150,7 +162,7 @@ const basesIssueOf = (
 	}
 	const expected = describe(errors.map(error => error.expected!))
 	// written after its path, as any issue saying what it expects is
-	return new ListedIssue(
+	const issue = new ListedIssue(
 		path.slice(),
 		data,
 		[],
@@ -158,6 +170,8 @@ const basesIssueOf = (
 		expected,
 		messageOf({ expected })
 	)
+	// one expression, so a build labeling nothing folds it to the issue
+	return labelsValues ? labeledAlike(issue, errors) : issue
 }
 
 // a union's issue of its branches' errors: what they share, said after its
@@ -224,3 +238,23 @@ export const alikeIssue: UnionIssueOf = /* @__PURE__ */ issueWriterOf(
 	writeAlike,
 	expected => expected[0]
 )
+
+// declared last, so a build labeling nothing drops them without splitting the
+// declarations around them in two, which costs it bytes
+
+/** @internal the label each issue's message names its value by, if they agree */
+export const labelSharedBy = (
+	errors: readonly ArkIssue[]
+): string | undefined => {
+	const label = errors[0]?._n
+	for (const error of errors) if (error._n !== label) return
+	return label
+}
+
+// bases each labeled alike say what they expect of their label, as each would
+const labeledAlike = (issue: ArkIssue, errors: readonly ArkIssue[]) => {
+	const label = labelSharedBy(errors)
+	if (label === undefined) return issue
+	issue.message = `${label} ${issue.message}`
+	return labeledIssue(issue, label)
+}

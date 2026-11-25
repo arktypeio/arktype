@@ -278,8 +278,8 @@ Even(3)
 	<SyntaxTab string>
 
 ```ts
-const Bigints = type({
-	foo: "bigint"
+const Account = type({
+	balance: "bigint"
 })
 ```
 
@@ -288,8 +288,8 @@ const Bigints = type({
     <SyntaxTab fluent>
 
 ```ts
-const Bigints = type({
-	foo: type.bigint
+const Account = type({
+	balance: type.bigint
 })
 ```
 
@@ -315,8 +315,8 @@ A [unit expression](/docs/expressions#unit) like `type.unit(1337n)` does the sam
 	<SyntaxTab string>
 
 ```ts
-const Symbols = type({
-	key: "symbol"
+const Entry = type({
+	id: "symbol"
 })
 ```
 
@@ -325,8 +325,8 @@ const Symbols = type({
     <SyntaxTab fluent>
 
 ```ts
-const Symbols = type({
-	key: type.symbol
+const Entry = type({
+	id: type.symbol
 })
 ```
 
@@ -344,8 +344,8 @@ Symbol keys need no special syntax, e.g. `{ [mySymbol]: "string" }`. See [proper
 	<SyntaxTab string>
 
 ```ts
-const Booleans = type({
-	key: "boolean"
+const Settings = type({
+	darkMode: "boolean"
 })
 ```
 
@@ -354,8 +354,8 @@ const Booleans = type({
     <SyntaxTab fluent>
 
 ```ts
-const Booleans = type({
-	key: type.boolean
+const Settings = type({
+	darkMode: type.boolean
 })
 ```
 
@@ -402,8 +402,8 @@ const Booleans = type({
 	<SyntaxTab string>
 
 ```ts
-const MyObj = type({
-	foo: "number | null"
+const Profile = type({
+	age: "number | null"
 })
 ```
 
@@ -412,8 +412,8 @@ const MyObj = type({
     <SyntaxTab fluent>
 
 ```ts
-const MyObj = type({
-	foo: type.number.or(type.null)
+const Profile = type({
+	age: type.number.or(type.null)
 })
 ```
 

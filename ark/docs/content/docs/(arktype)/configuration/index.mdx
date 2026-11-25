@@ -94,27 +94,31 @@ A Type's own options are its [metadata](/docs/expressions#meta), including the [
 
 ## Error messages
 
-ArkType's built-in error messages are designed to be good enough to ship as-is, and you have two ways to customize them when needed: **templated** (`description` / `expected`) and **custom** (`message`). Choose in this order:
+ArkType's built-in error messages are designed to be good enough to ship as-is, and you have three ways to customize them when needed: **templated** (`description` / `expected`), **labeled** (`label`) and **custom** (`message`). Choose in this order:
 
 1. **Use the built-in error messages first.** ArkType's defaults are specific and readable out of the box (`must be non-empty`, `must be even`, `must be an email address`), and because they follow a `must be ___` template, they compose automatically across unions — `"string.email | string.uuid"` reports `must be an email address or a UUID`. Give them a try before reaching to customize every field.
 2. **Configure [`description`](#description) when you want custom wording that still composes.** If you're happy with `must be ___` messages and plan to reuse a Type in unions or intersections, pass a phrase like `.describe("a valid email")` instead of a full sentence so ArkType keeps merging it into natural-language union errors (`must be a phone number, a username or a valid email`) and reuses it in `.description` and JSON Schema.
-3. **Chain constraint methods with a [`message`](#message) for custom per-check sentences.** Most Types aren't composed into unions whose errors need to read as one sentence — for forms and standalone fields, you just want exact sentences for each condition that can fail. ArkType has chained methods for every built-in constraint, and passing a message as the last argument (e.g. `type.string.atLeastLength(1, "Name is required.").matching(..., "...")`) is the easiest way to give each check its own message. Use `.message()` for a whole Type or a keyword's error code.
-4. **Save [`.narrow()`](/docs/expressions#narrow) for rules built-in constraints can't express.** Don't rewrite a length, range, divisor or pattern check as a `.narrow()` just to attach a custom error message — chaining the constraint method keeps the check visible to ArkType's set algebra, JSON Schema generation and precompiler.
+3. **Configure a [`label`](#label) to name a field in its messages.** Most custom messages only exist to say which field failed: `Unit price must be greater than 0`. `.label("Unit price")` puts that name in front of every built-in message for the value, so `unitPriceCents: type("number > 0").label("Unit price")` reads `Unit price must be positive`, `Unit price must be a number` or `Unit price must be a number (was missing)`, while the error's `path` stays `unitPriceCents` for a form to bind. It's one call where a message would be one per check, though unlike a description it names only the value it's on, not the Types nested inside it.
+4. **Chain constraint methods with a [`message`](#message) for custom per-check sentences.** Most Types aren't composed into unions whose errors need to read as one sentence — for forms and standalone fields, you just want exact sentences for each condition that can fail. ArkType has chained methods for every built-in constraint, and passing a message as the last argument (e.g. `type.string.atLeastLength(1, "Name is required").matching(..., "...")`) is the easiest way to give each check its own message. Use `.message()` for a whole Type, a keyword or a union, and `.describe()` for what it must be, rather than `.configure({ message })` or `.configure({ description })`.
+5. **Save [`.narrow()`](/docs/expressions#narrow) for rules built-in constraints can't express**, like a rule across fields, one that depends on another field's value, or a check from another library. Don't rewrite a length, range, divisor, pattern, non-empty array or keyword like `string.email` as a `.narrow()` just to attach a custom error message — chaining the constraint method keeps the check visible to ArkType's set algebra, JSON Schema generation and precompiler.
+
+Put each check on the value it checks, not on the object or array holding it. `countries: type.string.array().atLeastLength(1, "Pick a country")` reports at `countries` even while other keys are invalid, where a `.narrow()` on the object reading `countries.length` runs only once every key is valid. The same goes for a nested key: `limit: Money.merge({ amount_cents: type.number.moreThan(0, "Enter a limit above zero") })`.
 
 ```ts
 const User = type({
 	name: type.string
-		.atLeastLength(1, "Name is required.")
-		.matching(/^[a-zA-Z\s'-]+$/, "Enter a valid name."),
+		.atLeastLength(1, "Name is required")
+		.matching(/^[a-z\s'-]*$/i, "Enter a valid name"),
 	age: type("number >= 18").describe("an adult's age"),
-	email: type("string.email").message("Enter a valid email")
+	email: type("string.email").message("Enter a valid email"),
+	seats: type("1 <= number.integer <= 10").label("Seats")
 })
 
-// ArkErrors: name: Enter a valid name.
-//            name: Name is required.
+// ArkErrors: name: Name is required
 //            age must be an adult's age
 //            email: Enter a valid email
-User({ name: "", age: 3, email: "x" })
+//            Seats must be at most 10
+User({ name: "", age: 3, email: "x", seats: 12 })
 ```
 
 `expected`, `actual` and `message` each take a string or a function. See [Errors](/docs/errors) for what an error contains.
@@ -132,6 +136,26 @@ const Contact = type.or(Email, Username, Phone)
 // ArkErrors: must be a phone number, a username or a valid email
 Contact("!")
 ```
+
+### label
+
+What a field is called in its messages, written before each one ArkType writes for the value. Use it where the only reason for a custom message would be to name the field:
+
+```ts
+const LineItem = type({
+	unitPriceCents: type("number > 0").label("Unit price"),
+	quantity: type("number.integer > 0").label("Quantity")
+})
+
+// ArkErrors: Unit price must be positive
+//            Quantity must be a number (was missing)
+LineItem({ unitPriceCents: 0 })
+```
+
+- The label is part of each error's `message`, at `unitPriceCents`, so a form library, [`flatMessagesByPath`](/docs/errors), a toast and `summary` all say it. The error's `path` keeps the key, and a summary leaves out only the key the label names, keeping where it is: `items[0]: Unit price must be positive`.
+- A [message](#message), whether passed to a constraint method or set with `.message()`, is said as written. A label names the checks that have none, so `type.number.moreThan(0, "Enter a price").label("Price")` reads `Enter a price` for `0` and `Price must be a number` for `"1"`.
+- Like `.describe()`, `.label()` applies to the Type it's called on, not to the Types inside it: a label on an object names what isn't an object, and each key keeps its own. A union of branches labeled alike names them together.
+- `toJsonSchema` writes a label as the schema's `title` unless it has one.
 
 ### expected
 
@@ -239,9 +263,7 @@ A code selects every check of that kind in the Type, a nested key's included, so
 A function receives the error, including its `expected` and `actual`. A summary writes its text after the path and a colon as it does a string's, but a missing key doesn't say it:
 
 ```ts
-const Email = type("string.email").configure({
-	message: ctx => `Enter ${ctx.expected}`
-})
+const Email = type("string.email").message(ctx => `Enter ${ctx.expected}`)
 
 // ArkErrors: Enter an email address
 Email("x")
@@ -254,9 +276,9 @@ A summary tells a sentence of yours by its text. A message that begins as arktyp
 
 ```ts
 const Entry = type({
-	age: type("number").configure({
-		message: ctx => `must be ${ctx.expected} (was ${ctx.actual})`
-	})
+	age: type("number").message(
+		ctx => `must be ${ctx.expected} (was ${ctx.actual})`
+	)
 })
 
 // ArkErrors: age must be a number (was a string)
@@ -264,6 +286,45 @@ Entry({ age: "5" })
 ```
 
 Each function also receives the active [locale](/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in. A [locale](/docs/i18n#writing-a-locale) also decides how a summary places a path before a message.
+
+### Form fields
+
+A form library reading a Type through [Standard Schema](/docs/standard-schema), like TanStack Form or react-hook-form's `standardSchemaResolver`, shows each issue's `message` beside its field, or in a toast or summary away from it. A [label](#label) per field gets messages that read well in either place, with nothing else to write:
+
+```ts
+const Booking = type({
+	name: type("string > 0").label("Name"),
+	email: type("string.email").label("Email"),
+	seats: type("1 <= number.integer <= 10").label("Seats")
+})
+
+// ArkErrors: Name must be non-empty
+//            Email must be an email address
+//            Seats must be at most 10
+Booking({ name: "", email: "x", seats: 12 })
+```
+
+For copy of your own, a field's empty state is usually `""` or `undefined`, so choose a required field's message by which of those it should cover:
+
+```ts
+const Signup = type({
+	// a whole-value message: "" and undefined both say it
+	name: type("string > 0").message("Name is required"),
+	// a constraint's message: only a string too short says it
+	nickname: type.string.atLeastLength(1, "Nickname is required")
+})
+
+// ArkErrors: name: Name is required
+//            nickname must be a string
+Signup({ name: undefined, nickname: undefined })
+```
+
+Each is one expression, so write it where the field is defined rather than in a helper like `requiredString(message)`, which hides which of the two the field gets.
+
+- A field that must hold more than whitespace is `type(/\S/).message("Name is required")`, which rejects `""` and `"   "` and keeps the value as it is. `string.trim` [transforms it](/docs/expressions#pipe) instead.
+- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or ""`. Give the union a message, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`, or a [description](#description).
+- A pattern beside a length reports both for `""`, as `must be non-empty` and the pattern's message. Let the pattern match `""`, with `*` rather than `+`, so an empty field says only that it's required: `type("0 < string <= 50").matching(/^[a-z ]*$/i, "Use letters only")`.
+- A rule about a value computed from the data, like an order's total, can check what a [pipe](/docs/expressions#pipe) computes rather than narrow the input: `Order.pipe(totalOf, type({ total: type.number.moreThan(0, "Add something to the order") }))`.
 
 ### By code
 
