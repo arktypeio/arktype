@@ -1,6 +1,6 @@
 <idea-plugin>
 	<id>io.arktype.arktype</id>
-	<name>ArkType</name>
+	<name>arktype.io</name>
 	<vendor url="https://arktype.io" email="david@arktype.io">ArkType</vendor>
 	<description><![CDATA[
 	<p><a href="https://arktype.io">ArkType</a> syntax highlighting and inline errors, matching the
