@@ -89,7 +89,7 @@ const coded: Record<string, string> = {
 		show(type({ a: Wrong }).or({ b: "string" }), { a: 1, b: 1 }, {})
 	`,
 	"lists errors a callback raised by a code that say its message": `
-		const raises = (s: string, ctx: any) => ctx.reject({ code: "divisor" })
+		const raises = (s: string, ctx: any) => ctx.reject({ code: "divisor", rule: 2 })
 		show(type({ k: type("string").narrow(raises) }), { k: "x" })
 		show(type({ a: type("string").narrow(raises) }).or({ b: type("string").narrow(raises) }), { a: "x", b: "x" })
 	`,

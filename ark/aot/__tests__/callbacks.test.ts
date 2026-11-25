@@ -256,11 +256,24 @@ export const Ids = type("string[]").narrow(isUnique)`
 const base = { meta: { field: "name" } }
 export const Name = type("string").pipe((s, ctx) =>
 	s.length ? s
-	: s === " " ? ctx.reject({ ...{ code: "pattern", flags: "i" }, rule: "x" })
+	: s === " " ? ctx.reject({ ...{ flags: "i" }, rule: "x" })
 	: ctx.error({ ...base, ["meta"]: {}, message: "Required" })
 )`)
 			).snap([
-				'/main.ts:3:21  type("string").pipe((s, ctx) => s.length ? s : s === " " ? … can\'t be precompiled yet\n  the `flags`, `rule` and `meta` keys `(s, ctx) => s.length ? s : s === " " ? ctx.reject({ ...{ co…` passes to ctx.reject() and ctx.error() can\'t be precompiled to a standalone validator\n  A standalone validator\'s error keeps only the code, path, data, expected and message a narrow or morph raises. Read what the program needs from those, or put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so its errors keep every key.'
+				'/main.ts:3:21  type("string").pipe((s, ctx) => s.length ? s : s === " " ? … can\'t be precompiled yet\n  the `flags`, `rule` and `meta` keys `(s, ctx) => s.length ? s : s === " " ? ctx.reject({ ...{ fl…` passes to ctx.reject() and ctx.error() can\'t be precompiled to a standalone validator\n  A standalone validator\'s error keeps only the code, path, data, expected and message a narrow or morph raises. Read what the program needs from those, or put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so its errors keep every key.'
+			])
+		})
+
+		it("refuses meta and a custom error's code context", () => {
+			attest(
+				emittedDiagnosticsOf(`import { type } from "arktype"
+export const A = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ code: "pattern", flags: "i", meta: { field: "s" } }))
+export const B = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ code: "predicate", flags: "i" }))`).map(
+					d => d.split("\n")[1]
+				)
+			).snap([
+				'  the `meta` key `(s, ctx) => s.length > 0 || ctx.reject({ code: "pattern", f…` passes to ctx.reject() can\'t be precompiled to a standalone validator',
+				'  the `flags` key `(s, ctx) => s.length > 0 || ctx.reject({ code: "predicate",…` passes to ctx.reject() can\'t be precompiled to a standalone validator'
 			])
 		})
 
@@ -286,7 +299,9 @@ export const E = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ 
 export const F = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ expected: "non-empty", actual: "empty", description: "text" }))
 export const G = type("string").narrow((s, ctx) => s.length > 0 || ctx.mustBe("non-empty"))
 export const H = type("string").pipe((s, ctx) => (s.length ? s : ctx.error({ prefixPath: ["s"], data: s, message: "Required" })))
-export const I = type("string").pipe((s, ctx) => (s.length ? s : ctx.error("non-empty")))`)
+export const I = type("string").pipe((s, ctx) => (s.length ? s : ctx.error("non-empty")))
+// a code's context, which its type requires, is that code's
+export const J = type("string").narrow((s, ctx) => s.length > 1 || ctx.reject({ code: "minLength", rule: 2, description: "at least length 2" }))`)
 			).equals([])
 		})
 
