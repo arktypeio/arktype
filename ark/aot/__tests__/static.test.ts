@@ -624,8 +624,7 @@ export const createClient = (token: string) => connect({ url: env.API_URL, token
 			).snap([
 				"3:14 accepted { name: string }",
 				"4:15 accepted",
-				"5:13 accepted",
-				"23:29 accepted"
+				"5:13 accepted"
 			])
 		})
 
@@ -2490,6 +2489,18 @@ export const User = type({ plan: Plan, "nickname": Nickname })`).diagnostics.map
 
 		it("functions of errors arktype/runtime doesn't export", () => {
 			attest(
+				diagnosticsOf(`import { type, type ArkErrors } from "arktype"
+import * as ark from "arktype"
+export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))
+export const translators = [ark.messageIn]`)
+			).snap([
+				'/main.ts:3:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.',
+				"/main.ts:4:29  `ark.messageIn` is arktype's, which arktype/runtime doesn't export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: \"arktype\" to write it in a locale."
+			])
+		})
+
+		it("functions of errors arktype/runtime exports", () => {
+			attest(
 				diagnosticsOf(`import { type, flatMessagesByPath, type ArkErrors } from "arktype"
 import * as ark from "arktype"
 const User = type({ name: "string" })
@@ -2498,14 +2509,19 @@ export const check = (data: unknown) => {
 	const out = User(data)
 	return out instanceof type.errors ? ark.byPath(out) : out
 }
-export const readers = [ark.flatByPath]
-export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
-			).snap([
-				'/main.ts:4:46  flatMessagesByPath(errors) calls flatMessagesByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
-				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Write it as `Object.fromEntries([...out.issues].reverse().map(issue => [issue.path.join("."), issue]))`, whose keys join each path\'s keys with ".", where arktype writes an index as [0] and brackets a key that isn\'t an identifier, or build with runtime: "arktype".',
-				'/main.ts:9:25  `ark.flatByPath` is arktype\'s, which arktype/runtime doesn\'t export\n  Write it as `Object.groupBy(errors.issues, issue => issue.path.join("."))`, whose keys join each path\'s keys with ".", where arktype writes an index as [0] and brackets a key that isn\'t an identifier, or build with runtime: "arktype".',
-				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
-			])
+export const readers = [ark.flatByPath, ark.byAncestorPath]`)
+			).equals([])
+		})
+
+		it("regex called with a pattern known only at runtime", () => {
+			attest(
+				diagnosticsOf(`import { regex } from "arktype"
+import { regex as fromArkregex } from "arkregex"
+import * as ark from "arktype/regex"
+export const matcherOf = (source: string) => regex(source, "i")
+export const exact = (source: string) => fromArkregex(\`^\${source}$\`)
+export const makers = [ark.regex, regex.as]`)
+			).equals([])
 		})
 
 		it("a value only known at runtime, named in the fix", () => {

@@ -359,22 +359,6 @@ export const composedRefusalHint =
 export const writeNoConfigHint = (path: string): string =>
 	`Name this module as the build's config in ark.json: { "precompile": { "config": ${JSON.stringify(/^\.{0,2}\//.test(path) ? path : `./${path}`)} } }`
 
-// a standalone validator's issues stay apart at one path, where arktype
-// merges them into an intersection, so only these have an exact rewrite.
-// byPath keeps each path's first issue: Object.fromEntries keeps the last
-// entry of a key, so the issues are read last to first
-const errorReaderRewrites: Record<string, (errors: string) => string> = {
-	byPath: errors =>
-		`Object.fromEntries([...${errors}.issues].reverse().map(issue => [issue.path.join("."), issue]))`,
-	flatByPath: errors =>
-		`Object.groupBy(${errors}.issues, issue => issue.path.join("."))`
-}
-
-export const writeErrorReaderHint = (name: string, errors: string): string =>
-	name in errorReaderRewrites ?
-		`Write it as \`${errorReaderRewrites[name](errors)}\`, whose keys join each path's keys with ".", where arktype writes an index as [0] and brackets a key that isn't an identifier, or build with runtime: "arktype".`
-	:	`Read \`${errors}.issues\`, each with its path and message, as in \`for (const { path, message } of ${errors}.issues)\`, or build with runtime: "arktype".`
-
 // a standalone validator writes its errors only in English
 export const writeMessageInHint = (issue: string): string =>
 	`Read \`${issue}.message\`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.`
