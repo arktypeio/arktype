@@ -70,7 +70,7 @@ declare const server: {
 	registerTool(
 		name: string,
 		config: { description: string; inputSchema: type.Any },
-		handler: (args: { name: string; times?: number }) => unknown
+		handler: (args: { name: string; times: number }) => unknown
 	): void
 }
 // ---cut-end---
@@ -79,10 +79,10 @@ server.registerTool(
 	"greet",
 	{
 		description: "Greet someone by name",
-		inputSchema: type({ name: "string", "times?": "1 <= number.integer <= 5" })
+		inputSchema: type({ name: "string", times: "1 <= number.integer <= 5 = 1" })
 	},
 	async ({ name, times }) => ({
-		content: [{ type: "text", text: `Hello, ${name}! `.repeat(times ?? 1) }]
+		content: [{ type: "text", text: `Hello, ${name}! `.repeat(times) }]
 	})
 )
 ```

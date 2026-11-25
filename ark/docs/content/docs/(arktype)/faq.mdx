@@ -44,9 +44,8 @@ A string passed to `.describe()`, `ctx.mustBe()` or `ctx.error()`, or configured
 ```ts
 const Email = type("string.email").message("Enter a valid email")
 
-const Zip = type("string").narrow(
-	(s, ctx) =>
-		/^\d{5}$/.test(s) || ctx.reject({ message: "Enter a 5-digit zip" })
+const Deadline = type("Date").narrow(
+	(d, ctx) => d > new Date() || ctx.reject({ message: "Choose a future date" })
 )
 ```
 

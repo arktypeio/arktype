@@ -61,7 +61,7 @@ import { type } from "arktype"
 const User = type({
 	name: type.string.atLeastLength(1, "Name is required"),
 	email: "string.email",
-	"age?": "0 <= number.integer <= 9007199254740991",
+	"age?": "number.integer & number.safe >= 0",
 	role: "'admin' | 'member' = 'member'"
 })
 
@@ -86,7 +86,7 @@ configure({
 })
 ```
 
-Import it before anything creates a Type. To convert one schema without it, say both in the definition: `"+": "delete"` in each object, `"age?": "0 <= number.integer <= 9007199254740991 | undefined"`, and write `role`'s default as [Defaults that differ](#defaults-that-differ) does, so `undefined` gets it too. [Defaults that differ](#defaults-that-differ) has every default to check, for each library.
+Import it before anything creates a Type. To convert one schema without it, say both in the definition: `"+": "delete"` in each object, `"age?": "number.integer & number.safe >= 0 | undefined"`, and write `role`'s default as [Defaults that differ](#defaults-that-differ) does, so `undefined` gets it too. [Defaults that differ](#defaults-that-differ) has every default to check, for each library.
 
 ## Zod
 
@@ -497,18 +497,26 @@ const Range = type({ start: "number", end: "number" }).narrow(
 To report several errors, as a `.superRefine()` calling `ctx.addIssue()` more than once does, call `ctx.error()` for each, then return `true`:
 
 ```ts
-const Order = type({ quantity: "number", price: "number" }).narrow((d, ctx) => {
-	if (d.quantity < 1)
-		ctx.error({ message: "Order at least one", relativePath: ["quantity"] })
-	if (d.price < 0)
-		ctx.error({ message: "Price can't be negative", relativePath: ["price"] })
+const Signup = type({
+	email: "string.email",
+	"recoveryEmail?": "string.email",
+	password: "string >= 8",
+	confirm: "string"
+}).narrow((d, ctx) => {
+	if (d.confirm !== d.password)
+		ctx.error({ message: "Passwords must match", relativePath: ["confirm"] })
+	if (d.recoveryEmail === d.email)
+		ctx.error({
+			message: "Use a different recovery email",
+			relativePath: ["recoveryEmail"]
+		})
 	return true
 })
 ```
 
 - A narrow that returns `false` without `ctx.reject()` says `must be valid according to an anonymous predicate`, so always reject with text.
 - A narrow on an object runs only once every key is valid. Zod 4 runs a `.refine()` even when a key fails a check like `.min()`, though not when one is missing or of the wrong type, so its issue could join theirs.
-- A narrow never rejects a literal with its own text. ArkType calls it on each literal the Type allows, like `true`, `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `z.boolean().refine(v => v, "Accept the terms")` written as a narrow says `must be true`. Write the values the Type allows, with the message: `["true", "@", { message: "Accept the terms" }]`, which also infers `true` where Zod inferred `boolean`.
+- A narrow never rejects a literal with its own text. ArkType calls it on each literal the Type allows, like `true`, `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `z.boolean().refine(v => v, "Accept the terms")` written as a narrow says `must be true`. Write the values the Type allows, with the message: `type("true").message("Accept the terms")`, which also infers `true` where Zod inferred `boolean`.
 
 ### Custom messages
 
@@ -536,8 +544,8 @@ An issue's `message` holds it without its path, as Zod's `issue.message` did, an
 
 - **Only `message` takes a sentence.** `ctx.mustBe("a valid zip code")`, `ctx.error("a valid zip code")`, `.describe("a valid zip code")`, `expected` and a string after `"@"` each take what the value must be, so they read `must be a valid zip code`. A Zod message passed to one reads `must be Enter a valid zip code`. `ctx.reject()` takes no string, so a `.refine()` message is `ctx.reject({ message })`.
 - **`.message()` covers the whole value.** Like Zod's `z.string({ error })`, `type("string").message("Enter a name")` is said for any value the Type rejects, of the wrong type included, and for a key that's absent. Configure it last, after any `.pipe()` or `.to()`. It replaces the messages of the constraints before it, so beside those, give a wrong type and a missing key theirs [by code](#a-check-without-a-method-takes-its-code).
-- **With `| null` or `| undefined`, configure the union.** `["string.email | null", "@", { message }]` says the message for any value it rejects. A message on one branch, as in `Email.configure({ message }).or("null")`, is lost for a value of the wrong type, which reads `must be a string or null`. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so where the message must cover the wrong type too, as a Zod `z.string({ error })` does, write `undefined` into it: `"email?": ["string.email | undefined", "@", { message }]`. Always write a boolean's, a literal's or an enum's message on the union, as in `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a wrong value is their only error, so a message on `Role` alone is never said beside `null` or `undefined`.
-- **A parse keyword's own failure keeps its text.** A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` is said for a value that isn't a string, but a string that doesn't parse still reads `must be a parsable date`. Check the string, then convert it: `type("string.date").pipe(s => new Date(s)).configure({ message })`, or `"string.url"` with `new URL(s)`. For JSON, call `JSON.parse` in a `.pipe()` and report its failure with `ctx.error({ message })`.
+- **With `| null` or `| undefined`, configure the union.** `type("string.email | null").message(message)` says the message for any value it rejects. A message on one branch, as in `Email.message(message).or("null")`, is lost for a value of the wrong type, which reads `must be a string or null`. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so where the message must cover the wrong type too, as a Zod `z.string({ error })` does, write `undefined` into it: `"email?": type("string.email | undefined").message(message)`. Always write a boolean's, a literal's or an enum's message on the union, as in `"role?": type("'admin' | 'user' | undefined").message(message)`: a wrong value is their only error, so a message on `Role` alone is never said beside `null` or `undefined`.
+- **A parse keyword's own failure keeps its text.** A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` is said for a value that isn't a string, but a string that doesn't parse still reads `must be a parsable date`. Check the string, then convert it: `type("string.date").pipe(s => new Date(s)).message(message)`, or `"string.url"` with `new URL(s)`. For JSON, call `JSON.parse` in a `.pipe()` and report its failure with `ctx.error({ message })`.
 
 #### A check without a method takes its code
 
@@ -694,14 +702,11 @@ A `.narrow()` on an object doesn't survive them. `.merge()`, a `"..."` spread, `
 ```ts
 import { type, type Traversal } from "arktype"
 
-const passwordsMatch = (
-	d: { password: string; confirm: string },
-	ctx: Traversal
-) =>
+const Credentials = type({ password: "string >= 8", confirm: "string" })
+
+const passwordsMatch = (d: typeof Credentials.infer, ctx: Traversal) =>
 	d.password === d.confirm ||
 	ctx.reject({ message: "Passwords must match", relativePath: ["confirm"] })
-
-const Credentials = type({ password: "string >= 8", confirm: "string" })
 
 const Signup = Credentials.narrow(passwordsMatch)
 
@@ -758,7 +763,7 @@ An index signature like `"[string]": "number"` applies to every key, including d
 
 ### Errors are values
 
-`T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws a `TraversalError`. To change what an error says, `.describe("a strong password")` gives `must be a strong password`, and `.configure({ message: "Choose a stronger password" })` replaces that sentence; see [Custom messages](#custom-messages).
+`T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws a `TraversalError`. To change what an error says, `.describe("a strong password")` gives `must be a strong password`, and `.message("Choose a stronger password")` replaces that sentence; see [Custom messages](#custom-messages).
 
 ### Descriptions
 

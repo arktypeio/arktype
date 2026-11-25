@@ -21,6 +21,8 @@ export const User = type({
 	"age?": "number.integer >= 0"
 })
 
+export type User = typeof User.infer
+
 const out = User({ name: "Alan", age: -1 })
 
 if (out instanceof type.errors) console.error(out.summary)

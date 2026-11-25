@@ -44,7 +44,6 @@ if (out instanceof type.errors) {
 A validated `object` still isn't very useful, though. Since a Type can be called like a function, it can be a step in a pipe too. For JSON, the built-in `string.json.parse` keyword does the parsing, and `.to` validates its output:
 
 ```ts
-// .to is a sugared .pipe for a single parsed output validator
 const parseJson = type("string.json.parse").to({
 	name: "string",
 	version: "string.semver"
@@ -58,7 +57,7 @@ if (out instanceof type.errors) {
 	console.error(out.summary)
 } else {
 	// { name: string; version: string }
-	console.log(`${out.name}:${out.version}`)
+	console.log(`${out.name}@${out.version}`)
 }
 ```
 

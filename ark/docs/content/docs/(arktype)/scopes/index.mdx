@@ -122,17 +122,16 @@ const types = scope({
 // ---cut---
 type Package = typeof types.Package.infer
 
-const packageData: Package = {
+const arktype: Package = {
 	name: "arktype",
-	dependencies: [{ name: "typescript" }],
 	contributors: [{ email: "david@sharktypeio" }]
 }
 
 // arktype now depends on itself
-packageData.dependencies![0].dependencies = [packageData]
+arktype.dependencies = [arktype]
 
 // ArkErrors: contributors[0].email must be an email address
-types.Package(packageData)
+types.Package(arktype)
 ```
 
 A cycle must pass through an object, array or morph. An alias that resolves to itself without one, like `a` in `scope({ a: "a | string" })`, is a type error and throws a `ParseError`.
@@ -286,17 +285,18 @@ const $ = scope({
 })
 ```
 
-To use fluent methods like `.pipe` on a scoped definition, define it as a thunk: a function that calls the `type` method of the scope you're defining.
+To use fluent methods like `.pipe` or `.atLeastLength` on a scoped definition, define it as a thunk: a function that calls the `type` method of the scope you're defining.
 
 ```ts
 const $ = scope({
 	Id: "string",
-	TrimmedId: () => $.type("Id").pipe(s => s.trim())
+	Ids: () => $.type("Id").array().atLeastLength(1, "Add an ID")
 })
 
 const types = $.export()
 
-types.TrimmedId("  42 ") // "42"
+// ArkErrors: Add an ID
+types.Ids([])
 ```
 
 A thunk can't pass a callback that receives the data, like `.narrow`'s, to a Type that references the alias the thunk defines. TypeScript would read the callback's parameter from that alias, which is still being inferred from the thunk, and reports the thunk as implicitly `any`. Write the narrow as a tuple expression instead:
@@ -309,7 +309,9 @@ const $ = scope({
 		children: [
 			"(File | Directory)[]",
 			":",
-			children => new Set(children.map(c => c.name)).size === children.length
+			(children, ctx) =>
+				new Set(children.map(c => c.name)).size === children.length ||
+				ctx.mustBe("uniquely named")
 		]
 	}
 })
@@ -320,9 +322,12 @@ const $ = scope({
 `scope` takes a config as its second argument. It applies to every `Type` parsed in the scope:
 
 ```ts
-const $ = scope({ Even: "number % 2" }, { divisor: { expected: "even" } })
+const $ = scope(
+	{ Even: "number % 2" },
+	{ divisor: { message: "Enter an even number" } }
+)
 
-// ArkErrors: must be even
+// ArkErrors: Enter an even number
 $.export().Even(3)
 ```
 

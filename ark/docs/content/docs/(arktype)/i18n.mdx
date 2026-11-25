@@ -45,9 +45,11 @@ Only an error's `message`, the `expected` and `actual` it's written from and its
 A locale may name a value by its `title`. `en` ignores titles, while `de` writes one after the value's path, which still tells apart values titled alike:
 
 ```ts
+const Zip = type("string == 5").configure({ title: "Postleitzahl" })
+
 const Order = type({
-	billing: { zip: type("string == 5").configure({ title: "Postleitzahl" }) },
-	shipping: { zip: type("string == 5").configure({ title: "Postleitzahl" }) }
+	billing: { zip: Zip },
+	shipping: { zip: Zip }
 })
 
 // with de:
@@ -55,6 +57,8 @@ const Order = type({
 // shipping.zip („Postleitzahl“) muss genau 5 Zeichen lang sein
 const out = Order({ billing: { zip: "1" }, shipping: { zip: "2" } })
 ```
+
+A [`label`](/docs/configuration#label) names a value in every locale, `en` included, as the subject of its message rather than after its path. Translate it as you would any text you write: in `de`, `type("number > 0").label("Stückpreis")` reads `Stückpreis muss positiv sein`.
 
 ## Switching locales
 

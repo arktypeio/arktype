@@ -12,8 +12,8 @@ const ${playgroundTypeVariableName} = type({
 })
 
 const ${playgroundOutVariableName} = ${playgroundTypeVariableName}({
-    name: "TypeScript",
-    versions: ["5.8.2", 6, 7n]
+	name: "TypeScript",
+	versions: ["5.8.2", 6, 7n]
 })
 `
 

@@ -19,8 +19,8 @@ import { useForm } from "@tanstack/react-form"
 import { type } from "arktype"
 
 const User = type({
-	name: type.string.atLeastLength(1, "Name is required"),
-	age: "number.integer >= 0"
+	name: type("string > 0").message("Name is required"),
+	age: type("number.integer >= 0").label("Age")
 })
 
 export const useUserForm = () =>
@@ -162,15 +162,15 @@ import { type } from "arktype"
 import { useForm } from "react-hook-form"
 
 const User = type({
-	name: type.string.atLeastLength(1, "Name is required"),
-	age: "number.integer >= 0"
+	name: type("string > 0").message("Name is required"),
+	age: type("number.integer >= 0").label("Age")
 })
 
 export const useUserForm = () =>
 	useForm({ resolver: standardSchemaResolver(User) })
 ```
 
-Each field's error holds its issue's `message`, which never names the field: `errors.name.message` is the [`message`](/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, like `must be an integer`.
+Each field's error holds its issue's `message`: `errors.name.message` is the [`message`](/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, named by its [`label`](/docs/configuration#label), like `Age must be an integer`. Without a label, a message doesn't name its field, as in `must be an integer`.
 
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 
@@ -384,9 +384,11 @@ The [AI SDK](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data) acc
 import { generateText, Output } from "ai"
 import { type } from "arktype"
 
+const Ingredient = type({ name: "string", amount: "string" })
+
 const Recipe = type({
 	name: "string",
-	ingredients: type({ name: "string", amount: "string" }).array(),
+	ingredients: Ingredient.array(),
 	steps: "string[]"
 })
 
@@ -426,9 +428,11 @@ import { type } from "arktype"
 import OpenAI from "openai"
 import { standardResponseFormat } from "openai/helpers/standard-schema"
 
+const Ingredient = type({ name: "string", amount: "string" })
+
 const Recipe = type({
 	name: "string",
-	ingredients: type({ name: "string", amount: "string" }).array(),
+	ingredients: Ingredient.array(),
 	notes: "string | null"
 })
 
@@ -463,9 +467,11 @@ import { type } from "arktype"
 
 const client = new Anthropic()
 
+const Ingredient = type({ name: "string", amount: "string" })
+
 const Recipe = type({
 	name: "string",
-	ingredients: type({ name: "string", amount: "string" }).array(),
+	ingredients: Ingredient.array(),
 	notes: "string | null"
 })
 

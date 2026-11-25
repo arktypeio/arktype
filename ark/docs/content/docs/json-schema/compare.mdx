@@ -39,9 +39,7 @@ Use it to check in CI that a new version of an API schema still accepts what the
 import { fromJsonSchema } from "arktype"
 import { z } from "zod"
 
-fromJsonSchema({ type: "integer", minimum: 0 }).equals(
-	type("number.integer >= 0")
-) // true
+fromJsonSchema({ type: "integer", minimum: 0 }).equals("number.integer >= 0") // true
 
 fromJsonSchema({ enum: ["a", "b"] }).extends(
 	fromJsonSchema({ type: "string", maxLength: 1 })

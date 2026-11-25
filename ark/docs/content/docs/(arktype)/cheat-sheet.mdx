@@ -131,14 +131,16 @@ const Name = User.pick("name")
 ```ts
 import { scope } from "arktype"
 
+// a type that refers to itself
+const TreeNode = type({ value: "number", children: "this[]" })
+
+// types that refer to each other, in a scope
 const types = scope({
-	TreeNode: {
-		value: "number",
-		children: "TreeNode[]"
-	}
+	User: { name: "string", "posts?": "Post[]" },
+	Post: { title: "string", author: "User" }
 }).export()
 
-const tree = types.TreeNode({ value: 1, children: [] })
+const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 ```
 
 ## Morphs and pipes
@@ -158,7 +160,7 @@ const trim = type("string.trim") // string → trimmed string
 
 ## Custom rules
 
-Use `.narrow()` only for conditions ArkType's built-in constraints can't express, like cross-field rules — not just to customize error messages on built-in checks.
+Use `.narrow()` only for what built-in constraints can't express, like a rule across keys. A length, range or pattern takes its message as a constraint method's last argument instead.
 
 ```ts
 const Signup = type({
@@ -177,10 +179,11 @@ const Signup = type({
 
 ## Error messages
 
-1. Start with ArkType's built-in messages — they're specific and compose automatically across unions (`"string.email | string.uuid"` reads `must be an email address or a UUID`).
-2. Use `.describe()` when you want custom `must be ...` wording that still composes.
-3. Chain constraint methods with a message (or `.message()` for a whole Type or keyword code) when you need full custom sentences per check.
-4. Save `.narrow()` for rules built-in constraints can't express.
+1. Start with ArkType's built-in messages. They're specific and compose across unions: `"string.email | string.uuid"` reads `must be an email address or a UUID`.
+2. Use `.describe()` for your own `must be ...` wording, which still composes.
+3. Use `.label("Unit price")` to name a field in every built-in message: `Unit price must be positive`.
+4. Pass a sentence to a constraint method for that check, or to `.message()` for a whole Type, a keyword or a union.
+5. Save `.narrow()` for rules built-in constraints can't express.
 
 ```ts
 const Signup = type({
@@ -191,20 +194,23 @@ const Signup = type({
 	// a sentence for every failure, a missing key's included
 	email: type("string.email").message("Enter a valid email"),
 	// what the value must be, after "must be", so it composes in unions
-	age: type("number >= 18").describe("an adult's age")
+	age: type("number >= 18").describe("an adult's age"),
+	// the field's name before every built-in message
+	seats: type("1 <= number.integer <= 10").label("Seats")
 })
 
-const out = Signup({ password: "short", email: "x", age: 3 })
+const out = Signup({ password: "short", email: "x", age: 3, seats: 12 })
 
 if (out instanceof type.errors) {
 	// password: Include a number
 	// password: Use 8 or more characters
 	// email: Enter a valid email
 	// age must be an adult's age
+	// Seats must be at most 10
 	console.error(out.summary)
 
 	// without paths, e.g. to show beside each field:
-	// ["Include a number", "Use 8 or more characters", "Enter a valid email", "must be an adult's age"]
+	// ["Include a number", "Use 8 or more characters", "Enter a valid email", "must be an adult's age", "Seats must be at most 10"]
 	out.issues.map(issue => issue.message)
 }
 ```
@@ -307,18 +313,21 @@ export default {
 
 ## Common gotchas
 
-| Mistake                                                             | Fix                                                                                         |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `name: "string \| undefined"` for optional                          | Use `"name?": "string"`: `?` goes on the **key**                                            |
-| `type([Schema])` for arrays                                         | Use `Schema.array()`: brackets create tuples                                                |
-| ``type(`${Schema}[]`)``                                             | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type                          |
-| `"Record<string, T>"` with `T` a variable                           | Use `type.Record("string", T)` or `{ "[string]": T }`                                       |
-| `type("number = 0")`                                                | Defaults only work as object values or tuple elements                                       |
-| `out[0]` or `out.map(...)` on errors                                | Use `out.issues[0]` or `out.issues.map(...)`                                                |
-| `.describe("Enter a valid email")`, which reads `must be Enter…`    | Pass a sentence to `.message("Enter a valid email")` or `ctx.reject({ message })`           |
-| `ctx.reject({ path: ["key"] })` on a nested object                  | Use `relativePath: ["key"]`; `path` is from the root of the data                            |
-| `.merge()` or `.pick()` on an object with a `.narrow()`             | Derive from the object before its `.narrow()`, which they'd drop, then add the narrow       |
-| Mutating the argument in `.pipe`                                    | Return a new value; a morph receives the caller's data, not a copy                          |
-| `type User = typeof Schema.t`                                       | Use `typeof Schema.infer` for the output type                                               |
-| Precompiled: `User.pick(...keys)` with `keys` known only at runtime | A Type per case, composed from static values: `const Admin = User.and({ role: "'admin'" })` |
-| Precompiled: `type()` from a runtime value                          | Make it static, or mark it `// @ark-runtime` if it's only known at runtime                  |
+| Mistake                                                                       | Fix                                                                                         |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `name: "string \| undefined"` for optional                                    | Use `"name?": "string"`: `?` goes on the **key**                                            |
+| `type([Schema])` for arrays                                                   | Use `Schema.array()`: brackets create tuples                                                |
+| ``type(`${Schema}[]`)``                                                       | Use `Schema.array()` or `[Schema, "[]"]`, never interpolate a Type                          |
+| `"Record<string, T>"` with `T` a variable                                     | Use `type.Record("string", T)` or `{ "[string]": T }`                                       |
+| `type("number = 0")`                                                          | Defaults only work as object values or tuple elements                                       |
+| `out[0]` or `out.map(...)` on errors                                          | Use `out.issues[0]` or `out.issues.map(...)`                                                |
+| `.describe("Enter a valid email")`, which reads `must be Enter…`              | Pass a sentence to `.message("Enter a valid email")` or `ctx.reject({ message })`           |
+| `ctx.reject({ path: ["key"] })` on a nested object                            | Use `relativePath: ["key"]`; `path` is from the root of the data                            |
+| `.merge()` or `.pick()` on an object with a `.narrow()`                       | Derive from the object before its `.narrow()`, which they'd drop, then add the narrow       |
+| `.narrow(v => v.tags.length > 0)` on the object                               | Put the check on the value: `tags: Tag.array().atLeastLength(1, "Add a tag")`               |
+| `.narrow(s => s.trim() !== "")` for a non-blank string                        | `type(/\S/).message("Name is required")`, which keeps the value as it is                    |
+| `type.string.atLeastLength(1, "Required")` on a field that starts `undefined` | `type("string > 0").message("Required")`, whose message covers `""` and `undefined`         |
+| Mutating the argument in `.pipe`                                              | Return a new value; a morph receives the caller's data, not a copy                          |
+| `type User = typeof Schema.t`                                                 | Use `typeof Schema.infer` for the output type                                               |
+| Precompiled: `User.pick(...keys)` with `keys` known only at runtime           | A Type per case, composed from static values: `const Admin = User.and({ role: "'admin'" })` |
+| Precompiled: `type()` from a runtime value                                    | Make it static, or mark it `// @ark-runtime` if it's only known at runtime                  |

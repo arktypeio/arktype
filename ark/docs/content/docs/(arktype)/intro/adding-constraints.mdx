@@ -53,13 +53,13 @@ ArkType's built-in error messages are descriptive and compose across unions auto
 
 ```ts
 const Username = type.string
-	.atLeastLength(3, "Use 3 or more characters.")
-	.matching(/^[a-z0-9_]+$/, "Use lowercase letters, numbers or underscores.")
+	.atLeastLength(3, "Use 3 or more characters")
+	.matching(/^[a-z0-9_]*$/, "Use lowercase letters, numbers or underscores")
 
-// ArkErrors: Use 3 or more characters.
+// ArkErrors: Use 3 or more characters
 Username("ab")
 
-// ArkErrors: Use lowercase letters, numbers or underscores.
+// ArkErrors: Use lowercase letters, numbers or underscores
 Username("Bad Name")
 ```
 
@@ -67,13 +67,13 @@ See [Error messages](/docs/configuration#error-messages) for built-in messages, 
 
 ## Narrow
 
-Structured constraints like divisors and ranges will only take us so far. For conditions ArkType's built-in constraints can't express, add your own logic with `.narrow` (if you only need a custom message on a built-in constraint like a length, range or regex, chain the constraint method with its message above instead).
+Structured constraints like divisors and ranges only go so far. For a condition they can't express, add your own logic with `.narrow`. A custom message on a length, range or pattern still belongs on its constraint method, as above.
 
 ```ts
-// there's no "not divisible" expression - need to narrow
-const Odd = type("number").narrow((n, ctx) =>
-	// if even, add a customizable error and return false
-	n % 2 === 0 ? ctx.mustBe("odd") : true
+// there's no "not divisible" expression, so narrow
+const Odd = type("number.integer").narrow(
+	// ctx.mustBe reports "must be odd" and returns false
+	(n, ctx) => n % 2 !== 0 || ctx.mustBe("odd")
 )
 
 const FavoriteNumbers = type({
@@ -81,18 +81,9 @@ const FavoriteNumbers = type({
 	odd: Odd
 })
 
-const out = FavoriteNumbers({
-	even: 7,
-	odd: 8
-})
-
-if (out instanceof type.errors) {
-	// ArkErrors: even must be even
-	//            odd must be odd
-	console.error(out.summary)
-} else {
-	console.log(out.odd)
-}
+// ArkErrors: even must be even
+//            odd must be odd
+FavoriteNumbers({ even: 7, odd: 8 })
 ```
 
 You now know how to refine your types to enforce additional constraints at runtime.

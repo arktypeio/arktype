@@ -6,27 +6,28 @@ description: The ctx argument that narrow and pipe functions receive for reading
 Functions you pass to [`.narrow`](/docs/expressions#narrow) and [`.pipe`](/docs/expressions#pipe) receive a `ctx` as their second argument. Use it to report errors that read like ArkType's own:
 
 ```ts
-const Even = type("number").narrow(
-	(n, ctx) => n % 2 === 0 || ctx.mustBe("even")
+const PowerOfTwo = type("number").narrow(
+	(n, ctx) => Number.isInteger(Math.log2(n)) || ctx.mustBe("a power of 2")
 )
 
-// ArkErrors: must be even
-Even(3)
+// ArkErrors: must be a power of 2
+PowerOfTwo(6)
 ```
 
 A narrow returns `ctx.mustBe(...)` or `ctx.reject(...)`, which add an error and return `false`. A morph returns `ctx.error(...)`, which adds an error and returns it:
 
 ```ts
-const Json = type("string").pipe((s, ctx) => {
-	try {
-		return JSON.parse(s)
-	} catch {
-		return ctx.error("valid JSON")
-	}
-})
+const prices = new Map([
+	["apple", 1.25],
+	["pear", 0.75]
+])
 
-// ArkErrors: must be valid JSON
-Json("{")
+const priceOf = type("string").pipe(
+	(name, ctx) => prices.get(name) ?? ctx.error("a product we sell")
+)
+
+// ArkErrors: must be a product we sell
+priceOf("kiwi")
 ```
 
 `reject` takes the [parts of an error](/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. It doesn't take a string, which would read as a sentence but say what the value must be: pass that to `mustBe`. `error` takes either, its string being what the value must be. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
@@ -60,9 +61,10 @@ To write a check outside the call, type `ctx` with `Traversal`:
 ```ts
 import { type, type Traversal } from "arktype"
 
-const isEven = (n: number, ctx: Traversal) => n % 2 === 0 || ctx.mustBe("even")
+const isPowerOfTwo = (n: number, ctx: Traversal) =>
+	Number.isInteger(Math.log2(n)) || ctx.mustBe("a power of 2")
 
-const Even = type("number").narrow(isEven)
+const PowerOfTwo = type("number").narrow(isPowerOfTwo)
 ```
 
 ## Context
