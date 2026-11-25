@@ -10,6 +10,7 @@ export type {
 	ErrorContextsByCode
 } from "./shared/errors.ts"
 export * from "./shared/enWriters.ts"
+export * from "./shared/errorReaders.ts"
 export {
 	appliesValues,
 	discriminatesBooleans,

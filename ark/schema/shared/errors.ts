@@ -1,7 +1,5 @@
 import {
-	appendStringifiedKey,
 	conflatenateAll,
-	hasOwn,
 	pathAt,
 	printable,
 	stringifyPath,
@@ -1477,77 +1475,13 @@ export const serializableErrors = (issues: ArkError[]): readonly ArkError[] =>
 export const firstIssue = (errors: ArkErrors): ArkError =>
 	errors._first ?? errors.issues[0]
 
-/**
- * The first error at each path, by the string of the path.
- */
-export const byPath = (errors: ArkErrors): Record<string, ArkError> => {
-	const result: Record<string, ArkError> = {}
-	for (const error of errors.issues) {
-		const k = propStringOf(error)
-		if (!hasOwn(result, k)) defineEntry(result, k, error)
-	}
-	return result
-}
-
-/**
- * Each path's errors, by the string of the path.
- */
-export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> => {
-	const result: Record<string, ArkError[]> = {}
-	for (const error of errors.issues)
-		addEntry(result, propStringOf(error), error)
-	return result
-}
-
-/**
- * Each path's messages, by the string of the path.
- */
-export const flatMessagesByPath = (
-	errors: ArkErrors
-): Record<string, string[]> => {
-	const result: Record<string, string[]> = {}
-	for (const error of errors.issues)
-		addEntry(result, propStringOf(error), error.message)
-	return result
-}
-
-/**
- * All path strings at which errors are present mapped to the errors occuring
- * at that path or any nested path within it.
- */
-export const byAncestorPath = (
-	errors: ArkErrors
-): Record<string, ArkError[]> => {
-	const result: Record<string, ArkError[]> = {}
-	for (const error of errors.issues) {
-		let propString = ""
-		addEntry(result, propString, error)
-		for (const k of error.path) {
-			propString = appendStringifiedKey(propString, k)
-			addEntry(result, propString, error)
-		}
-	}
-	return result
-}
-
-// a standalone validator's issue, which another copy of arktype or one an
-// earlier build wrote may pass, holds no propString
-const propStringOf = (error: ArkIssue): string =>
-	(error as Partial<ArkError>).propString ?? stringifyPath(error.path)
-
-const addEntry = <v>(result: Record<string, v[]>, k: string, value: v) => {
-	if (hasOwn(result, k)) result[k].push(value)
-	else defineEntry(result, k, [value])
-}
-
-// defined, since assigning a path "__proto__" would set the prototype
-const defineEntry = (result: object, k: string, value: unknown) =>
-	Object.defineProperty(result, k, {
-		value,
-		enumerable: true,
-		writable: true,
-		configurable: true
-	})
+// read from errorReaders.ts, which arktype/runtime exports alone
+export {
+	byAncestorPath,
+	byPath,
+	flatByPath,
+	flatMessagesByPath
+} from "./errorReaders.ts"
 
 export interface DerivableErrorContext<
 	code extends ArkErrorCode = ArkErrorCode
