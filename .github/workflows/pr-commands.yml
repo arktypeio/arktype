@@ -34,6 +34,7 @@ jobs:
       history: ${{ steps.parse.outputs.history }}
       ts: ${{ steps.parse.outputs.ts }}
       environments: ${{ steps.parse.outputs.environments }}
+      neovim: ${{ steps.parse.outputs.neovim }}
     steps:
       - id: parse
         env:
@@ -55,6 +56,7 @@ jobs:
           history=false
           ts=false
           environments=false
+          neovim=false
           labels=()
           unknown=()
 
@@ -80,12 +82,17 @@ jobs:
                 environments=true
                 labels+=("ci:environments")
                 ;;
+              ci:neovim|neovim|nvim)
+                neovim=true
+                labels+=("ci:neovim")
+                ;;
               ci:all|all)
                 aot=true
                 compat=true
                 history=true
                 ts=true
                 environments=true
+                neovim=true
                 labels+=("ci:all")
                 ;;
               *)
@@ -95,7 +102,7 @@ jobs:
           done
 
           if (( ${#labels[@]} == 0 || ${#unknown[@]} > 0 )); then
-            msg="Usage: \`/run <suite...>\` with one or more of \`aot:full\`, \`ci:compat\`, \`ci:history\`, \`ci:ts\`, \`ci:environments\`, or \`all\`."
+            msg="Usage: \`/run <suite...>\` with one or more of \`aot:full\`, \`ci:compat\`, \`ci:history\`, \`ci:ts\`, \`ci:environments\`, \`ci:neovim\`, or \`all\`."
             if (( ${#unknown[@]} > 0 )); then
               msg="Unknown suite(s): \`${unknown[*]}\`. $msg"
             fi
@@ -126,6 +133,7 @@ jobs:
             echo "history=$history"
             echo "ts=$ts"
             echo "environments=$environments"
+            echo "neovim=$neovim"
           } >> "$GITHUB_OUTPUT"
 
   run:
@@ -140,3 +148,4 @@ jobs:
       history: ${{ needs.parse.outputs.history == 'true' }}
       ts: ${{ needs.parse.outputs.ts == 'true' }}
       environments: ${{ needs.parse.outputs.environments == 'true' }}
+      neovim: ${{ needs.parse.outputs.neovim == 'true' }}

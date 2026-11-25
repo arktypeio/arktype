@@ -6,12 +6,13 @@ name: nightly
 # - typescript: full TS 5.1–7.0 consumer matrix + attest@6.0.3
 # - environments: precompiled program across Deno, Bun, Chrome, Firefox
 # - aot: @ark/aot's derived suites (differential, cache, perturbation, programs)
+# - neovim: arktype.nvim's parity with the VS Code extension (pnpm testNeovim)
 #
 # Runs:
 # - nightly on main (failure opens or comments on the "nightly failing" issue;
 #   a green night closes it)
 # - on a PR labelled aot:full, ci:compat, ci:history, ci:ts, ci:environments,
-#   or ci:all (when the label is added and on each push after)
+#   ci:neovim or ci:all (when the label is added and on each push after)
 # - on a PR when a maintainer comments `/run <suite...>` (via pr-commands.yml)
 # - on demand from the Actions tab (workflow_dispatch) or workflow_call
 on:
@@ -41,6 +42,10 @@ on:
         description: "Run precompiled program across Deno, Bun, Chrome, Firefox"
         type: boolean
         default: true
+      neovim:
+        description: "Run arktype.nvim's parity suite in headless Neovim"
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       ref:
@@ -68,6 +73,10 @@ on:
         required: false
         default: false
       environments:
+        type: boolean
+        required: false
+        default: false
+      neovim:
         type: boolean
         required: false
         default: false
@@ -108,6 +117,7 @@ jobs:
       history: ${{ steps.plan.outputs.history }}
       ts: ${{ steps.plan.outputs.ts }}
       environments: ${{ steps.plan.outputs.environments }}
+      neovim: ${{ steps.plan.outputs.neovim }}
     steps:
       - id: plan
         env:
@@ -121,6 +131,7 @@ jobs:
           INPUT_HISTORY: ${{ inputs.history }}
           INPUT_TS: ${{ inputs.ts }}
           INPUT_ENVS: ${{ inputs.environments }}
+          INPUT_NEOVIM: ${{ inputs.neovim }}
         run: |
           set -euo pipefail
 
@@ -130,6 +141,7 @@ jobs:
           history=false
           ts=false
           environments=false
+          neovim=false
 
           has_label() {
             [[ ",$PR_LABELS," == *",$1,"* ]]
@@ -145,6 +157,7 @@ jobs:
                 history=true
                 ts=true
                 environments=true
+                neovim=true
               fi
               ;;
             # a called workflow sees its caller's event, so pr-commands.yml's
@@ -155,6 +168,7 @@ jobs:
               [[ "$INPUT_HISTORY" == true ]] && history=true
               [[ "$INPUT_TS" == true ]] && ts=true
               [[ "$INPUT_ENVS" == true ]] && environments=true
+              [[ "$INPUT_NEOVIM" == true ]] && neovim=true
               ;;
             pull_request)
               if [[ "$ACTION" == labeled ]]; then
@@ -164,12 +178,14 @@ jobs:
                   ci:history) history=true ;;
                   ci:ts) ts=true ;;
                   ci:environments) environments=true ;;
+                  ci:neovim) neovim=true ;;
                   ci:all)
                     aot=true
                     compat=true
                     history=true
                     ts=true
                     environments=true
+                    neovim=true
                     ;;
                 esac
               else
@@ -179,12 +195,14 @@ jobs:
                   history=true
                   ts=true
                   environments=true
+                  neovim=true
                 else
                   has_label "aot:full" && aot=true
                   has_label "ci:compat" && compat=true
                   has_label "ci:history" && history=true
                   has_label "ci:ts" && ts=true
                   has_label "ci:environments" && environments=true
+                  has_label "ci:neovim" && neovim=true
                 fi
               fi
               ;;
@@ -197,6 +215,7 @@ jobs:
             echo "history=$history"
             echo "ts=$ts"
             echo "environments=$environments"
+            echo "neovim=$neovim"
           } >> "$GITHUB_OUTPUT"
 
   compatibility:
@@ -391,6 +410,13 @@ jobs:
           ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
           ARK_PRECOMPILE_PROGRAMS: 300
 
+  neovim:
+    needs: plan
+    if: needs.plan.outputs.neovim == 'true'
+    uses: ./.github/workflows/neovim.yml
+    with:
+      ref: ${{ needs.plan.outputs.ref }}
+
   # the nightly's result, kept in one issue
   alert:
     needs:
@@ -402,6 +428,7 @@ jobs:
       - differential
       - cache
       - perturbation
+      - neovim
     if: always() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 5

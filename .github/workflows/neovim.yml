@@ -1,0 +1,64 @@
+name: neovim
+
+# arktype.nvim's parity suite (pnpm testNeovim) in headless Neovim, on every
+# PR and push to main that touches the plugin or what it's held to: the
+# tree-sitter grammar, the conformance fixtures, and the extension whose
+# highlighting and errorLens.replace rules it reproduces. nightly.yml calls
+# it too (suite `neovim`, label ci:neovim, `/run ci:neovim`).
+on:
+  pull_request:
+    paths:
+      - "ark/neovim/**"
+      - "ark/tree-sitter/**"
+      - "ark/editor-conformance/**"
+      - "ark/extension/**"
+      - ".github/workflows/neovim.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ark/neovim/**"
+      - "ark/tree-sitter/**"
+      - "ark/editor-conformance/**"
+      - "ark/extension/**"
+      - ".github/workflows/neovim.yml"
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  neovim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Setup Neovim
+        env:
+          NVIM_VERSION: v0.12.6
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/neovim/neovim/releases/download/$NVIM_VERSION/nvim-linux-x86_64.tar.gz" |
+            tar -xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/nvim-linux-x86_64/bin" >> "$GITHUB_PATH"
+          # nvim-treesitter builds the host parsers with the tree-sitter CLI
+          # ark/tree-sitter installs
+          echo "$GITHUB_WORKSPACE/ark/tree-sitter/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Test arktype.nvim's parity with the VS Code extension
+        run: pnpm testNeovim

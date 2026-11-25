@@ -552,6 +552,12 @@ importers:
 
   ark/fs: {}
 
+  ark/neovim:
+    devDependencies:
+      '@ark/editor-conformance':
+        specifier: workspace:*
+        version: link:../editor-conformance
+
   ark/regex:
     devDependencies:
       '@ark/util':

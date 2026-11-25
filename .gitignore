@@ -31,3 +31,5 @@ ark/docs/public/image/og.png
 ark/docs/public/image/blog
 # the Markdown grammar ark/tree-sitter's tests build, since its package ships no .wasm
 ark/tree-sitter/test/.wasm
+# the nvim-treesitter checkout and host parsers ark/neovim/test/test.ts installs
+ark/neovim/test/.deps
