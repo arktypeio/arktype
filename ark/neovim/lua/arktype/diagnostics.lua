@@ -215,9 +215,25 @@ M.defaults = {
 ---@type arktype.diagnostics.Config
 M.config = vim.deepcopy(M.defaults)
 
---- The text ErrorLens would show for a message, with the current config.
+--- The text ErrorLens would show for a message, with the current config:
+--- `inline(rewrite(message))`, minus characters only Neovim makes visible.
 ---@param message string
 ---@return string
+--- Drops the characters Neovim would draw as `<200b>`-style escapes: zero
+--- width and format characters, which ErrorLens's CSS `content` draws as
+--- nothing. ArkType ends most error messages with a U+200B ZERO WIDTH SPACE.
+---@param text string
+---@return string
+function M.visible(text)
+	return (
+		text:gsub("[\xC2-\xF4][\x80-\xBF]+", function(char)
+			if vim.fn.strtrans(char) ~= char then
+				return ""
+			end
+		end)
+	)
+end
+
 local prepared, prepared_count = {}, 0
 
 function M.prepare(message)
@@ -226,7 +242,7 @@ function M.prepare(message)
 		return cached
 	end
 	local config = M.config
-	local text = M.inline((M.rewrite(message, config.rules)), config)
+	local text = M.visible(M.inline((M.rewrite(message, config.rules)), config))
 	-- the closest problem is redrawn on every cursor move
 	if prepared_count >= 1000 then
 		prepared, prepared_count = {}, 0
@@ -387,7 +403,7 @@ function M.render(bufnr)
 			local diagnostic = by_line[line][1]
 			vim.api.nvim_buf_set_extmark(bufnr, M.ns, line, 0, {
 				virt_text = {
-					{ config.margin, "" },
+					{ config.margin },
 					{ M.format(diagnostic), severity_hl[diagnostic.severity] },
 				},
 				virt_text_pos = "eol",

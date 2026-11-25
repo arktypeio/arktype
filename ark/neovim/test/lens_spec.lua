@@ -116,6 +116,12 @@ return {
 			h.eq({ [1] = "second" }, shown(bufnr))
 			vim.diagnostic.set(ns_a, bufnr, { diag(1, E, "tabbed\tmessage\n") })
 			h.eq({ [1] = "" }, shown(bufnr))
+			-- ArkType's own messages end in a zero width space, which ErrorLens
+			-- draws as nothing and Neovim would draw as <200b>
+			vim.diagnostic.set(ns_a, bufnr, {
+				diag(1, E, "Type '\"strng\"' is not assignable to type '\"'strng' is unresolvable\u{200B}\"'."),
+			})
+			h.eq({ [1] = "'strng' is unresolvable" }, shown(bufnr))
 		end,
 	},
 	{

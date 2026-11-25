@@ -10,6 +10,10 @@ ArkType's VS Code extension ([`ark/extension`](../extension)) for Neovim: the sa
 | `editor.quickSuggestions: { strings: "on" }`                                  | completions on each character typed in a string (built-in LSP completion)        |
 | `autoImportSpecifierExcludeRegexes: ["^(node:)?os$"]` (docs)                  | added to vtsls and ts_ls for you                                                 |
 
+![Highlighted definitions and inline error summaries in Neovim](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/neovim/inlineErrors.png)
+
+<sub>Neovim's default colorscheme, with `follow_cursor = "allLines"` to show several summaries at once.</sub>
+
 Both are tested against [`ark/editor-conformance`](../editor-conformance), the fixtures every ArkType editor integration is held to. See [Parity](#parity).
 
 ## Install

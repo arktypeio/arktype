@@ -413,31 +413,9 @@ jobs:
   neovim:
     needs: plan
     if: needs.plan.outputs.neovim == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: ${{ needs.plan.outputs.ref }}
-
-      - name: Setup repo
-        uses: ./.github/actions/setup
-
-      - name: Setup Neovim
-        env:
-          NVIM_VERSION: v0.12.6
-        run: |
-          set -euo pipefail
-          curl -fsSL "https://github.com/neovim/neovim/releases/download/$NVIM_VERSION/nvim-linux-x86_64.tar.gz" |
-            tar -xz -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/nvim-linux-x86_64/bin" >> "$GITHUB_PATH"
-          # nvim-treesitter builds the host parsers with the tree-sitter CLI
-          # ark/tree-sitter installs
-          echo "$GITHUB_WORKSPACE/ark/tree-sitter/node_modules/.bin" >> "$GITHUB_PATH"
-
-      - name: Test arktype.nvim's parity with the VS Code extension
-        run: pnpm testNeovim
+    uses: ./.github/workflows/neovim.yml
+    with:
+      ref: ${{ needs.plan.outputs.ref }}
 
   # the nightly's result, kept in one issue
   alert:
