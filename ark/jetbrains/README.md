@@ -2,6 +2,8 @@
 
 The JetBrains plugin for [ArkType](https://arktype.io): what the [VS Code extension](../extension) does, for WebStorm, IntelliJ IDEA and any JetBrains IDE with JavaScript support, 2025.2 or later.
 
+![Highlighting and an inline error in WebStorm](./highlighting.png)
+
 It doesn't reimplement the extension. It runs the extension's own files, so a change there reaches both editors:
 
 | VS Code extension                                                   | Here                                                                                                                                                                                                                                                                                                                            |
@@ -13,6 +15,10 @@ It doesn't reimplement the extension. It runs the extension's own files, so a ch
 
 > [!NOTE]
 > The IDE colors code outside strings from its own TypeScript parser, not TextMate, so the few places the extension changes how VS Code colors code in a definition (an object key's `:`, a variable inside a definition) look as they do anywhere else in the IDE.
+
+Settings \| Tools \| ArkType turns each feature on or off:
+
+![The ArkType settings page](./settings.png)
 
 ## Development
 

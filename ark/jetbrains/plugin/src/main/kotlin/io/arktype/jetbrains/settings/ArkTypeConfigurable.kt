@@ -18,7 +18,8 @@ class ArkTypeConfigurable : BoundConfigurable("ArkType") {
 	override fun createPanel(): DialogPanel = panel {
 		group("Inline Errors") {
 			row {
-				checkBox("Show problems at the end of the line, shortened to the part of an ArkType error that names the fix")
+				checkBox("Show problems at the end of the line")
+					.comment("ArkType errors are shortened to the part that names the fix, as in VS Code with ErrorLens")
 					.bindSelected(settings::inlineErrors)
 			}
 			row("Show:") {
@@ -31,15 +32,12 @@ class ArkTypeConfigurable : BoundConfigurable("ArkType") {
 		}
 		group("Completion") {
 			row {
-				checkBox("Show completions automatically while typing in an ArkType definition's strings")
+				checkBox("Show completions while typing in a definition's strings")
 					.bindSelected(settings::completionInStrings)
 			}
 		}
 		group("Auto-Import") {
-			row {
-				label("Skip modules whose specifier matches one of these JavaScript regexes, one per line (e.g. ^(node:)?os$ to import ArkType's type rather than os's):")
-			}
-			row {
+			row("Skip modules matching:") {
 				textArea()
 					.rows(3)
 					.align(AlignX.FILL)
@@ -49,6 +47,7 @@ class ArkTypeConfigurable : BoundConfigurable("ArkType") {
 							settings.autoImportSpecifierExcludeRegexes = text.lines().map(String::trim).filter(String::isNotEmpty).toMutableList()
 						}
 					)
+					.comment("JavaScript regexes, one per line, as in TypeScript's autoImportSpecifierExcludeRegexes. Add ^(node:)?os$ so <code>type</code> imports from ArkType rather than os.")
 			}
 		}
 	}
@@ -59,8 +58,8 @@ class ArkTypeConfigurable : BoundConfigurable("ArkType") {
 	}
 
 	private fun followCursorLabel(followCursor: FollowCursor): String = when (followCursor) {
-		FollowCursor.CLOSEST_PROBLEM -> "Only the problem closest to the cursor"
-		FollowCursor.ACTIVE_LINE -> "Only problems on the cursor's line"
-		FollowCursor.ALL_LINES -> "Every problem"
+		FollowCursor.CLOSEST_PROBLEM -> "Closest to the cursor"
+		FollowCursor.ACTIVE_LINE -> "On the cursor's line"
+		FollowCursor.ALL_LINES -> "All"
 	}
 }
