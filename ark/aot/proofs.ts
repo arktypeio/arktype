@@ -1,4 +1,4 @@
-import { suppliedIssueKeys } from "arktype/schema"
+import type { SuppliedIssue } from "arktype/schema"
 import type { DroppedReportKeys, Fn, KeySet } from "arktype/util"
 import type {
 	ArrowFunctionExpression,
@@ -299,12 +299,29 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 }
 
 // what a standalone validator's Traversal.raise reads of what ctx.reject() or
-// ctx.error() is passed: arktype's error keeps every key it's passed, so a key
-// past these, like `meta` or `flags`, is on the error in development and gone
-// from it in production. propString is written from path by both, and problem
-// throws in both
+// ctx.error() is passed, each key of its SuppliedIssue, which a key it starts
+// reading fails to typecheck without: arktype's error keeps every key it's
+// passed, so a key past these, like `meta` or `flags`, is on the error in
+// development and gone from it in production. Written here, not imported, as
+// the drivers load this before checking which arktype they run on
+const suppliedIssueKeys = {
+	code: 1,
+	path: 1,
+	relativePath: 1,
+	prefixPath: 1,
+	data: 1,
+	expected: 1,
+	description: 1,
+	actual: 1,
+	message: 1,
+	morph: 1,
+	cause: 1,
+	predicate: 1
+} satisfies Record<keyof SuppliedIssue, 1>
+
+// propString is written from path by both, and problem throws in both
 const raisedKeys = new Set<string>([
-	...suppliedIssueKeys,
+	...Object.keys(suppliedIssueKeys),
 	"propString",
 	"problem"
 ])

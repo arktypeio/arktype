@@ -427,8 +427,9 @@ export class FirstIssueTraversal extends Traversal {
 
 // what raise reads of what ctx.reject() or ctx.error() is passed. A build
 // refuses a callback passing another key, which arktype's error would keep and
-// this one drops, so @ark/aot reads them from here
-type SuppliedIssue = {
+// this one drops, so @ark/aot's list of them is checked against this
+/** @internal */
+export type SuppliedIssue = {
 	code?: ArkErrorCode
 	path?: array<PropertyKey>
 	relativePath?: array<PropertyKey>
@@ -442,22 +443,6 @@ type SuppliedIssue = {
 	cause?: unknown
 	predicate?: Predicate
 }
-
-/** @internal the keys a standalone validator reads of what a callback raises */
-export const suppliedIssueKeys: readonly (keyof SuppliedIssue)[] = Object.keys({
-	code: 1,
-	path: 1,
-	relativePath: 1,
-	prefixPath: 1,
-	data: 1,
-	expected: 1,
-	description: 1,
-	actual: 1,
-	message: 1,
-	morph: 1,
-	cause: 1,
-	predicate: 1
-} satisfies Record<keyof SuppliedIssue, 1>) as never
 
 // 2.x's slot, which a cast or JavaScript still passes, throws in arktype and
 // in a precompiled validator alike rather than raising a predicate's error
