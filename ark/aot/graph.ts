@@ -405,6 +405,33 @@ const typeParserTypes: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// the Types arktype's `type` holds as properties, e.g. `type.string`, so
+// `type.string.matching(...)` is a Type and what calling it returns is data,
+// rather than a member of a Module, which may be any arktype value. `Record`
+// is a Generic, so it isn't one
+const typeParserKeywords: Record<string, 1> = Object.setPrototypeOf(
+	{
+		string: 1,
+		number: 1,
+		bigint: 1,
+		boolean: 1,
+		symbol: 1,
+		undefined: 1,
+		null: 1,
+		object: 1,
+		unknown: 1,
+		false: 1,
+		true: 1,
+		never: 1,
+		arrayIndex: 1,
+		Key: 1,
+		Array: 1,
+		Date: 1
+		// a literal without `valueOf` has Object's, which isn't 1
+	} satisfies Partial<Record<Exclude<keyof TypeParser, keyof Object>, 1>>,
+	null
+)
+
 const arkBits: KindBits =
 	kinds.type | kinds.otherArk | kinds.returnsType | kinds.returnsArk
 
@@ -2932,6 +2959,12 @@ export class ModuleGraph {
 			this.arkExportNameOf(object.node, module) === "type"
 		)
 			return kinds.data
+		if (
+			typeof name === "string" &&
+			name in typeParserKeywords &&
+			this.arkExportNameOf(object.node, module) === "type"
+		)
+			return kinds.type
 		return (
 			memberKindOf(this.transfer(object.node, module, kindOfKey), name) |
 			this.exposedKindOf(node, module, kindOfKey)

@@ -79,6 +79,33 @@ export const translate = (data: unknown) => {
 		])
 	})
 
+	it("reads errors off a Type chained from a keyword of type", () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+const Digits = type.string.matching(/^\\d+$/, "Digits only")
+const Amount = type.number.moreThan(0, "Enter an amount")
+export const digits = (data: unknown) => {
+	const out = Digits(data)
+	return out instanceof type.errors ? out.issues[0]?.message : out
+}
+export const amount = (data: unknown) => {
+	const out = Amount(data)
+	return out instanceof type.errors ? out.issues[0]?.message : out
+}
+export const name = (data: unknown) => {
+	const out = type.string(data)
+	return out instanceof type.errors ? out.issues[0]?.message : out
+}
+`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:16  accepted",
+			"main.ts:3:16  accepted",
+			"main.ts:13:14  accepted",
+			"3 sites in 1 file: 3 accepted (100.0%)"
+		])
+	})
+
 	it("checks a fixture as its own project under a directory reading options", () => {
 		// as a temp dir holding a package.json and a config calling the plugin
 		const parent = writeFixture({
