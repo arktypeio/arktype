@@ -1,6 +1,6 @@
 # arktype
 
-## Unreleased
+## 3.0.0-rc.8
 
 ### `string.nonblank` and `string.url.http`
 

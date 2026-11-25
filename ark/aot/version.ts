@@ -6,7 +6,7 @@ import { writeArktypeHint, writeVersionHint } from "./messages.ts"
 import { parsePackageManifest } from "./util.ts"
 
 // the arktype the precompiler is released with, which `pnpm bump` sets
-export const arktypeVersion = "3.0.0-rc.7"
+export const arktypeVersion = "3.0.0-rc.8"
 
 // a package manager may resolve the arktype @ark/aot peers to a version
 // lacking what the precompiler imports, as arktype 2 lacks arktype/codecs, so
