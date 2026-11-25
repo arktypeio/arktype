@@ -300,18 +300,18 @@ To show each message beside its field, `flatMessagesByPath(out)` from `arktype` 
 
 A form library like TanStack Form, or react-hook-form through `standardSchemaResolver`, takes a Type as a Standard Schema and shows each issue's `message` beside its field.
 
-| A field that                              | Write                                                                                                      |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| reads well with ArkType's own text        | `type("string > 0").label("Name")`: `Name must be non-empty`, `Name must be a string`                      |
-| is required, empty as `""` or `undefined` | `type("string > 0").message("Name is required")`                                                           |
-| must hold more than whitespace            | `type(/\S/).message("Name is required")`, which keeps the value; `string.trim` morphs it                   |
-| is optional, left as `""`                 | `type("string.email \| ''").message("Enter a valid email or leave it blank")`                              |
-| is a number above zero                    | `type.number.moreThan(0, "Enter an amount")`                                                               |
-| is a choice that must be made             | `type.boolean.message("Choose yes or no")`                                                                 |
-| is a web link, or a plain `1.2.3` version | `type("string.url").matching(/^https?:\/\//i, "...")`, `type("string.semver").matching(/^[\d.]+$/, "...")` |
+| A field that                              | Write                                                                                                                      |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| reads well with ArkType's own text        | `type("string > 0").label("Name")`: `Name must be non-empty`, `Name must be a string`                                      |
+| is required, empty as `""` or `undefined` | `type("string > 0").message("Name is required")`                                                                           |
+| must hold more than whitespace            | `type("string.nonblank")`, which keeps the value; `string.trim` morphs it                                                  |
+| is optional, left as `""`                 | `type("string.email \| ''").message("Enter a valid email or leave it blank")`                                              |
+| is a number above zero                    | `type.number.moreThan(0, "Enter an amount")`                                                                               |
+| is a choice that must be made             | `type.boolean.message("Choose yes or no")`                                                                                 |
+| is a web link, or a plain `1.2.3` version | `"string.url.http"` (`string.url` allows `mailto:` and `javascript:`), `type("string.semver").matching(/^[\d.]+$/, "...")` |
 
 - `type.string.atLeastLength(1, "Name is required")` says its message only for a string. `undefined`, a field's state before it's touched, reads `must be a string`. A whole-value `.message()` says it for both.
-- Without a message, `"string.email | ''"` reads `must be an email address or ""`.
+- Without a message, `"string.email | ''"` reads `must be an email address or empty`.
 - A pattern chained beside a length, like `type("0 < string <= 50").matching(...)`, also fails `""`. Match `""` in the pattern, with `*` rather than `+`, so an empty field says only `must be non-empty`.
 - Label every field a user reads about, then write a message only where the copy must differ from ArkType's: `price: type.number.moreThan(0, "Enter a price").label("Price")` says `Enter a price` for `0` and `Price must be a number` for anything else. A message, given or set with `.message()`, is never labeled.
 - Don't wrap these in helpers like `nonEmptyString(name)`, `positiveNumber(message)` or `requiredBoolean(message)`: each is one expression, and the helper hides which of a constraint's message or a whole-value message the field gets.

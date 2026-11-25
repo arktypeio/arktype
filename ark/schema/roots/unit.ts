@@ -42,7 +42,7 @@ export declare namespace Unit {
 const dateTimeOf = (v: unknown): number | undefined =>
 	isDate(v) ? timeOf(v) : undefined
 
-const describeUnit = (unit: unknown): string => {
+const printUnit = (unit: unknown): string => {
 	if (isDate(unit)) {
 		const time = timeOf(unit)
 		if (time === undefined) return printable({ ...unit }, { ownDataOnly: true })
@@ -50,6 +50,10 @@ const describeUnit = (unit: unknown): string => {
 	}
 	return printable(unit, { ownDataOnly: true })
 }
+
+// "" reads as what a form field holds, as `non-empty` reads for its opposite
+const describeUnit = (unit: unknown): string =>
+	unit === "" ? "empty" : printUnit(unit)
 
 const serializeUnit = (unit: unknown): JsonPrimitive => {
 	const time = dateTimeOf(unit)
@@ -112,7 +116,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 				"Invalid Date"
 			:	`d'${this.unitJson}'`
 		: typeof this.unit === "number" ? printDecimal(this.unit)
-		: describeUnit(this.unit)
+		: printUnit(this.unit)
 	domain: Domain = domainOf(this.unit)
 
 	get brief(): string {

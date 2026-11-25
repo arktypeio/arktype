@@ -758,9 +758,35 @@ const urlRoot = cached(() =>
 	predicateStringNode(isParsableUrl, "string.url", { format: "uri" })
 )
 
+// http(s), cased without the i flag, which JSON Schema's pattern can't write
+const httpUrlMatcher = /^[Hh][Tt]{2}[Pp][Ss]?:\/\//
+
+// a URL a browser opens as a page, unlike mailto:, javascript: or ftp:
+const httpUrl = cached(() =>
+	node("intersection", {
+		domain: node("domain", { domain: "string" }),
+		pattern: [
+			node("pattern", {
+				meta: keywordMeta("string.url.http"),
+				rule: httpUrlMatcher.source
+			})
+		],
+		predicate: [
+			node("predicate", {
+				meta: {
+					...keywordMeta("string.url.http"),
+					jsonSchema: { format: "uri" }
+				},
+				predicate: isParsableUrl
+			})
+		]
+	})
+)
+
 export const url: url.module = keywordModule(
 	{
 		root: urlRoot,
+		http: httpUrl,
 		parse: () =>
 			node("morph", {
 				declaredIn: urlRoot(),
@@ -780,6 +806,7 @@ export declare namespace url {
 
 	export type $ = {
 		root: string
+		http: string
 		parse: (In: string) => To<URL>
 	}
 }
@@ -852,6 +879,8 @@ export const string: string.module = keywordModule(
 		json,
 		lower,
 		normalize,
+		// unanchored: any one character that isn't whitespace
+		nonblank: () => regexStringNode(/\S/, "string.nonblank"),
 		numeric: stringNumeric,
 		regex,
 		semver,
@@ -887,6 +916,7 @@ export declare namespace string {
 		json: stringJson.submodule
 		lower: lower.submodule
 		normalize: normalize.submodule
+		nonblank: string
 		numeric: stringNumeric.submodule
 		regex: string
 		semver: string

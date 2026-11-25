@@ -321,8 +321,8 @@ Signup({ name: undefined, nickname: undefined })
 
 Each is one expression, so write it where the field is defined rather than in a helper like `requiredString(message)`, which hides which of the two the field gets.
 
-- A field that must hold more than whitespace is `type(/\S/).message("Name is required")`, which rejects `""` and `"   "` and keeps the value as it is. `string.trim` [transforms it](/docs/expressions#pipe) instead.
-- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or ""`. Give the union a message, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`, or a [description](#description).
+- A field that must hold more than whitespace is `string.nonblank`, which rejects `""` and `"   "` and keeps the value as it is: `type("string.nonblank").label("Name")` reads `Name must be non-blank`. `string.trim` [transforms it](/docs/expressions#pipe) instead.
+- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or empty`. Give the union a [label](#label), as in `type("string.email | ''").label("Email")`, a message, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`, or a [description](#description). A website is `"string.url.http | ''"`, since `string.url` accepts `mailto:` and `javascript:`.
 - A pattern beside a length reports both for `""`, as `must be non-empty` and the pattern's message. Let the pattern match `""`, with `*` rather than `+`, so an empty field says only that it's required: `type("0 < string <= 50").matching(/^[a-z ]*$/i, "Use letters only")`.
 - A rule about a value computed from the data, like an order's total, can check what a [pipe](/docs/expressions#pipe) computes rather than narrow the input: `Order.pipe(totalOf, type({ total: type.number.moreThan(0, "Add something to the order") }))`.
 

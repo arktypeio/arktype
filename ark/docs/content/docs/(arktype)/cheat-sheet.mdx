@@ -325,7 +325,7 @@ export default {
 | `ctx.reject({ path: ["key"] })` on a nested object                            | Use `relativePath: ["key"]`; `path` is from the root of the data                            |
 | `.merge()` or `.pick()` on an object with a `.narrow()`                       | Derive from the object before its `.narrow()`, which they'd drop, then add the narrow       |
 | `.narrow(v => v.tags.length > 0)` on the object                               | Put the check on the value: `tags: Tag.array().atLeastLength(1, "Add a tag")`               |
-| `.narrow(s => s.trim() !== "")` for a non-blank string                        | `type(/\S/).message("Name is required")`, which keeps the value as it is                    |
+| `.narrow(s => s.trim() !== "")` for a non-blank string                        | `type("string.nonblank")`, which keeps the value as it is                                   |
 | `type.string.atLeastLength(1, "Required")` on a field that starts `undefined` | `type("string > 0").message("Required")`, whose message covers `""` and `undefined`         |
 | Mutating the argument in `.pipe`                                              | Return a new value; a morph receives the caller's data, not a copy                          |
 | `type User = typeof Schema.t`                                                 | Use `typeof Schema.infer` for the output type                                               |

@@ -1,5 +1,15 @@
 # arktype
 
+## Unreleased
+
+### `string.nonblank` and `string.url.http`
+
+`string.nonblank` is a string with a character that isn't whitespace, without trimming it, as a required text field needs: `""` and `"   "` read `must be non-blank`. `string.url.http` is a URL whose scheme is `http` or `https`, as a website field needs, where `string.url` also accepts `mailto:`, `javascript:` and any other scheme `URL.canParse` does: `must be an HTTP or HTTPS URL`.
+
+### `""` and a length of 0 read as empty
+
+The empty string, and a length of exactly 0, are described as `empty`, mirroring `non-empty`, so an optional form field left as `""` reads `must be an email address or empty` rather than `must be an email address or ""`, and `"string == 0"` reads `must be empty` rather than `must be exactly length 0`. An expression still writes `""`.
+
 ## 3.0.0-rc.7
 
 ### Name a field in its messages with `.label()`

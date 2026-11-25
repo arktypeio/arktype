@@ -8,7 +8,7 @@ contextualize(() => {
 		attest(T.expression).snap("[]")
 		attest(T.json).snap({ proto: "Array", exactLength: 0 })
 		attest(T([])).equals([])
-		attest(T([1]).toString()).snap("must be exactly length 0")
+		attest(T([1]).toString()).snap("must be empty")
 	})
 
 	it("empty string syntax", () => {
@@ -16,7 +16,7 @@ contextualize(() => {
 		attest<[]>(T.infer)
 		attest(T.expression).snap("[]")
 		attest(T.equals(type([]))).equals(true)
-		attest(T([1]).toString()).snap("must be exactly length 0")
+		attest(T([1]).toString()).snap("must be empty")
 	})
 
 	it("empty in an expression", () => {
@@ -24,7 +24,7 @@ contextualize(() => {
 		attest<[][] | "a">(T.infer)
 		attest(T.expression).snap('[][] | "a"')
 		attest(T([[]])).equals([[]])
-		attest(T([[1]]).toString()).snap("[0] must be exactly length 0")
+		attest(T([[1]]).toString()).snap("[0] must be empty")
 		// @ts-expect-error
 		attest(() => type("[1]")).throws("Expected an expression before '[1]'")
 	})

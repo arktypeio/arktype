@@ -268,5 +268,7 @@ export const describeCases = ({
 					objectKindDescriptions.Array
 				:	domainDescriptions[domain]
 			)
-		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
+		:	cases.map(unit =>
+				unit === "" ? "empty" : printable(unit, { ownDataOnly: true })
+			)
 	)

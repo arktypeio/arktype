@@ -47,7 +47,8 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		},
 		ownErr: true,
 		defaults: {
-			description: node => `exactly length ${node.rule}`
+			description: node =>
+				node.rule === 0 ? "empty" : `exactly length ${node.rule}`
 		}
 	})
 

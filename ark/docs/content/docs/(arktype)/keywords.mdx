@@ -69,23 +69,21 @@ A keyword with subtypes, like `string.date`, is a module. Its `.root` is the key
 
 </SyntaxTabs>
 
-A keyword accepts everything its standard does, which is often more than a form wants. Restrict it with a constraint rather than a `.narrow()`:
+A keyword accepts everything its standard does, which is often more than a form wants. `string.url` accepts anything `URL.canParse` does, like `mailto:` or `javascript:`, so a form asking for a website wants `string.url.http`. Restrict a keyword further with a constraint rather than a `.narrow()`:
 
 ```ts
-// string.url accepts anything URL.canParse does, like mailto: or javascript:
-const Website = type("string.url").matching(
-	/^https?:\/\//i,
-	"Enter a web address"
-)
+const Profile = type({
+	website: "string.url.http",
+	// string.semver accepts prerelease and build tags, like 1.2.3-beta.1
+	version: type("string.semver").matching(
+		/^[\d.]+$/,
+		"Enter a version like 1.2.3"
+	)
+})
 
-// string.semver accepts prerelease and build tags, like 1.2.3-beta.1
-const Release = type("string.semver").matching(
-	/^[\d.]+$/,
-	"Enter a version like 1.2.3"
-)
-
-// ArkErrors: Enter a web address
-Website("javascript:alert(1)")
+// ArkErrors: website must be an HTTP or HTTPS URL
+//            version: Enter a version like 1.2.3
+Profile({ website: "javascript:alert(1)", version: "1.2.3-beta.1" })
 ```
 
 ## All keywords [#all-keywords]
