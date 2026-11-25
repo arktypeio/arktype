@@ -222,7 +222,7 @@ Other morph keywords: `string.trim`, `string.lower`, `string.upper`, `string.num
 
 ## Custom rules
 
-Use `.narrow()` when a rule involves more than one value. Return `true` to accept, or `ctx.reject()` to say what was wrong and where: a `message`, one whole sentence like `"Passwords must match"`, at a `relativePath` from the value being narrowed.
+Use `.narrow()` only for conditions ArkType's built-in constraints can't express (like cross-field rules or custom logic) — not just to add custom error messages to length, range, divisor or regex checks, which belong on chained constraint methods like `type.string.atLeastLength(1, "Name is required.")`. Return `true` to accept, or `ctx.reject()` to say what was wrong and where: a `message`, one whole sentence like `"Passwords must match"`, at a `relativePath` from the value being narrowed.
 
 ```ts
 const Signup = type({
@@ -247,7 +247,14 @@ const Signup = type({
 
 ## Error messages
 
-There are two ways to say what's wrong. Choose by the text you have:
+Follow this hierarchy when deciding how to report errors:
+
+1. **Use ArkType's built-in error messages first.** They're specific out of the box (`must be non-empty`, `must be an email address`, `must be even`) and compose automatically across unions (`"string.email | string.uuid"` reports `must be an email address or a UUID`). Don't add custom error messages unless the caller, UI or existing schema actually requires custom copy.
+2. **Use `.describe(...)` when you want custom wording that still composes.** If `must be ...` wording fits and the Type may be reused in unions or intersections, pass a description like `.describe("a valid email")` so ArkType can merge it into natural-language union errors (`must be a phone number, a username or a valid email`) and reuse it in JSON Schema.
+3. **Chain constraint methods with a `message` for custom per-check sentences.** Most Types aren't composed into unions where errors need to compose, so when you need full custom messages, pass them directly to chained constraint methods (`type.string.atLeastLength(1, "Name is required.").matching(/^[a-z]+$/i, "Enter a valid name.")`) rather than reaching for `.narrow()`. Use `.message(...)` for a whole Type or a keyword's error code.
+4. **Reserve `.narrow()` for conditions built-in constraints don't cover**, not just to attach custom messages to built-in checks.
+
+There are two ways to write custom text. Choose by the text you have:
 
 | The text is                                                     | Write it as                                                                                                     | An issue's `message`    | Its line of `out.summary`     |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------- |
@@ -351,7 +358,7 @@ ArkType reports most mistakes in a definition as a TypeScript error at the defin
 import { type } from "arktype"
 
 const User = type({
-	name: ["string > 0", "@", { message: "Name is required" }],
+	name: type.string.atLeastLength(1, "Name is required"),
 	"age?": "number.integer >= 0"
 })
 

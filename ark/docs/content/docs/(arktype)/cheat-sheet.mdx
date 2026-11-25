@@ -158,6 +158,8 @@ const trim = type("string.trim") // string → trimmed string
 
 ## Custom rules
 
+Use `.narrow()` only for conditions ArkType's built-in constraints can't express, like cross-field rules — not just to customize error messages on built-in checks.
+
 ```ts
 const Signup = type({
 	password: "string >= 8",
@@ -175,26 +177,34 @@ const Signup = type({
 
 ## Error messages
 
+1. Start with ArkType's built-in messages — they're specific and compose automatically across unions (`"string.email | string.uuid"` reads `must be an email address or a UUID`).
+2. Use `.describe()` when you want custom `must be ...` wording that still composes.
+3. Chain constraint methods with a message (or `.message()` for a whole Type or keyword code) when you need full custom sentences per check.
+4. Save `.narrow()` for rules built-in constraints can't express.
+
 ```ts
 const Signup = type({
-	// a sentence for one check, shown as written
-	password: type.string.atLeastLength(8, "Use 8 or more characters"),
+	// custom sentences per constraint, chained
+	password: type.string
+		.atLeastLength(8, "Use 8 or more characters")
+		.matching(/[0-9]/, "Include a number"),
 	// a sentence for every failure, a missing key's included
 	email: type("string.email").message("Enter a valid email"),
-	// what the value must be, after "must be"
+	// what the value must be, after "must be", so it composes in unions
 	age: type("number >= 18").describe("an adult's age")
 })
 
 const out = Signup({ password: "short", email: "x", age: 3 })
 
 if (out instanceof type.errors) {
+	// password: Include a number
 	// password: Use 8 or more characters
 	// email: Enter a valid email
 	// age must be an adult's age
 	console.error(out.summary)
 
 	// without paths, e.g. to show beside each field:
-	// ["Use 8 or more characters", "Enter a valid email", "must be an adult's age"]
+	// ["Include a number", "Use 8 or more characters", "Enter a valid email", "must be an adult's age"]
 	out.issues.map(issue => issue.message)
 }
 ```

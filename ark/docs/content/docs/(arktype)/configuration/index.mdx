@@ -94,19 +94,24 @@ A Type's own options are its [metadata](/docs/expressions#meta), including the [
 
 ## Error messages
 
-There are two ways to change what an error says:
+ArkType's built-in error messages are designed to be good enough to ship as-is, and you have two ways to customize them when needed: **templated** (`description` / `expected`) and **custom** (`message`). Choose in this order:
 
-- **Templated**: configure what the value was expected to be, with a [`description`](#description) or [`expected`](#expected), and what it was, with [`actual`](#actual). ArkType writes "must be `expected`", lists it where a union's error lists its branches' and writes the path before it in a summary.
-- **Custom**: configure a [`message`](#message), one whole sentence shown as written wherever the error is read.
+1. **Use the built-in error messages first.** ArkType's defaults are specific and readable out of the box (`must be non-empty`, `must be even`, `must be an email address`), and because they follow a `must be ___` template, they compose automatically across unions — `"string.email | string.uuid"` reports `must be an email address or a UUID`. Give them a try before reaching to customize every field.
+2. **Configure [`description`](#description) when you want custom wording that still composes.** If you're happy with `must be ___` messages and plan to reuse a Type in unions or intersections, pass a phrase like `.describe("a valid email")` instead of a full sentence so ArkType keeps merging it into natural-language union errors (`must be a phone number, a username or a valid email`) and reuses it in `.description` and JSON Schema.
+3. **Chain constraint methods with a [`message`](#message) for custom per-check sentences.** Most Types aren't composed into unions whose errors need to read as one sentence — for forms and standalone fields, you just want exact sentences for each condition that can fail. ArkType has chained methods for every built-in constraint, and passing a message as the last argument (e.g. `type.string.atLeastLength(1, "Name is required.").matching(..., "...")`) is the easiest way to give each check its own message. Use `.message()` for a whole Type or a keyword's error code.
+4. **Save [`.narrow()`](/docs/expressions#narrow) for rules built-in constraints can't express.** Don't rewrite a length, range, divisor or pattern check as a `.narrow()` just to attach a custom error message — chaining the constraint method keeps the check visible to ArkType's set algebra, JSON Schema generation and precompiler.
 
 ```ts
 const User = type({
-	name: type.string.atLeastLength(1, "Enter your name"),
+	name: type.string
+		.atLeastLength(1, "Name is required.")
+		.matching(/^[a-zA-Z\s'-]+$/, "Enter a valid name."),
 	age: type("number >= 18").describe("an adult's age"),
 	email: type("string.email").message("Enter a valid email")
 })
 
-// ArkErrors: name: Enter your name
+// ArkErrors: name: Enter a valid name.
+//            name: Name is required.
 //            age must be an adult's age
 //            email: Enter a valid email
 User({ name: "", age: 3, email: "x" })
@@ -116,13 +121,16 @@ User({ name: "", age: 3, email: "x" })
 
 ### description
 
-What follows "must be" in a message. Other parts and the Type's `.description` reuse it, so it should be your first choice:
+What follows "must be" in a message. Because it fits into ArkType's template, it composes cleanly across unions and is reused by the Type's `.description` and JSON Schema output — reach for it when you want `must be ___` errors that compose:
 
 ```ts
-const Even = type("number % 2").describe("an even number")
+const Email = type("string.email").describe("a valid email")
+const Username = type(/^[a-z0-9_]{3,20}$/).describe("a username")
+const Phone = type(/^\d{10}$/).describe("a phone number")
+const Contact = type.or(Email, Username, Phone)
 
-// ArkErrors: must be an even number
-Even(3)
+// ArkErrors: must be a phone number, a username or a valid email
+Contact("!")
 ```
 
 ### expected
