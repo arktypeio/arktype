@@ -1,6 +1,6 @@
 # @ark/aot
 
-## Unreleased
+## 3.0.0-rc.5
 
 A webpack or Rspack compiler releases its precompiler worker once it closes, and a Vite dev server once it closes. A production build that failed never reached the hook releasing it, and a dev server's never did, so a process running several, like a test runner or a dev server restarting for a changed config, held a worker of about 150 MB for each until it exited.
 

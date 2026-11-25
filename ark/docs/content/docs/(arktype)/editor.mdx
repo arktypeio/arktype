@@ -1,6 +1,6 @@
 ---
 title: Editor setup
-description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs and other editors.
+description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, Zed, JetBrains IDEs, Neovim and other editors.
 ---
 
 ArkType works in any editor with TypeScript support. These extensions make definitions read like the rest of your code.
@@ -39,8 +39,62 @@ Install [ArkType](https://plugins.jetbrains.com/search?search=arktype) from the 
 
 To have auto-import pick ArkType's `type` instead of the `type` function from Node's `os` module, add `^(node:)?os$` to the auto-import regexes under **Settings | Tools | ArkType**.
 
+## Zed
+
+Install **ArkType** from Zed's extensions page (`zed: extensions` in the command palette). It adds:
+
+- syntax highlighting for strings in ArkType definitions, in `.ts`, `.tsx`, `.js` and `.jsx` files and in the TypeScript of Svelte, Vue and Astro components and Markdown code blocks
+- one-line summaries of ArkType's type errors at the end of the line, the same ones the VS Code extension shows
+- auto-import that picks ArkType's `type` over the `type` function from Node's `os` module, with no setting to add
+
+The summaries come from the `arktype` language server, which is vtsls, the TypeScript server Zed already uses, with each error's summary as the first line of its message. Zed shows that line inline. To use it in place of vtsls and turn on inline errors, add this to your Zed settings:
+
+```json title="settings.json"
+{
+	"languages": {
+		"TypeScript": { "language_servers": ["arktype", "!vtsls", "..."] },
+		"TSX": { "language_servers": ["arktype", "!vtsls", "..."] },
+		"JavaScript": { "language_servers": ["arktype", "!vtsls", "..."] }
+	},
+	"diagnostics": {
+		"inline": { "enabled": true, "update_debounce_ms": 0 }
+	}
+}
+```
+
+Hovers and the diagnostics panel show the summary, then TypeScript's full message. Zed already suggests completions while you type inside a string, so `"string | num"` completes with no setting. Unlike ErrorLens, Zed shows an inline error on every line that has one, not only the one closest to your cursor.
+
+## Neovim
+
+[arktype.nvim](https://github.com/arktypeio/arktype/tree/main/ark/neovim) does what the VS Code extension does, tested against the same fixtures:
+
+- syntax highlighting for strings in ArkType definitions, through a tree-sitter grammar injected into TypeScript, TSX and JavaScript, and from them into Svelte, Vue, Astro and Markdown
+- the same one-line summaries of ArkType's type errors, for the problem closest to your cursor
+- completions while typing inside strings with Neovim's built-in LSP completion (blink.cmp and nvim-cmp already do this)
+- the `os` auto-import exclusion for vtsls and `ts_ls`
+
+It needs Neovim 0.11 or later and [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)'s TypeScript and JavaScript parsers. With lazy.nvim:
+
+```lua title="lua/plugins/arktype.lua"
+return {
+	"arktypeio/arktype",
+	name = "arktype.nvim",
+	lazy = false,
+	build = function(plugin)
+		vim.opt.rtp:append(plugin.dir .. "/ark/neovim")
+		require("arktype.treesitter").build()
+	end,
+	config = function(plugin)
+		vim.opt.rtp:append(plugin.dir .. "/ark/neovim")
+		require("arktype").setup()
+	end
+}
+```
+
+See its [README](https://github.com/arktypeio/arktype/tree/main/ark/neovim#readme) for `vim.pack`, the options and completion setup.
+
 ## Other editors
 
-There's no official extension for other editors yet. For Neovim, a community [tree-sitter grammar](https://github.com/jeffrom/tree-sitter-arktype) covers the most common syntax. If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
+There's no official extension for other editors yet. If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
 
 Completions and type errors come from TypeScript, so they work in every editor without an extension.

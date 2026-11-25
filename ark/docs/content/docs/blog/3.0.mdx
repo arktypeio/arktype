@@ -75,8 +75,8 @@ And after:
 import { type } from "arktype"
 
 const Signup = type({
-	email: ["string.email", "@", { message: "Enter a valid email" }],
-	password: ["string >= 8", "@", { message: "Use 8 or more characters" }],
+	email: type("string.email").message("Enter a valid email"),
+	password: type.string.atLeastLength(8, "Use 8 or more characters"),
 	role: "'admin' | 'member'"
 })
 
@@ -91,8 +91,8 @@ A `message` is shown exactly as you wrote it and never includes its path, as Zod
 
 ```ts
 const Signup = type({
-	email: ["string.email", "@", { message: "Enter a valid email" }],
-	password: ["string >= 8", "@", { message: "Use 8 or more characters" }],
+	email: type("string.email").message("Enter a valid email"),
+	password: type.string.atLeastLength(8, "Use 8 or more characters"),
 	role: "'admin' | 'member'"
 })
 // ---cut---

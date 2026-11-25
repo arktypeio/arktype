@@ -18,6 +18,10 @@ coverage
 # ntwine's worktrees and thread state, checkouts of this repo that prettier
 # would otherwise walk (it reads this file, not the .gitignore inside)
 .ntwine
+# written by cargo and by Zed when it installs ark/zed as a dev extension
+ark/zed/target
+ark/zed/grammars
+ark/zed/*.wasm
 # generated per-page Markdown, see ark/docs/lib/writeMarkdown.ts
 ark/docs/public/docs/**/*.md
 # bundled from ark/docs/components/precompile/compile.worker.ts, see ark/docs/lib/writeLiveWorker.ts
@@ -27,6 +31,8 @@ ark/docs/public/image/og.png
 ark/docs/public/image/blog
 # the Markdown grammar ark/tree-sitter's tests build, since its package ships no .wasm
 ark/tree-sitter/test/.wasm
+# the nvim-treesitter checkout and host parsers ark/neovim/test/test.ts installs
+ark/neovim/test/.deps
 # the JetBrains plugin's Gradle output and caches, see ark/jetbrains
 ark/jetbrains/.gradle
 ark/jetbrains/.kotlin
