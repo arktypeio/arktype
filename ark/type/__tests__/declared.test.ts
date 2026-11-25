@@ -137,6 +137,57 @@ contextualize(() => {
 			attest(T.expression).equals(A.or(B).expression)
 		})
 
+		it("inline object literal infix", () => {
+			type Expected =
+				| { kind: "a"; count: number }
+				| { kind: "b"; label: string }
+			const T = declare<Expected>().type(
+				{ kind: "'a'", count: "number" },
+				"|",
+				{ kind: "'b'", label: "string" }
+			)
+			attest<Expected>(T.t)
+			attest(T({ kind: "a", count: 1 })).equals({ kind: "a", count: 1 })
+			attest(T({ kind: "b", label: "hi" })).equals({ kind: "b", label: "hi" })
+		})
+
+		it("inline object literal infix mismatch", () => {
+			type Expected =
+				| { kind: "a"; count: number }
+				| { kind: "b"; label: string }
+			attest(() =>
+				declare<Expected>().type(
+					// @ts-expect-error
+					{ kind: "'c'", count: "number" },
+					"|",
+					{ kind: "'b'", label: "string" }
+				)
+			).type.errors(
+				`declared: Expected; inferred: { kind: "c"; count: number; } | { kind: "b"; label: string; }`
+			)
+		})
+
+		it("inline object literal infix invalid syntax", () => {
+			type Expected = { kind: "a" } | { kind: "b" }
+			attest(() =>
+				declare<Expected>().type(
+					// @ts-expect-error
+					{ kind: "notAKeyword" },
+					"|",
+					{ kind: "'b'" }
+				)
+			).throwsAndHasTypeError(writeUnresolvableMessage("notAKeyword"))
+		})
+
+		it("inline object literal predicate", () => {
+			const T = declare<{ kind: "a" }>().type(
+				{ kind: "'a'" },
+				":",
+				v => v.kind === "a"
+			)
+			attest<{ kind: "a" }>(T.t)
+		})
+
 		it("infix mismatch", () => {
 			attest(() =>
 				// @ts-expect-error

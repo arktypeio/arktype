@@ -90,24 +90,24 @@ export interface DeclaredTypeParser<
 
 // the first argument of a tuple expression spread as `.type`'s arguments: as
 // `type` validates it, or a mismatch with the declared type once the
-// expression as a whole is valid
+// expression as a whole is valid. `mismatch` is a default parameter rather than
+// `extends infer mismatch` so TypeScript's `isConstTypeVariable` sees `<const
+// zero>` through the conditional constraint instead of pruning it with
+// `mismatch = unknown` and widening inline object/array literals in `_0`.
 type validateDeclaredRoot<
 	preinferred,
 	zero,
 	one,
 	rest extends array,
 	$,
-	ctx extends DeclareContext
+	ctx extends DeclareContext,
+	mismatch = declaredRootMismatch<preinferred, [zero, one, ...rest], $, ctx>
 > =
-	declaredRootMismatch<preinferred, [zero, one, ...rest], $, ctx> extends (
-		infer mismatch
-	) ?
-		[mismatch] extends [never] ?
-			zero extends IndexZeroOperator ?
-				zero
-			:	type.validate<zero, $>
-		:	mismatch
-	:	never
+	[mismatch] extends [never] ?
+		zero extends IndexZeroOperator ?
+			zero
+		:	type.validate<zero, $>
+	:	mismatch
 
 type declaredRootMismatch<
 	preinferred,
