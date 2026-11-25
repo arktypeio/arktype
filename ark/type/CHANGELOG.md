@@ -1,5 +1,24 @@
 # arktype
 
+## Unreleased
+
+### Name a field in its messages with `.label()`
+
+`.label(text)` names a value in every message ArkType writes for it, so a field reads well in a form, a toast or a summary without a custom message for each check:
+
+```ts
+const LineItem = type({
+	unitPriceCents: type("number > 0").label("Unit price"),
+	quantity: type("number.integer > 0").label("Quantity")
+})
+
+// ArkErrors: Unit price must be positive
+//            Quantity must be a number (was missing)
+LineItem({ unitPriceCents: 0 })
+```
+
+The label is part of each error's `message`, so Standard Schema consumers like form libraries show it too, while `path` keeps the key. A summary leaves out only the key a label names, keeping the rest of its path, as in `items[0]: Unit price must be positive`. A message passed to a constraint method or set with `.message()` is said as written. Like `.describe()`, a label applies to the Type it's called on, not the Types inside it, and `["number > 0", "@", { label: "Unit price" }]` sets one in a definition. `toJsonSchema` writes a label as `title` unless one is set. `de` writes it as its message's subject: `Stückpreis muss positiv sein`.
+
 ## 3.0.0-beta.2
 
 ### Read a JSON Schema or a Zod schema with `fromJsonSchema`

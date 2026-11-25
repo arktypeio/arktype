@@ -50,6 +50,7 @@ const typeMembers: ReadonlySet<string> = new Set([
 	"configure",
 	"describe",
 	"message",
+	"label",
 	"onUndeclaredKey",
 	"onDeepUndeclaredKey",
 	"keyof",

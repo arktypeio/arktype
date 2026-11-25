@@ -1,5 +1,6 @@
 import {
 	$ark,
+	asLabeled,
 	asTemplated,
 	BaseRoot,
 	constraintInputOf,
@@ -209,7 +210,7 @@ const parseStandardSchema = (
 			)
 			// an arktype 2 message starts with the path its issue already has, so
 			// its problem is read
-			const { problem, _c, _l, _m } = issue as ArkWrittenIssue
+			const { problem, _c, _l, _m, _n } = issue as ArkWrittenIssue
 			const fromArk2 = isForeign && typeof problem === "string"
 			const error = ctx.error({
 				message: fromArk2 ? problem : issue.message,
@@ -221,7 +222,9 @@ const parseStandardSchema = (
 			// answers for its own. A standalone validator's issue holds only its
 			// message, read as its own summary reads it; one an earlier build
 			// wrote notes a sentence of its own as `_c`
-			if (
+			// a message naming a label is arktype's own, said of its value
+			if (fromArk && typeof _n === "string") asLabeled(error, _n)
+			else if (
 				fromArk2 ||
 				(fromArk &&
 					_c === undefined &&
@@ -251,6 +254,7 @@ type ArkWrittenIssue = {
 	problem?: unknown
 	_c?: unknown
 	_l?: string
+	_n?: unknown
 	_m?: (prefix: array<PropertyKey>) => { _l?: string }
 }
 

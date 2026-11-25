@@ -17,6 +17,7 @@ export {
 	failsInBranches,
 	findsOnRead,
 	holdsExpression,
+	labelsValues,
 	listsUnions,
 	transformsBranches,
 	traversesUnions

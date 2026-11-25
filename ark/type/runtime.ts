@@ -23,6 +23,8 @@ import {
 	isCustomIssue,
 	issueAt,
 	issuesOf,
+	labeledIssue,
+	labelsValues,
 	mergeIssues,
 	runtimeConfig,
 	sharedMessageOf,
@@ -741,8 +743,9 @@ type Writer = string | Fn | undefined
 const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
 // written once first read; keeps is 1 if the issue takes expected, 4 if its
-// actual describes its data, which a default message leaves out, and 2 if its
-// message is configured for its code
+// actual describes its data, which a default message leaves out, 2 if its
+// message is configured for its code and 8 if its default message names its
+// value by the label its meta holds
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
@@ -755,6 +758,18 @@ const writeIssue = (
 		message: context.message
 	}
 	if (keeps & 2 && text.message === undefined) codedIssue(issue)
+	// a missing key's label is its value's. Each read of the flag is its
+	// statement's own, so a build labeling nothing folds both
+	if (labelsValues && keeps & 8) {
+		labeledIssue(
+			issue,
+			(
+				(issue.code === "required" ? context.valueMeta : context.meta) as {
+					label: string
+				}
+			).label
+		)
+	}
 	const writeText = () => {
 		const error: Record<string, unknown> = {
 			data: issue.data,
@@ -771,7 +786,10 @@ const writeIssue = (
 			error.actual = write(actual, issue.data, error)
 		}
 		if (keeps & 1) text.expected = error.expected
-		text.message ??= write(message, error)
+		text.message ??=
+			labelsValues && keeps & 8 ?
+				`${issue._n} ${write(message, error)}`
+			:	write(message, error)
 		for (const k in text) {
 			defineProperty(issue, k, {
 				value: text[k],
@@ -892,7 +910,11 @@ export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 		// a message its errors share is its own, as arktype's union's is, unless
 		// one is configured for it
 		const shared = isCustomIssue(issue) ? undefined : sharedMessageOf(errors)
-		if (shared !== undefined) issue.message = shared
+		if (shared !== undefined) {
+			issue.message = shared
+			// which names no label of its own
+			if (labelsValues) delete (issue as { _n?: string })._n
+		}
 		issue.errors = errors
 		return issue
 	}) satisfies Fn
@@ -1598,3 +1620,20 @@ export const deepFreeze = <t>(value: t): t => {
 		for (const k in freeze(value)) deepFreeze(value[k])
 	return value
 }
+
+// declared last, so a build labeling nothing drops it without splitting the
+// declarations around it in two, which costs it bytes
+
+// a site whose default message names its value by a label, which its issue
+// notes, as a summary leaves out the key the label names
+export const labelSiteOf = ((
+	code: ArkErrorCode,
+	description: string | undefined,
+	message: string,
+	label: string
+): SiteContext => ({
+	code,
+	description,
+	x: message,
+	text: issue => labeledIssue(issue, label)
+})) satisfies Fn

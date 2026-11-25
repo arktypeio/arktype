@@ -1064,6 +1064,21 @@ user.name must be a string`)
 		)
 	})
 
+	it("labeled issues a Type reads as a Standard Schema's keep their lines", async () => {
+		const { Item } = await load({
+			Item: type({
+				unitPriceCents: type("number > 0").label("Unit price"),
+				name: "string"
+			})
+		})
+		attest(
+			type({ items: [Item] })({
+				items: [{ unitPriceCents: 0, name: 1 }]
+			}).toString()
+		).snap(`items[0]: Unit price must be positive
+items[0].name must be a string`)
+	})
+
 	it("a union's configured expected is written after must be and its path", async () => {
 		const Shape = type({ a: "string" })
 			.or({ b: "number" })

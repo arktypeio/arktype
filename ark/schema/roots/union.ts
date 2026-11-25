@@ -211,7 +211,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	private _discMeta: ArkEnv.meta | undefined
 	/** the meta its discriminant's errors are written with: at a key, expected and actual describe the object around it */
 	get discMeta(): ArkEnv.meta {
-		return (this._discMeta ??= metaAtDiscriminant(this.meta, this.missPath))
+		return (this._discMeta ??= metaAtDiscriminant(
+			this.meta,
+			this.missPath,
+			this.branches
+		))
 	}
 
 	get expression(): string {
@@ -650,10 +654,22 @@ const isArrayCase = (caseNode: BaseRoot | true): boolean =>
 
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,
-	path: array<PropertyKey>
+	path: array<PropertyKey>,
+	branches: readonly BaseRoot[]
 ): ArkEnv.meta => {
-	if (path.length === 0) return meta
-	const { expected, actual, ...rest } = meta
+	if (path.length === 0) {
+		if (meta.label !== undefined) return meta
+		// a value each branch labels alike is labeled so, as each would say
+		const label = branches[0]?.meta.label
+		return (
+				label === undefined ||
+					branches.some(branch => branch.meta.label !== label)
+			) ?
+				meta
+			:	{ ...meta, label }
+	}
+	// the key it misses isn't the value a label names
+	const { expected, actual, label, ...rest } = meta
 	return rest
 }
 

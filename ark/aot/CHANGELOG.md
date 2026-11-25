@@ -2,6 +2,10 @@
 
 ## 3.0.0-rc.7
 
+A standalone validator writes a `.label()`'s messages and summary lines as arktype does.
+
+Reading an error off a Type chained from a keyword `type` holds, like `type.string.matching(/^\d+$/, "Digits only")` or `type.number.moreThan(0, "Enter an amount")`, no longer fails the build with `R4: result.issues[0]?.message reads message, which a standalone validator lacks`. The build read `type.string` as a Module's member, which may be any arktype value, so it couldn't tell what calling the chained Type returned from a Type. `type("string").matching(...)` was never affected.
+
 A standalone build fails where a narrow or morph passes `ctx.reject()` or `ctx.error()` a key its validator's error leaves out: `meta`, or any key past those it reads where no `code` is passed, as in `ctx.reject({ flags: FLAG, message: "Must be unique." })`. arktype's error keeps every key it's passed, while a standalone validator's is written only from `code`, the path keys, `data`, `expected`, `description`, `actual` and `message`, so a program reading `issue.flags` found it in development and silently didn't in production. A code's own context, like `rule` for `code: "minLength"`, which its type requires, still builds. A runtime island or `runtime: "arktype"` keeps every key, as before.
 
 ## 3.0.0-rc.5

@@ -771,7 +771,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "literal"
             ],
-            "example": "const T = type({ foo: \"string\" });\n// TypeScript: Type 'number' is not assignable to type 'string'\nconst data = T.from({ foo: 5 });"
+            "example": "const User = type({ name: \"string\" })\n// TypeScript: Type 'number' is not assignable to type 'string'\nconst user = User.from({ name: 5 })"
         },
         {
             "group": "Validation",
@@ -914,7 +914,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const Unmorphed = type(\"string\")\n// with no morphs, we can introspect the input and output as a single Type\ntype UnmorphedOut = typeof Unmorphed.inferIntrospectableOut // string\n\nconst Morphed = type(\"string\").pipe(s => s.length)\n// with a standard user-defined morph, TypeScript can infer a\n// return type from your function, but we have no way to\n// know the shape at runtime\ntype MorphOut = typeof Morphed.inferIntrospectableOut  // unknown\n\nconst Validated = type(\"string\").pipe(s => s.length).to(\"number\")\n// morphs with validated output, including all morph keywords, are introspectable\ntype ValidatedMorphOut = typeof Validated.inferIntrospectableOut"
+            "example": "const Unmorphed = type(\"string\")\n// with no morphs, we can introspect the input and output as a single Type\ntype UnmorphedOut = typeof Unmorphed.inferIntrospectableOut // string\n\nconst Morphed = type(\"string\").pipe(s => s.length)\n// with a standard user-defined morph, TypeScript can infer a\n// return type from your function, but we have no way to\n// know the shape at runtime\ntype MorphOut = typeof Morphed.inferIntrospectableOut // unknown\n\nconst Validated = type(\"string\").pipe(s => s.length).to(\"number\")\n// morphs with validated output, including all morph keywords, are introspectable\ntype ValidatedMorphOut = typeof Validated.inferIntrospectableOut // number"
         },
         {
             "group": "Inference",
@@ -1084,9 +1084,39 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                         "value": "does not affect error messages within properties of an object",
                         "warning": true
                     }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": ""
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "describe"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ", "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "message"
+                    },
+                    {
+                        "kind": "text",
+                        "value": " and "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "label"
+                    },
+                    {
+                        "kind": "text",
+                        "value": " set one key each"
+                    }
                 ]
             ],
-            "example": "const NotOdd = type(\"number % 2\").configure({ description: \"not odd\" })\n// all constraints at the root are affected\nconst odd = NotOdd(3) // must be not odd\nconst nonNumber = NotOdd(\"two\") // must be not odd\n\nconst NotOddBox = type({\n   // we should have referenced notOdd or added meta here\n   notOdd: \"number % 2\",\n// but instead chained from the root object\n}).configure({ description: \"not odd\" })\n// error message at path notOdd is not affected\nconst oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even\n// error message at root is affected, leading to a misleading description\nconst nonObject = NotOddBox(null) // must be not odd"
+            "example": "const Port = type(\"1 <= number.integer <= 65535\").configure({\n    description: \"a port\",\n    examples: [80, 443]\n})\n// ArkErrors: must be a port\nconst zero = Port(0)\n\n// configured on the object, not on port\nconst Server = type({ port: \"number.integer\" }).configure({\n    description: \"a server\"\n})\n// ArkErrors: port must be an integer\nconst halfPort = Server({ port: 1.5 })\n// ArkErrors: must be a server\nconst nonObject = Server(null)"
         },
         {
             "group": "Metadata",
@@ -1160,6 +1190,73 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "example": "const Name = type(\"string >= 1\").message(\"Name is required\")\n// ArkErrors: Name is required\nconst empty = Name(\"\")\n\nconst Password = type(\"string >= 8\").message(\"Use 8 or more characters\", \"minLength\")\n// ArkErrors: Use 8 or more characters\nconst short = Password(\"abc\")\n// ArkErrors: must be a string\nconst nonString = Password(5)"
+        },
+        {
+            "group": "Metadata",
+            "name": "label",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "name the value in its built-in error messages"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "equivalent to `.configure({ label })` (see "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "configure"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ")"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a missing key says it too: `Unit price must be a number (was missing)`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "an error's `path` stays the key, so a form shows it beside its field"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "written as JSON Schema's `title` where none is set"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a message from ",
+                        "warning": true
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "message"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ", a constraint method or config is said as written"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "names only the value it's on, not keys nested in it",
+                        "warning": true
+                    }
+                ]
+            ],
+            "example": "const LineItem = type({\n    unitPriceCents: type(\"number > 0\").label(\"Unit price\"),\n    quantity: type(\"number.integer\").moreThan(0, \"Add at least one\").label(\"Quantity\")\n})\n// ArkErrors: Unit price must be positive\nconst free = LineItem({ unitPriceCents: 0, quantity: 1 })\n// ArkErrors: Unit price must be a number (was missing)\nconst missing = LineItem({ quantity: 1 })\n// ArkErrors: quantity: Add at least one\nconst none = LineItem({ unitPriceCents: 100, quantity: 0 })"
         }
     ],
     "Composition": [
@@ -1244,7 +1341,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ],
             "notes": [],
             "params": [],
-            "example": "// Type<{ rebmun: number }[]>\nconst T = type({ rebmun: \"number\" }).array();"
+            "example": "const User = type({ name: \"string\" })\n// Type<{ name: string }[]>\nconst Users = User.array()"
         },
         {
             "group": "Composition",
@@ -1266,7 +1363,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "params": [],
-            "example": "const Prop = type({ foo: \"number\" })\n// Type<{ bar?: { foo: number } }>\nconst Obj = type({ bar: Prop.optional() })"
+            "example": "const Address = type({ city: \"string\" })\n// Type<{ address?: { city: string } }>\nconst User = type({ address: Address.optional() })"
         },
         {
             "group": "Composition",
@@ -1303,7 +1400,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "value"
             ],
-            "example": "// Type<{ count: Default<number, 0> }>\nconst State = type({ count: type.number.default(0) })\nconst Prop = type({ nested: \"boolean\" })\nconst ForObj = type({\n    key: Prop.default(() => ({ nested: false }))\n})"
+            "example": "const Theme = type(\"'light' | 'dark'\")\nconst Settings = type({\n    // Default<\"light\" | \"dark\", \"light\">\n    theme: Theme.default(\"light\"),\n    tags: type(\"string[]\").default(() => [])\n})\n// { theme: \"light\", tags: [] }\nconst defaults = Settings({})"
         }
     ],
     "Morphs": [
@@ -1348,7 +1445,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "predicate"
             ],
-            "example": "const Palindrome = type(\"string\").narrow(s => s === [...s].reverse().join(\"\"))\n\nconst ThisYear = type(\"string.date.parse\").narrow((date, ctx) =>\n\t\tdate.getFullYear() === new Date().getFullYear() || ctx.mustBe(\"the current year\")\n)\n// Type<`${string}.tsx`>\nconst WithPredicate = type(\"string\").narrow((s): s is `${string}.tsx` => s.endsWith(\".tsx\"))"
+            "example": "const Palindrome = type(\"string\").narrow(s => s === [...s].reverse().join(\"\"))\n\nconst ThisYear = type(\"string.date.parse\").narrow(\n    (date, ctx) =>\n        date.getFullYear() === new Date().getFullYear() ||\n        ctx.mustBe(\"in the current year\")\n)\n// Type<`${string}.tsx`>\nconst WithPredicate = type(\"string\").narrow((s): s is `${string}.tsx` => s.endsWith(\".tsx\"))"
         },
         {
             "group": "Morphs",
@@ -1412,7 +1509,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "const User = type({ name: \"string\" })\n\n// parse a string and validate the result as a User\nconst parseUser = type(\"string\").pipe(s => JSON.parse(s), User)"
+            "example": "// Type<(In: string) => Out<number>>\nconst length = type(\"string\").pipe(s => s.length)\n\nconst User = type({ name: \"string\" })\n// parse JSON, then validate the result as a User\nconst parseUser = type(\"string.json.parse\").pipe(User)"
         },
         {
             "group": "Morphs",
@@ -1434,7 +1531,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "def"
             ],
-            "example": "// parse a string and validate the result as a user\nconst parseUser = type(\"string\").pipe(s => JSON.parse(s)).to({ name: \"string\" })"
+            "example": "// Type<(In: string) => To<{ name: string }>>\nconst parseUser = type(\"string.json.parse\").to({ name: \"string\" })"
         },
         {
             "group": "Morphs",
@@ -1505,7 +1602,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const EpochMs = codec(\"number.integer\", \"Date\", {\n    decode: n => new Date(n),\n    encode: d => d.getTime()\n})\nconst Event = type({ name: \"string\", at: EpochMs })\n// { name: \"launch\", at: 0 }\nconst encoded = Event.encode({ name: \"launch\", at: new Date(0) })"
+            "example": "import { codec } from \"arktype/codecs\"\n\nconst EpochMs = codec(\"number.integer\", \"Date\", {\n    decode: n => new Date(n),\n    encode: d => d.getTime()\n})\nconst Event = type({ name: \"string\", at: EpochMs })\n// { name: \"launch\", at: 0 }\nconst encoded = Event.encode({ name: \"launch\", at: new Date(0) })"
         }
     ],
     "Comparison": [
@@ -1543,7 +1640,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "def"
             ],
-            "example": "const DivisibleBy6 = type.number.divisibleBy(6).moreThan(0)\n// false (left side must also be positive)\nDivisibleBy6.equals(\"number % 6\")\n// false (right side has an additional <100 constraint)\nconsole.log(DivisibleBy6.equals(\"0 < (number % 6) < 100\"))\nconst ThirdTry = type(\"(number % 2) > 0\").divisibleBy(3)\n// true (types are normalized and reduced)\nconsole.log(DivisibleBy6.equals(ThirdTry))"
+            "example": "const DivisibleBy6 = type.number.divisibleBy(6).moreThan(0)\n// false (left side must also be positive)\nDivisibleBy6.equals(\"number % 6\")\n// false (right side has an additional <100 constraint)\nDivisibleBy6.equals(\"0 < (number % 6) < 100\")\n// true (types are normalized and reduced)\nDivisibleBy6.equals(type(\"(number % 2) > 0\").divisibleBy(3))"
         },
         {
             "group": "Comparison",
@@ -1708,15 +1805,15 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "extract branches "
+                    "value": "extract each branch that "
+                },
+                {
+                    "kind": "reference",
+                    "value": "extends"
                 },
                 {
                     "kind": "text",
-                    "value": "`extend`"
-                },
-                {
-                    "kind": "text",
-                    "value": "ing the parsed Type"
+                    "value": " the parsed Type"
                 }
             ],
             "notes": [],
@@ -1731,15 +1828,15 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "exclude branches "
+                    "value": "exclude each branch that "
+                },
+                {
+                    "kind": "reference",
+                    "value": "extends"
                 },
                 {
                     "kind": "text",
-                    "value": "`extend`"
-                },
-                {
-                    "kind": "text",
-                    "value": "ing the parsed Type"
+                    "value": " the parsed Type"
                 }
             ],
             "notes": [],
@@ -1756,14 +1853,14 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Get the `Type` of a property of this `Type<object>`."
+                    "value": "the Type at a key, or at a path of up to three keys"
                 }
             ],
             "notes": [],
             "params": [
                 "k1"
             ],
-            "example": "type({ foo: \"string\" }).get(\"foo\") // Type<string>"
+            "example": "const User = type({ name: \"string\", address: { city: \"string\" } })\n// Type<string>\nconst City = User.get(\"address\", \"city\")"
         },
         {
             "group": "Objects",
@@ -1771,7 +1868,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Create a copy of this `Type` with only the specified properties."
+                    "value": "copy with only the given keys"
                 }
             ],
             "notes": [
@@ -1795,7 +1892,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "keys"
             ],
-            "example": "type({ foo: \"string\", bar: \"number\" }).pick(\"foo\") // Type<{ foo: string }>"
+            "example": "const User = type({ id: \"string\", name: \"string\", email: \"string.email\" })\n// Type<{ name: string; email: string }>\nconst Contact = User.pick(\"name\", \"email\")"
         },
         {
             "group": "Objects",
@@ -1803,7 +1900,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Create a copy of this `Type` with all properties except the specified ones."
+                    "value": "copy without the given keys"
                 }
             ],
             "notes": [
@@ -1827,7 +1924,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "keys"
             ],
-            "example": "type({ foo: \"string\", bar: \"number\" }).omit(\"foo\") // Type<{ bar: number }>"
+            "example": "const User = type({ id: \"string\", name: \"string\", email: \"string.email\" })\n// Type<{ name: string; email: string }>\nconst NewUser = User.omit(\"id\")"
         },
         {
             "group": "Objects",
@@ -1835,7 +1932,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Merge another `Type` definition, overriding properties of this `Type` with the duplicate keys."
+                    "value": "copy with another object's keys, its value winning where both have one"
                 }
             ],
             "notes": [
@@ -1859,7 +1956,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "def"
             ],
-            "example": "type({ a: \"1\", b: \"2\" }).merge({ b: \"3\", c: \"4\" }) // Type<{ a: 1; b: 3; c: 4 }>"
+            "example": "const Member = type({ name: \"string\", role: \"'guest' | 'member'\" })\n// Type<{ name: string; role: \"admin\"; since: Date }>\nconst Admin = Member.merge({ role: \"'admin'\", since: \"Date\" })"
         },
         {
             "group": "Objects",
@@ -1867,7 +1964,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Create a copy of this `Type` with all properties required."
+                    "value": "copy with every key required"
                 }
             ],
             "notes": [
@@ -1895,7 +1992,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "params": [],
-            "example": "const T = type({ \"foo?\": \"string\" }).required() // Type<{ foo: string }>"
+            "example": "const Draft = type({ \"title?\": \"string\", \"body?\": \"string\" })\n// Type<{ title: string; body: string }>\nconst Post = Draft.required()"
         },
         {
             "group": "Objects",
@@ -1903,7 +2000,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Create a copy of this `Type` with all properties optional."
+                    "value": "copy with every key optional"
                 }
             ],
             "notes": [
@@ -1931,7 +2028,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "params": [],
-            "example": "const T = type({ foo: \"string\" }).partial() // Type<{ foo?: string }>"
+            "example": "const User = type({ name: \"string\", email: \"string.email\" })\n// Type<{ name?: string; email?: string }>\nconst UserPatch = User.partial()"
         },
         {
             "group": "Objects",
@@ -1939,10 +2036,16 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "Create a copy of this `Type` with each of its properties transformed by\nthe provided function. Return `[]` to remove a property."
+                    "value": "copy with each property transformed by a function"
                 }
             ],
             "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "return `[]` to remove a property, or an array to replace it with several"
+                    }
+                ],
                 [
                     {
                         "kind": "noteStart",
@@ -1963,7 +2066,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "flatMapEntry"
             ],
-            "example": "type({ foo: \"string\" }).map(prop => ({ key: prop.key, value: prop.value.or(\"null\") })) // Type<{ foo: string | null }>"
+            "example": "const User = type({ name: \"string\", email: \"string.email\" })\n// Type<{ name: string | null; email: string | null }>\nconst Nullable = User.map(prop => ({ key: prop.key, value: prop.value.or(\"null\") }))"
         },
         {
             "group": "Objects",
@@ -1971,11 +2074,11 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "List of property info of this `Type<object>`."
+                    "value": "each property's kind, key, value and default"
                 }
             ],
             "notes": [],
-            "example": "type({ foo: \"string = 'x'\" }).props // [{ kind: \"optional\", key: \"foo\", value: Type<string>, default: \"x\" }]"
+            "example": "const Settings = type({ theme: \"'light' | 'dark' = 'light'\" })\n// [{ kind: \"optional\", key: \"theme\", value: Type<\"light\" | \"dark\">, default: \"light\" }]\nconst props = Settings.props"
         },
         {
             "group": "Objects",

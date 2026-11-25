@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type, type ArkErrors, type Locale } from "arktype"
+import { messageIn, scope, type, type ArkErrors, type Locale } from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 import { de } from "arktype/locales/de"
 import { en } from "arktype/locales/en"
@@ -405,6 +405,42 @@ Wert an ["a b"]: Bitte eine gültige E-Mail-Adresse eingeben`)
 			.snap(`name („Name“) muss eine Zeichenkette sein
 email („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben
 emails[0] („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben`)
+	})
+
+	it("writes a label as its message's subject, in place of the key it names", () => {
+		const Preis = type("number > 0").label("Stückpreis")
+		const Order = type({
+			billing: { unitPriceCents: Preis },
+			prices: Preis.array(),
+			// a title follows its path, a label replaces its key
+			name: type("string").configure({
+				title: "Name",
+				label: "Vollständiger Name"
+			})
+		})
+		const out = Order({
+			billing: {},
+			prices: [0],
+			name: 1
+		}) as ArkErrors
+		attest(out.issues.map(e => messageIn(e, de))).snap([
+			"Stückpreis fehlt (muss eine Zahl sein)",
+			"Stückpreis muss positiv sein",
+			"Vollständiger Name muss eine Zeichenkette sein"
+		])
+		attest(out.summaryIn(de))
+			.snap(`billing: Stückpreis fehlt (muss eine Zahl sein)
+prices[0]: Stückpreis muss positiv sein
+Vollständiger Name muss eine Zeichenkette sein`)
+	})
+
+	it("lists a labeled branch's error by its label", () => {
+		const T = type({ email: type("string").label("E-Mail") }).or({
+			phone: "number"
+		})
+		attest((T({ email: 1, phone: "1" }) as ArkErrors).summaryIn(de)).snap(
+			"E-Mail muss eine Zeichenkette sein oder phone muss eine Zahl sein"
+		)
 	})
 
 	it("writes a custom message after a colon unless it begins as its own", () => {

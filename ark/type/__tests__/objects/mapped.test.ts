@@ -93,6 +93,7 @@ contextualize(() => {
 			filter: Base,
 			get: Base,
 			keyof: Base,
+			label: Base,
 			map: Base,
 			merge: Base,
 			message: Base,
@@ -127,6 +128,7 @@ contextualize(() => {
 			filter: [Base, ":", filterFn],
 			get: "1",
 			keyof: "'base'",
+			label: Base.label(""),
 			map: { base: "2" },
 			merge: { base: "1", merge: "1" },
 			message: Base.message(""),
@@ -179,6 +181,11 @@ contextualize(() => {
 					return {
 						key: prop.key,
 						value: prop.value.message("")
+					}
+				case "label":
+					return {
+						key: prop.key,
+						value: prop.value.label("")
 					}
 				case "exclude":
 					return {

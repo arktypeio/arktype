@@ -95,7 +95,6 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * 🔗 alias of {@link infer}
 	 * @typeonly
 	 *
-	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type ParsedNumber = typeof parseNumber.inferOut // number
@@ -119,11 +118,11 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * // with a standard user-defined morph, TypeScript can infer a
 	 * // return type from your function, but we have no way to
 	 * // know the shape at runtime
-	 * type MorphOut = typeof Morphed.inferIntrospectableOut  // unknown
+	 * type MorphOut = typeof Morphed.inferIntrospectableOut // unknown
 	 *
 	 * const Validated = type("string").pipe(s => s.length).to("number")
 	 * // morphs with validated output, including all morph keywords, are introspectable
-	 * type ValidatedMorphOut = typeof Validated.inferIntrospectableOut
+	 * type ValidatedMorphOut = typeof Validated.inferIntrospectableOut // number
 	 */
 	inferIntrospectableOut: distill.introspectable.Out<t>
 
@@ -217,22 +216,24 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * #### add metadata to shallow references
 	 *
 	 * ⚠️ does not affect error messages within properties of an object
+	 * 🔗 {@link describe}, {@link message} and {@link label} set one key each
 	 *
 	 * @example
-	 * const NotOdd = type("number % 2").configure({ description: "not odd" })
-	 * // all constraints at the root are affected
-	 * const odd = NotOdd(3) // must be not odd
-	 * const nonNumber = NotOdd("two") // must be not odd
+	 * const Port = type("1 <= number.integer <= 65535").configure({
+	 *     description: "a port",
+	 *     examples: [80, 443]
+	 * })
+	 * // ArkErrors: must be a port
+	 * const zero = Port(0)
 	 *
-	 * const NotOddBox = type({
-	 *    // we should have referenced notOdd or added meta here
-	 *    notOdd: "number % 2",
-	 * // but instead chained from the root object
-	 * }).configure({ description: "not odd" })
-	 * // error message at path notOdd is not affected
-	 * const oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even
-	 * // error message at root is affected, leading to a misleading description
-	 * const nonObject = NotOddBox(null) // must be not odd
+	 * // configured on the object, not on port
+	 * const Server = type({ port: "number.integer" }).configure({
+	 *     description: "a server"
+	 * })
+	 * // ArkErrors: port must be an integer
+	 * const halfPort = Server({ port: 1.5 })
+	 * // ArkErrors: must be a server
+	 * const nonObject = Server(null)
 	 */
 	configure: NodeSelector.SelectableFn<TypeMeta.MappableInput, this>
 
@@ -271,6 +272,30 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	message: NodeSelector.SelectableFn<MessageConfig, this>
 
 	/**
+	 * #### name the value in its built-in error messages
+	 *
+	 * 🔗 equivalent to `.configure({ label })` (see {@link configure})
+	 * ✅ a missing key says it too: `Unit price must be a number (was missing)`
+	 * ✅ an error's `path` stays the key, so a form shows it beside its field
+	 * ✅ written as JSON Schema's `title` where none is set
+	 * ⚠️ a message from {@link message}, a constraint method or config is said as written
+	 * ⚠️ names only the value it's on, not keys nested in it
+	 *
+	 * @example
+	 * const LineItem = type({
+	 *     unitPriceCents: type("number > 0").label("Unit price"),
+	 *     quantity: type("number.integer").moreThan(0, "Add at least one").label("Quantity")
+	 * })
+	 * // ArkErrors: Unit price must be positive
+	 * const free = LineItem({ unitPriceCents: 0, quantity: 1 })
+	 * // ArkErrors: Unit price must be a number (was missing)
+	 * const missing = LineItem({ quantity: 1 })
+	 * // ArkErrors: quantity: Add at least one
+	 * const none = LineItem({ unitPriceCents: 100, quantity: 0 })
+	 */
+	label: NodeSelector.SelectableFn<string, this>
+
+	/**
 	 * #### apply undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
@@ -288,9 +313,9 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * #### alias for {@link assert} with typed input
 	 *
 	 * @example
-	 * const T = type({ foo: "string" });
+	 * const User = type({ name: "string" })
 	 * // TypeScript: Type 'number' is not assignable to type 'string'
-	 * const data = T.from({ foo: 5 });
+	 * const user = User.from({ name: 5 })
 	 */
 	from(literal: this["inferIn"]): this["infer"]
 
@@ -366,6 +391,8 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * ⚠️ requires `import "arktype/codecs"`, and throws if a morph has no inverse
 	 *
 	 * @example
+	 * import { codec } from "arktype/codecs"
+	 *
 	 * const EpochMs = codec("number.integer", "Date", {
 	 *     decode: n => new Date(n),
 	 *     encode: d => d.getTime()
@@ -396,8 +423,9 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * #### an array of this
 	 *
 	 * @example
-	 * // Type<{ rebmun: number }[]>
-	 * const T = type({ rebmun: "number" }).array();
+	 * const User = type({ name: "string" })
+	 * // Type<{ name: string }[]>
+	 * const Users = User.array()
 	 */
 	array(): ArrayType<t[], $>
 
@@ -407,9 +435,9 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * @chainedDefinition
 	 *
 	 * @example
-	 * const Prop = type({ foo: "number" })
-	 * // Type<{ bar?: { foo: number } }>
-	 * const Obj = type({ bar: Prop.optional() })
+	 * const Address = type({ city: "string" })
+	 * // Type<{ address?: { city: string } }>
+	 * const User = type({ address: Address.optional() })
 	 */
 	optional(): [this, "?"]
 
@@ -421,12 +449,14 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * @chainedDefinition
 	 *
 	 * @example
-	 * // Type<{ count: Default<number, 0> }>
-	 * const State = type({ count: type.number.default(0) })
-	 * const Prop = type({ nested: "boolean" })
-	 * const ForObj = type({
-	 *     key: Prop.default(() => ({ nested: false }))
+	 * const Theme = type("'light' | 'dark'")
+	 * const Settings = type({
+	 *     // Default<"light" | "dark", "light">
+	 *     theme: Theme.default("light"),
+	 *     tags: type("string[]").default(() => [])
 	 * })
+	 * // { theme: "light", tags: [] }
+	 * const defaults = Settings({})
 	 */
 	default<const value extends defaultFor<this["inferIn"]>>(
 		value: value
@@ -469,8 +499,10 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * @example
 	 * const Palindrome = type("string").narrow(s => s === [...s].reverse().join(""))
 	 *
-	 * const ThisYear = type("string.date.parse").narrow((date, ctx) =>
-	 *		date.getFullYear() === new Date().getFullYear() || ctx.mustBe("the current year")
+	 * const ThisYear = type("string.date.parse").narrow(
+	 *     (date, ctx) =>
+	 *         date.getFullYear() === new Date().getFullYear() ||
+	 *         ctx.mustBe("in the current year")
 	 * )
 	 * // Type<`${string}.tsx`>
 	 * const WithPredicate = type("string").narrow((s): s is `${string}.tsx` => s.endsWith(".tsx"))
@@ -494,10 +526,12 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * #### pipe output through arbitrary transformations or other Types
 	 *
 	 * @example
-	 * const User = type({ name: "string" })
+	 * // Type<(In: string) => Out<number>>
+	 * const length = type("string").pipe(s => s.length)
 	 *
-	 * // parse a string and validate the result as a User
-	 * const parseUser = type("string").pipe(s => JSON.parse(s), User)
+	 * const User = type({ name: "string" })
+	 * // parse JSON, then validate the result as a User
+	 * const parseUser = type("string.json.parse").pipe(User)
 	 */
 	pipe: ChainedPipeParser<$, t>
 
@@ -507,8 +541,8 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * 🔗 `to({ name: "string" })` is equivalent to `.pipe(type({ name: "string" }))`
 	 *
 	 * @example
-	 * // parse a string and validate the result as a user
-	 * const parseUser = type("string").pipe(s => JSON.parse(s)).to({ name: "string" })
+	 * // Type<(In: string) => To<{ name: string }>>
+	 * const parseUser = type("string.json.parse").to({ name: "string" })
 	 */
 	to<const def, r = instantiateType<inferPipe<t, inferDefinition<def, $>>, $>>(
 		def: type.validate<def, $>
@@ -605,10 +639,9 @@ interface Type<out t = unknown, in out $ = {}>
 	 * // false (left side must also be positive)
 	 * DivisibleBy6.equals("number % 6")
 	 * // false (right side has an additional <100 constraint)
-	 * console.log(DivisibleBy6.equals("0 < (number % 6) < 100"))
-	 * const ThirdTry = type("(number % 2) > 0").divisibleBy(3)
+	 * DivisibleBy6.equals("0 < (number % 6) < 100")
 	 * // true (types are normalized and reduced)
-	 * console.log(DivisibleBy6.equals(ThirdTry))
+	 * DivisibleBy6.equals(type("(number % 2) > 0").divisibleBy(3))
 	 */
 	equals<const def>(def: type.validate<def, $>): boolean
 
@@ -668,7 +701,7 @@ interface Type<out t = unknown, in out $ = {}>
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
 	/**
-	 * #### extract branches {@link extend}ing the parsed Type
+	 * #### extract each branch that {@link extends} the parsed Type
 	 *
 	 * @example
 	 * // Type<true | 0 | 2>
@@ -682,10 +715,9 @@ interface Type<out t = unknown, in out $ = {}>
 	): r extends infer _ extends r ? _ : never
 
 	/**
-	 * #### exclude branches {@link extend}ing the parsed Type
+	 * #### exclude each branch that {@link extends} the parsed Type
 	 *
 	 * @example
-	 *
 	 * // Type<false | 'one' | bigint>
 	 * const T = type("boolean | 0 | 'one' | 2 | bigint").exclude("number | 0n | true")
 	 */

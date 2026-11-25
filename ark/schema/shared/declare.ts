@@ -13,6 +13,12 @@ export interface DefaultArkEnv {
 
 interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	alias?: string
+	/**
+	 * what an error's default message calls the value, e.g. "Unit price" for
+	 * "Unit price must be positive", in place of the key a summary writes
+	 * before it. JSON Schema's `title` where none is set
+	 */
+	label?: string
 	/** the flat alias of the builtin keyword whose phrase describes this node */
 	keyword?: string
 	/** the JSON Schema to write for this node in place of the one its constraints imply */

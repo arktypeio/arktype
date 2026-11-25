@@ -42,8 +42,12 @@ interface Type<out t extends object = object, in out $ = {}>
 	keyof(): instantiateType<arkKeyOf<t>, $>
 
 	/**
-	 * Get the `Type` of a property of this `Type<object>`.
-	 * @example type({ foo: "string" }).get("foo") // Type<string>
+	 * #### the Type at a key, or at a path of up to three keys
+	 *
+	 * @example
+	 * const User = type({ name: "string", address: { city: "string" } })
+	 * // Type<string>
+	 * const City = User.get("address", "city")
 	 */
 	get<const k1 extends arkIndexableOf<t>, r = instantiateType<gotAt<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
@@ -73,13 +77,16 @@ interface Type<out t extends object = object, in out $ = {}>
 	): r extends infer _ ? _ : never
 
 	/**
-	 * Create a copy of this `Type` with only the specified properties.
+	 * #### copy with only the given keys
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
 	 *
-	 * @example type({ foo: "string", bar: "number" }).pick("foo") // Type<{ foo: string }>
+	 * @example
+	 * const User = type({ id: "string", name: "string", email: "string.email" })
+	 * // Type<{ name: string; email: string }>
+	 * const Contact = User.pick("name", "email")
 	 */
 	pick<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
@@ -91,13 +98,16 @@ interface Type<out t extends object = object, in out $ = {}>
 	>
 
 	/**
-	 * Create a copy of this `Type` with all properties except the specified ones.
+	 * #### copy without the given keys
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
 	 *
-	 * @example type({ foo: "string", bar: "number" }).omit("foo") // Type<{ bar: number }>
+	 * @example
+	 * const User = type({ id: "string", name: "string", email: "string.email" })
+	 * // Type<{ name: string; email: string }>
+	 * const NewUser = User.omit("id")
 	 */
 	omit<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
@@ -109,13 +119,16 @@ interface Type<out t extends object = object, in out $ = {}>
 	>
 
 	/**
-	 * Merge another `Type` definition, overriding properties of this `Type` with the duplicate keys.
+	 * #### copy with another object's keys, its value winning where both have one
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
 	 *
-	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1; b: 3; c: 4 }>
+	 * @example
+	 * const Member = type({ name: "string", role: "'guest' | 'member'" })
+	 * // Type<{ name: string; role: "admin"; since: Date }>
+	 * const Admin = Member.merge({ role: "'admin'", since: "Date" })
 	 */
 	merge<
 		const def,
@@ -131,42 +144,49 @@ interface Type<out t extends object = object, in out $ = {}>
 	): r extends infer _ ? _ : never
 
 	/**
-	 * Create a copy of this `Type` with all properties required.
+	 * #### copy with every key required
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
-	 *
 	 * 🔗 like TS's `Required`, an array or tuple base is preserved and
 	 * applied to its elements, e.g. `type(["string", "number"]).required()`
 	 *
-	 * @example const T = type({ "foo?": "string" }).required() // Type<{ foo: string }>
+	 * @example
+	 * const Draft = type({ "title?": "string", "body?": "string" })
+	 * // Type<{ title: string; body: string }>
+	 * const Post = Draft.required()
 	 */
 	required(): instantiateType<show<required<t>>, $>
 
 	/**
-	 * Create a copy of this `Type` with all properties optional.
+	 * #### copy with every key optional
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
-	 *
 	 * 🔗 like TS's `Partial`, an array or tuple base is preserved and
 	 * applied to its elements, e.g. `type(["string", "number"]).partial()`
 	 *
-	 * @example const T = type({ foo: "string" }).partial() // Type<{ foo?: string }>
+	 * @example
+	 * const User = type({ name: "string", email: "string.email" })
+	 * // Type<{ name?: string; email?: string }>
+	 * const UserPatch = User.partial()
 	 */
 	partial(): instantiateType<{ [k in keyof t]?: t[k] }, $>
 
 	/**
-	 * Create a copy of this `Type` with each of its properties transformed by
-	 * the provided function. Return `[]` to remove a property.
+	 * #### copy with each property transformed by a function
 	 *
+	 * ✅ return `[]` to remove a property, or an array to replace it with several
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
 	 *
-	 * @example type({ foo: "string" }).map(prop => ({ key: prop.key, value: prop.value.or("null") })) // Type<{ foo: string | null }>
+	 * @example
+	 * const User = type({ name: "string", email: "string.email" })
+	 * // Type<{ name: string | null; email: string | null }>
+	 * const Nullable = User.map(prop => ({ key: prop.key, value: prop.value.or("null") }))
 	 */
 	map<
 		transformed extends listable<MappedTypeProp>,
@@ -177,8 +197,12 @@ interface Type<out t extends object = object, in out $ = {}>
 	): r extends infer _ ? _ : never
 
 	/**
-	 * List of property info of this `Type<object>`.
-	 * @example type({ foo: "string = 'x'" }).props // [{ kind: "optional", key: "foo", value: Type<string>, default: "x" }]
+	 * #### each property's kind, key, value and default
+	 *
+	 * @example
+	 * const Settings = type({ theme: "'light' | 'dark' = 'light'" })
+	 * // [{ kind: "optional", key: "theme", value: Type<"light" | "dark">, default: "light" }]
+	 * const props = Settings.props
 	 */
 	// readonly [] rather than @ark/util's array, which a consumer's emitted
 	// declarations could only name through arktype/internal

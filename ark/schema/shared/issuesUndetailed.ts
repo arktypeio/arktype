@@ -109,6 +109,12 @@ export const codedIssue = <issue extends ArkIssue>(issue: issue): issue => issue
 
 export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue => copy
 
+// no label is written where no message is
+export const labeledIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	issue
+
+export const labeledPathOf = pathOf
+
 // what arktype's Apply reports into a piped ctx, replaced by the root issue
 const issueOf = (path: PropertyKey[]): ArkIssue => ({
 	code: "predicate",

@@ -34,6 +34,9 @@ export const failsInBranches: boolean = true
 /** a union told apart by a key holding a boolean */
 export const discriminatesBooleans: boolean = true
 
+/** an issue whose message names its value by a label, set by `.label()` */
+export const labelsValues: boolean = true
+
 /** an errors object's `summary` */
 export const readsSummary: boolean = true
 

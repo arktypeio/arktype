@@ -477,6 +477,10 @@ export abstract class BaseRoot<
 		return this.configure({ message }, selector)
 	}
 
+	label(label: string, selector: NodeSelector = "shallow"): this {
+		return this.configure({ label }, selector)
+	}
+
 	// these should ideally be implemented in arktype since they use its syntax
 	// https://github.com/arktypeio/arktype/issues/1223
 	optional(): [this, "?"] {

@@ -836,7 +836,13 @@ const snapshotPlainMeta = (
 		return
 	const copy: Record<string, string> = {}
 	for (const k of Object.keys(meta)) {
-		if (k !== "description" && k !== "expected" && k !== "title") return
+		if (
+			k !== "description" &&
+			k !== "expected" &&
+			k !== "title" &&
+			k !== "label"
+		)
+			return
 		const v = (meta as Record<string, unknown>)[k]
 		if (typeof v !== "string") return
 		copy[k] = v
@@ -912,6 +918,10 @@ const deferredMethods: Dict<
 	describe: (d, [description, selector]) =>
 		typeof description === "string" && selector === undefined ?
 			metaFacts(d, { description })
+		:	undefined,
+	label: (d, [label, selector]) =>
+		typeof label === "string" && selector === undefined ?
+			metaFacts(d, { label })
 		:	undefined,
 	configure: (d, args) => {
 		if (args[1] !== undefined) return
