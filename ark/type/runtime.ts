@@ -207,7 +207,7 @@ export interface ValidatorAttributes {
 export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // each precompiled module imports it, so another version's runtime fails to link
-export const precompiledForArktype_3_0_0_rc_5 = true
+export const precompiledForArktype_3_0_0_rc_6 = true
 
 // captured at load so a program can't replace them; each alone to tree-shake
 export const assign = /* @__PURE__ */ (() => Object.assign)()
