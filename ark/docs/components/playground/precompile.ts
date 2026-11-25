@@ -7,6 +7,7 @@ import { proveFunction } from "@ark/aot/internal/proofs.ts"
 import { combinesChecks } from "@ark/aot/internal/smaller.ts"
 import {
 	arkKindOf,
+	dropsReportKeys,
 	printable,
 	readsOnlyData,
 	returnsReports,
@@ -146,7 +147,8 @@ const holeNamerOf =
 			proveFunction(f, site.node as never, true, {
 				readsOnlyData,
 				returnsReports,
-				testsOrRejects
+				testsOrRejects,
+				dropsReportKeys
 			})
 		}
 		return Object.defineProperty(f, "name", { value: holeNameAt(site) })

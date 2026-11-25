@@ -16,7 +16,10 @@ import {
 	type UnionSite
 } from "@ark/schema/internal"
 import {
+	type DroppedReportKeys,
+	dropsReportKeys,
 	type Fn,
+	functionNameOf,
 	hasDomain,
 	isDotAccessible,
 	readsOnlyData,
@@ -62,6 +65,7 @@ export const assertDescribed = (root: BaseRoot): void => {
 			if (reason) throwParseError(writeUnprecompilableMessage(reason))
 		}
 	}
+	if (raisable === "any") assertKeepsReportKeys(root)
 	for (const node of writtenSelectedOf(rootUnitsOf(root), isUnion)) {
 		for (const k of describingKeys) {
 			if (k !== "actual" && typeof node.meta[k] === "function") {
@@ -74,6 +78,41 @@ export const assertDescribed = (root: BaseRoot): void => {
 		}
 	}
 }
+
+// a key a narrow or morph passes its ctx's reject() or error(), which arktype's
+// error keeps, would be on it in development and gone from it in production
+const assertKeepsReportKeys = (root: BaseRoot): void => {
+	for (const unit of rootUnitsOf(root)) {
+		for (const node of unit.declared) {
+			const fns =
+				node.is("predicate") ? [node.predicate]
+				: node.is("morph") ? node.morphs
+				: []
+			for (const fn of fns) {
+				const dropped =
+					typeof fn === "function" ? dropsReportKeys.get(fn) : undefined
+				if (dropped) {
+					throwParseError(
+						writeUnprecompilableMessage(writeDroppedKeys(fn, dropped))
+					)
+				}
+			}
+		}
+	}
+}
+
+const listed = (items: readonly string[]): string =>
+	items.length > 1 ?
+		`${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`
+	:	items[0]
+
+// e.g. "the `flags` key isUnique passes to ctx.reject()", whose name the build
+// prints as the function's source
+const writeDroppedKeys = (
+	fn: Function,
+	{ methods, keys }: DroppedReportKeys
+): string =>
+	`the ${listed(keys.map(k => `\`${k}\``))} ${keys.length > 1 ? "keys" : "key"} \`${functionNameOf(fn)}\` passes to ${listed(methods.map(method => `ctx.${method}()`))}`
 
 const raisableCodesByRoot = new WeakMap<BaseRoot, "any" | Set<ArkErrorCode>>()
 

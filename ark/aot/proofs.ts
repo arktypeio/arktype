@@ -1,4 +1,4 @@
-import type { Fn, KeySet } from "arktype/util"
+import type { DroppedReportKeys, Fn, KeySet } from "arktype/util"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -297,10 +297,112 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 	return { data, test, message: property.value, fails }
 }
 
+// what a standalone validator's Traversal.raise (ark/schema/shared/traversal.ts)
+// reads of what ctx.reject() or ctx.error() is passed: arktype's error keeps
+// every key it's passed, so a key past these, like `meta` or a code's own
+// `flags`, is on the error in development and gone from it in production.
+// propString is written from path by both, and problem throws in both
+const raisedKeys = new Set([
+	"code",
+	"path",
+	"relativePath",
+	"prefixPath",
+	"data",
+	"expected",
+	"description",
+	"actual",
+	"message",
+	"predicate",
+	"morph",
+	"cause",
+	"propString",
+	"problem"
+])
+
+const reportingMethods = new Set(["reject", "error"])
+
+const keyNameOf = (prop: Node): string | undefined =>
+	prop.type !== "Property" ? undefined
+	: !prop.computed && prop.key.type === "Identifier" ? prop.key.name
+	: prop.key.type === "Literal" ? String(prop.key.value)
+	: undefined
+
+// the keys an input's literal is written with, whichever of two a condition
+// picks. What a spread of anything but a literal or a computed key holds
+// isn't known, and is left to the program as arktype's types leave it
+const addLiteralKeys = (input: Node, keys: Set<string>): void => {
+	const value = unwrapped(input)
+	if (value.type === "ConditionalExpression") {
+		addLiteralKeys(value.consequent, keys)
+		addLiteralKeys(value.alternate, keys)
+	} else if (value.type === "LogicalExpression") {
+		addLiteralKeys(value.left, keys)
+		addLiteralKeys(value.right, keys)
+	} else if (value.type === "ObjectExpression") {
+		for (const prop of value.properties) {
+			if (prop.type === "SpreadElement") addLiteralKeys(prop.argument, keys)
+			else {
+				const name = keyNameOf(prop)
+				if (name !== undefined) keys.add(name)
+			}
+		}
+	}
+}
+
+const bindsName = (fn: FunctionNode, name: string): boolean =>
+	runtimeParamsOf(fn).some(param =>
+		someNode(param, node => node.type === "Identifier" && node.name === name)
+	)
+
+/**
+ * the keys a narrow or morph passes ctx.reject() or ctx.error() as an object
+ * literal that a standalone validator's error leaves out
+ */
+export const droppedReportKeysOf = (
+	fn: FunctionNode
+): DroppedReportKeys | undefined => {
+	const ctx = runtimeParamsOf(fn)[1]
+	if (ctx?.type !== "Identifier") return
+	const methods = new Set<string>()
+	const keys = new Set<string>()
+	const visit = (node: Node): void => {
+		// a function binding its own `ctx` reports to that one
+		if (node !== fn && isFunction(node) && bindsName(node, ctx.name)) return
+		if (node.type === "CallExpression") {
+			const callee = unwrapped(node.callee)
+			if (
+				callee.type === "MemberExpression" &&
+				!callee.computed &&
+				callee.object.type === "Identifier" &&
+				callee.object.name === ctx.name &&
+				reportingMethods.has(callee.property.name) &&
+				node.arguments.length
+			) {
+				const passed = new Set<string>()
+				addLiteralKeys(node.arguments[0], passed)
+				for (const k of passed) {
+					if (raisedKeys.has(k)) continue
+					keys.add(k)
+					methods.add(callee.property.name)
+				}
+			}
+		}
+		for (const k in node) {
+			if (k === "parent") continue
+			const value = node[k as keyof Node] as unknown
+			for (const child of Array.isArray(value) ? value : [value])
+				if (isNode(child)) visit(child)
+		}
+	}
+	if (fn.body) visit(fn.body)
+	return keys.size ? { methods: [...methods], keys: [...keys] } : undefined
+}
+
 export type FunctionProofSets = {
 	readsOnlyData: WeakSet<Fn>
 	returnsReports: WeakSet<Fn>
 	testsOrRejects: WeakSet<Fn>
+	dropsReportKeys: WeakMap<Fn, DroppedReportKeys>
 }
 
 /** notes what a function a build wouldn't run can read, as it's created */
@@ -312,8 +414,12 @@ export const proveFunction = (
 	sets: FunctionProofSets
 ): void => {
 	if (readsOnlyItsArgument(node)) sets.readsOnlyData.add(fn)
-	else if (isStandalone && returnsItsReports(node)) {
-		sets.returnsReports.add(fn)
-		if (rejectingPartsOf(node)) sets.testsOrRejects.add(fn)
+	else if (isStandalone) {
+		if (returnsItsReports(node)) {
+			sets.returnsReports.add(fn)
+			if (rejectingPartsOf(node)) sets.testsOrRejects.add(fn)
+		}
+		const dropped = droppedReportKeysOf(node)
+		if (dropped) sets.dropsReportKeys.set(fn, dropped)
 	}
 }

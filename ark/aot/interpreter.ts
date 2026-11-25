@@ -12,6 +12,7 @@ import {
 	type CacheReach
 } from "arktype/schema"
 import {
+	dropsReportKeys,
 	hasDomain,
 	ParseError,
 	readsOnlyData,
@@ -101,7 +102,8 @@ const proveFunction = (
 	proveFunctionWithSets(fn, node, isStandalone, {
 		readsOnlyData,
 		returnsReports,
-		testsOrRejects
+		testsOrRejects,
+		dropsReportKeys
 	})
 import {
 	isOwnEnumSeed,

@@ -43,6 +43,17 @@ export const returnsReports: WeakSet<Function> = new WeakSet()
 // the test reading no ctx: all its ctx is asked is to reject with that message
 export const testsOrRejects: WeakSet<Function> = new WeakSet()
 
+/** the keys a callback passes its ctx's reject() or error() that a standalone validator's error leaves out */
+export interface DroppedReportKeys {
+	methods: string[]
+	keys: string[]
+}
+
+// callbacks a build read and found pass their ctx's reject() or error() a key
+// a standalone validator's error leaves out, which arktype's error keeps
+export const dropsReportKeys: WeakMap<Function, DroppedReportKeys> =
+	new WeakMap()
+
 export const functionNameOf = (fn: Function): string => fn.name
 
 export const constructorNameOf = (o: object): string | undefined =>
