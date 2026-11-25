@@ -3999,6 +3999,87 @@ try {
 		])
 	})
 
+	// each held a worker thread, about 150 MB, until the process exited,
+	// so a CI shard running a few dozen ran out of memory
+	describe("releases the worker of a compiler that closes", () => {
+		const threadsStatus = "/proc/self/status"
+		const threads = () =>
+			Number(/^Threads:\s+(\d+)/m.exec(readFileSync(threadsStatus, "utf8"))![1])
+		// a worker exits once it answers the close, a moment after the compiler's
+		const settledThreads = async (atMost: number) => {
+			for (let waited = 0; threads() > atMost && waited < 10_000; waited += 50)
+				await new Promise(resolve => setTimeout(resolve, 50))
+			return threads()
+		}
+		for (const [name, compile, plugin] of [
+			["webpack", webpack, precompile.webpack],
+			["Rspack", rspack, precompile.rspack]
+		] as const) {
+			it(`a failing production build on ${name}`, async function () {
+				if (!existsSync(threadsStatus)) this.skip()
+				const root = writeFixture(
+					{
+						"main.ts": `import { type } from "arktype"\nexport const T = type(\`number < \${Math.random()}\`)\n`
+					},
+					tempPath("closedWorker", name)
+				)
+				const build = () => {
+					const compiler = (compile as typeof webpack)({
+						mode: "production",
+						context: root,
+						entry: "./main.ts",
+						target: "node",
+						cache: false,
+						output: { path: join(root, "out") },
+						plugins: [plugin({ cwd: root }) as never]
+					})
+					return new Promise<number>((resolve, reject) =>
+						compiler.run((error, stats) =>
+							compiler.close(() =>
+								error ?
+									reject(error)
+								:	resolve(
+										stats!.toJson({ all: false, errors: true }).errors!.length
+									)
+							)
+						)
+					)
+				}
+				// the first starts the threads every build shares
+				attest(await build()).equals(1)
+				const before = await settledThreads(Infinity)
+				for (let i = 0; i < 3; i++) attest(await build()).equals(1)
+				// threads left once the three closed, none of them a worker
+				const leaked = (await settledThreads(before)) - before
+				attest(Math.max(leaked, 0)).equals(0)
+			})
+		}
+
+		it("a Vite dev server", async function () {
+			if (!existsSync(threadsStatus)) this.skip()
+			const root = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"\nexport const T = type({ a: "string" })\n`
+				},
+				tempPath("closedWorker", "vite")
+			)
+			const serve = async () => {
+				const server = await createServer(viteConfig({ cwd: root }, root))
+				try {
+					// a transform starts its worker
+					return (await server.transformRequest("/main.ts"))!.code.length > 0
+				} finally {
+					await server.close()
+				}
+			}
+			attest(await serve()).equals(true)
+			const before = await settledThreads(Infinity)
+			for (let i = 0; i < 3; i++) attest(await serve()).equals(true)
+			const leaked = (await settledThreads(before)) - before
+			attest(Math.max(leaked, 0)).equals(0)
+		})
+	})
+
 	// TypeScript compiling to CommonJS requires each import where it stands,
 	// where a bundler reading ES modules would have hoisted it
 	describe("a loader compiling TypeScript to CommonJS", () => {

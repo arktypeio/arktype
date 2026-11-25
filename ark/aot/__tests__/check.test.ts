@@ -38,6 +38,29 @@ contextualize(function (this: Mocha.Suite) {
 		])
 	})
 
+	it("accepts reading a validator's errors by path", () => {
+		const root = writeFixture({
+			"main.ts": `import { byAncestorPath, byPath, flatByPath, flatMessagesByPath, messageIn, type } from "arktype"
+const User = type({ name: "string" })
+export const read = (data: unknown) => {
+	const out = User(data)
+	return out instanceof type.errors ?
+			[byPath(out), flatByPath(out), flatMessagesByPath(out), byAncestorPath(out)]
+		:	out
+}
+export const translate = (data: unknown) => {
+	const out = User(data)
+	return out instanceof type.errors ? messageIn(out.issues[0], {} as never) : out
+}
+`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:14  accepted",
+			'main.ts:11:38  messageIn(out.issues[0], {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `out.issues[0].message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.',
+			"1 site in 1 file: 1 accepted (100.0%), 1 error outside a site"
+		])
+	})
+
 	it("checks a fixture as its own project under a directory reading options", () => {
 		// as a temp dir holding a package.json and a config calling the plugin
 		const parent = writeFixture({
