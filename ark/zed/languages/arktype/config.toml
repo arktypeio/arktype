@@ -1,0 +1,6 @@
+# ArkType definitions, injected into TypeScript, TSX and JavaScript (and
+# through them, into every language that embeds those) by their
+# injections.scm. Never a file's own language.
+name = "ArkType"
+grammar = "arktype"
+hidden = true

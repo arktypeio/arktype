@@ -1,0 +1,26 @@
+id = "arktype"
+name = "ArkType"
+description = "Syntax highlighting and inline errors for ArkType definitions"
+version = "0.1.0"
+schema_version = 1
+authors = ["David Blass <david@arktype.io>"]
+repository = "https://github.com/arktypeio/arktype"
+capabilities = [{ kind = "npm:install", package = "@vtsls/language-server" }]
+
+[grammars.arktype]
+repository = "https://github.com/arktypeio/arktype"
+# a commit on main; move it forward to release a grammar change
+rev = "eb24f4af9ae305a3f8dd5a5b951138b9083f4d28"
+path = "ark/tree-sitter"
+
+[language_servers.arktype]
+name = "ArkType"
+languages = ["TypeScript", "TSX", "JavaScript"]
+# replaces vtsls rather than running beside it, so it starts only where
+# `language_servers` names it
+opt_in_languages = ["TypeScript", "TSX", "JavaScript"]
+
+[language_servers.arktype.language_ids]
+"TypeScript" = "typescript"
+"TSX" = "typescriptreact"
+"JavaScript" = "javascript"

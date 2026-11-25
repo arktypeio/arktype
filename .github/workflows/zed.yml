@@ -1,0 +1,53 @@
+name: zed
+
+# ark/zed's tests build Zed's grammars and fetch its queries, so they run here,
+# when the extension or anything it is checked against changes, rather than in
+# every PR's core job (testCore and the other root runs exclude them)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ark/zed/**
+      - ark/tree-sitter/**
+      - ark/editor-conformance/**
+      - ark/extension/**
+      - .github/workflows/zed.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zed-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      # Zed's grammars built to wasm (conformance/zedLanguages.ts pins every
+      # revision) and the WASI SDK tree-sitter builds them with
+      - name: Cache Zed grammars
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            /tmp/ark-zed-conformance
+            ~/.cache/tree-sitter
+          key: zed-grammars-${{ hashFiles('ark/zed/conformance/zedLanguages.ts', 'pnpm-lock.yaml') }}
+
+      - name: Test
+        run: pnpm testZed
+
+      - name: Test the extension's Rust
+        working-directory: ark/zed
+        run: cargo test
