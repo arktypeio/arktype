@@ -4,3 +4,7 @@
 ark/tree-sitter/src/** linguist-generated
 ark/editor-conformance/highlighting/expected/** linguist-generated
 ark/editor-conformance/diagnostics/cases.json linguist-generated
+# cmd.exe needs CRLF to run the Gradle wrapper on Windows
+ark/jetbrains/gradlew.bat text eol=crlf
+# the engine's token goldens, written by ark/jetbrains/scripts/writeGoldens.ts
+ark/jetbrains/core/src/test/resources/golden/** linguist-generated

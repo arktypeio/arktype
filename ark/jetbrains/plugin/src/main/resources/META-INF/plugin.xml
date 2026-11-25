@@ -1,0 +1,36 @@
+<idea-plugin>
+	<id>io.arktype.arktype</id>
+	<name>ArkType</name>
+	<vendor url="https://arktype.io" email="david@arktype.io">ArkType</vendor>
+	<description><![CDATA[
+	<p><a href="https://arktype.io">ArkType</a> syntax highlighting and inline errors, matching the
+	<a href="https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark">VS Code extension</a>:</p>
+	<ul>
+		<li>highlighting for strings in ArkType definitions, in TypeScript, JavaScript, Vue, Svelte, Astro, MDX and
+		Markdown files, from the extension's own TextMate grammar</li>
+		<li>problems shown at the end of the line, shortened to the part of an ArkType error that names the fix, as
+		ErrorLens shows them with the extension</li>
+		<li>completions while typing in a definition's strings</li>
+		<li>an option to keep auto-import from picking <code>os</code>'s <code>type</code> over ArkType's</li>
+	</ul>
+	<p>See <a href="https://arktype.io/docs/editor">arktype.io/docs/editor</a>.</p>
+	]]></description>
+	<depends>com.intellij.modules.platform</depends>
+	<depends>JavaScript</depends>
+
+	<extensions defaultExtensionNs="com.intellij">
+		<!-- every language: definitions in Vue, Svelte, Astro and Markdown files are in embedded code -->
+		<externalAnnotator language="" implementationClass="io.arktype.jetbrains.highlight.ArkTypeHighlightingAnnotator"/>
+		<colorSettingsPage implementation="io.arktype.jetbrains.highlight.ArkTypeColorSettingsPage"/>
+		<completion.confidence language="JavaScript" order="first"
+			implementationClass="io.arktype.jetbrains.completion.ArkTypeCompletionConfidence"/>
+		<applicationConfigurable parentId="tools" id="io.arktype.settings" displayName="ArkType"
+			instance="io.arktype.jetbrains.settings.ArkTypeConfigurable"/>
+		<postStartupActivity implementation="io.arktype.jetbrains.errors.InlineErrorsStartup"/>
+	</extensions>
+
+	<extensions defaultExtensionNs="JavaScript">
+		<importCandidatesFilterFactory id="arktypeAutoImportSpecifierExcludes"
+			implementation="io.arktype.jetbrains.imports.AutoImportSpecifierFilter$Factory"/>
+	</extensions>
+</idea-plugin>

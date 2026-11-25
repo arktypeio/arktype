@@ -27,3 +27,9 @@ ark/docs/public/image/og.png
 ark/docs/public/image/blog
 # the Markdown grammar ark/tree-sitter's tests build, since its package ships no .wasm
 ark/tree-sitter/test/.wasm
+# the JetBrains plugin's Gradle output and caches, see ark/jetbrains
+ark/jetbrains/.gradle
+ark/jetbrains/.kotlin
+ark/jetbrains/.intellijPlatform
+ark/jetbrains/build
+ark/jetbrains/*/build

@@ -552,6 +552,18 @@ importers:
 
   ark/fs: {}
 
+  ark/jetbrains:
+    devDependencies:
+      '@shikijs/engine-oniguruma':
+        specifier: 4.6.0
+        version: 4.6.0
+      '@shikijs/langs':
+        specifier: 4.6.0
+        version: 4.6.0
+      '@shikijs/vscode-textmate':
+        specifier: 10.1.0
+        version: 10.1.0
+
   ark/regex:
     devDependencies:
       '@ark/util':

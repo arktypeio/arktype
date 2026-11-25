@@ -37,6 +37,8 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 `pr.yml` also runs `suggest` (`ark/repo/suggestCiSuites.ts`) on non-fork PRs to post or update a single comment recommending relevant extended suites based on modified folders.
 
+`jetbrains.yml` runs the JetBrains plugin's tests (`./gradlew :core:test :plugin:test :plugin:verifyPlugin` in `ark/jetbrains`) on PRs that change `ark/jetbrains`, `ark/extension` or `ark/editor-conformance`, since the plugin runs the extension's grammar and ErrorLens rules and is checked against the conformance suite.
+
 `nightly.yml` runs the extended suites offloaded from `pr.yml` — OS/Node `compatibility` (`pnpm testRepoCompat`), `history` (`pnpm testHistory --jobs 4`), full `typescript` version matrix, `environments` (Deno, Bun, Chrome, Firefox), and `@ark/aot`'s derived suites (`testDifferential`, `testCache`, `testPerturbation`, `testPrograms`). It runs:
 
 - nightly on `main`. A failing night opens the issue "nightly failing", labelled `nightly`, or comments on it, and the next passing night closes it.

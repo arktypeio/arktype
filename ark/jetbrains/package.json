@@ -1,0 +1,19 @@
+{
+	"name": "@ark/jetbrains",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"scripts": {
+		"build": "echo No build required!",
+		"writeGrammars": "node ./scripts/writeGrammars.ts",
+		"gradle": "./gradlew",
+		"testJetbrains": "./gradlew check",
+		"diffEngine": "node ./scripts/diffEngine.ts",
+		"writeGoldens": "node ./scripts/writeGoldens.ts"
+	},
+	"devDependencies": {
+		"@shikijs/engine-oniguruma": "4.6.0",
+		"@shikijs/langs": "4.6.0",
+		"@shikijs/vscode-textmate": "10.1.0"
+	}
+}

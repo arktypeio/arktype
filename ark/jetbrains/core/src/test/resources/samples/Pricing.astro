@@ -1,0 +1,50 @@
+---
+import { type, scope } from "arktype"
+import Layout from "../layouts/Layout.astro"
+
+interface Props {
+	plans: unknown[]
+}
+
+const Plan = type({
+	name: "string",
+	price: "number >= 0",
+	"features?": "string[]",
+	tier: "'free' | 'pro' | 'team'"
+})
+
+const types = scope({
+	plan: Plan,
+	catalog: "plan[] > 0"
+}).export()
+
+const { plans } = Astro.props
+const catalog = types.catalog(plans)
+const ok = !(catalog instanceof type.errors)
+---
+
+<Layout title="Pricing">
+	<h1 class:list={["title", { error: !ok }]}>Pricing</h1>
+	{ok ? (
+		<ul>
+			{catalog.map(plan => (
+				<li data-tier={plan.tier}>
+					{plan.name}: ${plan.price.toFixed(2)}
+					{plan.features?.length && <small>{plan.features.join(", ")}</small>}
+				</li>
+			))}
+		</ul>
+	) : (
+		<pre>{catalog.summary}</pre>
+	)}
+	<script>
+		import { type } from "arktype"
+		const Click = type({ x: "number", y: "number" })
+		document.addEventListener("click", e => console.log(Click({ x: e.x, y: e.y })))
+	</script>
+</Layout>
+
+<style>
+	h1 { font-size: clamp(1.5rem, 4vw, 3rem); }
+	.error { color: crimson; }
+</style>
