@@ -425,7 +425,11 @@ export class FirstIssueTraversal extends Traversal {
 	}
 }
 
-type SuppliedIssue = {
+// what raise reads of what ctx.reject() or ctx.error() is passed. A build
+// refuses a callback passing another key, which arktype's error would keep and
+// this one drops, so @ark/aot's list of them is checked against this
+/** @internal */
+export type SuppliedIssue = {
 	code?: ArkErrorCode
 	path?: array<PropertyKey>
 	relativePath?: array<PropertyKey>
@@ -437,7 +441,7 @@ type SuppliedIssue = {
 	message?: string
 	morph?: Morph
 	cause?: unknown
-	meta?: { keyword?: string }
+	predicate?: Predicate
 }
 
 // 2.x's slot, which a cast or JavaScript still passes, throws in arktype and

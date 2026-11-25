@@ -470,6 +470,10 @@ const textHints: [
 		`A standalone validator writes what a narrow or morph raises from what it passes to ctx.reject(). Pass the text there, or build with runtime: "arktype".`
 	],
 	[
+		/^the `.+` keys? `.+` passes to ctx\.\w+\(\)/,
+		`A standalone validator's error keeps only the code, path, data, expected and message a narrow or morph raises. Read what the program needs from those, or put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so its errors keep every key.`
+	],
+	[
 		/^`(.+)` is a runtime island's Type, which a precompiled site can't receive$/,
 		name =>
 			`Precompile \`${name}\` too, by removing its // @ark-runtime where the build can, or mark this definition // @ark-runtime as well.`

@@ -1,7 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
-import type { PrecompileOptions } from "@ark/aot"
+import { renderDiagnostic, type PrecompileOptions } from "@ark/aot"
 import type { Type } from "arktype"
-import { analyze, diagnosticsOf, normalized, statusesOf } from "./utils.ts"
+import {
+	analyze,
+	diagnosticsOf,
+	normalized,
+	precompile,
+	statusesOf
+} from "./utils.ts"
 
 const nonStatic = `{
 	let result = "string"
@@ -225,5 +231,103 @@ const D = type({ a: [["string", ":", s => s.length > 0], "=", "a"] })`
 			'10:11 accepted { a: string & fn$hole_#1 = "a" }',
 			'14:11 accepted { a: string & fn$hole_#2 = "a" }'
 		])
+	})
+
+	describe("keys a callback passes ctx.reject() or ctx.error()", () => {
+		const emittedDiagnosticsOf = (source: string, opts?: PrecompileOptions) =>
+			precompile(source, {}, opts).diagnostics.map(renderDiagnostic)
+
+		const dropping = `import { type, type Traversal } from "arktype"
+const FLAG = "dispute"
+const isUnique = (ids: string[], ctx: Traversal) =>
+	new Set(ids).size === ids.length ||
+	ctx.reject({ flags: FLAG, message: "Transaction IDs must be unique" })
+export const Ids = type("string[]").narrow(isUnique)`
+
+		it("refuses a key a standalone validator's error leaves out", () => {
+			attest(emittedDiagnosticsOf(dropping)).snap([
+				'/main.ts:6:20  type("string[]").narrow(isUnique) can\'t be precompiled yet\n  the `flags` key `isUnique` passes to ctx.reject() can\'t be precompiled to a standalone validator\n  A standalone validator\'s error keeps only the code, path, data, expected and message a narrow or morph raises. Read what the program needs from those, or put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so its errors keep every key.'
+			])
+		})
+
+		it("names each key and method a callback drops", () => {
+			attest(
+				emittedDiagnosticsOf(`import { type } from "arktype"
+const base = { meta: { field: "name" } }
+export const Name = type("string").pipe((s, ctx) =>
+	s.length ? s
+	: s === " " ? ctx.reject({ ...{ flags: "i" }, rule: "x" })
+	: ctx.error({ ...base, ["meta"]: {}, message: "Required" })
+)`)
+			).snap([
+				'/main.ts:3:21  type("string").pipe((s, ctx) => s.length ? s : s === " " ? … can\'t be precompiled yet\n  the `flags`, `rule` and `meta` keys `(s, ctx) => s.length ? s : s === " " ? ctx.reject({ ...{ fl…` passes to ctx.reject() and ctx.error() can\'t be precompiled to a standalone validator\n  A standalone validator\'s error keeps only the code, path, data, expected and message a narrow or morph raises. Read what the program needs from those, or put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so its errors keep every key.'
+			])
+		})
+
+		it("refuses meta and a custom error's code context", () => {
+			attest(
+				emittedDiagnosticsOf(`import { type } from "arktype"
+export const A = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ code: "pattern", flags: "i", meta: { field: "s" } }))
+export const B = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ code: "predicate", flags: "i" }))`).map(
+					d => d.split("\n")[1]
+				)
+			).snap([
+				'  the `meta` key `(s, ctx) => s.length > 0 || ctx.reject({ code: "pattern", f…` passes to ctx.reject() can\'t be precompiled to a standalone validator',
+				'  the `flags` key `(s, ctx) => s.length > 0 || ctx.reject({ code: "predicate",…` passes to ctx.reject() can\'t be precompiled to a standalone validator'
+			])
+		})
+
+		it("reads each object a condition picks", () => {
+			attest(
+				emittedDiagnosticsOf(`import { type } from "arktype"
+export const Even = type("number").narrow((n, ctx) =>
+	n % 2 === 0 || ctx.reject(n > 0 ? { message: "odd" } : { message: "negative", severity: 1 })
+)`).map(d => d.split("\n")[1])
+			).snap([
+				"  the `severity` key `(n, ctx) => n % 2 === 0 || ctx.reject(n > 0 ? { message: \"o…` passes to ctx.reject() can't be precompiled to a standalone validator"
+			])
+		})
+
+		it("accepts the keys a standalone validator's error is written from", () => {
+			attest(
+				emittedDiagnosticsOf(`import { type } from "arktype"
+export const A = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ message: "Required" }))
+export const B = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ expected: "non-empty" }))
+export const C = type({ a: "string" }).narrow((o, ctx) => o.a !== "" || ctx.reject({ path: ["a"], message: "Required" }))
+export const D = type({ a: "string" }).narrow((o, ctx) => o.a !== "" || ctx.reject({ relativePath: ["a"], expected: "non-empty" }))
+export const E = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ code: "predicate", message: "Required" }))
+export const F = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ expected: "non-empty", actual: "empty", description: "text" }))
+export const G = type("string").narrow((s, ctx) => s.length > 0 || ctx.mustBe("non-empty"))
+export const H = type("string").pipe((s, ctx) => (s.length ? s : ctx.error({ prefixPath: ["s"], data: s, message: "Required" })))
+export const I = type("string").pipe((s, ctx) => (s.length ? s : ctx.error("non-empty")))
+// a code's context, which its type requires, is that code's
+export const J = type("string").narrow((s, ctx) => s.length > 1 || ctx.reject({ code: "minLength", rule: 2, description: "at least length 2" }))`)
+			).equals([])
+		})
+
+		it("leaves what it can't read to the program", () => {
+			attest(
+				emittedDiagnosticsOf(`import { type } from "arktype"
+const keyed = "flags"
+const input = (message: string) => ({ flags: 1, message })
+export const A = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject(input("Required")))
+export const B = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ ...input("Required") }))
+export const C = type("string").narrow((s, ctx) => s.length > 0 || ctx.reject({ [keyed]: 1, message: "Required" }))
+// a ctx of its own, which isn't arktype's
+export const D = type("string[]").narrow((ids, ctx) => ids.every(id => [id].some((_, ctx) => ctx.reject({ flags: 1 }))))`)
+			).equals([])
+		})
+
+		it("leaves a runtime island or arktype's runtime its keys", () => {
+			attest(
+				emittedDiagnosticsOf(
+					dropping.replace(
+						"export const Ids",
+						"// @ark-runtime\nexport const Ids"
+					)
+				)
+			).equals([])
+			attest(emittedDiagnosticsOf(dropping, { runtime: "arktype" })).equals([])
+		})
 	})
 })

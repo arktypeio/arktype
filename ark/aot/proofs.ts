@@ -1,4 +1,5 @@
-import type { Fn, KeySet } from "arktype/util"
+import type { SuppliedIssue } from "arktype/schema"
+import type { DroppedReportKeys, Fn, KeySet } from "arktype/util"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -297,10 +298,146 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 	return { data, test, message: property.value, fails }
 }
 
+// what a standalone validator's Traversal.raise reads of what ctx.reject() or
+// ctx.error() is passed, each key of its SuppliedIssue, which a key it starts
+// reading fails to typecheck without: arktype's error keeps every key it's
+// passed, so a key past these, like `meta` or `flags`, is on the error in
+// development and gone from it in production. Written here, not imported, as
+// the drivers load this before checking which arktype they run on
+const suppliedIssueKeys = {
+	code: 1,
+	path: 1,
+	relativePath: 1,
+	prefixPath: 1,
+	data: 1,
+	expected: 1,
+	description: 1,
+	actual: 1,
+	message: 1,
+	morph: 1,
+	cause: 1,
+	predicate: 1
+} satisfies Record<keyof SuppliedIssue, 1>
+
+// propString is written from path by both, and problem throws in both
+const raisedKeys = new Set<string>([
+	...Object.keys(suppliedIssueKeys),
+	"propString",
+	"problem"
+])
+
+const reportingMethods = new Set(["reject", "error"])
+
+const keyNameOf = (prop: Node): string | undefined =>
+	prop.type !== "Property" ? undefined
+	: !prop.computed && prop.key.type === "Identifier" ? prop.key.name
+	: prop.key.type === "Literal" ? String(prop.key.value)
+	: undefined
+
+// each key a literal is written with and what it's set to, through spreads of
+// literals. What a spread of anything else or a computed key holds isn't
+// known, and is left to the program as arktype's types leave it
+const addLiteralEntries = (
+	literal: Node,
+	entries: Map<string, Node | undefined>
+): void => {
+	for (const prop of (literal as Node & { properties: Node[] }).properties) {
+		if (prop.type === "SpreadElement") {
+			const spread = unwrapped(prop.argument)
+			if (spread.type === "ObjectExpression") addLiteralEntries(spread, entries)
+		} else {
+			const name = keyNameOf(prop)
+			if (name !== undefined)
+				entries.set(name, prop.type === "Property" ? prop.value : undefined)
+		}
+	}
+}
+
+// a custom error's own text is all a standalone validator keeps, where a
+// code's context, which its type requires, is that code's, like a minLength
+// error's `rule`. Neither keeps `meta`
+const isCustomCode = (code: Node | undefined): boolean => {
+	const value = code && unwrapped(code)
+	return (
+		!value ||
+		(value.type === "Literal" &&
+			(value.value === "predicate" || value.value === null)) ||
+		(value.type === "Identifier" && value.name === "undefined")
+	)
+}
+
+// the keys an input written as a literal passes that its error drops,
+// whichever of two a condition picks
+const addDroppedKeys = (input: Node, dropped: Set<string>): void => {
+	const value = unwrapped(input)
+	if (value.type === "ConditionalExpression") {
+		addDroppedKeys(value.consequent, dropped)
+		addDroppedKeys(value.alternate, dropped)
+	} else if (value.type === "LogicalExpression") {
+		addDroppedKeys(value.left, dropped)
+		addDroppedKeys(value.right, dropped)
+	} else if (value.type === "ObjectExpression") {
+		const entries = new Map<string, Node | undefined>()
+		addLiteralEntries(value, entries)
+		const isCustom = isCustomCode(entries.get("code"))
+		for (const k of entries.keys())
+			if (k === "meta" || (isCustom && !raisedKeys.has(k))) dropped.add(k)
+	}
+}
+
+const bindsName = (fn: FunctionNode, name: string): boolean =>
+	runtimeParamsOf(fn).some(param =>
+		someNode(param, node => node.type === "Identifier" && node.name === name)
+	)
+
+/**
+ * the keys a narrow or morph passes ctx.reject() or ctx.error() as an object
+ * literal that a standalone validator's error leaves out
+ */
+export const droppedReportKeysOf = (
+	fn: FunctionNode
+): DroppedReportKeys | undefined => {
+	const ctx = runtimeParamsOf(fn)[1]
+	if (ctx?.type !== "Identifier") return
+	const methods = new Set<string>()
+	const keys = new Set<string>()
+	const visit = (node: Node): void => {
+		// a function binding its own `ctx` reports to that one
+		if (node !== fn && isFunction(node) && bindsName(node, ctx.name)) return
+		if (node.type === "CallExpression") {
+			const callee = unwrapped(node.callee)
+			if (
+				callee.type === "MemberExpression" &&
+				!callee.computed &&
+				callee.object.type === "Identifier" &&
+				callee.object.name === ctx.name &&
+				reportingMethods.has(callee.property.name) &&
+				node.arguments.length
+			) {
+				const dropped = new Set<string>()
+				addDroppedKeys(node.arguments[0], dropped)
+				for (const k of dropped) {
+					keys.add(k)
+					methods.add(callee.property.name)
+				}
+			}
+		}
+		for (const k in node) {
+			if (k === "parent") continue
+			const value = node[k as keyof Node] as unknown
+			for (const child of Array.isArray(value) ? value : [value])
+				if (isNode(child)) visit(child)
+		}
+	}
+	if (fn.body) visit(fn.body)
+	return keys.size ? { methods: [...methods], keys: [...keys] } : undefined
+}
+
 export type FunctionProofSets = {
 	readsOnlyData: WeakSet<Fn>
 	returnsReports: WeakSet<Fn>
 	testsOrRejects: WeakSet<Fn>
+	dropsReportKeys: WeakMap<globalThis.Function, DroppedReportKeys>
 }
 
 /** notes what a function a build wouldn't run can read, as it's created */
@@ -312,8 +449,12 @@ export const proveFunction = (
 	sets: FunctionProofSets
 ): void => {
 	if (readsOnlyItsArgument(node)) sets.readsOnlyData.add(fn)
-	else if (isStandalone && returnsItsReports(node)) {
-		sets.returnsReports.add(fn)
-		if (rejectingPartsOf(node)) sets.testsOrRejects.add(fn)
+	else if (isStandalone) {
+		if (returnsItsReports(node)) {
+			sets.returnsReports.add(fn)
+			if (rejectingPartsOf(node)) sets.testsOrRejects.add(fn)
+		}
+		const dropped = droppedReportKeysOf(node)
+		if (dropped) sets.dropsReportKeys.set(fn, dropped)
 	}
 }

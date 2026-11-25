@@ -1,5 +1,9 @@
 # @ark/aot
 
+## 3.0.0-rc.7
+
+A standalone build fails where a narrow or morph passes `ctx.reject()` or `ctx.error()` a key its validator's error leaves out: `meta`, or any key past those it reads where no `code` is passed, as in `ctx.reject({ flags: FLAG, message: "Must be unique." })`. arktype's error keeps every key it's passed, while a standalone validator's is written only from `code`, the path keys, `data`, `expected`, `description`, `actual` and `message`, so a program reading `issue.flags` found it in development and silently didn't in production. A code's own context, like `rule` for `code: "minLength"`, which its type requires, still builds. A runtime island or `runtime: "arktype"` keeps every key, as before.
+
 ## 3.0.0-rc.5
 
 A webpack or Rspack compiler releases its precompiler worker once it closes, and a Vite dev server once it closes. A production build that failed never reached the hook releasing it, and a dev server's never did, so a process running several, like a test runner or a dev server restarting for a changed config, held a worker of about 150 MB for each until it exited.
