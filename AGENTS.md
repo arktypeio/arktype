@@ -21,6 +21,7 @@ pnpm prChecks # lint, build, typecheck and test, except @ark/aot (run before PRs
 pnpm testAot # @ark/aot's tests, which prChecks leaves out, in up to eight shards at once
 pnpm testAot --jobs 4 # in four shards at once; --jobs 1 runs them in one process
 ARK_SHARD=3/8 pnpm testAot # the third of the eight shards CI runs them in
+pnpm testZed # ark/zed's tests, which the root test runs leave out
 ```
 
 Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
@@ -36,6 +37,8 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 - `aot`: `pnpm testAot` in eight shards, one runner each. `ark/repo/testAotShard.ts` deals the test files among them by the seconds `ark/aot/__tests__/timings.json` has for each, heaviest first, and `pnpm testAot --list` prints the result. A file without an entry weighs the median, so a new test file needs none. A file heavier than one shard's share has entries for its heavier top-level `describe`s and one for the rest of its tests, and is divided among shards by `--grep`; a `describe` added to it later runs with the rest. A shard that takes over twice the mean shard's planned seconds times `ARK_SHARD_BUDGET_FACTOR` (4 unless set) fails and says to run `pnpm writeAotTimings`, which runs the tests once and rewrites `timings.json`. Commit the result.
 
 `pr.yml` also runs `suggest` (`ark/repo/suggestCiSuites.ts`) on non-fork PRs to post or update a single comment recommending relevant extended suites based on modified folders.
+
+`zed.yml` runs `pnpm testZed` and the extension's `cargo test` on PRs that touch `ark/zed`, `ark/tree-sitter`, `ark/editor-conformance` or `ark/extension`. They build Zed's grammars and fetch its queries, so `testCore`, `testJitless` and `testTypedLoose` exclude `ark/zed`.
 
 `nightly.yml` runs the extended suites offloaded from `pr.yml` — OS/Node `compatibility` (`pnpm testRepoCompat`), `history` (`pnpm testHistory --jobs 4`), full `typescript` version matrix, `environments` (Deno, Bun, Chrome, Firefox), and `@ark/aot`'s derived suites (`testDifferential`, `testCache`, `testPerturbation`, `testPrograms`). It runs:
 

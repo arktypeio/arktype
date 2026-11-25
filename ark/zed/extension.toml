@@ -9,8 +9,8 @@ capabilities = [{ kind = "npm:install", package = "@vtsls/language-server" }]
 
 [grammars.arktype]
 repository = "https://github.com/arktypeio/arktype"
-# the commit on main with ark/tree-sitter, set when publishing
-rev = "0000000000000000000000000000000000000000"
+# a commit on main; move it forward to release a grammar change
+rev = "eb24f4af9ae305a3f8dd5a5b951138b9083f4d28"
 path = "ark/tree-sitter"
 
 [language_servers.arktype]

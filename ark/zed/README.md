@@ -11,7 +11,7 @@ The [Zed](https://zed.dev) extension for ArkType, matching the [VS Code extensio
 
 ## Where Zed differs
 
-- **Highlighting needs Zed to inject ArkType.** A Zed extension can't add injections to a language it doesn't define, and Zed rejects an extension language named like a built-in one (zed-industries/zed#65382, #8795). Library injections go in Zed's own `crates/grammars/src/{typescript,tsx,javascript}/injections.scm`, as `graphql`, `sql` and Lit's `svg` already do (zed-industries/zed#65509), so ArkType's go there too: append [`ark/tree-sitter/queries/ecma/injections.scm`](../tree-sitter/queries/ecma/injections.scm) to all three. Svelte, Vue, Astro and Markdown code blocks reach it through their TypeScript layers. MDX parses its ESM itself, so `srazzak/zed-mdx`'s `languages/mdx/injections.scm` needs the same rules.
+- **Highlighting needs Zed to inject ArkType.** A Zed extension can't add injections to a language it doesn't define, and Zed rejects an extension language named like a built-in one (zed-industries/zed#65382, #8795). Library injections go in Zed's own `crates/grammars/src/{typescript,tsx,javascript}/injections.scm`, as `graphql`, `sql` and Lit's `svg` already do (zed-industries/zed#65509), so ArkType's go there too: zed-industries/zed#67445 appends [`ark/tree-sitter/queries/ecma/injections.scm`](../tree-sitter/queries/ecma/injections.scm) to all three. Svelte, Vue, Astro and Markdown code blocks reach it through their TypeScript layers. MDX parses its ESM itself, so `srazzak/zed-mdx`'s `languages/mdx/injections.scm` needs the same rules.
 - **Zed's themes name two captures differently.** `writeQueries.ts` writes `languages/arktype/highlights.scm` from the shared one with `@none` as `@primary` (the editor's foreground in every theme Zed ships) and `@module` as `@namespace`, since Zed skips a capture its theme doesn't style.
 - **Vue's bound attributes are highlighted.** VS Code's Vue grammar scopes `:title="type('string')"` as an HTML string, so ArkType isn't highlighted there; Zed's Vue extension injects TypeScript into it, so it is.
 - **Inline errors are opt-in.** The `arktype` server replaces vtsls only where `language_servers` names it, and Zed's inline diagnostics are off by default (see the docs for both settings). The summary is the message's first line, so hovers and the diagnostics panel show it above TypeScript's full message, where VS Code shows only the full message.
@@ -32,7 +32,7 @@ node ark/zed/checkPackage.ts # package it as the registry does, in Docker
 
 ## Publish
 
-1. Land `ark/tree-sitter` and this directory on `main`, then set `[grammars.arktype] rev` in `extension.toml` to that commit.
+1. If `ark/tree-sitter` changed since `[grammars.arktype] rev` in `extension.toml`, land the change on `main` and set `rev` to that commit.
 2. Bump `version` in `extension.toml`, `Cargo.toml` and `package.json` together, and run `node ark/zed/checkPackage.ts`.
 3. Install it as a dev extension and check highlighting, an inline `"number | strin"` and auto-import of `type`. The registry closes PRs for untested extensions.
 4. Open a PR to [zed-industries/extensions](https://github.com/zed-industries/extensions) that adds the submodule and entry, then run `pnpm sort-extensions`:
@@ -50,4 +50,4 @@ node ark/zed/checkPackage.ts # package it as the registry does, in Docker
 
 5. For each later release, bump the submodule and `version` in the same file.
 
-Highlighting also needs the injections in Zed itself and in the MDX extension: append `ark/tree-sitter/queries/ecma/injections.scm` to `crates/grammars/src/{typescript,tsx,javascript}/injections.scm` in zed-industries/zed and to `languages/mdx/injections.scm` in srazzak/zed-mdx.
+Highlighting also needs the injections in Zed itself (zed-industries/zed#67445) and in the MDX extension, whose `languages/mdx/injections.scm` in srazzak/zed-mdx needs `ark/tree-sitter/queries/ecma/injections.scm` appended.
