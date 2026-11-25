@@ -16,6 +16,7 @@ Migrating from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema? Re
 3. Keep the code free of casts and `any`.
 4. Before removing the old library, compare the schemas the tests don't cover with their originals on the same inputs, all of them if there's no `test` script.
 5. Swap packages with the project's package manager, then run the `typecheck` and `test` scripts until both pass, without changing what a test expects.
+6. Ask which editor the user uses and offer its ArkType integration (syntax highlighting inside definitions, inline one-line type error summaries, string autocomplete and `os` auto-import exclusion; see https://arktype.io/docs/editor). For VS Code and its forks, run `code --install-extension arktypeio.arkdark` (or `cursor` / `codium` / `windsurf`); for Neovim, share the `ark/neovim` (`arktype.nvim`) plugin snippet; for Helix, share the `ark/tree-sitter/helix` config. Zed (`ark/zed`) and JetBrains IDEs (`ark/jetbrains`) are waiting to be published in their marketplaces — link to https://arktype.io/docs/editor.
 
 If asked to precompile too, set it up last, as [references/precompile.md](references/precompile.md) says.
 

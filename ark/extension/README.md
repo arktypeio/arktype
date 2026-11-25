@@ -22,7 +22,7 @@
 
 ![errorLens](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/extension/errorLens.png)
 
-See [arktype.io/docs/editor](https://arktype.io/docs/editor) for the settings it changes and the JetBrains and Neovim alternatives.
+See [arktype.io/docs/editor](https://arktype.io/docs/editor) for the settings it changes and the JetBrains, Zed, Neovim and Helix integrations.
 
 ## Contributing
 

@@ -893,7 +893,7 @@ A [precompiled](https://arktype.io/docs/precompile) validator ships `~standard.j
 
 # Editor setup
 
-> Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs and other editors.
+> Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs, Zed, Neovim, Helix and other editors.
 
 ArkType works in any editor with TypeScript support. These extensions make definitions read like the rest of your code.
 
@@ -921,7 +921,7 @@ To have auto-import pick ArkType's `type` instead of the `type` function from No
 
 ## JetBrains IDEs
 
-Install [ArkType](https://plugins.jetbrains.com/search?search=arktype) from the JetBrains Marketplace in WebStorm, IntelliJ IDEA or any other JetBrains IDE with JavaScript support, version 2025.2 or later. It does what the VS Code extension does:
+[ArkType for JetBrains IDEs](https://github.com/arktypeio/arktype/tree/main/ark/jetbrains) works in WebStorm, IntelliJ IDEA and any other JetBrains IDE with JavaScript support, version 2025.2 or later. We're waiting on JetBrains to publish it to the JetBrains Marketplace — once it's live, this page will link directly to the listing. It does what the VS Code extension does:
 
 - syntax highlighting for strings in ArkType definitions, in the same files, from the VS Code extension's own grammar
 - the same one-line summary of the problem closest to your cursor at the end of its line
@@ -931,9 +931,73 @@ Install [ArkType](https://plugins.jetbrains.com/search?search=arktype) from the 
 
 To have auto-import pick ArkType's `type` instead of the `type` function from Node's `os` module, add `^(node:)?os$` to the auto-import regexes under **Settings | Tools | ArkType**.
 
+## Zed
+
+[ArkType for Zed](https://github.com/arktypeio/arktype/tree/main/ark/zed) is waiting on Zed to publish the extension ([zed-industries/extensions#8453](https://github.com/zed-industries/extensions/pull/8453)) and merge the syntax-highlighting injections ([zed-industries/zed#67445](https://github.com/zed-industries/zed/pull/67445)) — once it's live, you'll be able to install it directly from Zed's extensions page (`zed: extensions`). It adds:
+
+- syntax highlighting for strings in ArkType definitions, in `.ts`, `.tsx`, `.js` and `.jsx` files and in the TypeScript of Svelte, Vue and Astro components and Markdown code blocks
+- one-line summaries of ArkType's type errors at the end of the line, the same ones the VS Code extension shows
+- auto-import that picks ArkType's `type` over the `type` function from Node's `os` module, with no setting to add
+
+The summaries come from the `arktype` language server, which is vtsls, the TypeScript server Zed already uses, with each error's summary as the first line of its message. Zed shows that line inline. To use it in place of vtsls and turn on inline errors, add this to your Zed settings:
+
+```json
+{
+	"languages": {
+		"TypeScript": { "language_servers": ["arktype", "!vtsls", "..."] },
+		"TSX": { "language_servers": ["arktype", "!vtsls", "..."] },
+		"JavaScript": { "language_servers": ["arktype", "!vtsls", "..."] }
+	},
+	"diagnostics": {
+		"inline": { "enabled": true, "update_debounce_ms": 0 }
+	}
+}
+```
+
+Hovers and the diagnostics panel show the summary, then TypeScript's full message. Zed already suggests completions while you type inside a string, so `"string | num"` completes with no setting. Unlike ErrorLens, Zed shows an inline error on every line that has one, not only the one closest to your cursor.
+
+## Neovim
+
+[arktype.nvim](https://github.com/arktypeio/arktype/tree/main/ark/neovim) does what the VS Code extension does, tested against the same fixtures:
+
+- syntax highlighting for strings in ArkType definitions, through a tree-sitter grammar injected into TypeScript, TSX and JavaScript, and from them into Svelte, Vue, Astro and Markdown
+- the same one-line summaries of ArkType's type errors, for the problem closest to your cursor
+- completions while typing inside strings with Neovim's built-in LSP completion (blink.cmp and nvim-cmp already do this)
+- the `os` auto-import exclusion for vtsls and `ts_ls`
+
+It needs Neovim 0.11 or later and [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)'s TypeScript and JavaScript parsers. With lazy.nvim:
+
+```lua
+return {
+	"arktypeio/arktype",
+	name = "arktype.nvim",
+	lazy = false,
+	build = function(plugin)
+		vim.opt.rtp:append(plugin.dir .. "/ark/neovim")
+		require("arktype.treesitter").build()
+	end,
+	config = function(plugin)
+		vim.opt.rtp:append(plugin.dir .. "/ark/neovim")
+		require("arktype").setup()
+	end
+}
+```
+
+See its [README](https://github.com/arktypeio/arktype/tree/main/ark/neovim#readme) for `vim.pack`, the options and completion setup.
+
+## Helix
+
+[Helix](https://helix-editor.com) highlighting uses the shared tree-sitter grammar and queries in [`ark/tree-sitter/helix`](https://github.com/arktypeio/arktype/tree/main/ark/tree-sitter/helix). It highlights ArkType definitions in TypeScript, TSX, JavaScript and JSX, and in Markdown, Svelte, Vue and Astro through their own TypeScript injections.
+
+Append [`ark/tree-sitter/helix/languages.toml`](https://github.com/arktypeio/arktype/blob/main/ark/tree-sitter/helix/languages.toml) to `~/.config/helix/languages.toml`, copy `ark/tree-sitter/helix/runtime/queries` into `~/.config/helix/runtime/queries`, then build the grammar:
+
+```sh
+hx --grammar fetch && hx --grammar build
+```
+
 ## Other editors
 
-There's no official extension for other editors yet. For Neovim, a community [tree-sitter grammar](https://github.com/jeffrom/tree-sitter-arktype) covers the most common syntax. If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
+Any editor that uses tree-sitter can reuse the official grammar and queries in [`ark/tree-sitter`](https://github.com/arktypeio/arktype/tree/main/ark/tree-sitter), tested against the VS Code extension by [`ark/editor-conformance`](https://github.com/arktypeio/arktype/tree/main/ark/editor-conformance). If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
 
 Completions and type errors come from TypeScript, so they work in every editor without an extension.
 
@@ -1930,6 +1994,12 @@ const argsSchema = {
 8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If Jest fails with `Must use import to load ES Module`, naming arktype, [have it transform arktype's packages](https://arktype.io/docs/faq#why-does-jest-say-must-use-import-to-load-es-module), which ship ES modules only. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message, an issue `code` or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
 9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 2 as `config` in `ark.json`, run `npx @ark/aot --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
 10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for. Where the code ships to a browser and wasn't precompiled, say that arktype's parser now ships with it, which [precompiling](https://arktype.io/docs/migrating#precompile) removes.
+11. **Offer editor support.** ArkType has integrations for VS Code (and forks), JetBrains IDEs, Zed, Neovim and Helix that add syntax highlighting inside definition strings, inline one-line summaries of ArkType's type errors, string autocomplete and `os` auto-import exclusion (see [Editor setup](https://arktype.io/docs/editor)). Ask which editor the user uses and whether they want help setting it up:
+    - **VS Code, Cursor, VSCodium and Windsurf:** published as [ArkType](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) (`arktypeio.arkdark`, also on [Open VSX](https://open-vsx.org/extension/arktypeio/arkdark)), which bundles ErrorLens (`usernamehw.errorlens`) and enables `"editor.quickSuggestions": { "strings": "on" }`. If they say yes, run `code --install-extension arktypeio.arkdark` (or `cursor` / `codium` / `windsurf` for those forks), or share the store link if the CLI isn't available. You can also offer to recommend `"arktypeio.arkdark"` in `.vscode/extensions.json` and add `"typescript.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"]` to `.vscode/settings.json` so auto-import picks ArkType's `type`.
+    - **Neovim:** installable now from this repository (`ark/neovim`, [arktype.nvim](https://github.com/arktypeio/arktype/tree/main/ark/neovim)) for Neovim 0.11+ with `lazy.nvim`, `vim.pack` or `packer.nvim`; see [Neovim](https://arktype.io/docs/editor#neovim).
+    - **Helix:** highlighting is available now from [`ark/tree-sitter/helix`](https://github.com/arktypeio/arktype/tree/main/ark/tree-sitter/helix) (append `languages.toml` to `~/.config/helix/languages.toml`, copy `runtime/queries` into `~/.config/helix/runtime/queries`, then run `hx --grammar fetch && hx --grammar build`); see [Helix](https://arktype.io/docs/editor#helix).
+    - **Zed:** [`ark/zed`](https://github.com/arktypeio/arktype/tree/main/ark/zed) is waiting on Zed to publish the extension ([zed-industries/extensions#8453](https://github.com/zed-industries/extensions/pull/8453)) and merge the syntax-highlighting injections ([zed-industries/zed#67445](https://github.com/zed-industries/zed/pull/67445)); see [Zed](https://arktype.io/docs/editor#zed).
+    - **JetBrains IDEs (WebStorm, IntelliJ IDEA):** [`ark/jetbrains`](https://github.com/arktypeio/arktype/tree/main/ark/jetbrains) is waiting to be published on the JetBrains Marketplace; see [JetBrains IDEs](https://arktype.io/docs/editor#jetbrains-ides).
 
 ## How to convert
 
@@ -9893,7 +9963,7 @@ To define and validate Types, install `arktype`. It has zero runtime dependencie
 | `@ark/fast-check` | generate test data from a Type with fast-check | [fast-check](https://arktype.io/docs/fast-check) |
 | `@ark/fs` | nothing: it's the filesystem layer `@ark/attest` uses | |
 
-The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](https://arktype.io/docs/editor) page.
+Editor integrations for VS Code (and its forks), JetBrains IDEs, Zed, Neovim and Helix, plus "ArkThemes" for VS Code, are on the [Editor](https://arktype.io/docs/editor) page.
 
 ## arktype
 

@@ -58,7 +58,7 @@ If you're upgrading, [Upgrading](https://arktype.io/docs/upgrading#arkregex) lis
 
 ## Syntax highlighting
 
-The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) highlights the expression inside `regex` calls.
+ArkType's [editor integrations](https://arktype.io/docs/editor) highlight the expression inside `regex` calls in VS Code, JetBrains IDEs, Zed, Neovim and Helix.
 
 ## ArkType
 

@@ -1,6 +1,6 @@
 ---
 title: Editor setup
-description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, Zed, JetBrains IDEs, Neovim and other editors.
+description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs, Zed, Neovim, Helix and other editors.
 ---
 
 ArkType works in any editor with TypeScript support. These extensions make definitions read like the rest of your code.
@@ -29,7 +29,7 @@ To have auto-import pick ArkType's `type` instead of the `type` function from No
 
 ## JetBrains IDEs
 
-Install [ArkType](https://plugins.jetbrains.com/search?search=arktype) from the JetBrains Marketplace in WebStorm, IntelliJ IDEA or any other JetBrains IDE with JavaScript support, version 2025.2 or later. It does what the VS Code extension does:
+[ArkType for JetBrains IDEs](https://github.com/arktypeio/arktype/tree/main/ark/jetbrains) works in WebStorm, IntelliJ IDEA and any other JetBrains IDE with JavaScript support, version 2025.2 or later. We're waiting on JetBrains to publish it to the JetBrains Marketplace — once it's live, this page will link directly to the listing. It does what the VS Code extension does:
 
 - syntax highlighting for strings in ArkType definitions, in the same files, from the VS Code extension's own grammar
 - the same one-line summary of the problem closest to your cursor at the end of its line
@@ -41,7 +41,7 @@ To have auto-import pick ArkType's `type` instead of the `type` function from No
 
 ## Zed
 
-Install **ArkType** from Zed's extensions page (`zed: extensions` in the command palette). It adds:
+[ArkType for Zed](https://github.com/arktypeio/arktype/tree/main/ark/zed) is waiting on Zed to publish the extension ([zed-industries/extensions#8453](https://github.com/zed-industries/extensions/pull/8453)) and merge the syntax-highlighting injections ([zed-industries/zed#67445](https://github.com/zed-industries/zed/pull/67445)) — once it's live, you'll be able to install it directly from Zed's extensions page (`zed: extensions`). It adds:
 
 - syntax highlighting for strings in ArkType definitions, in `.ts`, `.tsx`, `.js` and `.jsx` files and in the TypeScript of Svelte, Vue and Astro components and Markdown code blocks
 - one-line summaries of ArkType's type errors at the end of the line, the same ones the VS Code extension shows
@@ -93,8 +93,18 @@ return {
 
 See its [README](https://github.com/arktypeio/arktype/tree/main/ark/neovim#readme) for `vim.pack`, the options and completion setup.
 
+## Helix
+
+[Helix](https://helix-editor.com) highlighting uses the shared tree-sitter grammar and queries in [`ark/tree-sitter/helix`](https://github.com/arktypeio/arktype/tree/main/ark/tree-sitter/helix). It highlights ArkType definitions in TypeScript, TSX, JavaScript and JSX, and in Markdown, Svelte, Vue and Astro through their own TypeScript injections.
+
+Append [`ark/tree-sitter/helix/languages.toml`](https://github.com/arktypeio/arktype/blob/main/ark/tree-sitter/helix/languages.toml) to `~/.config/helix/languages.toml`, copy `ark/tree-sitter/helix/runtime/queries` into `~/.config/helix/runtime/queries`, then build the grammar:
+
+```sh
+hx --grammar fetch && hx --grammar build
+```
+
 ## Other editors
 
-There's no official extension for other editors yet. If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
+Any editor that uses tree-sitter can reuse the official grammar and queries in [`ark/tree-sitter`](https://github.com/arktypeio/arktype/tree/main/ark/tree-sitter), tested against the VS Code extension by [`ark/editor-conformance`](https://github.com/arktypeio/arktype/tree/main/ark/editor-conformance). If you'd like to help add support for another editor, see [this issue](https://github.com/arktypeio/arktype/issues/989).
 
 Completions and type errors come from TypeScript, so they work in every editor without an extension.
