@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { declare, type, type Out } from "arktype"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -60,6 +61,175 @@ contextualize(() => {
 	it("tuple expression", () => {
 		const T = declare<0 | 1>().type(["0", "|", "1"])
 		attest<0 | 1>(T.infer)
+	})
+
+	describe("spread tuple expression", () => {
+		it("unit literals", () => {
+			const T = declare<"a" | "b">().type("===", "a", "b")
+			attest<"a" | "b">(T.t)
+			attest(T.expression).snap(`"a" | "b"`)
+		})
+
+		it("many unit literals", () => {
+			type Letter =
+				| "a"
+				| "b"
+				| "c"
+				| "d"
+				| "e"
+				| "f"
+				| "g"
+				| "h"
+				| "i"
+				| "j"
+				| "k"
+				| "l"
+				| "m"
+				| "n"
+				| "o"
+				| "p"
+			const T = declare<Letter>().type(
+				"===",
+				"a",
+				"b",
+				"c",
+				"d",
+				"e",
+				"f",
+				"g",
+				"h",
+				"i",
+				"j",
+				"k",
+				"l",
+				"m",
+				"n",
+				"o",
+				"p"
+			)
+			attest<Letter>(T.t).type.toString("Letter")
+			attest(T("q").toString()).snap(
+				`must be "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o" or "p"`
+			)
+		})
+
+		it("unit literal mismatch", () => {
+			attest(() =>
+				// @ts-expect-error
+				declare<"a" | "b">().type("===", "a", "c")
+			).type.errors.snap(
+				'Argument of type \'string\' is not assignable to parameter of type \'{ " brand": "ErrorType"; declared: "a" | "b"; inferred: "a" | "c"; }\'.'
+			)
+		})
+
+		it("missing unit literal", () => {
+			attest(() =>
+				// @ts-expect-error
+				declare<"a" | "b">().type("===", "a")
+			).type.errors(`declared: "a" | "b"; inferred: "a"`)
+		})
+
+		it("infix", () => {
+			const A = type({ kind: "'a'" })
+			const B = type({ kind: "'b'" })
+			const T = declare<{ kind: "a" } | { kind: "b" }>().type(A, "|", B)
+			attest<{ kind: "a" } | { kind: "b" }>(T.t)
+			attest(T.expression).equals(A.or(B).expression)
+		})
+
+		it("infix mismatch", () => {
+			attest(() =>
+				// @ts-expect-error
+				declare<string | number>().type("string", "|", "boolean")
+			).type.errors(`declared: string | number; inferred: string | boolean`)
+		})
+
+		it("prefix", () => {
+			const T = declare<"a" | "b">().type("keyof", { a: "1", b: "1" })
+			attest<"a" | "b">(T.t)
+		})
+
+		it("morph", () => {
+			const T = declare<string, { side: "in" }>().type(
+				"string",
+				"=>",
+				s => s.length
+			)
+			attest<(In: string) => Out<number>>(T.t)
+		})
+
+		it("morph out mismatch", () => {
+			attest(() =>
+				declare<string, { side: "out" }>().type(
+					// @ts-expect-error
+					"string",
+					"=>",
+					(s: string) => s.length
+				)
+			).type.errors("declared: string; inferred: number")
+		})
+
+		it("assignable", () => {
+			const T = declare<string, { assignable: true }>().type("===", "a", "b")
+			attest<"a" | "b">(T.t)
+		})
+
+		it("assignable infix", () => {
+			const T = declare<string | number, { assignable: true }>().type(
+				"'a'",
+				"|",
+				"1"
+			)
+			attest<"a" | 1>(T.t)
+		})
+
+		it("assignable mismatch", () => {
+			attest(() =>
+				declare<string, { assignable: true }>().type(
+					// @ts-expect-error
+					"string",
+					"|",
+					"number"
+				)
+			).type.errors("declared: string; inferred: string | number")
+		})
+
+		it("invalid operand", () => {
+			attest(() =>
+				// @ts-expect-error
+				declare<string>().type("string", "|", "strng")
+			).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
+		})
+
+		it("invalid operator", () => {
+			// @ts-expect-error
+			attest(() => declare<string>().type("string", "|||"))
+				.throws()
+				.type.errors.snap(
+					"Argument of type '\"|||\"' is not assignable to parameter of type 'ArgTwoOperator'."
+				)
+		})
+
+		it("operand completions", () => {
+			// @ts-expect-error
+			attest(() => declare<string>().type("string", "|", "boo")).completions({
+				boo: ["boolean"]
+			})
+		})
+
+		it("missing generic argument", () => {
+			// @ts-expect-error
+			attest(() => declare().type("===", "a")).type.errors(
+				"declare<ExternalType>() requires a generic argument"
+			)
+		})
+
+		it("rejects a parameter string", () => {
+			attest(() =>
+				// @ts-expect-error
+				declare<{ box: string }>().type("<t>", { box: "t" })
+			).type.errors(`Argument of type '"<t>"' is not assignable`)
+		})
 	})
 
 	it("regexp", () => {

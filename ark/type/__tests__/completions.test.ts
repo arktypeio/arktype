@@ -179,5 +179,13 @@ if (out instanceof type.errors) for (const issue of out.issues) issue`,
 			attest(completed.entries).snap(["string", "symbol"])
 			attest(completed.instantiations).satisfies("number < 50000")
 		})
+
+		it("an operand of a declared expression", () => {
+			const completed = complete(
+				`type.declare<string | symbol>().type("string", "|", "s")`
+			)
+			attest(completed.entries).snap(["string", "symbol"])
+			attest(completed.instantiations).satisfies("number < 50000")
+		})
 	})
 })

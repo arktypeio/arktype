@@ -38,6 +38,24 @@ contextualize(function (this: Mocha.Suite) {
 		])
 	})
 
+	it("accepts a tuple expression spread as declare<X>().type's arguments", () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+const A = type({ kind: "'a'" })
+const B = type({ kind: "'b'" })
+export const Letter = type.declare<"a" | "b">().type("===", "a", "b")
+export const Kind = type.declare<{ kind: "a" } | { kind: "b" }>().type(A, "|", B)
+`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:11  accepted",
+			"main.ts:3:11  accepted",
+			"main.ts:4:23  accepted",
+			"main.ts:5:21  accepted",
+			"4 sites in 1 file: 4 accepted (100.0%)"
+		])
+	})
+
 	it("accepts reading a validator's errors by path", () => {
 		const root = writeFixture({
 			"main.ts": `import { byAncestorPath, byPath, flatByPath, flatMessagesByPath, messageIn, type } from "arktype"

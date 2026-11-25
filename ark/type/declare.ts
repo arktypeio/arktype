@@ -1,8 +1,10 @@
-import type { TypeMeta, UndeclaredKeyBehavior } from "@ark/schema"
+import type { NodeSelector, TypeMeta, UndeclaredKeyBehavior } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
 	Backslash,
+	conform,
+	Constructor,
 	equals,
 	ErrorMessage,
 	ErrorType,
@@ -20,22 +22,110 @@ import type {
 } from "./parser/definition.ts"
 import type { MetaKey } from "./parser/objectLiteral.ts"
 import type { OptionalPropertyDefinition } from "./parser/property.ts"
-import type { TupleExpression } from "./parser/tupleExpressions.ts"
+import type {
+	ArgTwoOperator,
+	IndexZeroOperator,
+	TupleExpression,
+	TupleInfixOperator
+} from "./parser/tupleExpressions.ts"
 import type { bindThis } from "./scope.ts"
-import type { Type } from "./type.ts"
+import type { Type, ValidatedArgs } from "./type.ts"
 
 export type DeclarationParser<$> = <
 	preinferred = unset,
 	ctx extends DeclareContext = {}
 >() => {
-	type: <const def>(
+	type: DeclaredTypeParser<preinferred, $, ctx>
+}
+
+type missingDeclarationMessage =
+	`declare<ExternalType>() requires a generic argument`
+
+export interface DeclaredTypeParser<
+	preinferred,
+	$,
+	ctx extends DeclareContext
+> {
+	<const def>(
 		def: [preinferred] extends [anyOrNever] ?
 			validateDeclared<preinferred, def, $, ctx>
-		: [preinferred] extends [unset] ?
-			ErrorMessage<`declare<ExternalType>() requires a generic argument`>
-		:	validateDeclared<preinferred, def, $, ctx>
-	) => Type<finalizePreinferred<preinferred, def, $, ctx>, $>
+		: [preinferred] extends [unset] ? ErrorMessage<missingDeclarationMessage>
+		: validateDeclared<preinferred, def, $, ctx>
+	): Type<finalizePreinferred<preinferred, def, $, ctx>, $>
+
+	/**
+	 * A [tuple expression](https://arktype.io/docs/expressions) spread as
+	 * this function's arguments, e.g. `.type("===", "a", "b")`, checked
+	 * against the declared type as `.type(["===", "a", "b"])` would be.
+	 *
+	 * Each argument is validated as it is by `type`'s own signature for the
+	 * same form, which a parameter string is not, as `declare` defines a Type
+	 * rather than a Generic. The declaration is checked on the first argument
+	 * once the whole expression is valid.
+	 */
+	<const zero, const one, const rest extends array>(
+		_0: [preinferred] extends [anyOrNever] ?
+			validateDeclaredRoot<preinferred, zero, one, rest, $, ctx>
+		: [preinferred] extends [unset] ? ErrorMessage<missingDeclarationMessage>
+		: validateDeclaredRoot<preinferred, zero, one, rest, $, ctx>,
+		_1: zero extends "keyof" ? type.validate<one, $>
+		: zero extends "instanceof" ? conform<one, Constructor>
+		: zero extends "===" ? conform<one, unknown>
+		: conform<one, ArgTwoOperator>,
+		..._2: zero extends "===" ? rest
+		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
+		: one extends TupleInfixOperator ?
+			one extends ":" ?
+				ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "predicateRest"
+				:	never]
+			: one extends "=>" ?
+				ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "morphRest"
+				:	never]
+			: one extends "@" ? [TypeMeta.MappableInput, NodeSelector?]
+			: ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "operandRest"
+				:	never]
+		:	[]
+	): Type<finalizePreinferred<preinferred, [zero, one, ...rest], $, ctx>, $>
 }
+
+// the first argument of a tuple expression spread as `.type`'s arguments: as
+// `type` validates it, or a mismatch with the declared type once the
+// expression as a whole is valid
+type validateDeclaredRoot<
+	preinferred,
+	zero,
+	one,
+	rest extends array,
+	$,
+	ctx extends DeclareContext
+> =
+	declaredRootMismatch<preinferred, [zero, one, ...rest], $, ctx> extends (
+		infer mismatch
+	) ?
+		[mismatch] extends [never] ?
+			zero extends IndexZeroOperator ?
+				zero
+			:	type.validate<zero, $>
+		:	mismatch
+	:	never
+
+type declaredRootMismatch<
+	preinferred,
+	def extends array,
+	$,
+	ctx extends DeclareContext
+> =
+	def extends type.validate<def, $> ?
+		validateShallowInference<
+			inferDefinition<def, $>,
+			preinferred,
+			ctx
+		> extends infer result ?
+			unknown extends result ?
+				never
+			:	result
+		:	never
+	:	never
 
 type finalizePreinferred<preinferred, def, $, ctx extends DeclareContext> =
 	// an assignable declaration keeps what its definition infers, which may be

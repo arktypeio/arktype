@@ -997,6 +997,47 @@ address must be a full line
 		attest(unplaced(declared, "declared")).equals(unplaced(passed, "passed"))
 	})
 
+	it("builds a tuple expression spread as declare<X>().type's arguments to what type builds it to", async () => {
+		const mainOf = (
+			written: (declared: string, args: string) => string
+		) => `import { type } from "arktype"
+const A = type({ kind: "'a'" })
+const B = type({ kind: "'b'" })
+const Letter = ${written(`"a" | "b"`, `"===", "a", "b"`)}
+const Kind = ${written(`{ kind: "a" } | { kind: "b" }`, `A, "|", B`)}
+const show = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+show(Letter("b"))
+show(Letter("c"))
+show(Kind({ kind: "a" }))
+show(Kind({ kind: "c" }))
+`
+		const bundleAs = (
+			name: string,
+			written: (declared: string, args: string) => string
+		) =>
+			bundle(
+				writeFixture(
+					{ "main.ts": mainOf(written) },
+					tempPath("checkers", `declare-spread-${name}`)
+				)
+			)
+		const [declared, passed] = await Promise.all([
+			bundleAs(
+				"declared",
+				(declared, args) => `type.declare<${declared}>().type(${args})`
+			),
+			bundleAs("passed", (_, args) => `type(${args})`)
+		])
+		attest(behaviorOf(declared)).snap(`"b"
+must be "a" or "b"
+{"kind":"a"}
+kind must be "a" or "b"
+`)
+		const unplaced = (js: string, name: string) =>
+			normalized(js.split(`declare-spread-${name}`).join("declare-spread"))
+		attest(unplaced(declared, "declared")).equals(unplaced(passed, "passed"))
+	})
+
 	it("writes once what creates a validator, whichever way its root finds its issues", async () => {
 		const root = fixture(
 			"one-creator",
