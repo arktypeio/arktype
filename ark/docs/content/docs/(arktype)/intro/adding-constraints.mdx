@@ -49,9 +49,25 @@ const Contacts = Contact.array().atLeastLength(1)
 const out = Contacts([])
 ```
 
+ArkType's built-in error messages are descriptive and compose across unions automatically (for example, `"string.email | string.uuid"` reports `must be an email address or a UUID`), so try them before customizing everything. When you do want custom sentences per check, pass a message as the last argument to any chained constraint method:
+
+```ts
+const Username = type.string
+	.atLeastLength(3, "Use 3 or more characters.")
+	.matching(/^[a-z0-9_]+$/, "Use lowercase letters, numbers or underscores.")
+
+// ArkErrors: Use 3 or more characters.
+Username("ab")
+
+// ArkErrors: Use lowercase letters, numbers or underscores.
+Username("Bad Name")
+```
+
+See [Error messages](/docs/configuration#error-messages) for built-in messages, composable `.describe()` wording, and whole-Type `.message()`.
+
 ## Narrow
 
-Structured constraints like divisors and ranges will only take us so far. For anything else, add your own logic with `.narrow`.
+Structured constraints like divisors and ranges will only take us so far. For conditions ArkType's built-in constraints can't express, add your own logic with `.narrow` (if you only need a custom message on a built-in constraint like a length, range or regex, chain the constraint method with its message above instead).
 
 ```ts
 // there's no "not divisible" expression - need to narrow

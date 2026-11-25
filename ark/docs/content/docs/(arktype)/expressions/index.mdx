@@ -265,6 +265,8 @@ For more on branding in general, see [this article](https://www.learningtypescri
 
 A narrow adds custom validation to a type. Return `true` to accept the value, or call `ctx.mustBe()` or `ctx.reject()` to reject it with a message. The [intro](/docs/intro/adding-constraints#narrow) walks through an example.
 
+Use `.narrow` only for conditions ArkType's built-in constraints can't express, like cross-field checks or custom rules. If your only goal is a custom error message on a length, range, divisor or pattern check, pass it to the [chained constraint method](/docs/type-api#constraints) instead (see [Error messages](/docs/configuration#error-messages)).
+
 <SyntaxTabs>
 	<SyntaxTab fluent>
 

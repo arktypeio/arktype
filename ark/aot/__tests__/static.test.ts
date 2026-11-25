@@ -1279,6 +1279,27 @@ console.log(issuesOf(unlessSaved(undefined), {}))`
 			attest(diagnosticsOf(source, { "/address.ts": address })).equals([])
 		})
 
+		it("a tuple expression spread as declare<X>().type's arguments", () => {
+			const source = `import { scope, type } from "arktype"
+const A = type({ kind: "'a'" })
+const B = type({ kind: "'b'" })
+export const Letter = type.declare<"a" | "b" | "c">().type("===", "a", "b", "c")
+export const Kind = type.declare<{ kind: "a" } | { kind: "b" }>().type(A, "|", B)
+export const Narrow = type.declare<string, { assignable: true }>().type("'a'", "|", "'b'")
+const $ = scope({ letter: "'a' | 'b'" })
+export const Scoped = $.declare<"a" | "b" | "c">().type("letter", "|", "'c'")`
+			attest(statusesOf(source)).snap([
+				'2:11 accepted { kind: "a" }',
+				'3:11 accepted { kind: "b" }',
+				'4:23 accepted "a" | "b" | "c"',
+				'5:21 accepted { kind: "a" | "b" }',
+				'6:23 accepted "a" | "b"',
+				"7:11 accepted",
+				'8:23 accepted "a" | "b" | "c"'
+			])
+			attest(diagnosticsOf(source)).equals([])
+		})
+
 		it("what a call returns, composed", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

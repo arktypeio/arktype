@@ -1,6 +1,6 @@
 ---
 title: Editor setup
-description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, JetBrains IDEs, Neovim and other editors.
+description: Highlighting, inline errors and autocomplete for ArkType definitions in VS Code, Zed, JetBrains IDEs, Neovim and other editors.
 ---
 
 ArkType works in any editor with TypeScript support. These extensions make definitions read like the rest of your code.
@@ -30,6 +30,31 @@ To have auto-import pick ArkType's `type` instead of the `type` function from No
 ## JetBrains IDEs
 
 The [ArkType plugin](https://plugins.jetbrains.com/plugin/27099-arktype), maintained by Jan-Niklas Wortmann, adds syntax highlighting for ArkType definitions to WebStorm, IntelliJ IDEA and other JetBrains IDEs.
+
+## Zed
+
+Install **ArkType** from Zed's extensions page (`zed: extensions` in the command palette). It adds:
+
+- syntax highlighting for strings in ArkType definitions, in `.ts`, `.tsx`, `.js` and `.jsx` files and in the TypeScript of Svelte, Vue and Astro components and Markdown code blocks
+- one-line summaries of ArkType's type errors at the end of the line, the same ones the VS Code extension shows
+- auto-import that picks ArkType's `type` over the `type` function from Node's `os` module, with no setting to add
+
+The summaries come from the `arktype` language server, which is vtsls, the TypeScript server Zed already uses, with each error's summary as the first line of its message. Zed shows that line inline. To use it in place of vtsls and turn on inline errors, add this to your Zed settings:
+
+```json title="settings.json"
+{
+	"languages": {
+		"TypeScript": { "language_servers": ["arktype", "!vtsls", "..."] },
+		"TSX": { "language_servers": ["arktype", "!vtsls", "..."] },
+		"JavaScript": { "language_servers": ["arktype", "!vtsls", "..."] }
+	},
+	"diagnostics": {
+		"inline": { "enabled": true, "update_debounce_ms": 0 }
+	}
+}
+```
+
+Hovers and the diagnostics panel show the summary, then TypeScript's full message. Zed already suggests completions while you type inside a string, so `"string | num"` completes with no setting. Unlike ErrorLens, Zed shows an inline error on every line that has one, not only the one closest to your cursor.
 
 ## Neovim
 

@@ -1,0 +1,17 @@
+{
+	"name": "@ark/zed",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"exports": {
+		"./internal/*.ts": "./*.ts"
+	},
+	"devDependencies": {
+		"@ark/editor-conformance": "workspace:*",
+		"@vtsls/language-server": "0.3.0",
+		"arktype": "workspace:*",
+		"tree-sitter-arktype": "workspace:*",
+		"tree-sitter-cli": "0.27.2"
+	}
+}

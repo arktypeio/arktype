@@ -138,7 +138,7 @@ const Even = type.number.divisibleBy(2)
 Even(3)
 ```
 
-Each takes a [`message`](/docs/configuration#message) as its last argument, a sentence or a function of the error, which that constraint alone says:
+Each takes a [`message`](/docs/configuration#message) as its last argument, a sentence or a function of the error, which that constraint alone says. Prefer chaining these over `.narrow()` whenever your goal is custom error messages on built-in checks (see [Error messages](/docs/configuration#error-messages)):
 
 ```ts
 const Handle = type.string
