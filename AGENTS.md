@@ -43,6 +43,8 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 `neovim.yml` runs `pnpm testNeovim` on PRs and pushes to `main` that touch `ark/neovim`, `ark/tree-sitter`, `ark/editor-conformance` or `ark/extension`.
 
+`jetbrains.yml` runs the JetBrains plugin's tests (`./gradlew :core:test :plugin:test :plugin:verifyPlugin` in `ark/jetbrains`) on PRs that change `ark/jetbrains`, `ark/extension`, `ark/editor-conformance` or `ark/tree-sitter`, since the plugin runs the extension's grammar and ErrorLens rules and is checked against the conformance suite.
+
 `nightly.yml` runs the extended suites offloaded from `pr.yml` — OS/Node `compatibility` (`pnpm testRepoCompat`), `history` (`pnpm testHistory --jobs 4`), full `typescript` version matrix, `environments` (Deno, Bun, Chrome, Firefox), `@ark/aot`'s derived suites (`testDifferential`, `testCache`, `testPerturbation`, `testPrograms`), and `neovim` (`pnpm testNeovim`, arktype.nvim's parity with the VS Code extension in headless Neovim). It runs:
 
 - nightly on `main`. A failing night opens the issue "nightly failing", labelled `nightly`, or comments on it, and the next passing night closes it.

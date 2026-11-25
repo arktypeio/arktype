@@ -1,0 +1,37 @@
+---
+title: Scopes
+description: Reference types by name across definitions
+---
+
+import { Callout } from "../components/Callout"
+import { type, scope } from "arktype"
+
+export const meta = { section: "scopes" }
+
+# Scopes
+
+<Callout type="info">
+	A scope resolves names like `"user"` across its definitions.
+</Callout>
+
+```ts
+const $ = scope({
+	user: { name: "string", friends: "user[]" },
+	group: { members: "user[]", "owner?": "user" }
+})
+
+const types = $.export()
+const out = types.group({ members: [] })
+```
+
+Inline JSX works too: <code>{type("string | number").expression}</code>.
+
+{/* a comment in MDX */}
+
+export function Example() {
+	const T = type({ id: "string.uuid" })
+	return <pre>{JSON.stringify(T.json, null, 2)}</pre>
+}
+
+- list item with **bold**
+- another with a [link](./generics)

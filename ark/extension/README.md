@@ -36,6 +36,8 @@ To determine which scopes need to be changed, you can view scopes applied to any
 
 Changes to `injected.tmLanguage.json` should be mirrored to [tsWithArkType.tmLanguage.json](./tsWithArkType.tmLanguage.json).
 
+The JetBrains plugin ([ark/jetbrains](/ark/jetbrains)) runs `injected.tmLanguage.json` and the `errorLens.replace` rules in `package.json` as they are here, so a change to either reaches both editors.
+
 #### Testing tsWithArkType.tmLanguage.json
 
 To test the standalone rules for TS w/ ArkType highlighting, replace `grammars` in `package.json` with the following:

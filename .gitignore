@@ -33,3 +33,9 @@ ark/docs/public/image/blog
 ark/tree-sitter/test/.wasm
 # the nvim-treesitter checkout and host parsers ark/neovim/test/test.ts installs
 ark/neovim/test/.deps
+# the JetBrains plugin's Gradle output and caches, see ark/jetbrains
+ark/jetbrains/.gradle
+ark/jetbrains/.kotlin
+ark/jetbrains/.intellijPlatform
+ark/jetbrains/build
+ark/jetbrains/*/build

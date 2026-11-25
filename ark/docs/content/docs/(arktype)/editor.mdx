@@ -29,7 +29,15 @@ To have auto-import pick ArkType's `type` instead of the `type` function from No
 
 ## JetBrains IDEs
 
-The [ArkType plugin](https://plugins.jetbrains.com/plugin/27099-arktype), maintained by Jan-Niklas Wortmann, adds syntax highlighting for ArkType definitions to WebStorm, IntelliJ IDEA and other JetBrains IDEs.
+Install [ArkType](https://plugins.jetbrains.com/search?search=arktype) from the JetBrains Marketplace in WebStorm, IntelliJ IDEA or any other JetBrains IDE with JavaScript support, version 2025.2 or later. It does what the VS Code extension does:
+
+- syntax highlighting for strings in ArkType definitions, in the same files, from the VS Code extension's own grammar
+- the same one-line summary of the problem closest to your cursor at the end of its line
+- completions while typing an expression like `"string | num"`
+
+**Settings | Tools | ArkType** turns each of these on or off and can show every problem instead of the closest one. **Settings | Editor | Color Scheme | ArkType** changes the colors, which start as your theme's colors for the same kinds of TypeScript code.
+
+To have auto-import pick ArkType's `type` instead of the `type` function from Node's `os` module, add `^(node:)?os$` to the auto-import regexes under **Settings | Tools | ArkType**.
 
 ## Zed
 
