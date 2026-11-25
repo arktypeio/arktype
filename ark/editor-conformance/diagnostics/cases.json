@@ -1,0 +1,530 @@
+[
+	{
+		"name": "unresolvable",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:5 TS2345",
+		"input": "Argument of type '\"number | strin\"' is not assignable to parameter of type '\"number | string\"'.",
+		"output": "\"number | string\"",
+		"rule": 3,
+		"display": "\"number | string\""
+	},
+	{
+		"name": "unresolvableInObject",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:6 TS2322",
+		"input": "Type '\"strng\"' is not assignable to type '\"'strng' is unresolvable​\"'.",
+		"output": "'strng' is unresolvable​",
+		"rule": 2,
+		"display": "'strng' is unresolvable​"
+	},
+	{
+		"name": "partialKeyword",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:7 TS2345",
+		"input": "Argument of type '\"str\"' is not assignable to parameter of type '\"string\"'.",
+		"output": "\"string\"",
+		"rule": 3,
+		"display": "\"string\""
+	},
+	{
+		"name": "partialSubtype",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:8 TS2345",
+		"input": "Argument of type '\"string.emai\"' is not assignable to parameter of type '\"string.email\"'.",
+		"output": "\"string.email\"",
+		"rule": 3,
+		"display": "\"string.email\""
+	},
+	{
+		"name": "emptyCompletion",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:9 TS2345",
+		"input": "Argument of type '\"\"' is not assignable to parameter of type '\"string\" | \"number\" | \"bigint\" | \"boolean\" | \"symbol\" | \"undefined\" | \"object\" | \"ArrayBuffer\" | \"null\" | \"true\" | \"false\" | \"Array\" | \"Date\" | \"Error\" | \"Function\" | \"Map\" | \"Promise\" | ... 35 more ... | \"Merge\"'.",
+		"output": "\"string\" | \"number\" | \"bigint\" | \"boolean\" | \"symbol\" | \"undefined\" | \"object\" | \"ArrayBuffer\" | \"null\" | \"true\" | \"false\" | \"Array\" | \"Date\" | \"Error\" | \"Function\" | \"Map\" | \"Promise\" | ... 35 more ... | \"Merge\"",
+		"rule": 3,
+		"display": "\"string\" | \"number\" | \"bigint\" | \"boolean\" | \"symbol\" | \"undefined\" | \"object\" | \"ArrayBuffer\" | \"null\" | \"true\" | \"false\" | \"Array\" | \"Date\" | \"Error\" | \"Function\" | \"Map\" | \"Promise\" | ... 35 more ... | \"Merge\""
+	},
+	{
+		"name": "trailingOperator",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:10 TS2345",
+		"input": "Argument of type '\"string |\"' is not assignable to parameter of type '\"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | \"string |null\" | ... 43 more ... | \"string |this\"'.",
+		"output": "\"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | \"string |null\" | ... 43 more ... | \"string |this\"",
+		"rule": 3,
+		"display": "\"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | \"string |null\" | ... 43 more ... | \"string |this\""
+	},
+	{
+		"name": "unclosedGroup",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:11 TS2345",
+		"input": "Argument of type '\"(string | number\"' is not assignable to parameter of type '\"Missing )​\"'.",
+		"output": "Missing )​",
+		"rule": 2,
+		"display": "Missing )​"
+	},
+	{
+		"name": "unexpectedClose",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:12 TS2345",
+		"input": "Argument of type '\"string)\"' is not assignable to parameter of type '\"Unmatched )​\"'.",
+		"output": "Unmatched )​",
+		"rule": 2,
+		"display": "Unmatched )​"
+	},
+	{
+		"name": "badBound",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:13 TS2345",
+		"input": "Argument of type '\"boolean > 5\"' is not assignable to parameter of type '\"Bounded expression boolean must be exactly one of number, string, Array, or Date​\"'.",
+		"output": "Bounded expression boolean must be exactly one of number, string, Array, or Date​",
+		"rule": 2,
+		"display": "Bounded expression boolean must be exactly one of number, string, Array, or Date​"
+	},
+	{
+		"name": "doubleBound",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:14 TS2345",
+		"input": "Argument of type '\"number > 5 > 3\"' is not assignable to parameter of type '\"Expression number must have at most one right bound​\"'.",
+		"output": "Expression number must have at most one right bound​",
+		"rule": 2,
+		"display": "Expression number must have at most one right bound​"
+	},
+	{
+		"name": "badDivisor",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:15 TS2345",
+		"input": "Argument of type '\"string % 2\"' is not assignable to parameter of type '\"Divisor operand must be a number (was a string)​\"'.",
+		"output": "Divisor operand must be a number (was a string)​",
+		"rule": 2,
+		"display": "Divisor operand must be a number (was a string)​"
+	},
+	{
+		"name": "zeroDivisor",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:16 TS2345",
+		"input": "Argument of type '\"number % 0\"' is not assignable to parameter of type '\"% operator must be followed by a non-zero integer literal (was 0)​\"'.",
+		"output": "% operator must be followed by a non-zero integer literal (was 0)​",
+		"rule": 2,
+		"display": "% operator must be followed by a non-zero integer literal (was 0)​"
+	},
+	{
+		"name": "badArray",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:17 TS2345",
+		"input": "Argument of type '\"string[\"' is not assignable to parameter of type '\"Missing expected ']'​\"'.",
+		"output": "Missing expected ']'​",
+		"rule": 2,
+		"display": "Missing expected ']'​"
+	},
+	{
+		"name": "optionalTupleElement",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:18 TS2322",
+		"input": "Type '\"number\"' is not assignable to type '\"A postfix required element cannot follow an optional or defaultable element​\"'.",
+		"output": "A postfix required element cannot follow an optional or defaultable element​",
+		"rule": 2,
+		"display": "A postfix required element cannot follow an optional or defaultable element​"
+	},
+	{
+		"name": "badTupleOperator",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:19 TS2322",
+		"input": "Type '\"|\"' is not assignable to type '\"Token '|' requires a right operand​\"'.",
+		"output": "Token '|' requires a right operand​",
+		"rule": 2,
+		"display": "Token '|' requires a right operand​"
+	},
+	{
+		"name": "unknownGeneric",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:20 TS2345",
+		"input": "Argument of type '\"Recrd<string, number>\"' is not assignable to parameter of type '\"'Recrd' is unresolvable​\"'.",
+		"output": "'Recrd' is unresolvable​",
+		"rule": 2,
+		"display": "'Recrd' is unresolvable​"
+	},
+	{
+		"name": "badDefault",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:21 TS2322",
+		"input": "Type '\"number = 'five'\"' is not assignable to type '\"Default value 'five' must be assignable to number​\"'.",
+		"output": "Default value 'five' must be assignable to number​",
+		"rule": 2,
+		"display": "Default value 'five' must be assignable to number​"
+	},
+	{
+		"name": "optionalWithDefault",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:22 TS2322",
+		"input": "Type '\"number = 5\"' is not assignable to type '\"Only required keys may specify default values, e.g. { value: 'number = 0' }​\"'.",
+		"output": "Only required keys may specify default values, e.g. { value: 'number = 0' }​",
+		"rule": 2,
+		"display": "Only required keys may specify default values, e.g. { value: 'number = 0' }​"
+	},
+	{
+		"name": "nested",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:23 TS2322",
+		"input": "Type '\"strin\"' is not assignable to type '\"string\"'.",
+		"output": "\"string\"",
+		"rule": 3,
+		"display": "\"string\""
+	},
+	{
+		"name": "badLiteral",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:24 TS2345",
+		"input": "Argument of type '\"'unterminated\"' is not assignable to parameter of type '\"'unterminated requires a closing single-quote​\"'.",
+		"output": "'unterminated requires a closing single-quote​",
+		"rule": 2,
+		"display": "'unterminated requires a closing single-quote​"
+	},
+	{
+		"name": "regexLiteral",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:25 TS2345",
+		"input": "Argument of type '\"/unterminated\"' is not assignable to parameter of type '\"/unterminated requires a closing forward slash​\"'.",
+		"output": "/unterminated requires a closing forward slash​",
+		"rule": 2,
+		"display": "/unterminated requires a closing forward slash​"
+	},
+	{
+		"name": "keyof",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:26 TS2345",
+		"input": "Argument of type '\"keyof stirng\"' is not assignable to parameter of type '\"'stirng' is unresolvable​\"'.",
+		"output": "'stirng' is unresolvable​",
+		"rule": 2,
+		"display": "'stirng' is unresolvable​"
+	},
+	{
+		"name": "chained",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:27 TS2345",
+		"input": "Argument of type '\"numbr\"' is not assignable to parameter of type '\"'numbr' is unresolvable​\"'.",
+		"output": "'numbr' is unresolvable​",
+		"rule": 2,
+		"display": "'numbr' is unresolvable​"
+	},
+	{
+		"name": "piped",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:28 TS2345",
+		"input": "Argument of type '\"numbr\"' is not assignable to parameter of type '\"'numbr' is unresolvable​\"'.",
+		"output": "'numbr' is unresolvable​",
+		"rule": 2,
+		"display": "'numbr' is unresolvable​"
+	},
+	{
+		"name": "scoped",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:29 TS2322",
+		"input": "Type '\"strin\"' is not assignable to type '\"string\"'.",
+		"output": "\"string\"",
+		"rule": 3,
+		"display": "\"string\""
+	},
+	{
+		"name": "notADefinition",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:30 TS2345",
+		"input": "Argument of type '5' is not assignable to parameter of type '\"Type definitions must be strings or objects (was number). Write a literal value in a string, or pass it to type.unit()​\"'.",
+		"output": "Type definitions must be strings or objects (was number). Write a literal value in a string, or pass it to type.unit()​",
+		"rule": 2,
+		"display": "Type definitions must be strings or objects (was number). Write a literal value in a string, or pass it to type.unit()​"
+	},
+	{
+		"name": "badGenericArgument",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:31 TS2345",
+		"input": "Argument of type '\"number\"' is not assignable to parameter of type '\"number\" & ErrorType<[\"Invalid argument for T\", expected: string]>'.\n  Type 'string' is not assignable to type 'ErrorType<[\"Invalid argument for T\", expected: string]>'.",
+		"output": "[\"Invalid argument for T\", expected: string]",
+		"rule": 0,
+		"display": "[\"Invalid argument for T\", expected: string]"
+	},
+	{
+		"name": "nonObjectMerge",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:32 TS2339",
+		"input": "Property 'merge' does not exist on type 'Type<string, {}>'.",
+		"output": "Property 'merge' does not exist on type 'Type<string, {}>'.",
+		"rule": null,
+		"display": "Property 'merge' does not exist on type 'Type<string, {}>'."
+	},
+	{
+		"name": "badDeclaration",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:33 TS2322",
+		"input": "Type 'string' is not assignable to type '{ \" brand\": \"ErrorType\"; declared: string; inferred: number; }'.",
+		"output": "declared: string; inferred: number;",
+		"rule": 1,
+		"display": "declared: string; inferred: number;"
+	},
+	{
+		"name": "\tstrin: (s: string) => s,",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:35 TS2322",
+		"input": "Type '(s: string) => string' is not assignable to type 'ErrorType<\"string\">'.",
+		"output": "string",
+		"rule": 0,
+		"display": "string"
+	},
+	{
+		"name": "wrongTypeAnnotation",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:38 TS2739",
+		"input": "Type 'Type<string, {}>' is missing the following properties from type 'Type<number, {}>': divisibleBy, atLeast, atMost, moreThan, lessThan",
+		"output": "Type 'Type<string, {}>' is missing the following properties from type 'Type<number, {}>': divisibleBy, atLeast, atMost, moreThan, lessThan",
+		"rule": null,
+		"display": "Type 'Type<string, {}>' is missing the following properties from type 'Type<number, {}>': divisibleBy, atLeast, atMost, moreThan, lessThan"
+	},
+	{
+		"name": "wrongObjectAnnotation",
+		"origin": "tsc",
+		"source": "sources/arktype.ts:39 TS2322",
+		"input": "Type 'Type<{ a: string; }, {}>' is not assignable to type 'Type<{ a: number; }, {}>'.\n  The types of 'readonly().map' are incompatible between these types.\n    Type '<transformed extends listable<MappedTypeProp>, r = Type<{ [k in keyof intersectUnion<{ [k in keyof ({ [prop in (transformed extends array ? transformed : [transformed])[number] as Extract<applyHomomorphicOptionality<{ readonly a: string; }, prop>, { ...; }>[\"key\"]]: prop[\"value\"][\" arkInferred\"]; } & { [prop in (tra...' is not assignable to type '<transformed extends listable<MappedTypeProp>, r = Type<{ [k in keyof intersectUnion<{ [k in keyof ({ [prop in (transformed extends array ? transformed : [transformed])[number] as Extract<applyHomomorphicOptionality<{ readonly a: number; }, prop>, { ...; }>[\"key\"]]: prop[\"value\"][\" arkInferred\"]; } & { [prop in (tra...'.\n      Types of parameters 'flatMapEntry' and 'flatMapEntry' are incompatible.\n        Types of parameters 'entry' and 'entry' are incompatible.\n          Type 'BaseTypeProp<\"required\", \"a\", string, {}>' is not assignable to type 'BaseTypeProp<\"required\", \"a\", number, {}>'.\n            Types of property 'value' are incompatible.\n              Type 'Type<string, {}>' is missing the following properties from type 'Type<number, {}>': divisibleBy, atLeast, atMost, moreThan, lessThan",
+		"output": "              Type 'Type<string, {}>' is missing the following properties from type 'Type<number, {}>': divisibleBy, atLeast, atMost, moreThan, lessThan",
+		"rule": 4,
+		"display": "              Type 'Type<string, {}>' is missing the following properties from type 'Type<number, {}>': divisibleBy, atLeast, atMost, moreThan, lessThan"
+	},
+	{
+		"name": "wrongPrimitive",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:5 TS2322",
+		"input": "Type 'string' is not assignable to type 'number'.",
+		"output": "Type 'string' is not assignable to type 'number'.",
+		"rule": null,
+		"display": "Type 'string' is not assignable to type 'number'."
+	},
+	{
+		"name": "wrongLiteral",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:6 TS2322",
+		"input": "Type '\"ab\"' is not assignable to type '\"abc\"'.",
+		"output": "\"abc\"",
+		"rule": 3,
+		"display": "\"abc\""
+	},
+	{
+		"name": "wrongObject",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:7 TS2322",
+		"input": "Type 'string' is not assignable to type 'number'.",
+		"output": "Type 'string' is not assignable to type 'number'.",
+		"rule": null,
+		"display": "Type 'string' is not assignable to type 'number'."
+	},
+	{
+		"name": "missingProperty",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:8 TS2741",
+		"input": "Property 'age' is missing in type '{ name: string; }' but required in type 'User'.",
+		"output": "Property 'age' is missing in type '{ name: string; }' but required in type 'User'.",
+		"rule": null,
+		"display": "Property 'age' is missing in type '{ name: string; }' but required in type 'User'."
+	},
+	{
+		"name": "unknownName",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:9 TS2552",
+		"input": "Cannot find name 'notDefined'. Did you mean 'undefined'?",
+		"output": "Cannot find name 'notDefined'. Did you mean 'undefined'?",
+		"rule": null,
+		"display": "Cannot find name 'notDefined'. Did you mean 'undefined'?"
+	},
+	{
+		"name": "wrongArgument",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:11 TS2345",
+		"input": "Argument of type 'string' is not assignable to parameter of type 'number'.",
+		"output": "Argument of type 'string' is not assignable to parameter of type 'number'.",
+		"rule": null,
+		"display": "Argument of type 'string' is not assignable to parameter of type 'number'."
+	},
+	{
+		"name": "wrongLiteralArgument",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:13 TS2345",
+		"input": "Argument of type '\"ab\"' is not assignable to parameter of type '\"abc\"'.",
+		"output": "\"abc\"",
+		"rule": 3,
+		"display": "\"abc\""
+	},
+	{
+		"name": "\ta: { b: { c: \"x\" } }",
+		"origin": "tsc",
+		"source": "sources/typescript.ts:15 TS2322",
+		"input": "Type 'string' is not assignable to type 'number'.",
+		"output": "Type 'string' is not assignable to type 'number'.",
+		"rule": null,
+		"display": "Type 'string' is not assignable to type 'number'."
+	},
+	{
+		"name": "ErrorType with a quoted message",
+		"origin": "synthetic",
+		"input": "Type 'string' is not assignable to type 'ErrorType<\"must be a string\">'.",
+		"output": "must be a string",
+		"rule": 0,
+		"display": "must be a string"
+	},
+	{
+		"name": "ErrorType with an unquoted tuple",
+		"origin": "synthetic",
+		"input": "Argument of type '5' is not assignable to parameter of type 'ErrorType<[\"Invalid argument\", expected: string]>'.",
+		"output": "[\"Invalid argument\", expected: string]",
+		"rule": 0,
+		"display": "[\"Invalid argument\", expected: string]"
+	},
+	{
+		"name": "ErrorType on the first line of a multi-line message falls to the last-line rule",
+		"origin": "synthetic",
+		"input": "Type 'ErrorType<\"a\">' is not assignable to type 'string'.\n  Type 'x' is not assignable to type 'y'.",
+		"output": "  Type 'x' is not assignable to type 'y'.",
+		"rule": 4,
+		"display": "  Type 'x' is not assignable to type 'y'."
+	},
+	{
+		"name": "$& in a group expands to the matched placeholder",
+		"origin": "synthetic",
+		"input": "Type 'string' is not assignable to type 'ErrorType<\"costs $& now\">'.",
+		"output": "costs $1 now",
+		"rule": 0,
+		"display": "costs $1 now"
+	},
+	{
+		"name": "$$ in a group collapses to one $",
+		"origin": "synthetic",
+		"input": "Type 'string' is not assignable to type 'ErrorType<\"$$ref\">'.",
+		"output": "$ref",
+		"rule": 0,
+		"display": "$ref"
+	},
+	{
+		"name": "branded ErrorType object",
+		"origin": "synthetic",
+		"input": "Type 'string' is not assignable to type '{ \" brand\": \"ErrorType\"; declared: string; inferred: number; }'.",
+		"output": "declared: string; inferred: number;",
+		"rule": 1,
+		"display": "declared: string; inferred: number;"
+	},
+	{
+		"name": "completion ending in a hair space",
+		"origin": "synthetic",
+		"input": "Argument of type '\"str\"' is not assignable to parameter of type '\"string \"'.",
+		"output": "string ",
+		"rule": 2,
+		"display": "string "
+	},
+	{
+		"name": "completion ending in two zero-width spaces",
+		"origin": "synthetic",
+		"input": "Argument of type '\"str\"' is not assignable to parameter of type '\"string​​\"'.",
+		"output": "string​​",
+		"rule": 2,
+		"display": "string​​"
+	},
+	{
+		"name": "error message ending in a zero-width space",
+		"origin": "synthetic",
+		"input": "Argument of type '\"(string\"' is not assignable to parameter of type '\"Missing )​\"'.",
+		"output": "Missing )​",
+		"rule": 2,
+		"display": "Missing )​"
+	},
+	{
+		"name": "assignability to a longer literal",
+		"origin": "synthetic",
+		"input": "Type '\"abc\"' is not assignable to type '\"abcdef\"'.",
+		"output": "\"abcdef\"",
+		"rule": 3,
+		"display": "\"abcdef\""
+	},
+	{
+		"name": "assignability to a union of completions",
+		"origin": "synthetic",
+		"input": "Argument of type '\"str\"' is not assignable to parameter of type '\"string\" | \"symbol\"'.",
+		"output": "\"string\" | \"symbol\"",
+		"rule": 3,
+		"display": "\"string\" | \"symbol\""
+	},
+	{
+		"name": "assignability backreference is case-insensitive",
+		"origin": "synthetic",
+		"input": "Argument of type '\"STR\"' is not assignable to parameter of type '\"string\"'.",
+		"output": "\"string\"",
+		"rule": 3,
+		"display": "\"string\""
+	},
+	{
+		"name": "assignability to an unrelated literal passes through",
+		"origin": "synthetic",
+		"input": "Type '\"ab\"' is not assignable to type '\"xyz\"'.",
+		"output": "Type '\"ab\"' is not assignable to type '\"xyz\"'.",
+		"rule": null,
+		"display": "Type '\"ab\"' is not assignable to type '\"xyz\"'."
+	},
+	{
+		"name": "lowercase message still matches",
+		"origin": "synthetic",
+		"input": "argument of type '\"str\"' is not assignable to parameter of type '\"string\"'.",
+		"output": "\"string\"",
+		"rule": 3,
+		"display": "\"string\""
+	},
+	{
+		"name": "multi-line message keeps its last line, indentation included",
+		"origin": "synthetic",
+		"input": "Type '{ a: string; }' is not assignable to type 'User'.\n  Types of property 'a' are incompatible.\n    Type 'string' is not assignable to type 'number'.",
+		"output": "    Type 'string' is not assignable to type 'number'.",
+		"rule": 4,
+		"display": "    Type 'string' is not assignable to type 'number'."
+	},
+	{
+		"name": "trailing newline leaves an empty last line",
+		"origin": "synthetic",
+		"input": "Something went wrong.\n",
+		"output": "",
+		"rule": 4,
+		"display": ""
+	},
+	{
+		"name": "CRLF line breaks",
+		"origin": "synthetic",
+		"input": "First line.\r\nSecond line.",
+		"output": "Second line.",
+		"rule": 4,
+		"display": "Second line."
+	},
+	{
+		"name": "single-line message passes through",
+		"origin": "synthetic",
+		"input": "Cannot find name 'notDefined'.",
+		"output": "Cannot find name 'notDefined'.",
+		"rule": null,
+		"display": "Cannot find name 'notDefined'."
+	},
+	{
+		"name": "tab in a message is drawn as a line break",
+		"origin": "synthetic",
+		"input": "Expected\tsomething.",
+		"output": "Expected\tsomething.",
+		"rule": null,
+		"display": "Expected⏎something."
+	},
+	{
+		"name": "message longer than 500 characters is cut",
+		"origin": "synthetic",
+		"input": "Type 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' is not assignable to type 'number'.",
+		"output": "Type 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' is not assignable to type 'number'.",
+		"rule": null,
+		"display": "Type 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+	},
+	{
+		"name": "empty message",
+		"origin": "synthetic",
+		"input": "",
+		"output": "",
+		"rule": null,
+		"display": ""
+	}
+]

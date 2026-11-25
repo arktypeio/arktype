@@ -1,0 +1,30 @@
+{
+	"name": "tree-sitter-arktype",
+	"version": "0.1.0",
+	"private": true,
+	"description": "ArkType definitions for tree-sitter, held 1:1 with the VS Code extension",
+	"license": "MIT",
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/tree-sitter"
+	},
+	"scripts": {
+		"build": "echo No build required!",
+		"buildGrammar": "node ./scripts/buildGrammar.ts"
+	},
+	"devDependencies": {
+		"@ark/editor-conformance": "workspace:*",
+		"@tree-sitter-grammars/tree-sitter-markdown": "0.3.2",
+		"@tree-sitter-grammars/tree-sitter-svelte": "1.0.2",
+		"tree-sitter-cli": "0.27.2",
+		"tree-sitter-javascript": "0.25.0",
+		"tree-sitter-typescript": "0.23.2",
+		"web-tree-sitter": "0.27.2"
+	},
+	"exports": {
+		"./*.ts": "./*.ts",
+		"./*.json": "./*.json"
+	}
+}

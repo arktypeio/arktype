@@ -16,6 +16,7 @@ import {
 	type BuiltinObjectKind,
 	type Constructor,
 	type Domain,
+	type ErrorMessage,
 	type show
 } from "@ark/util"
 import { intersectNodesRoot, pipeNodesRoot } from "arksets/internal"
@@ -91,7 +92,8 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: never
 
 export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
-	def["length"] extends 1 ? readonly [writeMissingRightOperandMessage<def[0]>]
+	def["length"] extends 1 ?
+		readonly [ErrorMessage<writeMissingRightOperandMessage<def[0]>>]
 	: def[0] extends "keyof" ?
 		readonly [def[0], validateDefinition<def[1], $, args>]
 	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
@@ -109,7 +111,8 @@ export type validateIndexOneExpression<
 		readonly [validateDefinition<def[0], $, args>, def[1]]
 	:	readonly [
 			validateDefinition<def[0], $, args>,
-			def["length"] extends 2 ? writeMissingRightOperandMessage<def[1]>
+			def["length"] extends 2 ?
+				ErrorMessage<writeMissingRightOperandMessage<def[1]>>
 			:	def[1],
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>

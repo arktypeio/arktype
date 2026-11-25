@@ -140,7 +140,26 @@
 		"semi": false,
 		"trailingComma": "none",
 		"experimentalTernaries": true,
-		"arrowParens": "avoid"
+		"arrowParens": "avoid",
+		"overrides": [
+			{
+				"//": "editor fixtures, whose exact text is what's tested: formatted only with an @format pragma, so never",
+				"files": "ark/editor-conformance/highlighting/corpus/**",
+				"options": {
+					"requirePragma": true
+				}
+			},
+			{
+				"//": "generated with one span or difference per line",
+				"files": [
+					"ark/editor-conformance/highlighting/expected/**",
+					"ark/editor-conformance/highlighting/differences/**"
+				],
+				"options": {
+					"printWidth": 100000
+				}
+			}
+		]
 	},
 	"engines": {
 		"node": ">=22.18.0",
@@ -157,8 +176,13 @@
 				"eslint": "*"
 			}
 		},
+		"onlyBuiltDependencies": [
+			"tree-sitter-cli"
+		],
 		"ignoredBuiltDependencies": [
-			"sharp"
+			"sharp",
+			"tree-sitter-javascript",
+			"tree-sitter-typescript"
 		]
 	}
 }

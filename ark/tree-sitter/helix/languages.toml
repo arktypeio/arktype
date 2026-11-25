@@ -1,0 +1,19 @@
+# ArkType for Helix: append this to ~/.config/helix/languages.toml, copy
+# runtime/queries into ~/.config/helix/runtime/queries, then run
+# `hx --grammar fetch && hx --grammar build`.
+#
+# Helix highlights ArkType definitions where TypeScript, TSX, JavaScript and
+# JSX call ArkType, and in Markdown, Svelte, Vue and Astro through their own
+# TypeScript injections. For a local checkout, use
+# `source = { path = "/path/to/arktype/ark/tree-sitter" }` instead.
+
+[[language]]
+name = "arktype"
+scope = "source.arktype"
+injection-regex = "^arktype$"
+file-types = []
+roots = []
+
+[[grammar]]
+name = "arktype"
+source = { git = "https://github.com/arktypeio/arktype", rev = "main", subpath = "ark/tree-sitter" }

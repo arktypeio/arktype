@@ -1,0 +1,46 @@
+{
+	"$comment": "Maps a TextMate scope stack to the category a character is compared by. Walk the stack from the innermost scope outward; for each scope, the first rule with a prefix equal to the scope or to a dot-separated prefix of it decides. A stack no rule matches is `none` (the editor's default foreground). Categories are tree-sitter capture names.",
+	"rules": [
+		{ "prefix": "comment", "category": "comment" },
+		{ "prefix": "punctuation.definition.comment", "category": "comment" },
+		{ "prefix": "string.regexp", "category": "string.regexp" },
+		{ "prefix": "punctuation.definition.string", "category": "string" },
+		{ "prefix": "string", "category": "string" },
+		{ "prefix": "constant.character.escape", "category": "string.escape" },
+		{ "prefix": "constant.numeric", "category": "number" },
+		{ "prefix": "constant.language.boolean", "category": "boolean" },
+		{ "prefix": "constant.language", "category": "constant.builtin" },
+		{ "prefix": "support.type.primitive", "category": "type.builtin" },
+		{ "prefix": "support.type.builtin", "category": "type.builtin" },
+		{ "prefix": "entity.name.type.module", "category": "module" },
+		{ "prefix": "entity.name.type", "category": "type" },
+		{ "prefix": "entity.name.function", "category": "function" },
+		{ "prefix": "entity.name.label", "category": "label" },
+		{ "prefix": "keyword.operator.expression", "category": "keyword" },
+		{ "prefix": "keyword.operator.type.asserts", "category": "keyword" },
+		{ "prefix": "keyword.operator.new", "category": "keyword" },
+		{ "prefix": "keyword.control", "category": "keyword" },
+		{ "prefix": "storage", "category": "keyword" },
+		{ "prefix": "keyword.operator", "category": "operator" },
+		{ "prefix": "keyword", "category": "keyword" },
+		{ "prefix": "punctuation.accessor", "category": "punctuation.delimiter" },
+		{ "prefix": "punctuation.separator", "category": "punctuation.delimiter" },
+		{ "prefix": "punctuation.terminator", "category": "punctuation.delimiter" },
+		{
+			"prefix": "punctuation.definition.typeparameters",
+			"category": "punctuation.bracket"
+		},
+		{
+			"prefix": "punctuation.definition.block",
+			"category": "punctuation.bracket"
+		},
+		{ "prefix": "meta.brace", "category": "punctuation.bracket" },
+		{ "prefix": "punctuation", "category": "punctuation" },
+		{ "prefix": "variable.language", "category": "variable.builtin" },
+		{ "prefix": "variable.parameter", "category": "variable.parameter" },
+		{ "prefix": "variable", "category": "variable" },
+		{ "prefix": "support.function", "category": "function" },
+		{ "prefix": "support", "category": "type" },
+		{ "prefix": "meta.object-literal.key", "category": "property" }
+	]
+}
