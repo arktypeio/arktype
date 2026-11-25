@@ -97,12 +97,34 @@ export type LspDiagnostic = {
 	[k: string]: unknown
 }
 
+/**
+ * Whether one of the rules written for ArkType's errors matches the message,
+ * rather than only the last, which takes the last line of any message.
+ */
+export const isArkTypeMessage = (message: string): boolean => {
+	const rule = compiledRules.findIndex(rule => rule.matcher.test(message))
+	return rule !== -1 && rule < compiledRules.length - 1
+}
+
+/**
+ * Zed draws each of a diagnostic's `relatedInformation` as a diagnostic of
+ * its own. For an ArkType error that is TypeScript's "The expected type comes
+ * from property 'id' which is declared here on type 'validateObjectLiteral<…>'",
+ * which spans the whole definition, so hovering the string shows that instead
+ * of the summary. VS Code only lists it in the error's hover, and it points at
+ * ArkType's internals either way, so it's dropped.
+ */
 export const summarizeDiagnostic = <diagnostic extends LspDiagnostic>(
 	diagnostic: diagnostic
-): diagnostic =>
-	typeof diagnostic.message === "string" ?
-		{ ...diagnostic, message: summarizeMessage(diagnostic.message) }
-	:	diagnostic
+): diagnostic => {
+	if (typeof diagnostic.message !== "string") return diagnostic
+	const summarized = {
+		...diagnostic,
+		message: summarizeMessage(diagnostic.message)
+	}
+	if (isArkTypeMessage(diagnostic.message)) delete summarized.relatedInformation
+	return summarized
+}
 
 export const restoreDiagnostic = <diagnostic extends LspDiagnostic>(
 	diagnostic: diagnostic
