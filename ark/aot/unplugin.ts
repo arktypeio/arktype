@@ -501,6 +501,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
+		// a closed compiler releases its worker. buildEnd releases it only from
+		// the emit hook, which a production build failing doesn't reach, so
+		// each compiler a process ran, as a test runner's, held its own
+		bundler.hooks.shutdown?.tap("arktype", restart)
 		// a persistent cache keeps what other options or code precompiled, so
 		// they version it
 		const { cache } = bundler.options
@@ -1597,6 +1601,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			shouldTransformCachedModule,
 			buildApp: async builder => {
 				app = builder
+			},
+			// a closed dev server releases its worker, as one restarting for a
+			// changed config starts with a new plugin; a build's buildEnd does
+			closeBundle: () => {
+				if (isServing) restart()
 			},
 			configureServer: devServer => {
 				server = devServer
@@ -3012,6 +3021,8 @@ interface BundlerCompiler {
 	hooks: {
 		compilation: Tap<BundlerCompilation>
 		thisCompilation: Tap<BundlerCompilation>
+		// webpack 5's and Rspack's, which a stand-in compiler may lack
+		shutdown?: Tap<void>
 	}
 	resolverFactory: {
 		get(

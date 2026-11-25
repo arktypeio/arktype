@@ -324,7 +324,6 @@ import {
 	writeComposedRuntimeHint,
 	writeConfiguredOptionHint,
 	writeConflictHint,
-	writeErrorReaderHint,
 	writeMessageInHint,
 	writeNoConfigHint,
 	writeStaticHint,
@@ -3342,6 +3341,7 @@ export class Precompiler {
 			reads
 		)
 		this.linkIslands(module, sites, s, prefix)
+		this.inlineRegexCalls(module, sites, s)
 		this.markProgress(module, sites, s, prefix)
 		if (this.checkHelpers) this.registerHelpers(module, s)
 		// esbuild loads stdin as written, which holding no site leaves it
@@ -3361,6 +3361,45 @@ export class Precompiler {
 				.join(""),
 			chosen
 		]
+	}
+
+	// arkregex's regex is `(src, flags) => new RegExp(src, flags)`, typed, so
+	// `regex(src, flags)` or `regex.as(src, flags)` outside a site is written as
+	// `new RegExp(src, flags)`, which saves a call; a bare read like `[regex]`
+	// still reads it from arktype/runtime
+	private inlineRegexCalls(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString
+	): void {
+		for (const reference of module.scopes.references) {
+			const id = reference.id
+			if (
+				isInIsland(id, module) ||
+				sites.some(site => site.status === "accepted" && contains(site, id))
+			)
+				continue
+			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
+			if (name !== "regex" || !read) continue
+			const parent = read.parent
+			const callee =
+				(
+					parent?.type === "MemberExpression" &&
+					parent.object === read &&
+					!parent.computed &&
+					!parent.optional &&
+					parent.property.name === "as"
+				) ?
+					parent
+				:	read
+			const call = callee.parent
+			if (
+				call?.type === "CallExpression" &&
+				call.callee === callee &&
+				!call.optional
+			)
+				s.overwrite(callee.start, callee.end, "new RegExp")
+		}
 	}
 
 	// `type.errors` is `ArkErrors`, which leaves `type`, a frozen object holding
@@ -8089,7 +8128,7 @@ export class Precompiler {
 		return result
 	}
 
-	// e.g. `flatMessagesByPath(out)`, which the program can write from `out.issues`
+	// e.g. `messageIn(issue, de)`, where the program can read `issue.message`
 	private errorReaderDiagnostic(
 		module: SourceModule,
 		name: string,
@@ -8097,10 +8136,10 @@ export class Precompiler {
 	): Diagnostic {
 		const [callee, call] = operatorOf(read)
 		const isCall = call?.type === "CallExpression" && call.callee === callee
-		const errors =
-			isCall && call.arguments.length ? module.snippetOf(call.arguments[0])
-			: name === "messageIn" ? "issue"
-			: "errors"
+		const issue =
+			isCall && call.arguments.length ?
+				module.snippetOf(call.arguments[0])
+			:	"issue"
 		return this.diagnostic(
 			module,
 			isCall ? call : read,
@@ -8109,9 +8148,7 @@ export class Precompiler {
 				`${module.snippetOf(call)} calls ${name}, which arktype/runtime doesn't export`
 			:	`\`${module.snippetOf(read)}\` is arktype's, which arktype/runtime doesn't export`,
 			[],
-			name === "messageIn" ?
-				writeMessageInHint(errors)
-			:	writeErrorReaderHint(name, errors)
+			writeMessageInHint(issue)
 		)
 	}
 

@@ -3743,6 +3743,7 @@ export default shared`).js
 			"schema/runtime.ts",
 			"schema/shared/configured.ts",
 			"schema/shared/enWriters.ts",
+			"schema/shared/errorReaders.ts",
 			"schema/shared/errorWriters.ts",
 			"schema/shared/issues.ts",
 			"schema/shared/errors.ts",
