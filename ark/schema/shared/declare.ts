@@ -24,6 +24,12 @@ interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	/** the JSON Schema to write for this node in place of the one its constraints imply */
 	jsonSchema?: JsonSchema
 	onFail?: ArkErrors.Handler
+	/**
+	 * serialized as the `pattern` keyword of the generated JSON Schema
+	 *
+	 * ⚠️ does not affect validation (for that, use a regex definition like `type("/^$/")`)
+	 */
+	pattern?: string
 }
 
 /**

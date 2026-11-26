@@ -1154,4 +1154,19 @@ contextualize(() => {
 			'Can\'t convert "predicate" to JSON Schema'
 		)
 	})
+
+	describe("meta", () => {
+		it("configured pattern", () => {
+			// https://github.com/arktypeio/arktype/issues/1469
+			attest(() => type("string").configure({ pattern: "^$" })).type.errors("")
+
+			const T = type("string").configure({ pattern: "^$" })
+
+			attest(T.toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "string",
+				pattern: "^$"
+			})
+		})
+	})
 })
