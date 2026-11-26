@@ -1689,4 +1689,97 @@ swap.swap.order[1] must be "on"`)
 		const Wrapped = type({ value: Thing })
 		attest<{ value: Value }>(Wrapped.infer)
 	})
+
+	it("rejects invalid nested data in filtered cyclic morph with contextual narrow", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({
+				a: $.type("string").narrow((_s, _ctx) => true),
+				t: "string.trim",
+				"next?": "this"
+			}).filter(() => true)
+			const invalid = { a: "", t: " a ", next: { a: 1 } }
+			attest(T.allows(invalid)).equals(false)
+			// call twice so both uncompiled and JIT paths run when jitless is false
+			for (let i = 0; i < 2; i++) {
+				attest(T(invalid).toString()).snap(`next.a must be a string
+next.t must be a string (was missing)`)
+			}
+			const valid = { a: "", t: " a ", next: { a: "x", t: " b " } }
+			attest(T.allows(valid)).equals(true)
+			attest(T(valid)).equals({ a: "", t: "a", next: { a: "x", t: "b" } })
+		}
+	})
+
+	it("rejects cyclic data failing a filter on a transforming cyclic node", () => {
+		for (const jitless of [false, true]) {
+			const $: any = scope(
+				{
+					node: () =>
+						$.type({
+							a: "string",
+							t: "string.trim",
+							"next?": "node"
+						}).filter((o: { a: string }) => o.a === "ok")
+				},
+				{ jitless }
+			)
+			const Node = $.export().node
+			const selfBad: any = { a: "bad", t: " a " }
+			selfBad.next = selfBad
+			attest(Node.allows(selfBad)).equals(false)
+			for (let i = 0; i < 2; i++) {
+				attest(Node(selfBad).toString()).snap(
+					"must be valid according to an anonymous predicate"
+				)
+			}
+
+			const first: any = { a: "ok", t: " a " }
+			const second: any = { a: "bad", t: " b ", next: first }
+			first.next = second
+			attest(Node.allows(first)).equals(false)
+			for (let i = 0; i < 2; i++) {
+				attest(Node(first).toString()).snap(
+					"next must be valid according to an anonymous predicate"
+				)
+			}
+
+			const selfGood: any = { a: "ok", t: " a " }
+			selfGood.next = selfGood
+			attest(Node.allows(selfGood)).equals(true)
+			const out = Node.assert(selfGood) as any
+			attest(out.t).equals("a")
+			attest(out.next).is(out)
+		}
+	})
+
+	it("terminates on cyclic data in a contextual union", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope(
+				{
+					union: [
+						{
+							a: type("string").narrow((_s, _ctx) => true),
+							"next?": "union"
+						},
+						"|",
+						{ b: "number" }
+					]
+				},
+				{ jitless }
+			)
+			const U = $.export().union
+			const cyc: any = { a: "ok" }
+			cyc.next = cyc
+			attest(U.allows(cyc)).equals(true)
+			for (let i = 0; i < 2; i++) attest(U(cyc)).is(cyc)
+			const bad = { a: "ok", next: { a: 1 } }
+			attest(U.allows(bad)).equals(false)
+			for (let i = 0; i < 2; i++) {
+				attest(U(bad).toString()).snap(
+					"next.a must be a string, next.b must be a number or b must be a number"
+				)
+			}
+		}
+	})
 })
