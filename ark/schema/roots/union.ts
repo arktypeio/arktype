@@ -652,22 +652,31 @@ const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
 const isArrayCase = (caseNode: BaseRoot | true): boolean =>
 	caseNode !== true && caseNode._in.extends($ark.kw.Array.internal)
 
+/**
+ * @internal a union's meta, labeled as its branches are where it has no
+ * label of its own: a value each branch labels alike is labeled so, as each
+ * would say, whether it fails at its discriminant or its key is missing
+ */
+export const metaLabeledAlike = (
+	meta: ArkEnv.meta,
+	branches: readonly BaseRoot[]
+): ArkEnv.meta => {
+	if (meta.label !== undefined) return meta
+	const label = branches[0]?.meta.label
+	return (
+			label === undefined ||
+				branches.some(branch => branch.meta.label !== label)
+		) ?
+			meta
+		:	{ ...meta, label }
+}
+
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,
 	path: array<PropertyKey>,
 	branches: readonly BaseRoot[]
 ): ArkEnv.meta => {
-	if (path.length === 0) {
-		if (meta.label !== undefined) return meta
-		// a value each branch labels alike is labeled so, as each would say
-		const label = branches[0]?.meta.label
-		return (
-				label === undefined ||
-					branches.some(branch => branch.meta.label !== label)
-			) ?
-				meta
-			:	{ ...meta, label }
-	}
+	if (path.length === 0) return metaLabeledAlike(meta, branches)
 	// the key it misses isn't the value a label names
 	const { expected, actual, label, ...rest } = meta
 	return rest
