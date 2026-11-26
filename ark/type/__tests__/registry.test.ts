@@ -107,6 +107,13 @@ contextualize(() => {
 		attest(Box.internal.id in $ark.nodesById).equals(true)
 	})
 
+	it("is all arktype/schema exports of what registers a node", async () => {
+		const schema: object = await import("arktype/schema")
+		attest(
+			["nodesById", "registrationOf", "releaseContext"].filter(k => k in schema)
+		).equals(["nodesById"])
+	})
+
 	it("prints bare names", () => {
 		register(Symbol("bareTag"))
 		register({ isBare: () => true }.isBare)

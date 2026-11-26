@@ -29,12 +29,8 @@ import {
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
-import {
-	$ark,
-	nodesById,
-	registrationOf,
-	type NodeId
-} from "../shared/registry.ts"
+import { registrationOf } from "../shared/registrations.ts"
+import { $ark, nodesById, type NodeId } from "../shared/registry.ts"
 import {
 	assertUnchecked,
 	hasArkKind,
