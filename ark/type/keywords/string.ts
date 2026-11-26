@@ -129,15 +129,24 @@ export const stringInteger: stringInteger.module = keywordModule(
 	}
 ) as never
 
+// Submodule under a name this file doesn't export, which a module's exports
+// hold a nested module by: tsc writes it out as it does them. Held by
+// Submodule itself, it would bind to a scope without the key its root is
+// inferred by, as a module of a user's scope does
+type nested<exports extends {}> = Submodule<exports>
+
+// unexported, so emitted declarations write it out: see Submodule
+type stringInteger$ = {
+	root: string
+	parse: (In: string) => To<number>
+}
+
 export declare namespace stringInteger {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<number>
-	}
+	export type $ = stringInteger$
 }
 
 const hex = () => regexStringNode(/^[\dA-Fa-f]+$/, "string.hex")
@@ -162,15 +171,17 @@ const base64: base64.module = keywordModule(
 	}
 ) as never
 
+type base64$ = {
+	root: string
+	url: string
+}
+
 declare namespace base64 {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		url: string
-	}
+	export type $ = base64$
 }
 
 const preformattedCapitalize = cached(() =>
@@ -191,15 +202,17 @@ export const capitalize: capitalize.module = keywordModule(
 	}
 ) as never
 
+type capitalize$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace capitalize {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = capitalize$
 }
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isCreditCard.js
@@ -381,34 +394,40 @@ export const stringDate: stringDate.module = keywordModule(
 	}
 ) as never
 
+type stringDate$ = {
+	root: string
+	parse: (In: string) => To<Date>
+	iso: nested<stringDateIso$>
+	epoch: nested<stringDateEpoch$>
+}
+
+type stringDateIso$ = {
+	root: string
+	parse: (In: string) => To<Date>
+}
+
+type stringDateEpoch$ = {
+	root: string
+	parse: (In: string) => To<Date>
+}
+
 export declare namespace stringDate {
 	export type module = Module<stringDate.submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<Date>
-		iso: iso.submodule
-		epoch: epoch.submodule
-	}
+	export type $ = stringDate$
 
 	export namespace iso {
 		export type submodule = Submodule<$>
 
-		export type $ = {
-			root: string
-			parse: (In: string) => To<Date>
-		}
+		export type $ = stringDateIso$
 	}
 
 	export namespace epoch {
 		export type submodule = Submodule<$>
 
-		export type $ = {
-			root: string
-			parse: (In: string) => To<Date>
-		}
+		export type $ = stringDateEpoch$
 	}
 }
 
@@ -438,16 +457,18 @@ export const ip: ip.module = keywordModule(
 	}
 ) as never
 
+type ip$ = {
+	root: string
+	v4: string
+	v6: string
+}
+
 export declare namespace ip {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		v4: string
-		v6: string
-	}
+	export type $ = ip$
 }
 
 const jsonRoot = () =>
@@ -473,15 +494,17 @@ export const json: stringJson.module = keywordModule(
 	}
 ) as never
 
+type stringJson$ = {
+	root: string
+	parse: (In: string) => To<Json>
+}
+
 export declare namespace stringJson {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<Json>
-	}
+	export type $ = stringJson$
 }
 
 const preformattedLower = cached(() =>
@@ -502,15 +525,17 @@ const lower: lower.module = keywordModule(
 	}
 ) as never
 
+type lower$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace lower {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = lower$
 }
 
 export const normalizedForms = ["NFC", "NFD", "NFKC", "NFKD"] as const
@@ -603,53 +628,63 @@ export const normalize: normalize.module = keywordModule(
 	}
 ) as never
 
+type normalize$ = {
+	root: (In: string) => To<string>
+	NFC: nested<normalizeNFC$>
+	NFD: nested<normalizeNFD$>
+	NFKC: nested<normalizeNFKC$>
+	NFKD: nested<normalizeNFKD$>
+}
+
+type normalizeNFC$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
+type normalizeNFD$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
+type normalizeNFKC$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
+type normalizeNFKD$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace normalize {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		NFC: NFC.submodule
-		NFD: NFD.submodule
-		NFKC: NFKC.submodule
-		NFKD: NFKD.submodule
-	}
+	export type $ = normalize$
 
 	export namespace NFC {
 		export type submodule = Submodule<$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeNFC$
 	}
 
 	export namespace NFD {
 		export type submodule = Submodule<$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeNFD$
 	}
 
 	export namespace NFKC {
 		export type submodule = Submodule<$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeNFKC$
 	}
 
 	export namespace NFKD {
 		export type submodule = Submodule<$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeNFKD$
 	}
 }
 
@@ -690,15 +725,17 @@ export const stringNumeric: stringNumeric.module = keywordModule(
 	}
 ) as never
 
+type stringNumeric$ = {
+	root: string
+	parse: (In: string) => To<number>
+}
+
 export declare namespace stringNumeric {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<number>
-	}
+	export type $ = stringNumeric$
 }
 
 const regex = () =>
@@ -731,15 +768,17 @@ const trim: trim.module = keywordModule(
 	}
 ) as never
 
+type trim$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace trim {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = trim$
 }
 
 const preformattedUpper = cached(() =>
@@ -760,15 +799,17 @@ const upper: upper.module = keywordModule(
 	}
 ) as never
 
+type upper$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 declare namespace upper {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = upper$
 }
 
 const urlRoot = cached(() =>
@@ -819,16 +860,18 @@ export const url: url.module = keywordModule(
 	}
 ) as never
 
+type url$ = {
+	root: string
+	http: string
+	parse: (In: string) => To<URL>
+}
+
 export declare namespace url {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		http: string
-		parse: (In: string) => To<URL>
-	}
+	export type $ = url$
 }
 
 const uuidVersions = [1, 2, 3, 4, 5, 6, 7, 8] as const
@@ -859,22 +902,24 @@ export const uuid: uuid.module = keywordModule(
 	}
 ) as never
 
+type uuid$ = {
+	root: string
+	v1: string
+	v2: string
+	v3: string
+	v4: string
+	v5: string
+	v6: string
+	v7: string
+	v8: string
+}
+
 export declare namespace uuid {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		v1: string
-		v2: string
-		v3: string
-		v4: string
-		v5: string
-		v6: string
-		v7: string
-		v8: string
-	}
+	export type $ = uuid$
 
 	export namespace $ {
 		export type flat = {}
@@ -914,35 +959,37 @@ export const string: string.module = keywordModule(
 	}
 ) as never
 
+type string$ = {
+	root: string
+	alpha: string
+	alphanumeric: string
+	hex: string
+	base58: string
+	base64: nested<base64$>
+	capitalize: nested<capitalize$>
+	creditCard: string
+	date: nested<stringDate$>
+	digits: string
+	email: string
+	integer: nested<stringInteger$>
+	ip: nested<ip$>
+	json: nested<stringJson$>
+	lower: nested<lower$>
+	normalize: nested<normalize$>
+	nonblank: string
+	numeric: nested<stringNumeric$>
+	regex: string
+	semver: string
+	trim: nested<trim$>
+	upper: nested<upper$>
+	url: nested<url$>
+	uuid: nested<uuid$>
+}
+
 export declare namespace string {
 	export type module = Module<string.submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: string
-		alpha: string
-		alphanumeric: string
-		hex: string
-		base58: string
-		base64: base64.submodule
-		capitalize: capitalize.submodule
-		creditCard: string
-		date: stringDate.submodule
-		digits: string
-		email: string
-		integer: stringInteger.submodule
-		ip: ip.submodule
-		json: stringJson.submodule
-		lower: lower.submodule
-		normalize: normalize.submodule
-		nonblank: string
-		numeric: stringNumeric.submodule
-		regex: string
-		semver: string
-		trim: trim.submodule
-		upper: upper.submodule
-		url: url.submodule
-		uuid: uuid.submodule
-	}
+	export type $ = string$
 }

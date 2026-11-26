@@ -52,15 +52,18 @@ export const arkFormData: arkFormData.module = keywordModule(
 	}
 ) as never
 
+// unexported, so emitted declarations write it out: see Submodule
+type arkFormData$ = {
+	root: FormData
+	value: string | File
+	parse: (In: FormData) => To<ParsedFormData>
+	parsed: ParsedFormData
+}
+
 export declare namespace arkFormData {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: FormData
-		value: FormDataValue
-		parse: (In: FormData) => To<ParsedFormData>
-		parsed: ParsedFormData
-	}
+	export type $ = arkFormData$
 }

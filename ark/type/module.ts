@@ -26,6 +26,10 @@ export type bindExportsToScope<exports, $> = {
 	[k in keyof exports]: instantiateExport<exports[k], $>
 } & unknown
 
+// a keyword module declares its exports by an alias its file doesn't export
+// (string$ for string.$), which tsc can't name, so it writes them out in the
+// declarations it emits for a library exporting the module. Named, they would
+// be imported by that file's path under arktype/internal
 export type Submodule<exports extends {}> = RootModule<
 	exports &
 		("root" extends keyof exports ? { [inferred]: exports["root"] } : {})

@@ -115,9 +115,14 @@ export const declareParser = declare
 export const fromJsonSchemaParser = fromJsonSchema
 export const messageWriter = messageIn
 
+// each keyword submodule, and one nested in another
 export const stringKeywords = keywords.string
 export const numberKeywords = keywords.number
 export const objectKeywords = keywords.object
+export const unknownKeywords = keywords.unknown
+export const typedArrayKeywords = keywords.TypedArray
+export const formDataKeywords = keywords.FormData
+export const dateKeywords = keywords.string.date
 
 // a locale written from one arktype ships
 export const locale = { ...de, tag: "de-AT" }

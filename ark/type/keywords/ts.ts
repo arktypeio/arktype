@@ -75,13 +75,22 @@ export const unknown: Module<unknown.$> = keywordModule(
 	}
 ) as never
 
+// Submodule under a name this file doesn't export, which a module's exports
+// hold a nested module by: tsc writes it out as it does them. Held by
+// Submodule itself, it would bind to a scope without the key its root is
+// inferred by, as a module of a user's scope does
+type nested<exports extends {}> = Submodule<exports>
+
+// unexported, so emitted declarations write it out: see Submodule
+type unknown$ = {
+	root: unknown
+	any: any
+}
+
 export declare namespace unknown {
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: unknown
-		any: any
-	}
+	export type $ = unknown$
 }
 
 export const json: Module<json.$> = keywordModule(
@@ -98,14 +107,16 @@ export const json: Module<json.$> = keywordModule(
 	}
 ) as never
 
+type json$ = {
+	// only plain objects and arrays, so a primitive JSON value isn't one
+	root: JsonStructure
+	stringify: (In: JsonStructure) => To<string>
+}
+
 export declare namespace json {
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		// only plain objects and arrays, so a primitive JSON value isn't one
-		root: JsonStructure
-		stringify: (In: JsonStructure) => To<string>
-	}
+	export type $ = json$
 }
 
 export const object: Module<object.$> = keywordModule(
@@ -118,13 +129,15 @@ export const object: Module<object.$> = keywordModule(
 	}
 ) as never
 
+type object$ = {
+	root: object
+	json: nested<json$>
+}
+
 export declare namespace object {
 	export type submodule = Submodule<$>
 
-	export type $ = {
-		root: object
-		json: json.submodule
-	}
+	export type $ = object$
 }
 
 export class RecordHkt extends Hkt<[Key, unknown]> {
