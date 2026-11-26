@@ -937,7 +937,7 @@ Object.keys(User) // its node's keys
 
 - `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading see only a function's `length` and `name`, and `key in User` answers for a key the Type holds itself as it would for `type.object`.
 - `Object.getPrototypeOf()` returns a prototype every unread Type shares. `instanceof` builds the Type, so it answers as before.
-- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make the first read throw a `TypeError`, where they made the Type throw once it compiled.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` leave an unread Type the function it is: it's called and read as the Type it builds, but its own keys and prototype stay an unread Type's. A Type frozen once it's read but before it has compiled is checked without compiling.
 - `type.Record` is a function that calls and reads through to the `Record` generic, so `type.Record === type.keywords.Record` is `false`.
 - Two spellings of one Type can be two equal Types, depending on which is created and read first, as with `type("string")` and `type.keywords.string.root`, or `type("'b'")` and `type('"b"')`, and `/a/` and `"string & /a/"` always are. Definitions written alike are still one Type, as are union order, `.array()` and `[]`, and `type.string` and `"string"`.
 

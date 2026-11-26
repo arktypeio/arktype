@@ -1368,7 +1368,7 @@ Until a Type's first read:
 - Reflecting on its own keys, as `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading it do, sees only a function's `length` and `name`.
 - `key in T` answers for a key a Type holds itself as it would for `type.object`, so `"structure" in type({ a: "string" })` is `false` and `"domain" in type("string | number")` is `true`.
 - `Object.getPrototypeOf()` returns a prototype every unread Type shares, not its kind's. `instanceof` reads it, so it answers as before.
-- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make its first read throw a `TypeError`, where they made it throw once it compiled.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` leave it the function it is: it's called and read as the Type it builds, but its own keys and prototype stay an unread Type's. A Type frozen once it's read but before it has compiled is checked without compiling.
 
 Whether or not it's read:
 
