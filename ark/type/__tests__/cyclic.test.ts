@@ -800,6 +800,38 @@ contextualize(() => {
 		).throws(writeIndiscriminableMorphMessage("string[]", "($a0 | g0<$a0>)[]"))
 	})
 
+	it("a definition that throws leaves no deferred check to another Type's call", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// built as it's defined, so no parse of its own comes between the
+			// definition that throws and its first calls
+			const T = $.type({ a: "true", "+": "reject" })
+				.or({ a: "'b'" })
+				.or({ a: "null" })
+			const Self = $.type({ "a?": "this" })
+			// x's union is indeterminate, which is checked once `this` resolves
+			attest(() =>
+				$.type({
+					x: [{ b: "1", "+": "delete" }, "|", Self],
+					y: ["null", "&", "string"]
+				})
+			).throws(
+				"Intersection of null and string results in an unsatisfiable type"
+			)
+			// uncompiled, then compiled, which discriminates it
+			attest(T.allows({ a: true })).equals(true)
+			attest(T.allows({ a: true })).equals(true)
+			attest(T({ a: true, b: 1 }).toString()).equals("b must be removed")
+			// where the union is all that's defined, it throws as it did
+			attest(() => $.type([{ b: "1", "+": "delete" }, "|", Self])).throws(
+				writeIndiscriminableMorphMessage(
+					"{ a?: this }",
+					"{ b: 1, + (undeclared): delete }"
+				)
+			)
+		}
+	})
+
 	it("prints a deep transform's references", () => {
 		const { node } = scope({ node: { v: "string", "next?": "node" } }).export()
 		const { a } = scope({

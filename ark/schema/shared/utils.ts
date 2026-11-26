@@ -135,10 +135,16 @@ export const resolving = <t>(resolve: () => t): t => {
 export const defining = <t>(define: () => t): t => {
 	if (isResolutionFinal()) discardUnchecked()
 	inProgress.definitions++
+	let defined = false
 	try {
-		return define()
+		const result = define()
+		defined = true
+		return result
 	} finally {
 		inProgress.definitions--
+		// nor is its error another Type's, which whatever resolves next would
+		// throw if the checks waited for the next definition to discard them
+		if (!defined && isResolutionFinal()) discardUnchecked()
 	}
 }
 
