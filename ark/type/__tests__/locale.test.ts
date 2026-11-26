@@ -910,6 +910,27 @@ m must be a bigint`)
 				'a must be true, false or "x" (was missing)'
 			)
 		})
+
+		it("summaryIn and messageIn accept custom keyword phrases without TS2353", () => {
+			const Custom = type("string").configure({ keyword: "custom.id" })
+			const out = Custom(42) as ArkErrors
+			attest(
+				out.summaryIn({
+					tag: "en",
+					keywordPhrases: {
+						"custom.id": "a custom ID"
+					}
+				})
+			).snap("must be a custom ID")
+			attest(
+				messageIn(out.issues[0], {
+					tag: "en",
+					keywordPhrases: {
+						"custom.id": "a custom ID"
+					}
+				})
+			).snap("must be a custom ID")
+		})
 	})
 
 	describe("leaks", () => {

@@ -15,7 +15,6 @@ export {
 	type ArkEnv,
 	type ArkError,
 	type ArkErrorCode,
-	type ArkSchemaScopeConfig,
 	type ExpectedConfig,
 	type GenericAst,
 	type JsonSchema,
@@ -42,27 +41,12 @@ export {
 	type Json,
 	type JsonStructure
 } from "@ark/util"
-export {
-	regex,
-	type Regex,
-	type RegexExecArray,
-	type RegexParser
-} from "arkregex"
+export { regex, type Regex, type RegexExecArray } from "arkregex"
 export type { Default, distill, Out, To } from "./attributes.ts"
-export {
-	configure,
-	type ArkAmbient,
-	type ArkConfig,
-	type KeywordConfig
-} from "./config.ts"
+export { configure, type ArkConfig, type KeywordConfig } from "./config.ts"
 export type { DeclarationParser } from "./declare.ts"
 export type { FnParser, TypedFn } from "./fn.ts"
-export {
-	fromJsonSchema,
-	type FromJsonSchema,
-	type inferFromJsonSchema,
-	type validateFromJsonSchema
-} from "./fromJsonSchema.ts"
+export { fromJsonSchema, type FromJsonSchema } from "./fromJsonSchema.ts"
 export { Generic, type GenericParser } from "./generic.ts"
 export type { NonNegativeIntegerString } from "./keywords/Array.ts"
 export type { FormDataValue, ParsedFormData } from "./keywords/FormData.ts"

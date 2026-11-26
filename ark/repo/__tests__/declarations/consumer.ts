@@ -23,15 +23,12 @@ import {
 	ToJsonSchemaError,
 	type,
 	type ArkError,
-	type ArkSchemaScopeConfig,
 	type FromJsonSchema as FromJsonSchemaFn,
-	type inferFromJsonSchema,
 	type Locale,
 	type Module,
 	type ReadableIssue,
 	type Scope,
-	type ScopeParser,
-	type validateFromJsonSchema
+	type ScopeParser
 } from "arktype"
 import { codec } from "arktype/codecs"
 import {
@@ -184,6 +181,7 @@ export const formatReadableIssue = (issue: ReadableIssue): string =>
 	lineOf(issue)
 export const enLocale = en
 export const deLocale = de
+export const spreadLocale = { ...de, tag: "de-AT" }
 export const i18nHelpers = {
 	describeCause,
 	describeMissing,
@@ -196,10 +194,7 @@ export const i18nHelpers = {
 }
 export type ExportedHelpers = [
 	FromJsonSchemaFn,
-	validateFromJsonSchema<{ type: "string" }>,
-	inferFromJsonSchema<{ type: "string" }>,
 	ScopeParser,
-	ArkSchemaScopeConfig,
 	Module.infer<typeof exported>,
 	Module.inferIn<typeof exported>,
 	Scope.infer<typeof types>,

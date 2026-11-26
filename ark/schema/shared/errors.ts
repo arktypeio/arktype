@@ -193,7 +193,7 @@ export class ArkErrors extends BaseArkErrors {
 	/**
 	 * The summary in `locale`, or as configured without one.
 	 */
-	summaryIn(locale?: Locale): string {
+	summaryIn(locale?: Locale<string>): string {
 		if (locale === undefined) return this.summary
 		const resolved = resolveLocale(locale)
 		return summarize(
@@ -723,7 +723,7 @@ const failsAtBasis = (error: ArkError, path: array<PropertyKey>): boolean =>
  * that locale been configured, never naming its path, e.g. `must be a string`
  * where its line of `summaryIn(locale)` is `name must be a string`.
  */
-export const messageIn = (error: ArkError, locale: Locale): string =>
+export const messageIn = (error: ArkError, locale: Locale<string>): string =>
 	writtenIn(error, resolveLocale(locale)).message
 
 // what data a write or a getter has made valid since is rejected with, and
@@ -1411,7 +1411,7 @@ interface LocaleRenderer {
 		locale: Locale.Resolved
 	) => void
 	/** a locale completed from en where it lacks a part */
-	normalize: (locale: Locale) => Locale.Resolved
+	normalize: (locale: Locale<string>) => Locale.Resolved
 }
 
 let renderer: LocaleRenderer | undefined
@@ -1442,7 +1442,7 @@ export const configureLocale = (
 
 // a locale passed to write errors in, which without arktype/i18n is only
 // written in if it's the configured one, as writtenIn checks
-const resolveLocale = (locale: Locale): Locale.Resolved => {
+const resolveLocale = (locale: Locale<string>): Locale.Resolved => {
 	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
 		throwParseError(writeInvalidLocaleObjectMessage(locale))
 	return renderer ? renderer.normalize(locale) : (locale as Locale.Resolved)

@@ -17,7 +17,7 @@ import { describeActual } from "./enWriters.ts"
 import { keywordWriterOf, writeKeywordExpected, type Locale } from "./locale.ts"
 import { $ark } from "./registry.ts"
 
-type LocaleSelector = () => Locale | undefined
+type LocaleSelector = () => Locale<string> | undefined
 
 type ErrorSlot = "expected" | "actual" | "message"
 
@@ -35,7 +35,7 @@ let configured: Locale.Resolved
  * passed, returning it if it isn't a function
  */
 const configureLocale = (
-	locale: Locale | LocaleSelector | undefined,
+	locale: Locale<string> | LocaleSelector | undefined,
 	base: ResolvedConfig
 ): Locale.Resolved => {
 	defaultLocale = base.locale
@@ -243,7 +243,7 @@ const isDefaultDescription = (
 const normalizedLocales = new WeakMap<object, Locale.Resolved>()
 
 /** a locale completed from en where it lacks a part */
-export const normalizeLocale = (locale: Locale): Locale.Resolved => {
+export const normalizeLocale = (locale: Locale<string>): Locale.Resolved => {
 	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
 		throwParseError(writeInvalidLocaleObjectMessage(locale))
 	// en, once arktype's config has resolved, or before then as it will be,
@@ -258,7 +258,10 @@ export const normalizeLocale = (locale: Locale): Locale.Resolved => {
 	return normalized
 }
 
-const completeFrom = (en: Locale.Resolved, locale: Locale): Locale.Resolved => {
+const completeFrom = (
+	en: Locale.Resolved,
+	locale: Locale<string>
+): Locale.Resolved => {
 	let completed: Record<string, unknown> | undefined
 	const fill = (k: string, entry: unknown) => {
 		completed ??= { ...locale }
