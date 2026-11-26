@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
-import { firstIssue, match, scope, type } from "arktype"
+import { $ark, rootSchema } from "@ark/schema"
+import { firstIssue, match, scope, type, type Scope, type Type } from "arktype"
 import { setFlagsFromString } from "node:v8"
 import { runInNewContext } from "node:vm"
 
@@ -168,6 +168,154 @@ contextualize(() => {
 		attest(
 			String(type.schema(json as never)({ name: "a", next: { name: 1 } }))
 		).snap("next.name must be a string")
+	})
+
+	it("values captured by definitions that throw", async () => {
+		const value = (captured: object) => ["object", "=", () => captured] as const
+		const cases: Record<string, (captured: object) => unknown> = {
+			this: captured =>
+				type({
+					value: value(captured),
+					"next?": "this",
+					// @ts-expect-error
+					bad: "nope"
+				}),
+			export: captured =>
+				scope({
+					a: { value: value(captured), "b?": "b" },
+					// @ts-expect-error
+					b: { "a?": "a", bad: "nope" }
+				}).export(),
+			reference: captured =>
+				scope({
+					a: { value: value(captured), "b?": "b" },
+					// @ts-expect-error
+					b: { "a?": "a", bad: "nope" }
+				}).type("a[]"),
+			// b closes with a, which throws once b is parsed
+			member: captured =>
+				scope({
+					// @ts-expect-error
+					a: { "b?": "b", bad: "nope" },
+					b: { value: value(captured), "a?": "a" }
+				}).export(),
+			// a is cached as a union of an alias until b resolves
+			pending: captured =>
+				scope({
+					a: "b | string",
+					b: { value: value(captured), "a?": "a" }
+				}).type({
+					b: "b",
+					// @ts-expect-error
+					bad: "nope"
+				}),
+			check: captured =>
+				scope({
+					a: { value: value(captured), "b?": "b" },
+					b: "a & string"
+				}).export(),
+			// a resolves as its cycle closes, having parsed
+			resolution: captured =>
+				scope({
+					a: "b & string",
+					b: { value: value(captured), "a?": "a" }
+				}).export(),
+			cycle: captured =>
+				scope({
+					// @ts-expect-error
+					a: "b",
+					// @ts-expect-error
+					b: "a",
+					c: { value: value(captured) }
+				}).export(),
+			thunk: captured =>
+				scope({
+					a: { value: value(captured), "b?": "b" },
+					b: () => {
+						throw new Error("thrown by a thunk")
+					}
+				}).export(),
+			generic: captured =>
+				scope({
+					"box<t>": {
+						value: value(captured),
+						"next?": "box<t>",
+						// @ts-expect-error
+						bad: "nope"
+					},
+					a: "box<string>"
+				}).export()
+		}
+		// the first name to be unresolvable resolves the keywords, which stay registered
+		attest(() => type("nope" as never)).throws("'nope' is unresolvable")
+		const registered = new Set(Object.keys($ark.nodesById))
+		const thrown: Record<string, string> = {}
+		const refs: Record<string, WeakRef<object>> = {}
+		for (const k in cases) {
+			refs[k] = capture(captured => {
+				try {
+					cases[k](captured)
+				} catch (e) {
+					thrown[k] = String(e)
+				}
+			})
+		}
+		for (const ref of Object.values(refs)) await collectTarget(ref)
+		attest(thrown).snap({
+			this: "ParseError: 'nope' is unresolvable",
+			export: "ParseError: 'nope' is unresolvable",
+			reference: "ParseError: 'nope' is unresolvable",
+			member: "ParseError: 'nope' is unresolvable",
+			pending: "ParseError: 'nope' is unresolvable",
+			check:
+				"ParseError: Intersection of object and string results in an unsatisfiable type",
+			resolution:
+				"ParseError: Intersection of object and string results in an unsatisfiable type",
+			cycle: "ParseError: Alias 'a' has a shallow resolution cycle: a->b->a",
+			thunk: "Error: thrown by a thunk",
+			generic: "ParseError: 'nope' is unresolvable"
+		})
+		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
+		attest(
+			Object.keys($ark.nodesById).filter(id => !registered.has(id))
+		).equals([])
+	})
+
+	it("cycle parsed again after a thunk it references threw", async () => {
+		let calls = 0
+		// c is parsed and u cached as a union of an alias when b throws
+		const $: Scope = scope({
+			a: { "u?": "u", "c?": "c", b: "b" },
+			u: "a | string",
+			c: { "a?": "a", v: "string" },
+			b: () => {
+				if (calls++) return type("number")
+				throw new Error("thrown by a thunk")
+			}
+		} as never)
+		attest(() => $.export()).throws("thrown by a thunk")
+		await collect()
+		const types: Record<string, Type> = $.export() as never
+		attest(types.c.expression).snap("{ v: string, a?: $a }")
+		attest(types.u.expression).snap("string | { b: number, c?: $c, u?: $u }")
+		attest(String(types.c({ v: "", a: { b: 1, c: { v: 1 } } }))).snap(
+			"a.c.v must be a string"
+		)
+	})
+
+	it("alias parsed in a thunk that threw", async () => {
+		let Parsed: Type | undefined
+		const $: Scope = scope({
+			a: () => {
+				if (Parsed) return type({ v: "number" })
+				Parsed = $.type({ "next?": "a" } as never)
+				throw new Error("thrown by a thunk")
+			}
+		} as never)
+		attest(() => $.export()).throws("thrown by a thunk")
+		await collect()
+		// resolved by name, as its thunk is called again
+		attest(String(Parsed!({ next: { v: "" } }))).snap("next.v must be a number")
 	})
 
 	it("keeps cyclic scope types", async () => {

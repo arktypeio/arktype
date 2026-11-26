@@ -52,28 +52,44 @@ export const registrationOf = (id: string): Registration | undefined => {
 	return held && ("to" in held ? held : held.deref())
 }
 
-// a node bound to another scope, or built over a deferred Type, keeps the id
-// and inner of the node it's from, so either holds what the other registered
-const registrationsByInner = new WeakMap<object, Registration[]>()
+// what holds an id's registration besides an alias referencing it. A node's
+// inner holds its own: one bound to another scope, or built over a deferred
+// Type, keeps the id and inner of the node it's from, so either holds what the
+// other registered. A root cached until its context can resolve holds that context's
+const registrationsByHolder = new WeakMap<object, Registration[]>()
+
+const holdWeakly = (
+	id: string,
+	registration: Registration,
+	holder: object | undefined
+): void => {
+	const held = registrations.get(id)
+	if (!held || "to" in held || !held.deref()) {
+		registrations.set(id, new WeakRef(registration))
+		forgetCollected!.register(registration, id)
+	}
+	if (!holder) return
+	const sharing = registrationsByHolder.get(holder)
+	if (!sharing) registrationsByHolder.set(holder, [registration])
+	else if (!sharing.includes(registration)) sharing.push(registration)
+}
 
 const registerTo = (id: string, to: BaseNode | BaseParseContext): void => {
-	const held = registrations.get(id)
-	const registered = held && ("to" in held ? held : held.deref())
 	// kept as its context resolves, so an alias that referenced the context holds the node
-	const registration = registered ?? { to }
+	const registration = registrationOf(id) ?? { to }
 	registration.to = to
-	if (!forgetCollected || arkKindOf(to) === "context") {
+	if (!forgetCollected || arkKindOf(to) === "context")
 		registrations.set(id, registration)
-		return
-	}
-	if (!registered || registered === held) {
-		registrations.set(id, new WeakRef(registration))
-		forgetCollected.register(registration, id)
-	}
-	const { inner } = to as BaseNode
-	const sharing = registrationsByInner.get(inner)
-	if (!sharing) registrationsByInner.set(inner, [registration])
-	else if (!sharing.includes(registration)) sharing.push(registration)
+	else holdWeakly(id, registration, (to as BaseNode).inner)
+}
+
+/**
+ * holds the context `id` is registered to as a node is held, by `holder` and
+ * what references its id alone, where it would otherwise outlive its parse
+ */
+export const releaseContext = (id: string, holder?: object): void => {
+	const registration = registrationOf(id)
+	if (registration && forgetCollected) holdWeakly(id, registration, holder)
 }
 
 // an object to what reads it, so an id is read, written and deleted as its key.

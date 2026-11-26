@@ -77,7 +77,7 @@ import type { Unit } from "./roots/unit.ts"
 import { canJit, tryJit } from "./shared/compile.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
-import { $ark, ambientResolver } from "./shared/registry.ts"
+import { $ark, ambientResolver, releaseContext } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
 import type { Traversal } from "./shared/traversal.ts"
 import {
@@ -286,6 +286,15 @@ $ark.ambient ??= {} as never
 
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 	(nodesById[ctx.id] = ctx)
+
+// a context left registered by a parse that threw would be held for good, as
+// would its scope. An alias referencing one of a scope's aliases still resolves
+// it by name, so the context is then held by what references it alone
+const releaseParseContext = (ctx: BaseParseContext): void => {
+	if (nodesById[ctx.id] !== ctx) return
+	if (ctx.alias && ctx.isReferencedById) releaseContext(ctx.id)
+	else delete nodesById[ctx.id]
+}
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
@@ -611,8 +620,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
-		if (inProgress.definitions && !isResolvable(pending))
+		if (inProgress.definitions && !isResolvable(pending)) {
+			// read by its id once it can resolve, so held by what's cached until then
+			releaseContext(pending.id, pending)
 			return this.node("alias", { reference: pending.id }, { reduced: true })
+		}
 		const ctx = nodesById[pending.id] as BaseParseContext
 		const mark = $ark.reached?.mark()
 		const resolution = resolving(() =>
@@ -660,8 +672,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 		try {
 			node = this.parseOpenDef(ctx.def, ctx)
 		} catch (e) {
-			// reset so the next reference reparses it and throws the same error
-			ctx.phase = "unresolved"
+			// reset so the next reference reparses it and throws the same error,
+			// as is each member of a component it leaves open
+			for (const open of [ctx, ...openMembers.splice(membersStart)]) {
+				open.phase = "unresolved"
+				delete open.resolution
+				releaseParseContext(open)
+			}
 			throw e
 		} finally {
 			openDefinitions.pop()
@@ -674,18 +691,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.aliasOf(ctx)
 		}
 		ctx.phase = "resolved"
-		const component = [ctx]
+		// it reaches no definition still open, so its component closes with it
+		const members =
+			ctx.lowlink === ctx.index ? openMembers.splice(membersStart) : []
 		try {
 			return resolving(() => {
-				// it reaches no definition still open, so its component closes with it
-				if (ctx.lowlink === ctx.index) {
-					for (const member of openMembers.splice(membersStart)) {
-						component.push(member)
-						member.phase = "resolved"
-						member.$.resolveContext(member.alias!, member, member.resolution!)
-						$ark.reached?.store(mark, member.$.res, member.alias)
-						delete member.resolution
-					}
+				for (const member of members) {
+					member.phase = "resolved"
+					member.$.resolveContext(member.alias!, member, member.resolution!)
+					$ark.reached?.store(mark, member.$.res, member.alias)
+					delete member.resolution
 				}
 				return node.topAlias ?
 						this.resolvePending(name, (this.res[name] = withId(node, ctx.id)))
@@ -693,10 +708,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 			})
 		} catch (e) {
 			// a deferred check failed; reparsing would reuse checked nodes
-			for (const failed of component) {
+			for (const failed of [ctx, ...members]) {
 				failed.phase = "failed"
 				failed.error = e
 				failed.$.res[failed.alias!] = failed
+				releaseParseContext(failed)
 			}
 			throw e
 		}
@@ -729,8 +745,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			try {
 				def = defining(() => this.normValue(ctx.def))
 			} finally {
-				// registered while the call runs, so an alias parsed during it resolves by name
+				// cached and registered while the call runs, so an alias parsed during
+				// it resolves by name, which one that outlives the call still does
 				delete this.res[name]
+				releaseParseContext(ctx)
 			}
 			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
 				ctx.def = def
@@ -965,17 +983,24 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
-		let node = this.parseOpenDef(def, ctx)
-		node = resolving(() => {
-			if (node.topAlias && !inProgress.definitions)
-				node = resolveShallowAliases(node)
+		let node: BaseRoot
+		try {
+			node = this.parseOpenDef(def, ctx)
+			node = resolving(() => {
+				if (node.topAlias && !inProgress.definitions)
+					node = resolveShallowAliases(node)
 
-			// if the node is recursive e.g. { box: "this" }, we need to make sure it
-			// has the original id from context so that its references compile correctly
-			if (ctx.isReferencedById) nodesById[ctx.id] = node = withId(node, ctx.id)
-			else delete nodesById[ctx.id]
-			return node
-		})
+				// if the node is recursive e.g. { box: "this" }, we need to make sure it
+				// has the original id from context so that its references compile correctly
+				if (ctx.isReferencedById)
+					nodesById[ctx.id] = node = withId(node, ctx.id)
+				else delete nodesById[ctx.id]
+				return node
+			})
+		} catch (e) {
+			releaseParseContext(ctx)
+			throw e
+		}
 		if (!ctx.isReferencedAsThis || ctx.name) return node
 		// parsed again, since the nodes that reference it have printed `this`
 		return printSelfAsThis(
