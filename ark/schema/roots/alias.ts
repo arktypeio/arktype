@@ -161,6 +161,9 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			resolution = nodesById[resolution.id]
 		}
 		if (!hasArkKind(resolution, "root")) {
+			// a schema can reference an id no node was registered under
+			if (resolution === undefined)
+				return throwParseError(writeUnresolvableMessage(this.reference))
 			return throwInternalError(`Unexpected resolution for reference ${this.reference}
 Seen: [${seen.join("->")}] 
 Resolution: ${printable(resolution)}`)
@@ -371,6 +374,13 @@ export const isResolvable = (node: BaseRoot): boolean => {
 	const referenced = nodesById[node.reference as NodeId]
 	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
+
+export const writeUnresolvableMessage = <token extends string>(
+	token: token
+): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
+
+export type writeUnresolvableMessage<token extends string> =
+	`'${token}' is unresolvable`
 
 export const writeShallowCycleErrorMessage = <
 	name extends string,

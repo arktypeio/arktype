@@ -101,6 +101,46 @@ contextualize(() => {
 		attest(types.b(almostB)?.toString()).snap("a.b.a.b must be an object")
 	})
 
+	it("reference to an id no node is registered under", () => {
+		attest(() => rootSchema({ reference: "unregistered" })).throws.snap(
+			"ParseError: 'unregistered' is unresolvable"
+		)
+		// a key of Object.prototype is no more an id than any other
+		attest(() => rootSchema({ reference: "constructor" })).throws.snap(
+			"ParseError: 'constructor' is unresolvable"
+		)
+		attest(() => rootSchema({ reference: "__proto__" })).throws.snap(
+			"ParseError: '__proto__' is unresolvable"
+		)
+		attest(() =>
+			schemaScope({
+				a: {
+					domain: "object",
+					required: { key: "b", value: { reference: "toString" } }
+				}
+			}).export()
+		).throws.snap("ParseError: 'toString' is unresolvable")
+	})
+
+	it("reference to an alias named for a key of Object.prototype", () => {
+		const types = schemaScope({
+			a: {
+				domain: "object",
+				required: { key: "b", value: "$constructor" }
+			},
+			constructor: { domain: "string" }
+		}).export()
+		attest(types.a.json).snap({
+			domain: "object",
+			required: [{ key: "b", value: "string" }]
+		})
+		attest(() =>
+			schemaScope({
+				a: { domain: "object", required: { key: "b", value: "$valueOf" } }
+			}).export()
+		).throws.snap("ParseError: 'valueOf' is unresolvable")
+	})
+
 	it("allows multiple scopes with the same name without collision", () => {
 		const s1 = schemaScope({ a: { domain: "string" } }, { name: "Array" })
 		const s2 = schemaScope({ b: { domain: "number" } }, { name: "Array" })

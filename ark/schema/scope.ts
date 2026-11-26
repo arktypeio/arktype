@@ -68,6 +68,7 @@ import { parseSchema, type RootSchema } from "./parseSchema.ts"
 import {
 	isResolvable,
 	resolveShallowAliases,
+	writeUnresolvableMessage,
 	type Alias
 } from "./roots/alias.ts"
 import { BaseRoot } from "./roots/root.ts"
@@ -1267,13 +1268,6 @@ const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 	}
 	return result
 }
-
-export const writeUnresolvableMessage = <token extends string>(
-	token: token
-): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
-
-export type writeUnresolvableMessage<token extends string> =
-	`'${token}' is unresolvable`
 
 export const writeNonSubmoduleDotMessage = <name extends string>(
 	name: name

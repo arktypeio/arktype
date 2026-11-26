@@ -22,10 +22,11 @@ export const $ark: ArkSchemaRegistry = registry as never
 
 export type NodeId = Brand<string, "NodeId">
 
+// without a prototype, whose keys a schema's reference would otherwise resolve to
 export const nodesById: Record<
 	NodeId,
 	BaseNode | BaseParseContext | undefined
-> = {}
+> = Object.create(null)
 
 $ark.nodesById = nodesById
 
