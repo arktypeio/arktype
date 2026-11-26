@@ -6,14 +6,16 @@ export {
 	flatByPath,
 	firstIssue,
 	flatMessagesByPath,
-	messageIn,
 	Traversal,
 	TraversalError,
+	type ActualConfig,
 	type ArkEnv,
 	type ArkError,
 	type ArkErrorCode,
+	type ExpectedConfig,
 	type GenericAst,
 	type JsonSchema,
+	type MessageConfig,
 	type StandardJSONSchemaV1,
 	type StandardSchemaV1,
 	type StandardTypedV1,
@@ -30,11 +32,12 @@ export {
 export { regex, type Regex, type RegexExecArray } from "arkregex"
 export type { Default, distill, Out, To } from "./attributes.ts"
 export { configure, type ArkConfig, type KeywordConfig } from "./config.ts"
-export type { TypedFn } from "./fn.ts"
-export { fromJsonSchema } from "./fromJsonSchema.ts"
-export { Generic } from "./generic.ts"
+export type { DeclarationParser } from "./declare.ts"
+export type { FnParser, TypedFn } from "./fn.ts"
+export { fromJsonSchema, type FromJsonSchema } from "./fromJsonSchema.ts"
+export { Generic, type GenericParser } from "./generic.ts"
 export type { ParsedFormData } from "./keywords/FormData.ts"
-export type { Locale } from "./locale.ts"
+export { messageIn, type Locale } from "./locale.ts"
 export {
 	ark,
 	declare,
@@ -52,13 +55,26 @@ export type {
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.ts"
-export { scope, type bindThis, type Scope } from "./scope.ts"
-export { Type, type BaseTypeParser, type TypeParser } from "./type.ts"
+export {
+	scope,
+	type AmbientInput,
+	type ArkScopeConfig,
+	type bindThis,
+	type Scope,
+	type ScopeParser
+} from "./scope.ts"
+export {
+	Type,
+	type BaseTypeParser,
+	type DefinitionParser,
+	type TypeParser
+} from "./type.ts"
 // tsc names a consumer's Types by these (as it does TypedFn, Match,
-// MatchParser, TypeParser and ParsedFormData) when it emits their
-// declarations, so each is exported here rather than reached under
-// arktype/internal, which is not semver-stable. ark/repo/testBuild.ts fails
-// on any a consumer's declarations would reach there.
+// MatchParser, ParsedFormData, each parser and the configs a Type's meta
+// holds) when it emits their declarations, so each is exported here rather
+// than reached under arktype/internal, which is not semver-stable.
+// ark/repo/testBuild.ts fails on any a consumer's declarations would reach
+// there.
 export type { ArrayType } from "./variants/array.ts"
 export type { BaseType, BoundType } from "./variants/base.ts"
 export type { DateType } from "./variants/date.ts"

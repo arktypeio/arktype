@@ -1,13 +1,17 @@
 // a library built on arktype, exporting each shape of Type whose declaration
 // tsc writes out. testBuild.ts emits its declarations against the build.
 import {
+	declare,
 	define,
 	fn,
 	fromJsonSchema,
 	generic,
+	keywords,
 	match,
+	messageIn,
 	scope,
-	type
+	type,
+	type ArkErrors
 } from "arktype"
 import { codec } from "arktype/codecs"
 import { regex } from "arktype/regex"
@@ -92,3 +96,24 @@ export const FromJsonSchema = fromJsonSchema({
 })
 export const FromStandardSchema = fromJsonSchema(User)
 export const intersection = FromJsonSchema.and(User)
+
+// a Type's meta, holding the configs its errors are written by
+export const meta = User.meta
+export const summaryIn = (errors: ArkErrors) => errors.summaryIn
+export const scopeConfig = types.config
+
+// each parser re-exported as a value of the library's own
+export const typeParser = type
+export const scopeParser = scope
+export const codecParser = codec
+export const fnParser = fn
+export const genericParser = generic
+export const matchParser = match
+export const defineParser = define
+export const declareParser = declare
+export const fromJsonSchemaParser = fromJsonSchema
+export const messageWriter = messageIn
+
+export const stringKeywords = keywords.string
+export const numberKeywords = keywords.number
+export const objectKeywords = keywords.object

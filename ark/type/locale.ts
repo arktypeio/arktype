@@ -1,4 +1,9 @@
-import type { ArkErrorCode, Locale as BaseLocale } from "@ark/schema"
+import {
+	messageIn as writeMessageIn,
+	type ArkError,
+	type ArkErrorCode,
+	type Locale as BaseLocale
+} from "@ark/schema"
 import type { KeywordPhraseAlias } from "./keywords/phrases.ts"
 
 /**
@@ -41,3 +46,13 @@ export declare namespace Locale {
 
 	export type Complete = BaseLocale.Complete<KeywordPhraseAlias>
 }
+
+// @ark/schema's, typed by the Locale arktype exports, so a library re-exporting
+// it declares it by arktype's root rather than by a path into @ark/schema
+/**
+ * Writes an error's `message` in `locale`: what `error.message` would be had
+ * that locale been configured, never naming its path, e.g. `must be a string`
+ * where its line of `summaryIn(locale)` is `name must be a string`.
+ */
+export const messageIn: (error: ArkError, locale: Locale) => string =
+	writeMessageIn

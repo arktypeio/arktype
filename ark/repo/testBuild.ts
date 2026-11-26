@@ -280,16 +280,28 @@ const publicSpecifiers = new Set(
 		.filter(path => !path.startsWith("./internal"))
 		.map(path => `arktype${path.slice(1)}`)
 )
-const unstableSpecifiers = [
+// a library re-exporting a keyword submodule (keywords.string) names it by the
+// namespaces arktype/internal/keywords/* declare, as it does @ark/schema's
+// Locale exporting ArkErrors' summaryIn, which takes any keywords' locale:
+// leaks arktype knows of (#1777), each counted by how often consumer.ts reaches
+// it, until it chooses public names for them. Any other reference is new
+const knownLeaks: Record<string, number> = {
+	"arktype/internal/keywords/string.ts#string.$": 1,
+	"arktype/internal/keywords/number.ts#number.$": 1,
+	"arktype/internal/keywords/ts.ts#object.$": 1,
+	"arktype/internal/_internal/schema/index.ts#Locale": 1
+}
+const unstableReferences = [
 	...readFileSync(`${declaringConsumer}out/consumer.d.ts`, "utf8").matchAll(
-		/import\("([^"]+)"\)/g
+		/import\("([^"]+)"\)((?:\.[\w$]+)*)/g
 	)
 ]
-	.map(match => match[1])
-	.filter(specifier => !publicSpecifiers.has(specifier))
-if (unstableSpecifiers.length) {
+	.filter(([, specifier]) => !publicSpecifiers.has(specifier))
+	.map(([, specifier, path]) => `${specifier}#${path.slice(1)}`)
+	.filter(reference => !(knownLeaks[reference]-- > 0))
+if (unstableReferences.length) {
 	throw new Error(
-		`⚠️  Declarations emitted for a library built on arktype name it by ${[...new Set(unstableSpecifiers)].join(", ")}. Export each type they reach there from arktype's root, or keep it out of arktype's public signatures.`
+		`⚠️  Declarations emitted for a library built on arktype name it by ${[...new Set(unstableReferences)].join(", ")}. Export each type they reach there from arktype's root, or keep it out of arktype's public signatures.`
 	)
 }
 

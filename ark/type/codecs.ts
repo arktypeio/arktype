@@ -27,19 +27,9 @@ import { type } from "./keywords/keywords.ts"
 import type { inferDefinition } from "./parser/definition.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
 
-/**
- * Create a {@link Type} from a morph and its inverse
- * @example
- * const EpochMs = codec("number.integer", "Date", {
- *     decode: n => new Date(n),
- *     encode: d => d.getTime()
- * })
- * // Date
- * const date = EpochMs(0)
- * // 0
- * const ms = EpochMs.encode(date)
- */
-export const codec = <
+// named so a library exporting codec declares it by this rather than by the
+// helpers in its signature, which arktype doesn't export
+export type CodecParser = <
 	const i,
 	const o,
 	r = instantiateType<
@@ -54,10 +44,7 @@ export const codec = <
 >(
 	i: type.validate<i>,
 	o: type.validate<o>,
-	{
-		decode,
-		encode
-	}: noInfer<
+	morphs: noInfer<
 		{
 			decode: Morph<
 				distill.Out<inferDefinition<i>>,
@@ -70,7 +57,21 @@ export const codec = <
 		},
 		i | o
 	>
-): r extends infer _ ? _ : never => {
+) => r extends infer _ ? _ : never
+
+/**
+ * Create a {@link Type} from a morph and its inverse
+ * @example
+ * const EpochMs = codec("number.integer", "Date", {
+ *     decode: n => new Date(n),
+ *     encode: d => d.getTime()
+ * })
+ * // Date
+ * const date = EpochMs(0)
+ * // 0
+ * const ms = EpochMs.encode(date)
+ */
+export const codec: CodecParser = (i, o, { decode, encode }) => {
 	const In = type(i as never).internal
 	return In.$.node("morph", { morphs: [In, decode], inverse: encode }).pipe(
 		type(o as never)
