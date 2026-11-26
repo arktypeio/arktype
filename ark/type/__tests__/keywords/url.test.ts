@@ -43,6 +43,26 @@ contextualize(() => {
 		attest(urls.filter(url => !Url.allows(url))).equals([])
 	})
 
+	it("http rejects a space or control character the parser would repair", () => {
+		const HttpUrl = type("string.url.http")
+		const urls = [
+			"http://a.com ",
+			" http://a.com",
+			"http://a.com\n",
+			"https://a.com/a b",
+			"https://a.com/\tb",
+			"https://a.com/\x7f"
+		]
+		attest(urls.filter(url => HttpUrl.allows(url))).equals([])
+		attest(HttpUrl("http://a.com ").toString()).snap(
+			"must be an HTTP or HTTPS URL"
+		)
+		// as other characters outside ASCII, which it percent-encodes
+		attest(HttpUrl.allows("https://a.com/\u00e9\u00a0")).equals(true)
+		attest(HttpUrl.allows("HTTPS://a.com/a?b=c#d")).equals(true)
+		attest(HttpUrl.allows("mailto:ada@example.com")).equals(false)
+	})
+
 	it("parse", () => {
 		const parseUrl = type("string.url.parse")
 
