@@ -85,6 +85,7 @@ contextualize(() => {
 			"5 < string < 3",
 			"-1 <= number < -1",
 			"string[] < -1",
+			{ a: "3 <= string > 3[] <= 5" },
 			"string < 1.5",
 			"'a' = 'b'",
 			"string & number",
@@ -281,6 +282,18 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 		]
 		for (const [l, r] of apart)
 			attest([l, r, anyType(l) === anyType(r)]).equals([l, r, false])
+	})
+
+	it("a bound before an array of a range is that range's", () => {
+		attest(
+			printed(`const outer = type({ a: type("string < 5").array().atLeastLength(3).atMostLength(5) })
+const parenthesized = type({ a: "3 <= (string < 5)[] <= 5" })
+const inner = type({ a: "3 <= string < 5[] <= 5" })
+console.log(outer === parenthesized, inner === outer, Object.hasOwn(parenthesized, "kind"))
+console.log(inner.expression, outer.expression)`)
+		).snap(
+			"true false false\n{ a: (3 <= string <= 4)[] <= 5 } { a: 3 <= (string <= 4)[] <= 5 }\n"
+		)
 	})
 
 	it("a bound with its own message isn't the Type its bound alone writes", () => {

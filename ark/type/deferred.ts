@@ -232,7 +232,8 @@ const scanRange = (def: string): Facts | undefined => {
 	if (op[0] === "<") max = +right - (op === "<" ? step : 0)
 	else min = +right + (op === ">" ? step : 0)
 	if (left) {
-		if (op[0] !== "<") return
+		// a bound before an array of a range bounds that range, as a parser reads it
+		if (op[0] !== "<" || range.test(word.replace(/(?:\[])+$/, ""))) return
 		min = +left + (leftOp === "<" ? step : 0)
 	}
 	// a length is positive and a range isn't empty
