@@ -1236,13 +1236,13 @@ const writeIntersectionCombinator = (
 		structure && narrowed ?
 			writeCall(
 				narrowedAfterOf(node.structure!),
-				(
-					node.structure!.hasAlias &&
-						node.structure!.tfs &&
-						!node.structure!.checksCtx
-				) ?
-					writeCall("holdingAlias", structure)
-				:	structure,
+				!node.structure!.tfs ? structure
+					// one that transforms is asked whether it allows data before
+					// its narrow reads it: with a ctx where a callback of its reads
+					// one, which asked with none would be passed none
+				: node.structure!.checksCtx ? writeCall("readingCtx", structure)
+				: node.structure!.hasAlias ? writeCall("holdingAlias", structure)
+				: structure,
 				narrowed
 			)
 		:	(structure ?? narrowed)

@@ -495,6 +495,35 @@ either.a must be a string or either.b must be a number false
 		attest(behaviorOf(await bundle(root, smallest))).equals(expected)
 	})
 
+	it("passes a ctx to a key's callback where a structure that transforms is asked before its filter", async () => {
+		const root = fixture(
+			"ctx-filter",
+			`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+// reports more than it returns, so it's passed the ctx it's called with
+const named = (s: string, ctx: { mustBe(expected: string): boolean }) => s !== "" || (ctx.mustBe("named"), ctx.mustBe("set"))
+// its filter reads data as it came, so only once its keys allow it
+const User = type({ name: type("string").narrow(named), role: "string = 'user'" }).filter(user => user.name !== "root")
+print(User({ name: "" }))
+print(User({ name: 1 }))
+print(User({ name: "root" }))
+print(User({ name: "ann" }))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `name must be named
+name must be set
+name must be a string
+must be valid according to an anonymous predicate
+{"name":"ann","role":"user"}
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		attest(behaviorOf(await bundle(root, smallest))).equals(expected)
+	})
+
 	it("returns what a factory created before for the same function, keyed by an object its module declares", async () => {
 		const root = fixture(
 			"intern-holder",
@@ -2222,6 +2251,29 @@ ${repaying}
 reply.text must be a string
 must be valid according to an anonymous predicate
 {"text":"a","reply":{"text":"b"}}
+`)
+		})
+
+		it("passes a ctx to a key's callback where a filter is asked of a cycle whose keys transform", async () => {
+			const root = fixture(
+				"cyclic-ctx-filter",
+				`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const named = (s: string, ctx: { mustBe(expected: string): boolean }) => s !== "" || (ctx.mustBe("named"), ctx.mustBe("set"))
+const Comment = type({ by: type("string").narrow(named), text: "string.trim", "reply?": "this" }).filter(comment => comment.by !== "root")
+print(Comment({ by: "", text: " a " }))
+print(Comment({ by: "root", text: "" }))
+print(Comment({ by: "a", text: " a ", reply: { by: "b", text: " b " } }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			attest(behaviorOf(await bundle(root, smallest))).equals(`by must be named
+by must be set
+must be valid according to an anonymous predicate
+{"by":"a","text":"a","reply":{"by":"b","text":"b"}}
 `)
 		})
 	})
