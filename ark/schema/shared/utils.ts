@@ -105,16 +105,28 @@ export const assertUnchecked = (): void => {
 	// runs in the outer loop
 	if (!isResolutionFinal() || assertingUnchecked) return
 	assertingUnchecked = true
+	let passed = false
 	try {
 		for (let i = 0; i < uncheckedAssertions.length; i++)
 			uncheckedAssertions[i]()
+		passed = true
 	} finally {
 		assertingUnchecked = false
-		discardUnchecked()
+		discardUnchecked(passed)
 	}
 }
 
-const discardUnchecked = (): void => {
+let discards = 0
+
+/**
+ * how many times checks were discarded that hadn't all passed. Whatever was
+ * cached while they waited is left unchecked, as nothing will queue them again
+ * for a result that's read from a cache
+ */
+export const uncheckedDiscards = (): number => discards
+
+const discardUnchecked = (passed?: boolean): void => {
+	if (!passed && uncheckedAssertions.length) discards++
 	uncheckedAssertions.length = 0
 	uncheckedKeys = {}
 }

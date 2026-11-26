@@ -1383,6 +1383,44 @@ baz[0] must be a number`)
 		).throws("Default for a must be an object")
 	})
 
+	it("a default a cyclic value rejects is rejected each time it's intersected with it", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		// the intersection is cached before node resolves, which is when its
+		// default is checked
+		const define = () =>
+			$.type([{ "a?": "node | number" }, "&", { a: ["unknown", "=", "x"] }])
+		attest(define).throws("Default for a must be a number or an object")
+		attest(define).throws("Default for a must be a number or an object")
+
+		// or where the definition it was first in threw before it was checked
+		const nested = [
+			{ "b?": "node | string" },
+			"&",
+			{ b: ["unknown", "=", 0] }
+		] as const
+		attest(() => $.type({ nested, c: ["null", "&", "string"] })).throws(
+			"Intersection of null and string results in an unsatisfiable type"
+		)
+		attest(() => $.type(nested)).throws(
+			"Default for b must be a string or an object"
+		)
+
+		// one it allows is the same Type each time
+		const T = $.type([
+			{ "a?": "node | number" },
+			"&",
+			{ a: ["unknown", "=", 0] }
+		])
+		attest(T({})).equals({ a: 0 })
+		attest(
+			$.type([
+				{ "a?": "node | number" },
+				"&",
+				{ a: ["unknown", "=", 0] }
+			]).equals(T)
+		).equals(true)
+	})
+
 	it("a default a cyclic value allows is defined again as the same Type", () => {
 		const $ = scope({ node: { "next?": "node" } })
 		const T = $.type({ a: ["node | number", "=", 0] })

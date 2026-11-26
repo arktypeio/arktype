@@ -5,6 +5,7 @@ import {
 	isNode,
 	isResolutionFinal,
 	rootKinds,
+	uncheckedDiscards,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
@@ -30,7 +31,11 @@ type IntersectionCache = WeakMap<
 >
 
 // a result belongs to the scope that parsed it
-const intersectionCache: IntersectionCache = new WeakMap()
+let intersectionCache: IntersectionCache = new WeakMap()
+
+// a result cached while a check waited is served without queueing the check
+// again, so once checks are discarded that hadn't passed, none is kept
+let checkedAsOf = 0
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -56,6 +61,10 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		r: BaseNode,
 		ctx: IntersectionContext
 	): BaseNode | Disjoint | null => {
+		if (checkedAsOf !== uncheckedDiscards()) {
+			intersectionCache = new WeakMap()
+			checkedAsOf = uncheckedDiscards()
+		}
 		let cacheByOperator = intersectionCache.get(ctx.$)
 		if (!cacheByOperator) {
 			intersectionCache.set(
