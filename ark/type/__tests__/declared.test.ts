@@ -58,6 +58,47 @@ contextualize(() => {
 		).type.errors(`Source has 3 element(s) but target allows only 2`)
 	})
 
+	it("optional element", () => {
+		type Expected = [string, number?]
+		const T = declare<Expected>().type(["string", "number?"])
+		attest<Expected>(T.infer)
+	})
+
+	it("optional element written required", () => {
+		attest(
+			// @ts-expect-error
+			declare<[string, number?]>().type(["string", "number"])
+		).type.errors(`declared: [string, number?]; inferred: [string, number]`)
+	})
+
+	it("missing optional element", () => {
+		attest(
+			// @ts-expect-error
+			declare<[string, number?]>().type(["string"])
+		).type.errors(`declared: [string, number?]; inferred: [string]`)
+	})
+
+	it("variadic element", () => {
+		type Expected = [string, ...number[]]
+		const T = declare<Expected>().type(["string", "...", "number[]"])
+		attest<Expected>(T.infer)
+	})
+
+	it("variadic element mismatch", () => {
+		attest(
+			// @ts-expect-error
+			declare<[string, ...number[]]>().type(["string", "...", "string[]"])
+		).type.errors(
+			`declared: [string, ...number[]]; inferred: [string, ...string[]]`
+		)
+	})
+
+	it("spread element", () => {
+		type Expected = [string, number]
+		const T = declare<Expected>().type(["string", "...", type(["number"])])
+		attest<Expected>(T.infer)
+	})
+
 	it("tuple expression", () => {
 		const T = declare<0 | 1>().type(["0", "|", "1"])
 		attest<0 | 1>(T.infer)

@@ -174,12 +174,27 @@ type validateArrayInference<
 	ctx extends DeclareContext
 > =
 	declaredObjectOf<declared, ctx> extends infer declared extends array ?
-		{
-			[i in keyof declared]: i extends keyof def ?
-				validateInference<def[i], declared[i], $, args, ctx>
-			:	declared[i]
-		}
+		isElementwise<def, declared> extends true ?
+			{
+				[i in keyof declared]: i extends keyof def ?
+					validateInference<def[i], declared[i], $, args, ctx>
+				:	declared[i]
+			}
+		:	validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
 	:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+
+// a tuple's elements can be checked against those at the same index only where
+// each is required on both sides. an optional element's declared value includes
+// `undefined` that its definition doesn't, and whether it is optional at all is
+// lost comparing values, while a variadic element maps to every index past the
+// fixed ones and a spread shifts those after it, so either is checked as a whole
+type isElementwise<def extends array, declared extends array> =
+	number extends declared["length"] ? false
+	: declared["length"] extends Required<declared>["length"] ?
+		[Extract<def[number], "..." | OptionalPropertyDefinition>] extends [never] ?
+			true
+		:	false
+	:	false
 
 type validateObjectInference<
 	def extends object,
