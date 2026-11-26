@@ -167,12 +167,16 @@ export const User = fromJsonSchema({
 	properties: { name: { type: "string" }, age: { type: "integer", minimum: 0 } },
 	required: ["name"]
 })
+export const ConstObj = fromJsonSchema({ const: { a: 1 } })
+export const EnumObj = fromJsonSchema({ enum: [{ a: 1 }, { a: 2 }] })
 // @ark-runtime
 export const Island = fromJsonSchema({ type: "array", uniqueItems: true })`
 			attest(statusesOf(ok)).snap([
 				"2:21 accepted string >= 1",
 				"3:21 accepted { name: string, age?: number % 1 >= 0 } & isNonArray",
-				"9:23 island"
+				"8:25 accepted { a: 1, + (undeclared): reject } & isNonArray & hasOwnKeys",
+				"9:24 accepted { a: 1 | 2, + (undeclared): reject } & isNonArray & hasOwnKeys",
+				"11:23 island"
 			])
 			attest(precompile(ok).diagnostics).equals([])
 

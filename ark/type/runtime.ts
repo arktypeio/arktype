@@ -169,6 +169,7 @@ export {
 export {
 	baseNameOf,
 	functionNameOf,
+	hasOwnKeys,
 	isIpv4,
 	isIpv6,
 	isIso8601,

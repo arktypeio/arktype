@@ -3,6 +3,7 @@ import {
 	Disjoint,
 	defining,
 	isNode,
+	makeMorph,
 	schemaScope,
 	type BaseNode,
 	type BaseParseContext,
@@ -18,6 +19,7 @@ import {
 	flatMorph,
 	hashOf,
 	hasOwn,
+	hasOwnKeys,
 	isArray,
 	isNonArray,
 	printable,
@@ -29,7 +31,7 @@ import {
 // installs the engine, which reduces nodes as they're parsed
 import "./engine.ts"
 import { intersectNodesRoot } from "./intersections.ts"
-import { ownKeyPredicates } from "./toJsonSchema.ts"
+import { ownKeyPredicates, ownKeysPredicates } from "./toJsonSchema.ts"
 
 interface ReadContext {
 	document: unknown
@@ -369,6 +371,7 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 		}
 		// a keyword's value is checked only where it's read, so one here may be invalid
 		for (const k in o) {
+			if (ctx.dialectBefore2019 && keywordsFrom2019.has(k)) continue
 			const kind = keywordValueKinds[k]
 			const keyPointer = `${pointer}/${escapePointer(k)}`
 			if (kind === "schema") visit(o[k], resource, keyPointer, depth + 1)
@@ -609,11 +612,18 @@ const readArray = (
 			)
 		)
 	}
-	// draft-07 lists a tuple's elements as items, followed by additionalItems
+	// draft-07 lists a tuple's elements as items, followed by additionalItems,
+	// and ignores 2020-12's prefixItems
 	const elementsKey = isArray(o.items) ? "items" : "prefixItems"
 	const restKey = elementsKey === "items" ? "additionalItems" : "items"
 	const [elements, rest] = withChildValue(ctx, () => [
-		readEach((o[elementsKey] ?? []) as array, `${pointer}/${elementsKey}`, ctx),
+		elementsKey === "prefixItems" && ctx.dialectBefore2019 ?
+			[]
+		:	readEach(
+				(o[elementsKey] ?? []) as array,
+				`${pointer}/${elementsKey}`,
+				ctx
+			),
 		read(o[restKey] ?? true, `${pointer}/${restKey}`, ctx)
 	])
 	if (elements.length === 0 && rest.isNever())
@@ -642,8 +652,11 @@ const readArray = (
 			]
 		})
 	}
-	const min = (o.minContains ?? 1) as number
-	const max = (o.maxContains ?? Number.POSITIVE_INFINITY) as number
+	const min = (ctx.dialectBefore2019 ? 1 : (o.minContains ?? 1)) as number
+	const max = (
+		ctx.dialectBefore2019 ?
+			Number.POSITIVE_INFINITY
+		:	(o.maxContains ?? Number.POSITIVE_INFINITY)) as number
 	// any array has at least 0 items that are anything, so that relates as Array
 	if (
 		o.contains !== undefined &&
@@ -817,11 +830,11 @@ const readKeyPredicates = (
 			)
 		)
 	}
-	for (const keyword of [
-		"dependencies",
-		"dependentRequired",
-		"dependentSchemas"
-	] as const) {
+	const dependencyKeywords =
+		ctx.dialectBefore2019 ?
+			(["dependencies"] as const)
+		:	(["dependencies", "dependentRequired", "dependentSchemas"] as const)
+	for (const keyword of dependencyKeywords) {
 		const dependencies = o[keyword] as dict
 		for (const key in dependencies) {
 			const dependency = dependencies[key]
@@ -1011,6 +1024,7 @@ const constObjectRoot = (
 	const required: RequiredPropEntry[] = []
 	const index: unknown[] = []
 	const predicate: unknown[] = [notArray()]
+	const ownKeys: string[] = []
 	for (const [key, v] of Object.entries(value)) {
 		const propValue = constRoot(
 			v,
@@ -1020,7 +1034,30 @@ const constObjectRoot = (
 		)
 		if (key in Object.prototype)
 			addPrototypeKeyConstraint({ index, predicate }, key, propValue, true)
-		else required.push({ key, value: propValue })
+		else {
+			required.push({ key, value: propValue })
+			ownKeys.push(key)
+		}
+	}
+	if (ownKeys.length) {
+		const sortedKeys = ownKeys.length > 1 ? [...ownKeys].sort() : ownKeys
+		const cacheKey = JSON.stringify(["ownKeys", sortedKeys])
+		const predicateFn =
+			predicatesByKey.get(cacheKey) ??
+			predicatesByKey.set(
+				cacheKey,
+				makeMorph(hasOwnKeys as never, sortedKeys) as unknown as Predicate
+			)
+		ownKeysPredicates.add(predicateFn)
+		predicate.push({
+			predicate: predicateFn,
+			meta: {
+				description:
+					sortedKeys.length === 1 ?
+						`an object with its own ${sortedKeys[0]}`
+					:	`an object with its own ${sortedKeys.join(", ")}`
+			}
+		})
 	}
 	return jsonSchemaRoot({
 		domain: "object",
@@ -1465,6 +1502,16 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	definitions: "schemasByKey"
 }
 
+// validation keywords from 2019-09 / 2020-12, ignored as unknown annotations
+// under draft-07 and earlier
+const keywordsFrom2019: ReadonlySet<string> = new Set([
+	"prefixItems",
+	"dependentRequired",
+	"dependentSchemas",
+	"minContains",
+	"maxContains"
+])
+
 // keywords from 2019-09 on, which a draft-07 or earlier validator ignores
 const unsupportedKeywords = [
 	"$dynamicRef",
@@ -1480,6 +1527,7 @@ const checkKeyword = (
 	ctx: ReadContext
 ): void => {
 	if (o[k] === undefined) return
+	if (ctx.dialectBefore2019 && keywordsFrom2019.has(k)) return
 	if (unsupportedKeywords.includes(k) && !ctx.dialectBefore2019)
 		throwParseError(writeUnsupportedKeywordMessage(`${pointer}/${k}`))
 	if (!hasOwn(keywordValueKinds, k)) return

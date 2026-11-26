@@ -1466,4 +1466,39 @@ nested.z must be removed`)
 			}
 		}
 	})
+
+	it("discriminates large covering unions via the fast path", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const branches = Array.from({ length: 24 }, (_, i) =>
+				$.type({ kind: `'v${i}'`, payload: i % 2 === 0 ? "string" : "number" })
+			)
+			const Large = branches
+				.slice(1)
+				.reduce<type.Any>((acc, b) => acc.or(b), branches[0])
+			const largeDisc =
+				Large.internal.is("union") ? Large.internal.discriminant : null
+			attest(largeDisc?.kind).equals("unit")
+			attest(largeDisc?.path).equals(["kind"])
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Large.allows({ kind: "v0", payload: "ok" })).equals(true)
+				attest(Large.allows({ kind: "v23", payload: 42 })).equals(true)
+				attest(Large.allows({ kind: "v23", payload: "bad" })).equals(false)
+				attest(Large.allows({ kind: "v99", payload: 0 })).equals(false)
+			}
+
+			// mixed depth-0 covering domain union (objects + primitives)
+			const Mixed = Large.or("string").or("null")
+			const mixedDisc =
+				Mixed.internal.is("union") ? Mixed.internal.discriminant : null
+			attest(mixedDisc?.kind).equals("domain")
+			attest(mixedDisc?.path).equals([])
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Mixed.allows("hi")).equals(true)
+				attest(Mixed.allows(null)).equals(true)
+				attest(Mixed.allows({ kind: "v2", payload: "ok" })).equals(true)
+				attest(Mixed.allows(123)).equals(false)
+			}
+		}
+	})
 })

@@ -113,4 +113,41 @@ contextualize(() => {
 			writeInvalidMergeOperandMessage("[string]")
 		)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1652
+	it("chained binary union merges scale without OOM", () => {
+		let merged: type<object> = type({ foo1: "string", bar1: "string" }).or({
+			foo1: "null",
+			bar1: "null"
+		})
+		for (let i = 2; i <= 11; i++) {
+			const next = type({
+				[`foo${i}`]: "string",
+				[`bar${i}`]: "string"
+			}).or({
+				[`foo${i}`]: "null",
+				[`bar${i}`]: "null"
+			})
+			merged = merged.merge(next as type<object>) as type<object>
+		}
+		attest(merged.internal.branches.length).equals(2048)
+		const allStrings = Object.fromEntries(
+			Array.from({ length: 11 }, (_, idx) => [
+				[`foo${idx + 1}`, "a"],
+				[`bar${idx + 1}`, "b"]
+			]).flat()
+		)
+		const allNulls = Object.fromEntries(
+			Array.from({ length: 11 }, (_, idx) => [
+				[`foo${idx + 1}`, null],
+				[`bar${idx + 1}`, null]
+			]).flat()
+		)
+		const mismatched = { ...allStrings, foo11: null }
+		for (let pass = 0; pass < 3; pass++) {
+			attest(merged.allows(allStrings)).equals(true)
+			attest(merged.allows(allNulls)).equals(true)
+			attest(merged.allows(mismatched)).equals(false)
+		}
+	}).timeout(120_000)
 })

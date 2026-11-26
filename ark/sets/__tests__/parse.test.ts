@@ -79,8 +79,17 @@ contextualize(() => {
 
 	it("reads object and array consts as structures", () => {
 		attest(parse({ const: { a: [1, "x"] } }).expression).snap(
-			'{ a: [1, "x"], + (undeclared): reject } & isNonArray'
+			'{ a: [1, "x"], + (undeclared): reject } & isNonArray & hasOwnKeys'
 		)
+		const ConstObj = parse({ const: { a: 1 } })
+		attest(ConstObj.allows({ a: 1 })).equals(true)
+		attest(ConstObj.allows(Object.create({ a: 1 }))).equals(false)
+		attest(
+			ConstObj.allows(Object.assign(Object.create(null), { a: 1 }))
+		).equals(true)
+		attest(
+			parse({ const: { a: 1, b: 2 } }).equals(parse({ const: { b: 2, a: 1 } }))
+		).equals(true)
 	})
 
 	it("keeps format as an annotation", () => {
@@ -176,6 +185,44 @@ contextualize(() => {
 			parse({ $schema: draft07, type: "object", unevaluatedProperties: false })
 				.expression
 		).snap("object & isNonArray")
+		// 2019-09 / 2020-12 validation keywords are unknown annotations in draft-07
+		const Draft07Prefix = parse({
+			$schema: draft07,
+			type: "array",
+			prefixItems: [{ type: "string" }]
+		})
+		attest(Draft07Prefix.allows([1])).equals(true)
+		attest(
+			parse({
+				$schema: draft07,
+				type: "array",
+				prefixItems: "annotation" as never
+			}).allows([1])
+		).equals(true)
+		const Draft07Deps = parse({
+			$schema: draft07,
+			type: "object",
+			dependentRequired: { a: ["b"] },
+			dependentSchemas: { a: { required: ["c"] } }
+		})
+		attest(Draft07Deps.allows({ a: 1 })).equals(true)
+		const Draft07Contains = parse({
+			$schema: draft07,
+			type: "array",
+			contains: { type: "number" },
+			minContains: 2,
+			maxContains: 1
+		})
+		attest(Draft07Contains.allows([1])).equals(true)
+		attest(Draft07Contains.allows([1, 2])).equals(true)
+		attest(Draft07Contains.allows([])).equals(false)
+		const Draft07ZeroMinContains = parse({
+			$schema: draft07,
+			type: "array",
+			contains: { type: "number" },
+			minContains: 0
+		})
+		attest(Draft07ZeroMinContains.allows([])).equals(false)
 		// its siblings' values are still checked, as a meta-schema would
 		attest(() =>
 			parse({

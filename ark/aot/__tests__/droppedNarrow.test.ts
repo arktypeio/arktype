@@ -115,7 +115,10 @@ export const ExtendedSchema = type({ "...": FromSchema, extra: "number" })
 export const MergedSchema = FromSchema.merge({ extra: "number" })
 export const PickedSchema = FromSchema.pick("name")
 const JsonObj = type("object.json")
-export const ExtendedJson = type({ "...": JsonObj, extra: "number" })`
+export const ExtendedJson = type({ "...": JsonObj, extra: "number" })
+const ConstObj = fromJsonSchema({ const: { a: 1 } })
+export const ExtendedConst = type({ "...": ConstObj, b: "number" })
+export const MergedConst = ConstObj.merge({ b: "number" })`
 			attest(diagnosticsOf(source)).equals([])
 		})
 

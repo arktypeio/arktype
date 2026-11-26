@@ -44,6 +44,9 @@ export { isNonArray }
 // own-key presence predicates created by fromJsonSchema for Object.prototype keys
 export const ownKeyPredicates = /* @__PURE__ */ new WeakMap<Function, string>()
 
+// own-key presence predicates created by fromJsonSchema for const objects
+export const ownKeysPredicates = /* @__PURE__ */ new WeakSet<Function>()
+
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** where in the Type the node being converted is, for its errors */
 	path: string
@@ -1418,8 +1421,10 @@ const reduceJsonSchemaByKind: {
 		}
 	},
 	predicate: (node, base, ctx) => {
-		// JSON Schema's object type already excludes arrays and functions
-		if (node.predicate === isNonArray) return base
+		// JSON Schema's object type already excludes arrays and functions, and
+		// JSON object keys are always own properties
+		if (node.predicate === isNonArray || ownKeysPredicates.has(node.predicate))
+			return base
 		const ownKey = ownKeyPredicates.get(node.predicate)
 		if (ownKey !== undefined && base.type === "object") {
 			const obj = base as JsonSchema.Object

@@ -320,6 +320,36 @@ contextualize(() => {
 			{
 				$schema: "http://json-schema.org/draft-07/schema#",
 				dependencies: { a: ["b"], kind: { required: ["n"] } }
+			},
+			{
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: [{ type: "string" }]
+			},
+			{
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				items: { type: "number" }
+			},
+			{
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "object",
+				dependentRequired: { a: ["b"] },
+				dependentSchemas: { a: { required: ["c"] } }
+			},
+			{
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				contains: { type: "number" },
+				minContains: 2,
+				maxContains: 1
+			},
+			{
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				contains: { type: "number" },
+				minContains: 0
 			}
 		))
 

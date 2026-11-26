@@ -9,11 +9,13 @@ import type {
 import type {
 	Anchor,
 	AnnotationKeyword,
+	draftsOf,
 	IdentifiedSchema,
 	isUnion,
 	replaceAll,
 	resolveRef,
 	rootOf,
+	SiblinglessRefDraft,
 	TypedSchema,
 	UnresolvedRef
 } from "./infer.ts"
@@ -137,10 +139,10 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 			  : k extends "additionalItems" ?
 					validateSchema<schema[k], root, "branch">
 			  : k extends UnsupportedKeyword ?
-					// a widened schema type may omit it
-					undefined extends schema[k] ?
-						schema[k]
-					:	ErrorMessage<writeUnsupportedKeywordMessage<k>>
+					// a widened schema type may omit it, and draft-07 ignores 2019-09+ keywords
+					undefined extends schema[k] ? schema[k]
+					: draftsOf<root> extends SiblinglessRefDraft ? schema[k]
+					: ErrorMessage<writeUnsupportedKeywordMessage<k>>
 			  : k extends ExclusiveBoundKeyword ?
 					validateExclusiveBound<
 						schema[k],
@@ -622,10 +624,12 @@ export interface ValidSchemaObject<schema extends KeywordObject, root>
 	else?: checkSchema<schema["else"], root>
 	contains?: checkSchema<schema["contains"], root>
 	additionalProperties?: checkSchema<schema["additionalProperties"], root>
-	unevaluatedProperties?: never
-	unevaluatedItems?: never
-	$dynamicRef?: never
-	$recursiveRef?: never
+	unevaluatedProperties?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	never
+	unevaluatedItems?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	never
+	$dynamicRef?: draftsOf<root> extends SiblinglessRefDraft ? unknown : never
+	$recursiveRef?: draftsOf<root> extends SiblinglessRefDraft ? unknown : never
 	contentSchema?: checkSchema<schema["contentSchema"], root>
 	additionalItems?: checkSchema<schema["additionalItems"], root>
 	propertyNames?: checkPropertyNames<schema["propertyNames"], root>

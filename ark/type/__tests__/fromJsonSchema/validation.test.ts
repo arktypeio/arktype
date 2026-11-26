@@ -692,6 +692,33 @@ contextualize(() => {
 			).type.errors.snap(
 				`Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`
 			)
+			// under draft-07, 2019-09+ keywords are ignored annotations both statically and at runtime
+			attest(() =>
+				inferred({
+					$schema: "http://json-schema.org/draft-07/schema#",
+					type: "object",
+					unevaluatedProperties: false,
+					unevaluatedItems: false,
+					$dynamicRef: "#foo",
+					$recursiveRef: "#",
+					properties: {
+						nested: { type: "object", unevaluatedProperties: false }
+					}
+				})
+			).type.errors.is("")
+			attest<
+				[true, false],
+				[
+					isValid<{
+						$schema: "http://json-schema.org/draft-07/schema#"
+						unevaluatedProperties: false
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2020-12/schema"
+						unevaluatedProperties: false
+					}>
+				]
+			>()
 		})
 
 		it("draft-04 boolean exclusive bounds", () => {

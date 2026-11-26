@@ -3838,6 +3838,38 @@ export default shared`).js
 		// bundling a precompiled fromJsonSchema object pulls in no sets/ modules
 		const { modules } = bundle(precompileStandalone({ User }).code)
 		attest(modules.some(path => path.startsWith("sets/"))).equals(false)
+
+		const ConstObj = fromJsonSchema({ const: { a: 1 } })
+		const EnumObj = fromJsonSchema({ enum: [{ a: 1 }, { a: 2 }] })
+		const { ConstObj: standaloneConst, EnumObj: standaloneEnum } = await load({
+			ConstObj,
+			EnumObj
+		})
+		const constInputs: unknown[] = [
+			{ a: 1 },
+			{ a: 2 },
+			{ a: 1, extra: true },
+			Object.create({ a: 1 }),
+			Object.assign(Object.create(null), { a: 1 }),
+			[],
+			null
+		]
+		for (const input of constInputs) {
+			attest(standaloneConst.allows(input)).equals(ConstObj.allows(input))
+			attest(standaloneEnum.allows(input)).equals(EnumObj.allows(input))
+			const dynConst = ConstObj(input)
+			const stConst = standaloneConst(input)
+			if (dynConst instanceof type.errors) {
+				attest(hasDomain(stConst, "object") && "summary" in stConst).equals(
+					true
+				)
+				attest((stConst as any).summary).equals(dynConst.summary)
+			} else attest(stConst).equals(dynConst)
+		}
+		const { modules: constModules } = bundle(
+			precompileStandalone({ ConstObj, EnumObj }).code
+		)
+		attest(constModules.some(path => path.startsWith("sets/"))).equals(false)
 	})
 
 	it("precompiles string.boolean, string.boolean.parse, and string.date.iso.date", async () => {

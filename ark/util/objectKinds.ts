@@ -416,6 +416,18 @@ export const isPlainObjectOrArray = (o: object): boolean => {
 export const isNonArray = (data: object): boolean =>
 	typeof data !== "function" && !Array.isArray(data)
 
+/** JSON Schema `const` object own-key predicate factory */
+export const hasOwnKeys = (
+	keys: readonly string[]
+): ((data: object) => boolean) => {
+	const check = (data: object): boolean => keys.every(k => hasOwn(data, k))
+	Object.defineProperty(check, "name", {
+		value: "hasOwnKeys",
+		configurable: true
+	})
+	return check
+}
+
 export type normalizedKeyOf<t> =
 	keyof t extends infer k ?
 		k extends number ?

@@ -4,6 +4,7 @@ import {
 	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
+	madeMorphs,
 	type RootUnit
 } from "@ark/schema"
 
@@ -629,9 +630,13 @@ export const unionKeySiteOf = (
 	return issueSiteOf({ v: value, m: missing })
 }
 
-// runtime keywords with one param never read Traversal
-export const isKeyword = (predicate: unknown): boolean =>
-	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
+// runtime keywords (or madeMorphs of runtime factories) with one param never read Traversal
+export const isKeyword = (predicate: unknown): boolean => {
+	if (typeof predicate !== "function" || predicate.length >= 2) return false
+	if (runtimePathsByValue.has(predicate)) return true
+	const made = madeMorphs.get(predicate as never)
+	return made !== undefined && runtimePathsByValue.has(made[0])
+}
 
 // a callback that can't reach the Traversal it's passed raises nothing
 export const raisesNothing = (predicate: Fn): boolean =>
