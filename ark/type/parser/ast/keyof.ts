@@ -1,19 +1,36 @@
 import type { writeNonStructuralOperandMessage } from "@ark/schema"
 import type { Brand, ErrorMessage, typeToString } from "@ark/util"
+import type { InferredMorph } from "../../attributes.ts"
 import type { inferAstRoot } from "./infer.ts"
 import type { validateAst } from "./validate.ts"
 
 export type validateKeyof<operandAst, $, args> =
 	inferAstRoot<operandAst, $, args> extends infer data ?
-		[unbrandKeyofOperand<data>] extends [object] ?
+		isKeyofOperand<data> extends true ?
 			validateAst<operandAst, $, args>
 		:	writeKeyofOperandError<data>
 	:	never
 
+/**
+ * An object, read through a brand, no branch of which is a morph, as at
+ * runtime, where a morph has no keys and any is unknown
+ */
+export type isKeyofOperand<data> =
+	[data] extends [never] ? true
+	: unknown extends data ? false
+	: [unbrandKeyofOperand<data>] extends [object] ?
+		[Extract<data, InferredMorph>] extends [never] ?
+			true
+		:	false
+	:	false
+
 export type writeKeyofOperandError<data> = ErrorMessage<
 	writeNonStructuralOperandMessage<
 		"keyof",
-		typeToString<unbrandKeyofOperand<data>>
+		unknown extends data ? "unknown"
+		: [unbrandKeyofOperand<data>] extends [object] ?
+			typeToString<Extract<data, InferredMorph>>
+		:	typeToString<unbrandKeyofOperand<data>>
 	>
 >
 

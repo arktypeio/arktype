@@ -36,6 +36,7 @@ import {
 	shallowOptionalMessage
 } from "./ast/validate.ts"
 import type {
+	isKeyofOperand,
 	unbrandKeyofOperand,
 	writeKeyofOperandError
 } from "./ast/keyof.ts"
@@ -102,7 +103,7 @@ export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
 		readonly [
 			def[0],
 			inferDefinition<def[1], $, args> extends infer data ?
-				[unbrandKeyofOperand<data>] extends [object] ?
+				isKeyofOperand<data> extends true ?
 					validateDefinition<def[1], $, args>
 				:	writeKeyofOperandError<data>
 			:	never
