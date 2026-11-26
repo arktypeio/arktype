@@ -1019,7 +1019,7 @@ extra must be a string or null (was missing)`)
 		})
 
 		attest(Feedback.expression).snap(
-			"{ contact: string == 0 | /^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$/ }"
+			"{ contact: string == 0 | /^[\\w%'+-]+(?:\\.[\\w%'+-]+)*@[\\dA-Za-z](?:[\\dA-Za-z-]*[\\dA-Za-z])?(?:\\.[\\dA-Za-z](?:[\\dA-Za-z-]*[\\dA-Za-z])?)*\\.[A-Za-z]{2,}$/ }"
 		)
 		attest(Feedback.t).type.toString.snap(`{ contact: string }`)
 	})

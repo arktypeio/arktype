@@ -89,6 +89,7 @@ export const EpochMs = codec("number.integer", "Date", {
 })
 
 export const types = scope({ id: "string", user: { id: "id" } })
+export const scopeCfg = types.config
 export const Owned = types.type({ owner: "user" })
 export const typeOf = types.type
 export const matchOf = types.match
@@ -145,6 +146,7 @@ export const kwStringDate = keywords.string.date
 export const kwStringDateIso = keywords.string.date.iso
 export const kwStringDateIsoDate = keywords.string.date.iso.date
 export const kwStringNormalizeNfc = keywords.string.normalize.NFC
+export const kwStringUpper = keywords.string.upper
 export const kwNumber = keywords.number
 export const kwObject = keywords.object
 export const kwObjectJson = keywords.object.json
@@ -157,6 +159,8 @@ export const arkScope = ark
 export const scopeFn = scope
 export const codecFn = codec
 export const typeFn = type
+export const typeModule = type.module
+export const typeSchema = type.schema
 export const matchFn = match
 export const fnFn = fn
 export const genericFn = generic

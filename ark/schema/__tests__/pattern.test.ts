@@ -3,6 +3,7 @@ import { rootSchema } from "@ark/schema"
 import {
 	ipv4Matcher,
 	ipv6Matcher,
+	iso8601DateMatcher,
 	iso8601Matcher,
 	numericStringMatcher,
 	uuidMatcher,
@@ -160,6 +161,34 @@ contextualize(() => {
 		attest(mismatches(iso8601Matcher, data)).equals([])
 	})
 
+	it("ISO 8601 calendar dates", () => {
+		const data = stringsUpTo("09-T", 5)
+		for (const n of twoDigits) {
+			data.push(
+				`2021-${n}-01`,
+				`2021-01-${n}`,
+				`2021-02-${n}`,
+				`2024-02-${n}`,
+				`1900-02-${n}`,
+				`2000-02-${n}`,
+				`2021-04-${n}`
+			)
+		}
+		for (let year = 0; year <= 9999; year++)
+			data.push(`${`${year}`.padStart(4, "0")}-02-29`)
+		for (const s of [
+			"0000-02-29",
+			"1900-02-29",
+			"2000-02-29",
+			"2021-01-01",
+			"2021-04-30",
+			"2021-12-31",
+			"2024-02-29"
+		])
+			data.push(...edits(s, "0129-T:Z+a"))
+		attest(mismatches(iso8601DateMatcher, data)).equals([])
+	})
+
 	// what a pattern can read differently from the check standing in for it
 	describe("each string a format's check could read unlike its pattern", () => {
 		// line terminators $ doesn't match before, what \\d and a class must
@@ -285,6 +314,27 @@ contextualize(() => {
 			).equals([])
 		})
 
+		const calendarDates = [
+			"0000-02-29",
+			"1900-02-28",
+			"1900-02-29",
+			"2000-02-29",
+			"2021-01-01",
+			"2021-04-30",
+			"2021-12-31",
+			"2024-02-29",
+			"9999-12-31"
+		]
+
+		it("ISO 8601 calendar dates", () => {
+			attest(
+				mismatches(iso8601DateMatcher, [
+					...around(calendarDates),
+					...generated(calendarDates, "0123489-T+")
+				])
+			).equals([])
+		})
+
 		// past what a backtracking stack or a quadratic scan could take
 		it("long runs", () => {
 			const long = 1_000_000
@@ -299,6 +349,14 @@ contextualize(() => {
 					`2021-02-01T00:00:00.${digits}\n`,
 					digits,
 					`${digits}-02-01`,
+					"-".repeat(long)
+				])
+			).equals([])
+			attest(
+				mismatches(iso8601DateMatcher, [
+					digits,
+					`${digits}-02-01`,
+					`2024-02-29${digits}`,
 					"-".repeat(long)
 				])
 			).equals([])
@@ -319,7 +377,10 @@ contextualize(() => {
 		attest(iso8601Matcher.source).snap(
 			"^[+-]?(?:(?:\\d{4}(?:-(?:(?:(?:0[13578]|1[02])(?:-(?:[12]\\d|0[1-9]|3[01]))?|(?:0[469]|11)(?:-(?:[12]\\d|0[1-9]|30))?|02(?:-(?:1\\d|0[1-9]|2[0-8]))?)|W(?:[0-4]\\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\\d|[12]\\d{2}|3(?:[0-5]\\d|6[1-6])))|(?:(?:0[13578]|1[02])(?:[12]\\d|0[1-9]|3[01])|(?:0[469]|11)(?:[12]\\d|0[1-9]|30)|02(?:1\\d|0[1-9]|2[0-8]))|W(?:[0-4]\\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\\d|[12]\\d{2}|3(?:[0-5]\\d|6[1-6])))|(?:\\d\\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)(?:-02-29|0229))(?:T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:[,.]\\d+|:[0-5]\\d(?:[,.]\\d+)?)?|(?:(?:(?:[01]\\d|2[0-3])(?:[0-5]\\d)?|24:?00)(?:[,.]\\d+)?)?(?:[0-5]\\d(?:[,.]\\d+)?)?)(?:[Zz]|[+-](?:[01]\\d|2[0-3]):?(?:[0-5]\\d)?)?)?|\\d{4}(?:(?:0[1-9]|1[0-2])T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?:[,.]\\d+|:[0-5]\\d(?:[,.]\\d+)?)?|(?:(?:(?:[01]\\d|2[0-3])(?:[0-5]\\d)?|24:?00)(?:[,.]\\d+)?)?(?:[0-5]\\d(?:[,.]\\d+)?)?)(?:[Zz]|[+-](?:[01]\\d|2[0-3]):?(?:[0-5]\\d)?)?)?)$"
 		)
-		for (const pattern of [uuidMatcher, iso8601Matcher]) {
+		attest(iso8601DateMatcher.source).snap(
+			"^(?:\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:\\d\\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)$"
+		)
+		for (const pattern of [uuidMatcher, iso8601Matcher, iso8601DateMatcher]) {
 			const T = rootSchema({ domain: "string", pattern })
 			attest(T.expression).equals(`${pattern}`)
 			attest(T.toJsonSchema()).equals({

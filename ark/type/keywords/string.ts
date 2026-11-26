@@ -151,15 +151,17 @@ const base64: base64.module = keywordModule(
 	}
 ) as never
 
+type base64$ = {
+	root: string
+	url: string
+}
+
 declare namespace base64 {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<base64$>
 
-	export type $ = {
-		root: string
-		url: string
-	}
+	export type $ = base64$
 }
 
 const stringBooleanRoot = cached(() =>
@@ -452,12 +454,10 @@ export declare namespace stringDate {
 
 const email = () =>
 	regexStringNode(
-		// considered https://colinhacks.com/essays/reasonable-email-regex but it includes a lookahead
-		// which breaks some integrations e.g. fast-check
-
-		// regex based on:
-		// https://www.regular-expressions.info/email.html
-		/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
+		// lookahead-free (RE2 & fast-check safe) dot-atom local part and RFC 1123 domain labels:
+		// rejects leading/trailing/consecutive dots and leading/trailing domain hyphens while
+		// allowing apostrophes (RFC 5322 atext) and punycode labels (xn--)
+		/^[\w%'+-]+(?:\.[\w%'+-]+)*@[\dA-Za-z](?:[\dA-Za-z-]*[\dA-Za-z])?(?:\.[\dA-Za-z](?:[\dA-Za-z-]*[\dA-Za-z])?)*\.[A-Za-z]{2,}$/,
 		"string.email",
 		{ format: "email" }
 	)
@@ -800,15 +800,17 @@ const upper: upper.module = keywordModule(
 	}
 ) as never
 
+type upper$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 declare namespace upper {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<upper$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = upper$
 }
 
 const urlRoot = cached(() =>
@@ -963,7 +965,7 @@ type string$ = {
 	alphanumeric: string
 	hex: string
 	base58: string
-	base64: base64.submodule
+	base64: Submodule<base64$>
 	boolean: Submodule<stringBoolean$>
 	capitalize: Submodule<capitalize$>
 	creditCard: string
@@ -980,7 +982,7 @@ type string$ = {
 	regex: string
 	semver: string
 	trim: Submodule<trim$>
-	upper: upper.submodule
+	upper: Submodule<upper$>
 	url: Submodule<url$>
 	uuid: Submodule<uuid$>
 }

@@ -108,7 +108,41 @@ contextualize(() => {
 	it("email", () => {
 		const Email = type("string.email")
 		attest(Email("shawn@mail.com")).snap("shawn@mail.com")
+		for (const valid of [
+			"a@b.co",
+			"first.last@example.com",
+			"o'brien@example.com",
+			"user+tag@sub.example.co.uk",
+			"user%name@a-b.example.org",
+			"user@xn--bcher-kva.example",
+			"123@456.789.com",
+			"_a@1.co"
+		])
+			attest([valid, Email.allows(valid)]).equals([valid, true])
+
 		attest(Email("shawn@email").toString()).equals("must be an email address")
+		for (const invalid of [
+			"",
+			"@example.com",
+			".a@c.com",
+			"a.@c.com",
+			"a..b@c.com",
+			"a@-c.com",
+			"a@c-.com",
+			"a@-.com",
+			"a@b..c.com",
+			"a@.c.com",
+			"a@c..com",
+			"a@c.com.",
+			"a@b.c",
+			"a b@c.com",
+			'"a"@c.com',
+			"<a@c.com>",
+			"a@b@c.com",
+			"a@c.com\n",
+			`a@${"a-".repeat(10_000)}!`
+		])
+			attest([invalid, Email.allows(invalid)]).equals([invalid, false])
 	})
 
 	it("credit card", () => {

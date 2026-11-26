@@ -58,6 +58,45 @@ contextualize(() => {
 		attest(t.internal.kind as string).equals("intersection")
 	})
 
+	it("defers 3.0 string keywords until first read", () => {
+		const obj = type({
+			date: "string.date.iso.date",
+			text: "string.nonblank",
+			url: "string.url.http"
+		})
+		attest(isUnread(obj)).equals(true)
+		attest(
+			obj({
+				date: "2026-01-15",
+				text: "hi",
+				url: "https://arktype.io"
+			})
+		).equals({
+			date: "2026-01-15",
+			text: "hi",
+			url: "https://arktype.io"
+		})
+		attest(isUnread(obj)).equals(false)
+		attest(
+			printed(`const d = type("string.date.iso.date")
+const nb = type("string.nonblank")
+const u = type("string.url.http")
+console.log(
+	Object.hasOwn(d, "kind"),
+	Object.hasOwn(nb, "kind"),
+	Object.hasOwn(u, "kind")
+)
+console.log(
+	d.allows("2026-01-15"),
+	d.allows("2026-02-29"),
+	nb.allows("x"),
+	nb.allows("   "),
+	u.allows("https://arktype.io"),
+	u.allows("mailto:a@b.co")
+)`)
+		).snap("false false false\ntrue false true false true false\n")
+	})
+
 	it("asking its kind's class is a read", () => {
 		const t = type({ asked: "string" })
 		attest(isUnread(t)).equals(true)

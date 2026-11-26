@@ -85,8 +85,10 @@ export type {
 } from "./parser/definition.ts"
 export {
 	scope,
+	type AmbientInput,
 	type ArkScopeConfig,
 	type bindThis,
+	type ModuleParser,
 	type Scope,
 	type ScopeParser
 } from "./scope.ts"
@@ -94,6 +96,7 @@ export {
 	Type,
 	type BaseTypeParser,
 	type DefinitionParser,
+	type SchemaParser,
 	type TypeParser
 } from "./type.ts"
 // tsc names a consumer's Types by these (as it does TypedFn, Match,
