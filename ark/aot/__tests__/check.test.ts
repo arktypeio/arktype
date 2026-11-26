@@ -830,4 +830,129 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"ark emit does not take --json"
 		)
 	})
+
+	it("emits structured JSON on stdout for pre-check failures under --check --json", () => {
+		const okRoot = writeFixture({
+			"package.json": "{}",
+			"main.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`
+		})
+
+		const noSources = runCli(okRoot, "--check", "nothing/*.ts", "--json")
+		attest([noSources.status, noSources.stderr]).equals([1, ""])
+		attest(JSON.parse(noSources.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: writeNoSourcesMessage(["nothing/*.ts"], okRoot)
+				}
+			]
+		})
+
+		const missingTsconfig = runCli(
+			okRoot,
+			"--check",
+			"--tsconfig",
+			"nope.json",
+			"--json"
+		)
+		attest([missingTsconfig.status, missingTsconfig.stderr]).equals([1, ""])
+		attest(JSON.parse(missingTsconfig.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: writeMissingTsconfigMessage(join(okRoot, "nope.json"))
+				}
+			]
+		})
+
+		const badFlag = runCli(okRoot, "--check", "--fail-under", "most", "--json")
+		attest([badFlag.status, badFlag.stderr]).equals([2, ""])
+		attest(JSON.parse(badFlag.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: "--fail-under must be a percentage (was most)"
+				}
+			]
+		})
+
+		const brokenJsonRoot = writeFixture({
+			"package.json": "{}",
+			"ark.json": "{not json",
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const brokenJson = runCli(brokenJsonRoot, "--check", "--json")
+		attest([brokenJson.status, brokenJson.stderr]).equals([1, ""])
+		const brokenParsed = JSON.parse(brokenJson.stdout)
+		attest({
+			...brokenParsed,
+			diagnostics: brokenParsed.diagnostics.map(
+				(d: { severity: string; message: string }) => ({
+					...d,
+					message: d.message.replace(
+						/isn't JSON: .*/,
+						"isn't JSON: <parse error>"
+					)
+				})
+			)
+		}).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: `${join(brokenJsonRoot, "ark.json")} isn't JSON: <parse error>`
+				}
+			]
+		})
+
+		const invalidArkJsonRoot = writeFixture({
+			"package.json": "{}",
+			"ark.json": JSON.stringify({ precompile: { runtime: "bogus" } }),
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const invalidArkJson = runCli(invalidArkJsonRoot, "--check", "--json")
+		attest([invalidArkJson.status, invalidArkJson.stderr]).equals([2, ""])
+		attest(JSON.parse(invalidArkJson.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: `${join(invalidArkJsonRoot, "ark.json")}: precompile.runtime must be "arktype" (was "bogus")`
+				}
+			]
+		})
+	})
 })

@@ -16,16 +16,50 @@ import {
 import { cliOptions } from "./settingsValidators.ts"
 import { checkArktypeVersion } from "./version.ts"
 
+const rawArgs = (() => {
+	const sep = process.argv.indexOf("--", 2)
+	return sep === -1 ? process.argv.slice(2) : process.argv.slice(2, sep)
+})()
+let isCheckJson =
+	rawArgs.includes("--check") &&
+	rawArgs.includes("--json") &&
+	!rawArgs.includes("--no-json") &&
+	!rawArgs.includes("--emit") &&
+	!rawArgs.includes("--declare")
+
+const emitJsonFailure = (message: string, status: number): never => {
+	console.log(
+		JSON.stringify(
+			{
+				files: 0,
+				sites: 0,
+				accepted: 0,
+				islands: 0,
+				rate: 0,
+				errors: 1,
+				errorsOutsideSites: 1,
+				diagnostics: [{ severity: "error", message }]
+			},
+			null,
+			2
+		)
+	)
+	process.exit(status)
+}
+
 // before importing what reads fs.globSync, which older versions lack
 const [major, minor] = process.versions.node.split(".").map(Number)
 if (major < 22 || (major === 22 && minor < 12)) {
-	console.error(writeNodeVersionMessage("@ark/aot", "22.12"))
+	const message = writeNodeVersionMessage("@ark/aot", "22.12")
+	if (isCheckJson) emitJsonFailure(message, 1)
+	console.error(message)
 	process.exit(1)
 }
 
 try {
 	checkArktypeVersion()
 } catch (e) {
+	if (isCheckJson) emitJsonFailure((e as Error).message, 1)
 	console.error((e as Error).message)
 	process.exit(1)
 }
@@ -64,6 +98,7 @@ const usage = `Usage: ark check [...files or globs] [--fail-under <percent>] [--
 	)}\n       ark emit [--declare] [--tsconfig <path>] [...the options check takes]\n       ark declare [--tsconfig <path>] [--checker <${checkers.join("|")}>]`
 
 const fail = (problem: string): never => {
+	if (isCheckJson) emitJsonFailure(problem, 2)
 	console.error(`${problem}\n${usage}`)
 	process.exit(2)
 }
@@ -71,6 +106,7 @@ const fail = (problem: string): never => {
 // file errors (e.g. an unparseable package.json or ark.json) aren't usage errors
 const failSettings = (e: unknown): never => {
 	if (isFileError(e) || (e instanceof Error && "code" in e)) {
+		if (isCheckJson) emitJsonFailure(e.message, 1)
 		console.error(e.message)
 		process.exit(1)
 	}
@@ -106,6 +142,10 @@ const { values, positionals } = ((): {
 	}
 })()
 
+isCheckJson = Boolean(
+	values.check && values.json && !values.emit && !values.declare
+)
+
 if (values.help) {
 	console.log(usage)
 	process.exit(0)
@@ -130,6 +170,7 @@ const run = <result>(build: () => result): result => {
 		// e.g. a config module that can't be read or a tsconfig that's missing,
 		// which the message names
 		if (!isBuildError(e)) throw e
+		if (isCheckJson) emitJsonFailure(e.message, 1)
 		console.error(e.message)
 		process.exit(1)
 	}
