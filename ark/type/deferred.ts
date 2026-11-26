@@ -1315,6 +1315,8 @@ export const deferredRecord = (
 						key: `Record<${key.key === "string" ? "" : `${key.key},`}${value.key}>`,
 						domains: objectBits,
 						pure: value.pure,
+						// a literal says an alias it holds of what's walking it, not of itself
+						cyclic: into.cyclic,
 						...holding(key, value)
 					},
 					$,

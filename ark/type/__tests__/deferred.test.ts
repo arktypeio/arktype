@@ -130,6 +130,25 @@ contextualize(() => {
 		).throws("results in an unsatisfiable type")
 	})
 
+	it("a Record of a literal holding an alias throws where it's composed", () => {
+		// its conflict is thrown the first time each is composed
+		const cyclic = () =>
+			type
+				.raw({
+					"[string]": "boolean",
+					a: "this | 1 <= number.integer <= 5 = 3"
+				})
+				.or("number.safe")
+		const held = anyType.Record("string", { z: cyclic() })
+		attest(isUnread(held)).equals(true)
+		attest(() => held.narrow(() => true)).throws(
+			"results in an unsatisfiable type"
+		)
+		attest(() =>
+			anyType.Record("string", [{ z: cyclic() }, "[]"]).narrow(() => true)
+		).throws("results in an unsatisfiable type")
+	})
+
 	it("a narrow checks a unit it holds at its call", () => {
 		const rejected: unknown[] = []
 		const rejects = (value: unknown) => {
