@@ -533,14 +533,21 @@ export const execMorph =
 export const callMorph = (
 	ctx: InternalTraversal,
 	morph: Morph,
-	data: unknown
+	data: unknown,
+	label?: string
 ): unknown => {
-	const { recv, recvAt } = ctx
+	const { recv, recvAt, lbl } = ctx
 	receive(ctx, data)
 	ctx.retFrom = undefined
-	const result = morph(data as never, ctx as never)
-	ctx.recv = recv
-	ctx.recvAt = recvAt
+	if (label !== undefined) ctx.lbl = label
+	let result: unknown
+	try {
+		result = morph(data as never, ctx as never)
+	} finally {
+		ctx.recv = recv
+		ctx.recvAt = recvAt
+		if (label !== undefined) ctx.lbl = lbl
+	}
 	return ctx.retFrom === undefined ? result : returned(ctx, result)
 }
 

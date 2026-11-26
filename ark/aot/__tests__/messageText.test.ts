@@ -185,6 +185,39 @@ const labeled: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ expected: "between 0 and 100", actual: "200" })).label("Pct") }), { k: "200" })
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ message: "Pct is out of range" })).label("Pct") }), { k: "200" })
 		show(type({ k: type({ a: "string" }).narrow((o, ctx) => pct(o.a) || ctx.reject({ expected: "between 0 and 100", relativePath: ["a"] })).label("Pct") }), { k: { a: "200" } })
+	`,
+	"names a value by its label in morph output checks and post-morph narrows": `
+		const DeleteRange = type({ "+": "delete", start: "string", end: "string" })
+			.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+			.label("Date range")
+		show(DeleteRange, { start: "2", end: "1" }, { start: "2", end: "1", extra: true }, { start: 1, end: "2" }, null)
+		standard(DeleteRange, { start: "2", end: "1" })
+		const DefaultedCfg = type({ a: "string = 'x'" })
+			.narrow((r, ctx) => r.a.length > 1 || ctx.mustBe("long enough"))
+			.label("Config")
+		show(DefaultedCfg, {}, { a: 1 }, null)
+		const Form = type({
+			name: type("string.trim").to("string > 0").label("Full name"),
+			port: type("string.integer.parse").to("1 <= number <= 65535").label("Port")
+		})
+		show(Form, { name: "   ", port: "99999" }, { name: 1, port: "abc" }, {})
+		standard(Form, { name: "   ", port: "99999" })
+		const Payload = type("string.json.parse").to({ name: "string" }).label("Payload")
+		show(Payload, "{}", "123", "bad")
+		const BeforeTo = type("string.trim").label("Before").to("string > 0")
+		show(BeforeTo, 1, "   ")
+		const BeforeNarrow = type({ "+": "delete", start: "string", end: "string" })
+			.label("Before")
+			.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+		show(BeforeNarrow, null, { start: "2", end: "1" })
+		const Relative = type({ "+": "delete", start: "string", end: "string" })
+			.narrow((r, ctx) => r.end >= r.start || ctx.reject({ expected: "valid range", relativePath: ["start"] }))
+			.label("Date range")
+		show(Relative, { start: "2", end: "1" })
+		const Custom = type({ "+": "delete", start: "string", end: "string" })
+			.narrow((r, ctx) => r.end >= r.start || ctx.reject({ message: "Custom sentence" }))
+			.label("Date range")
+		show(Custom, { start: "2", end: "1" })
 	`
 }
 

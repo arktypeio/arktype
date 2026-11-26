@@ -4,9 +4,12 @@ import {
 	byPath,
 	flatMessagesByPath,
 	fromJsonSchema,
+	lineOf,
 	scope,
 	type
 } from "arktype"
+import "arktype/i18n"
+import { de } from "arktype/locales/de"
 
 const UnitPrice = type("number > 0").label("Unit price")
 
@@ -147,6 +150,233 @@ contextualize(() => {
 			attest((T({ a: "200" }) as type.errors).summary).snap(
 				"a must be between 0 and 100"
 			)
+		})
+
+		it("names its value after a morphing object (delete or default)", () => {
+			const DeleteRange = type({
+				"+": "delete",
+				start: "string",
+				end: "string"
+			})
+				.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+				.label("Date range")
+			attest(reportOf(DeleteRange, { start: "2", end: "1" })).snap([
+				[[[], "", "Date range must be valid range"]],
+				"Date range must be valid range"
+			])
+			attest(
+				(DeleteRange({ start: "2", end: "1", extra: true }) as type.errors)
+					.summary
+			).snap("Date range must be valid range")
+			attest((DeleteRange(null) as type.errors).summary).snap(
+				"Date range must be an object"
+			)
+			attest((DeleteRange({ start: 1, end: "2" }) as type.errors).summary).snap(
+				"start must be a string"
+			)
+			const deleteStandard = DeleteRange["~standard"].validate({
+				start: "2",
+				end: "1"
+			}) as StandardSchemaV1.FailureResult
+			attest(deleteStandard.issues.map(i => [i.message, i.path])).snap([
+				["Date range must be valid range", []]
+			])
+
+			const DefaultedCfg = type({ a: "string = 'x'" })
+				.narrow((r, ctx) => r.a.length > 1 || ctx.mustBe("long enough"))
+				.label("Config")
+			attest(reportOf(DefaultedCfg, {})).snap([
+				[[[], "", "Config must be long enough"]],
+				"Config must be long enough"
+			])
+			attest((DefaultedCfg(null) as type.errors).summary).snap(
+				"Config must be an object"
+			)
+			attest((DefaultedCfg({ a: 1 }) as type.errors).summary).snap(
+				"a must be a string"
+			)
+
+			const Relative = type({ "+": "delete", start: "string", end: "string" })
+				.narrow(
+					(r, ctx) =>
+						r.end >= r.start ||
+						ctx.reject({ expected: "valid range", relativePath: ["start"] })
+				)
+				.label("Date range")
+			attest((Relative({ start: "2", end: "1" }) as type.errors).summary).snap(
+				"start must be valid range"
+			)
+
+			const Custom = type({ "+": "delete", start: "string", end: "string" })
+				.narrow(
+					(r, ctx) =>
+						r.end >= r.start || ctx.reject({ message: "Custom sentence" })
+				)
+				.label("Date range")
+			attest((Custom({ start: "2", end: "1" }) as type.errors).summary).snap(
+				"Custom sentence"
+			)
+
+			// a label called before .narrow() does not reach the narrow added after
+			const Before = type({ "+": "delete", start: "string", end: "string" })
+				.label("Before")
+				.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+			attest((Before(null) as type.errors).summary).snap(
+				"Before must be an object"
+			)
+			attest((Before({ start: "2", end: "1" }) as type.errors).summary).snap(
+				"must be valid range"
+			)
+		})
+	})
+
+	describe("a morph", () => {
+		it("names its value in output checks of a piped Type", () => {
+			const Form = type({
+				name: type("string.trim").to("string > 0").label("Full name"),
+				port: type("string.integer.parse")
+					.to("1 <= number <= 65535")
+					.label("Port")
+			})
+			const out = Form({ name: "   ", port: "99999" }) as type.errors
+			attest(reportOf(Form, { name: "   ", port: "99999" })).snap([
+				[
+					[["name"], "name", "Full name must be non-empty"],
+					[["port"], "port", "Port must be at most 65535"]
+				],
+				`Full name must be non-empty
+Port must be at most 65535`
+			])
+			attest(out.issues.map(lineOf)).snap([
+				"Full name must be non-empty",
+				"Port must be at most 65535"
+			])
+			const standard = Form["~standard"].validate({
+				name: "   ",
+				port: "99999"
+			}) as StandardSchemaV1.FailureResult
+			attest(standard.issues.map(i => [i.message, i.path])).snap([
+				["Full name must be non-empty", ["name"]],
+				["Port must be at most 65535", ["port"]]
+			])
+			attest((Form({ name: 1, port: "abc" }) as type.errors).summary).snap(
+				`Full name must be a string
+Port must be a well-formed integer string`
+			)
+			attest((Form({}) as type.errors).summary).snap(
+				`Full name must be a string (was missing)
+Port must be a string (was missing)`
+			)
+		})
+
+		it("is shallow on piped object outputs and keeps prior labels scoped", () => {
+			const Payload = type("string.json.parse")
+				.to({ name: "string" })
+				.label("Payload")
+			attest((Payload("{}") as type.errors).summary).snap(
+				"name must be a string (was missing)"
+			)
+			attest((Payload("123") as type.errors).summary).snap(
+				"Payload must be an object"
+			)
+			attest((Payload("bad") as type.errors).summary).snap(
+				"Payload must be a JSON string"
+			)
+
+			// a label called before .to() does not reach checks added after
+			const Before = type("string.trim").label("Before").to("string > 0")
+			attest((Before(1) as type.errors).summary).snap("Before must be a string")
+			attest((Before("   ") as type.errors).summary).snap("must be non-empty")
+
+			// outer .label() overrides inner .label(), matching non-morph precedence
+			const Override = type("string.trim")
+				.to(type("string > 0").label("Inner"))
+				.label("Outer")
+			const NonMorphOverride = type("string > 0").label("Inner").label("Outer")
+			attest((Override("   ") as type.errors).summary).equals(
+				(NonMorphOverride("") as type.errors).summary
+			)
+			attest((Override("   ") as type.errors).summary).snap(
+				"Outer must be non-empty"
+			)
+
+			// an explicit message on the output stays as written
+			const WithMessage = type("string.trim")
+				.to(type("string").atLeastLength(1, "Enter a name"))
+				.label("Full name")
+			attest((WithMessage("   ") as type.errors).summary).snap("Enter a name")
+			attest((WithMessage(1) as type.errors).summary).snap(
+				"Full name must be a string"
+			)
+
+			// a labeled morph does not leak its label into another Type piped with ctx
+			const Inner = type("string").narrow(
+				(s, ctx) => s.length > 0 || ctx.mustBe("non-empty")
+			)
+			const PipedInner = type("string")
+				.pipe((s, ctx) => Inner.internal(s.trim(), ctx))
+				.label("Outer")
+			attest((PipedInner("   ") as type.errors).summary).snap(
+				"must be non-empty"
+			)
+
+			// restoring ctx.lbl in finally prevents a caught throwing morph from corrupting outer labels
+			const ThrowingLabeled = type("string")
+				.pipe((_s, _ctx) => {
+					throw new Error("boom")
+				})
+				.label("Inner")
+			const CatchInner = type("string").pipe((s, ctx) => {
+				try {
+					return ThrowingLabeled.internal(s, ctx)
+				} catch {
+					return ctx.error("fallback")
+				}
+			})
+			attest((CatchInner("x") as type.errors).summary).snap("must be fallback")
+
+			const ThrowingUnlabeled = type("string").pipe((_s, _ctx) => {
+				throw new Error("boom")
+			})
+			const CatchOuter = type("string")
+				.pipe((s, ctx) => {
+					try {
+						return ThrowingUnlabeled.internal(s, ctx)
+					} catch {
+						return ctx.error("fallback")
+					}
+				})
+				.label("Outer")
+			attest((CatchOuter("x") as type.errors).summary).snap(
+				"Outer must be fallback"
+			)
+		})
+
+		it("works identically in jitless mode and other locales", () => {
+			const $ = scope({}, { jitless: true })
+			const DeleteRange = $.type({
+				"+": "delete",
+				start: "string",
+				end: "string"
+			})
+				.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+				.label("Date range")
+			const Form = $.type({
+				name: $.type("string.trim").to("string > 0").label("Full name"),
+				port: $.type("string.integer.parse")
+					.to("1 <= number <= 65535")
+					.label("Port")
+			})
+			const rangeErr = DeleteRange({ start: "2", end: "1" }) as type.errors
+			attest(rangeErr.summary).snap("Date range must be valid range")
+			attest(rangeErr.summaryIn(de)).snap(
+				"Date range muss ein Wert gemäß der Beschreibung „valid range“ sein"
+			)
+			const formErr = Form({ name: "   ", port: "99999" }) as type.errors
+			attest(formErr.summary).snap(`Full name must be non-empty
+Port must be at most 65535`)
+			attest(formErr.summaryIn(de)).snap(`Full name darf nicht leer sein
+Port muss höchstens 65535 sein`)
 		})
 	})
 

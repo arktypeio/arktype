@@ -2259,4 +2259,110 @@ console.log(P.allows({ b: 1 }), P.allows({}), R.allows({ a: "x", b: 1, c: true }
 			attest(behaviorOf(await bundle(root, smallest))).equals(expected)
 		})
 	})
+
+	describe("labeled morphs and post-morph narrows", () => {
+		it("preserves labels across speed, size, smallest, first and none error modes", async () => {
+			const root = writeFixture(
+				{
+					"main.ts": `import { lineOf, type } from "arktype"
+
+const DeleteRange = type({ "+": "delete", start: "string", end: "string" })
+	.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+	.label("Date range")
+const DefaultedCfg = type({ a: "string = 'x'" })
+	.narrow((r, ctx) => r.a.length > 1 || ctx.mustBe("long enough"))
+	.label("Config")
+const Form = type({
+	name: type("string.trim").to("string > 0").label("Full name"),
+	port: type("string.integer.parse").to("1 <= number <= 65535").label("Port")
+})
+const Payload = type("string.json.parse").to({ name: "string" }).label("Payload")
+
+const show = (t: any, input: unknown) => {
+	const out = t(input)
+	if (out instanceof type.errors)
+		console.log(JSON.stringify([out.summary, out.issues.map(lineOf)]))
+	else console.log("ok")
+}
+show(DeleteRange, { start: "2", end: "1" })
+show(DefaultedCfg, {})
+show(Form, { name: "   ", port: "99999" })
+show(Payload, "{}")
+show(Payload, "123")
+${repaying}
+`
+				},
+				tempPath("checkers", "labeled-morphs")
+			)
+			const expected = runPlain(root)
+			attest(expected).equals(
+				[
+					JSON.stringify([
+						"Date range must be valid range",
+						["Date range must be valid range"]
+					]),
+					JSON.stringify([
+						"Config must be long enough",
+						["Config must be long enough"]
+					]),
+					JSON.stringify([
+						"Full name must be non-empty\nPort must be at most 65535",
+						["Full name must be non-empty", "Port must be at most 65535"]
+					]),
+					JSON.stringify([
+						"name must be a string (was missing)",
+						["name must be a string (was missing)"]
+					]),
+					JSON.stringify([
+						"Payload must be an object",
+						["Payload must be an object"]
+					])
+				].join("\n") + "\n"
+			)
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			attest(behaviorOf(await bundle(root, { optimize: "size" }))).equals(
+				expected
+			)
+			attest(behaviorOf(await bundle(root, smallest))).equals(expected)
+			// errors: "first" keeps the first labeled issue on each failure
+			attest(
+				behaviorOf(await bundle(root, { optimize: "size", errors: "first" }))
+			).equals(
+				[
+					JSON.stringify([
+						"Date range must be valid range",
+						["Date range must be valid range"]
+					]),
+					JSON.stringify([
+						"Config must be long enough",
+						["Config must be long enough"]
+					]),
+					JSON.stringify([
+						"Full name must be non-empty",
+						["Full name must be non-empty"]
+					]),
+					JSON.stringify([
+						"name must be a string (was missing)",
+						["name must be a string (was missing)"]
+					]),
+					JSON.stringify([
+						"Payload must be an object",
+						["Payload must be an object"]
+					])
+				].join("\n") + "\n"
+			)
+			// errors: "none" still fails cleanly without crashing
+			attest(
+				behaviorOf(await bundle(root, { optimize: "size", errors: "none" }))
+			).equals(
+				[
+					JSON.stringify(["is invalid", ["is invalid"]]),
+					JSON.stringify(["is invalid", ["is invalid"]]),
+					JSON.stringify(["is invalid", ["is invalid"]]),
+					JSON.stringify(["is invalid", ["is invalid"]]),
+					JSON.stringify(["is invalid", ["is invalid"]])
+				].join("\n") + "\n"
+			)
+		})
+	})
 })

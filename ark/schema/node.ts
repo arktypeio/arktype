@@ -181,8 +181,16 @@ const callableOf = (cache: NodeCache) =>
 		pipedFromCtx?: Traversal | undefined,
 		onFail?: ArkErrors.Handler | null
 	) => {
-		if (pipedFromCtx)
-			return pipe(siteTraversalOf(pipedFromCtx), cache.self, data)
+		if (pipedFromCtx) {
+			const ctx = siteTraversalOf(pipedFromCtx)
+			const { lbl } = ctx
+			if (lbl !== undefined) ctx.lbl = undefined
+			try {
+				return pipe(ctx, cache.self, data)
+			} finally {
+				if (lbl !== undefined) ctx.lbl = lbl
+			}
+		}
 
 		const rootApply = cache.rootApply
 		return rootApply === undefined ?
