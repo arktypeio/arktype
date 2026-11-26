@@ -3,6 +3,7 @@ import type {
 	Scanner,
 	writeUnclosedGroupMessage
 } from "@ark/util"
+import type { StringDigit } from "./escape.ts"
 import type { State, s } from "./state.ts"
 
 type LookaroundChar = "=" | "!"
@@ -107,8 +108,10 @@ type _parseModifiers<
 						modifier extends flags | negated ?
 							writeDuplicateModifierMessage<modifier>
 						:	_parseModifiers<next, flags, negated | modifier>
-					:	writeInvalidModifierMessage<modifier>
-				:	missingNegatedModifierMessage
+					: modifier extends "-" ? multipleModifierDashesMessage
+					: writeInvalidModifierMessage<modifier>
+				: [flags] extends [never] ? missingNegatedModifierMessage
+				: ParsedModifiers<flags, never>
 			:	multipleModifierDashesMessage
 		: lookahead extends ModifiableFlag ?
 			lookahead extends flags | negated ?
@@ -157,12 +160,63 @@ type parseNamedGroupOrLookbehind<s extends State, unscanned extends string> =
 		s.pushGroup<s, name, following, undefined>
 	:	s.error<writeUnclosedGroupMessage<")">>
 
+type InvalidGroupNameChar =
+	| " "
+	| "\t"
+	| "\n"
+	| "\r"
+	| "-"
+	| "."
+	| "+"
+	| "*"
+	| "?"
+	| "^"
+	| "("
+	| ")"
+	| "["
+	| "]"
+	| "{"
+	| "}"
+	| "|"
+	| "/"
+	| "!"
+	| "@"
+	| "#"
+	| "%"
+	| "&"
+	| "="
+	| ":"
+	| ";"
+	| ","
+	| "<"
+	| "'"
+	| '"'
+	| "`"
+	| "~"
+
+type InvalidGroupName =
+	| `${StringDigit}${string}`
+	| `${string}${InvalidGroupNameChar}${string}`
+
 type shiftNamedGroup<unscanned extends string> =
 	unscanned extends `${infer name}>${infer next}` ?
 		name extends "" ?
 			Scanner.shiftResult<"", ErrorMessage<unnamedCaptureGroupMessage>>
+		: name extends InvalidGroupName ?
+			Scanner.shiftResult<
+				"",
+				ErrorMessage<writeInvalidCaptureGroupNameMessage<name>>
+			>
 		:	Scanner.shiftResult<name, next>
 	:	Scanner.shiftResult<"", ErrorMessage<writeUnclosedGroupMessage<">">>>
+
+export const writeInvalidCaptureGroupNameMessage = <name extends string>(
+	name: name
+): writeInvalidCaptureGroupNameMessage<name> =>
+	`Capture group name '${name}' is invalid`
+
+export type writeInvalidCaptureGroupNameMessage<name extends string> =
+	`Capture group name '${name}' is invalid`
 
 export const unnamedCaptureGroupMessage = "Capture group <> requires a name"
 

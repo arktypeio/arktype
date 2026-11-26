@@ -1,6 +1,6 @@
 import type { contains, parseNonNegativeInteger, Scanner } from "@ark/util"
 import type { UnicodeFlag } from "./regex.ts"
-import type { s, State } from "./state.ts"
+import type { appendString, s, State } from "./state.ts"
 
 export type parseBuiltinQuantifier<
 	s extends State,
@@ -153,7 +153,7 @@ type tryFastPath<
 		max extends 1 ? "" | pattern
 		: max extends number ? loopFromZero<pattern, max, "", []>
 		: // max is null, all we can do is append ${string}
-			"" | `${pattern}${string}`
+			"" | appendString<pattern>
 	:	loopUntilMin<pattern, min, max, "", []>
 
 type loopFromZero<
@@ -177,8 +177,8 @@ type loopUntilMin<
 		: // don't need appendNonRedundant for these cases because if the pattern is
 		// something collapsible like `string` or `bigint, the fast path has
 		// already been taken
-		repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
-		: `${acc}${string}`
+		repetitions["length"] extends 0 ? acc | appendString<`${acc}${base}`>
+		: appendString<acc>
 	:	loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 
 type loopUntilMax<

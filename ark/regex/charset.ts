@@ -10,6 +10,8 @@ import type {
 	NonZeroDigit,
 	RegexClassChar,
 	StringDigit,
+	UnicodePropertyChar,
+	writeInvalidUnicodePropertyMessage,
 	writeUnnecessaryEscapeMessage
 } from "./escape.ts"
 import type { UnicodeFlag } from "./regex.ts"
@@ -22,16 +24,12 @@ export type parseCharset<s extends State, unscanned extends string> =
 		nextUnscanned extends `]${infer remaining}` ?
 			// we don't care about the contents of the negated char set because we can't infer it
 			scanned extends Scanner.shift<"^", infer negatedBody> ?
-				negatedBody extends `${string}-${string}` ?
-					parseNonNegatedCharset<
-						negatedBody,
-						never,
-						null,
-						contains<s["flags"], UnicodeFlag>
-					> extends infer result extends ErrorMessage ?
-						s.error<result>
-					:	s.shiftQuantifiable<s, string, remaining>
-				:	s.shiftQuantifiable<s, string, remaining>
+				parseNegatedCharset<
+					s,
+					negatedBody,
+					remaining,
+					contains<s["flags"], UnicodeFlag>
+				>
 			: parseNonNegatedCharset<
 				scanned,
 				never,
@@ -40,9 +38,41 @@ export type parseCharset<s extends State, unscanned extends string> =
 			> extends infer result extends string ?
 				[result] extends [never] ? s.error<emptyCharacterSetMessage>
 				: result extends ErrorMessage ? s.error<result>
-				: s.shiftQuantifiable<s, result, remaining>
+				: s.shiftQuantifiable<
+						s,
+						applyCharsetCasing<s["caseInsensitive"], result>,
+						remaining
+					>
 			:	never
 		:	s.error<writeUnclosedGroupMessage<"]">>
+	:	never
+
+type parseNegatedCharset<
+	s extends State,
+	body extends string,
+	remaining extends string,
+	unicode extends boolean
+> =
+	body extends (
+		`${string}${unicode extends true ? "-" | Backslash : "-"}${string}`
+	) ?
+		parseNonNegatedCharset<body, never, null, unicode> extends (
+			infer result extends ErrorMessage
+		) ?
+			s.error<result>
+		:	s.shiftQuantifiable<s, string, remaining>
+	:	s.shiftQuantifiable<s, string, remaining>
+
+type applyCharsetCasing<caseInsensitive extends boolean, chars extends string> =
+	caseInsensitive extends false ? chars
+	: string extends chars ? chars
+	: expandCharsetCasing<chars>
+
+type expandCharsetCasing<char extends string> =
+	char extends unknown ?
+		`${number}` extends char ?
+			char
+		:	Lowercase<char> | Uppercase<char>
 	:	never
 
 type parseNonNegatedCharset<
@@ -112,7 +142,21 @@ type parseChar<unscanned extends string, unicode extends boolean> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
 		lookahead extends Backslash ?
 			next extends Scanner.shift<infer escaped, infer postEscaped> ?
-				Scanner.shiftResult<parseEscapedSetChar<escaped, unicode>, postEscaped>
+				unicode extends true ?
+					escaped extends UnicodePropertyChar ?
+						postEscaped extends `{${infer prop}}${infer afterProp}` ?
+							prop extends "" ?
+								Scanner.shiftResult<
+									ErrorMessage<writeInvalidUnicodePropertyMessage<escaped>>,
+									""
+								>
+							:	Scanner.shiftResult<string, afterProp>
+						:	Scanner.shiftResult<
+								ErrorMessage<writeInvalidUnicodePropertyMessage<escaped>>,
+								""
+							>
+					:	Scanner.shiftResult<parseEscapedSetChar<escaped, true>, postEscaped>
+				:	Scanner.shiftResult<parseEscapedSetChar<escaped, false>, postEscaped>
 			:	never
 		:	Scanner.shiftResult<
 				lookahead extends "-" ? UnescapedDashMarker : lookahead,

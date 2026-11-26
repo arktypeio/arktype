@@ -24,6 +24,7 @@ import {
 	unescapedLiteralQuestionMarkMessage,
 	unnamedCaptureGroupMessage,
 	writeDuplicateModifierMessage,
+	writeInvalidCaptureGroupNameMessage,
 	writeInvalidModifierMessage
 } from "arkregex/internal/group.ts"
 import type { next } from "arkregex/internal/parse.ts"
@@ -124,6 +125,65 @@ contextualize(() => {
 		it("start and end", () => {
 			const S = regex("^a$")
 			attest<Regex<`a`, {}>>(S).type.toString.snap('Regex<"a", {}>')
+		})
+
+		it("unanchored digit classes preserve surrounding ${string}", () => {
+			const D = regex("\\d")
+			attest<Regex<`${string}${number}${string}`, {}>>(D)
+			attest(D.test("foo5bar")).equals(true)
+
+			const Range = regex("[0-9]")
+			attest<Regex<`${string}${number}${string}`, {}>>(Range)
+
+			const Multiline = regex("\\d$", "m")
+			attest<Regex<`${string}${number}${string}`, { flags: "m" }>>(Multiline)
+
+			const Start = regex("^\\d")
+			attest<Regex<`${number}${string}`, {}>>(Start)
+			const okStart: typeof Start.infer = "5bar"
+			attest(Start.test(okStart)).equals(true)
+
+			const End = regex("\\d$")
+			attest<Regex<`${string}${number}`, {}>>(End)
+
+			const DigitFollowedByDot = regex("^(\\d).$")
+			attest<Regex<`${number}${string}`, { captures: [`${number}`] }>>(
+				DigitFollowedByDot
+			)
+
+			const DigitFollowedByUnion = regex("^(\\d)[a\\d]$")
+			attest<
+				Regex<`${number}a` | `${number}${number}`, { captures: [`${number}`] }>
+			>(DigitFollowedByUnion)
+		})
+
+		it("does not emit redundant adjacent ${string}${string}", () => {
+			const Plus = regex("^a+")
+			attest<Regex<`a${string}`, {}>>(Plus).type.toString.snap(
+				"Regex<`a${string}`, {}>"
+			)
+			const okPlus: typeof Plus.infer = "a"
+			attest(Plus.test(okPlus)).equals(true)
+
+			const UnanchoredPlus = regex("a+")
+			attest<Regex<`${string}a${string}`, {}>>(UnanchoredPlus)
+			const okUnanchored: typeof UnanchoredPlus.infer = "a"
+			attest(UnanchoredPlus.test(okUnanchored)).equals(true)
+
+			const LeadingWildcard = regex(".*a$")
+			attest<Regex<`${string}a`, {}>>(LeadingWildcard)
+			const okLeading: typeof LeadingWildcard.infer = "a"
+			attest(LeadingWildcard.test(okLeading)).equals(true)
+
+			const NestedPlus = regex("^(a+)+$")
+			attest<Regex<`a${string}`, { captures: [`a${string}`] }>>(NestedPlus)
+			const okNested: typeof NestedPlus.infer = "a"
+			attest(NestedPlus.test(okNested)).equals(true)
+
+			const NestedStar = regex("^(a+)*$")
+			attest<
+				Regex<"" | `a${string}`, { captures: [`a${string}` | undefined] }>
+			>(NestedStar)
 		})
 
 		it("multiple start branches", () => {
@@ -604,6 +664,55 @@ contextualize(() => {
 			)
 		})
 
+		it("negated charset validates escapes under u and v flags", () => {
+			// @ts-expect-error
+			attest(() => regex("^[^\\a]$", "u"))
+				.throws("Invalid escape")
+				.type.errors(writeUnnecessaryEscapeMessage("a"))
+			// @ts-expect-error
+			attest(() => regex("^[^\\1]$", "u"))
+				.throws("Invalid decimal escape")
+				.type.errors(writeUnnecessaryEscapeMessage("1"))
+			// @ts-expect-error
+			attest(() => regex("^[^\\a]$", "v"))
+				.throws("Invalid escape")
+				.type.errors(writeUnnecessaryEscapeMessage("a"))
+			// @ts-expect-error
+			attest(() => regex("^[^\\p]$", "u"))
+				.throws("Invalid property name")
+				.type.errors(writeInvalidUnicodePropertyMessage("p"))
+			// @ts-expect-error
+			attest(() => regex("^[^\\p{}]$", "u"))
+				.throws("Invalid property name")
+				.type.errors(writeInvalidUnicodePropertyMessage("p"))
+			// @ts-expect-error
+			attest(() => regex("^[\\p]$", "u"))
+				.throws("Invalid property name")
+				.type.errors(writeInvalidUnicodePropertyMessage("p"))
+			attest<Regex<string, { flags: "u" }>>(regex("^[^\\p{ASCII}]$", "u"))
+			attest<Regex<string, { flags: "u" }>>(regex("^[^\\d]$", "u"))
+			attest<Regex<string, { flags: "u" }>>(regex("^[^\\-]$", "u"))
+			attest<Regex<string, {}>>(regex("^[^\\a]$"))
+		})
+
+		it("case-insensitive character sets", () => {
+			const Single = regex("^[a]$", "i")
+			attest<Regex<"a" | "A", { flags: "i" }>>(Single)
+			attest(Single.test("A")).equals(true)
+
+			const Multi = regex("^[aB1-]$", "i")
+			attest<Regex<"a" | "A" | "b" | "B" | "1" | "-", { flags: "i" }>>(Multi)
+
+			const Range = regex("^[a-z]$", "i")
+			attest<Regex<string, { flags: "i" }>>(Range)
+
+			const Digits = regex("^[0-9]$", "i")
+			attest<Regex<`${number}`, { flags: "i" }>>(Digits)
+
+			const Mixed = regex("^[a0-9]$", "i")
+			attest<Regex<"a" | "A" | `${number}`, { flags: "i" }>>(Mixed)
+		})
+
 		it("shorthand", () => {
 			const S = regex("^a[\\d]$")
 			attest<Regex<`a${number}`, {}>>(S).type.toString.snap(
@@ -917,6 +1026,27 @@ contextualize(() => {
 					}
 				>
 			>(S)
+		})
+
+		it("zero-quantified capture group captures only undefined", () => {
+			const Exact = regex("^(a){0}$")
+			attest<Regex<"", { captures: [undefined] }>>(Exact)
+			attest(Exact.exec("")?.[1]).equals(undefined)
+
+			const Range = regex("^(a){0,0}$")
+			attest<Regex<"", { captures: [undefined] }>>(Range)
+
+			const Named = regex("^(?<a>x){0}$")
+			attest<Regex<"", { captures: [undefined]; names: { a: undefined } }>>(
+				Named
+			)
+			attest(Named.exec("")?.groups.a).equals(undefined)
+
+			const Nested = regex("^(a(b)){0}$")
+			attest<Regex<"", { captures: [undefined, undefined] }>>(Nested)
+
+			const WithBackref = regex("^(a){0}\\1$")
+			attest<Regex<"", { captures: [undefined] }>>(WithBackref)
 		})
 
 		it("quantified", () => {
@@ -1402,6 +1532,56 @@ contextualize(() => {
 			attest(() => regex("(?<>foo)")).type.errors(unnamedCaptureGroupMessage)
 		})
 
+		it("invalid capture group name", () => {
+			// @ts-expect-error
+			attest(() => regex("^(?<1a>x)$"))
+				.throws("Invalid capture group name")
+				.type.errors(writeInvalidCaptureGroupNameMessage("1a"))
+			// @ts-expect-error
+			attest(() => regex("^(?<a-b>x)$"))
+				.throws("Invalid capture group name")
+				.type.errors(writeInvalidCaptureGroupNameMessage("a-b"))
+			// @ts-expect-error
+			attest(() => regex("^(?<a b>x)$"))
+				.throws("Invalid capture group name")
+				.type.errors(writeInvalidCaptureGroupNameMessage("a b"))
+
+			attest<Regex<"x", { captures: ["x"]; names: { $a_1: "x" } }>>(
+				regex("^(?<$a_1>x)$")
+			)
+			attest<Regex<"x", { captures: ["x"]; names: { é: "x" } }>>(
+				regex("^(?<é>x)$")
+			)
+		})
+
+		it("case-insensitive backreferences", () => {
+			const Indexed = regex("^(x)\\1$", "i")
+			attest<
+				Regex<
+					"xx" | "xX" | "Xx" | "XX",
+					{ captures: ["x"] | ["X"]; flags: "i" }
+				>
+			>(Indexed)
+			attest(Indexed.test("xX")).equals(true)
+
+			const Named = regex("^(?<a>x)\\k<a>$", "i")
+			attest<
+				Regex<
+					"xx" | "xX" | "Xx" | "XX",
+					{
+						captures: ["x"] | ["X"]
+						names: { a: "x" } | { a: "X" }
+						flags: "i"
+					}
+				>
+			>(Named)
+			attest(Named.test("Xx")).equals(true)
+
+			const Bounded = regex("^(abcdef)\\1$", "i")
+			const okBounded: typeof Bounded.infer = "abcdefABCDEF"
+			attest(Bounded.test(okBounded)).equals(true)
+		})
+
 		it("unresolvable", () => {
 			// @ts-expect-error
 			attest(() => regex("(?<foo>a)b\\k<bar>")).type.errors(
@@ -1699,6 +1879,52 @@ contextualize(() => {
 				attest(() => regex("(?-:abc)")).type.errors(
 					missingNegatedModifierMessage
 				)
+			})
+
+			it("empty negated modifier list when positive flags precede dash", () => {
+				const S = regex("^(?i-:aB)$")
+				attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
+				attest(S.test("ab")).equals(true)
+
+				// @ts-expect-error
+				attest(() => regex("^(?i--:aB)$"))
+					.throws("Multiple dashes")
+					.type.errors(multipleModifierDashesMessage)
+			})
+
+			it("case-insensitive charset and backreference modifiers", () => {
+				const CharsetOn = regex("^(?i:[ab])$")
+				attest<Regex<"a" | "A" | "b" | "B", {}>>(CharsetOn)
+				attest(CharsetOn.test("A")).equals(true)
+
+				const CharsetOff = regex("^(?-i:[ab])$", "i")
+				attest<Regex<"a" | "b", { flags: "i" }>>(CharsetOff)
+				attest(CharsetOff.test("A")).equals(false)
+
+				const RefOn = regex("^(a)(?i:\\1)$")
+				attest<Regex<"aa" | "aA", { captures: ["a"] }>>(RefOn)
+				attest(RefOn.test("aA")).equals(true)
+
+				const RefOff = regex("^(a)(?-i:\\1)$", "i")
+				attest<Regex<"aa" | "AA", { captures: ["a"] | ["A"]; flags: "i" }>>(
+					RefOff
+				)
+				attest(RefOff.test("aA")).equals(false)
+				attest(RefOff.test("AA")).equals(true)
+
+				const RefTemplate = regex("^(.*a)(?i:\\1)$")
+				attest<
+					Regex<
+						`${string}a${string}a` | `${string}a${string}A`,
+						{ captures: [`${string}a`] }
+					>
+				>(RefTemplate)
+				const okRefTemplate: typeof RefTemplate.infer = "xaXA"
+				attest(RefTemplate.test(okRefTemplate)).equals(true)
+
+				const RefLong = regex("^(abcdef)(?i:\\1)$")
+				const okRefLong: typeof RefLong.infer = "abcdefABCDEF"
+				attest(RefLong.test(okRefLong)).equals(true)
 			})
 
 			it("unclosed modifier group", () => {

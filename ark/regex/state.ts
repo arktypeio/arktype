@@ -326,9 +326,13 @@ export type RegexAst =
 	| GroupTree
 	| QuantifierTree
 
-export interface ReferenceNode<to extends string = string> {
+export interface ReferenceNode<
+	to extends string = string,
+	caseInsensitive extends boolean = boolean
+> {
 	kind: "reference"
 	to: to
+	caseInsensitive: caseInsensitive
 }
 
 export declare namespace ReferenceNode {
@@ -344,20 +348,41 @@ export declare namespace ReferenceNode {
 				// to help users avoid it
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 			:	FinalizationResult.from<{
-					pattern: inferReference<ctx["captures"][to]>
+					pattern: inferReference<ctx["captures"][to], self["caseInsensitive"]>
 					ctx: ctx
 				}>
 		: to extends keyof ctx["names"] ?
 			ctx["names"][to] extends IncompleteCaptureGroup ?
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 			:	FinalizationResult.from<{
-					pattern: inferReference<ctx["names"][to]>
+					pattern: inferReference<ctx["names"][to], self["caseInsensitive"]>
 					ctx: ctx
 				}>
 		:	FinalizationResult.error<ctx, writeUnresolvableBackreferenceMessage<to>>
 
-	type inferReference<to extends string | undefined> =
-		to extends string ? to : ""
+	type inferReference<
+		to extends string | undefined,
+		caseInsensitive extends boolean
+	> =
+		to extends string ?
+			caseInsensitive extends true ?
+				expandBackreferenceCase<to>
+			:	to
+		:	""
+
+	type expandBackreferenceCase<s extends string, cased extends 1[] = []> =
+		s extends "" ? ""
+		: string extends s ? string
+		: s extends `${infer head}${infer tail}` ?
+			string extends head ?
+				appendNonRedundant<string, expandBackreferenceCase<tail, cased>>
+			: `${number}` extends head ?
+				`${number}${expandBackreferenceCase<tail, cased>}`
+			: Lowercase<head> extends Uppercase<head> ?
+				`${head}${expandBackreferenceCase<tail, cased>}`
+			: cased["length"] extends 5 ? string
+			: `${Lowercase<head> | Uppercase<head>}${expandBackreferenceCase<tail, [...cased, 1]>}`
+		:	string
 }
 
 export const writeIncompleteReferenceError = <ref extends string>(
@@ -711,8 +736,9 @@ export declare namespace QuantifierTree {
 		r extends FinalizationResult,
 		quantifiedCaptures extends IndexedCaptures
 	> =
-		| finalizeZeroQuantified<ctx, r, quantifiedCaptures>
-		| finalizeOnePlusQuantified<self["max"], r>
+		self["max"] extends 0 ? finalizeZeroQuantified<ctx, r, quantifiedCaptures>
+		:	| finalizeZeroQuantified<ctx, r, quantifiedCaptures>
+			| finalizeOnePlusQuantified<self["max"], r>
 
 	// add `| undefined` to any capture groups quantified by zero
 	type finalizeZeroQuantified<
@@ -823,10 +849,10 @@ type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
 		startStripped extends `${infer bothStripped}${EndAnchorMarker}` ?
 			bothStripped
-		:	appendNonRedundant<startStripped, string>
+		:	appendString<startStripped>
 	: pattern extends `${infer endStripped}${EndAnchorMarker}` ?
-		prependNonRedundant<endStripped, string>
-	:	prependNonRedundant<appendNonRedundant<pattern, string>, string>
+		prependString<endStripped>
+	:	prependString<appendString<pattern>>
 
 type anchorsAway<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
@@ -835,6 +861,20 @@ type anchorsAway<pattern extends string> =
 		:	startStripped
 	: pattern extends `${infer endStripped}${EndAnchorMarker}` ? endStripped
 	: pattern
+
+export type appendString<base extends string> =
+	base extends unknown ?
+		`${base}${string}` extends base ?
+			base
+		:	`${base}${string}`
+	:	never
+
+type prependString<base extends string> =
+	base extends unknown ?
+		`${string}${base}` extends base ?
+			base
+		:	`${string}${base}`
+	:	never
 
 type appendNonRedundant<base extends string, suffix extends string> =
 	string extends base ?
@@ -845,22 +885,11 @@ type appendNonRedundant<base extends string, suffix extends string> =
 	// to represent digits, so it is valid to merge them as `${number}`.
 	`${number}` extends base ?
 		`${number}` extends suffix ?
-			`${number}`
+			[base, suffix] extends [`${number}`, `${number}`] ?
+				`${number}`
+			:	`${base}${suffix}`
 		:	`${base}${suffix}`
 	:	`${base}${suffix}`
-
-type prependNonRedundant<base extends string, prefix extends string> =
-	string extends base ?
-		string extends prefix ?
-			string
-		:	`${prefix}${base}`
-	: // this is not generalizable, but arkregex uses `${number}`
-	// to represent digits, so it is valid to merge them as `${number}`.
-	`${number}` extends base ?
-		`${number}` extends prefix ?
-			`${number}`
-		:	`${prefix}${base}`
-	:	`${prefix}${base}`
 
 export const writeMidAnchorError = <anchor extends Anchor>(
 	anchor: anchor
