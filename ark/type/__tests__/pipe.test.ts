@@ -1411,6 +1411,40 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		)
 	})
 
+	it("one morph each branch applies to different inputs of a key is indeterminate", () => {
+		const measure = (v: string | number) => `${v}`.length
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// both measure n, but only the second measures a number
+			const Strings = $.type({ n: [["string", "=>", measure], "|", "number"] })
+			const Numbers = $.type({ n: ["number", "=>", measure] })
+			const indeterminate = writeIndiscriminableMorphMessage(
+				Strings.expression,
+				Numbers.expression
+			)
+			attest(() => Strings.or(Numbers)).throws(indeterminate)
+			attest(() => Numbers.or(Strings)).throws(indeterminate)
+
+			// measured wherever both allow it, the narrower is the wider's
+			const Wider = $.type({ n: ["string", "=>", measure] })
+			const Narrower = $.type({ n: ["'a' | 'b'", "=>", measure], id: "string" })
+			attest(Narrower.or(Wider).equals(Wider)).equals(true)
+
+			// what neither measures, only one of them allows
+			const T = $.type({
+				n: [["string", "=>", measure], "|", "0"],
+				a: "1"
+			}).or({ n: [["string", "=>", measure], "|", "1"], b: "1" })
+			for (let call = 0; call < 3; call++) {
+				attest(T({ n: "ab", a: 1, b: 1 })).equals({ n: 2, a: 1, b: 1 })
+				attest(T({ n: 0, a: 1, b: 1 })).equals({ n: 0, a: 1, b: 1 })
+				attest(T({ n: 0, b: 1 }).toString()).equals(
+					"a must be 1 or n must be 1"
+				)
+			}
+		}
+	})
+
 	it("multiple chained pipes", () => {
 		const T = type("string.trim").to("string.lower")
 

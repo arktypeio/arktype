@@ -1637,39 +1637,67 @@ const joinedIfDeterminate = (
 	l: Union.ChildNode,
 	r: Union.ChildNode
 ): boolean | null => {
-	if (
-		arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
-		(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
-		arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) &&
-		arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
-			isEqual: flatRefsAreEqual
-		})
-	)
-		return false
+	const narrows = narrowsToOverlap(l, r)
+	if (sameTransforms(l, r, flatMorphsAreEqual)) {
+		// a morph both apply could be one only one applies to some of what they
+		// share, like a key's number that one measures and the other allows as
+		// it is, unless they apply it to the same inputs, or would once narrowed
+		if (!narrows || sameTransforms(l, r, flatMorphsAllowAlike)) return false
+		const overlapping = narrowToOverlap(l, r)
+		return (
+				!overlapping ||
+					sameTransforms(overlapping[0], overlapping[1], flatMorphsAllowAlike)
+			) ?
+				false
+			:	null
+	}
 
 	if (l.deletesOnly && r.deletesOnly) return true
 
-	if (!l.hasAlias && !r.hasAlias && alikeWhereOverlapping(l, r)) return false
-
-	return null
+	// nor does either transform what the other leaves if narrowed, they're one Type
+	const overlapping = narrows && narrowToOverlap(l, r)
+	return overlapping && overlapping[0].equals(overlapping[1]) ? false : null
 }
 
-// whether narrowing each to the input both allow leaves one Type: a transform
-// one applies only to data the other rejects, like a morph on another branch of
-// a key's union, does nothing to what they share. A default is given to data
-// lacking its key even where the other rejects the key, which narrowed to it
-// would drop the default
-const alikeWhereOverlapping = (
+type FlatMorph = FlatRef<Morph.Node | Intersection.Node>
+
+const sameTransforms = (
+	l: BaseRoot,
+	r: BaseRoot,
+	isEqual: (l: FlatMorph, r: FlatMorph) => boolean
+): boolean =>
+	arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
+	(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
+	arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual }) &&
+	arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
+		isEqual: flatRefsAreEqual
+	})
+
+const flatMorphsAllowAlike = (l: FlatMorph, r: FlatMorph): boolean =>
+	flatMorphsAreEqual(l, r) &&
+	(l.node === r.node ||
+		!l.node.is("morph") ||
+		(l.node._in.extends(r.node._in) && r.node._in.extends(l.node._in)))
+
+// a default is given to data lacking its key even where the other rejects the
+// key, which narrowed to it would drop the default, and an alias narrowed is
+// one more to resolve
+const narrowsToOverlap = (l: Union.ChildNode, r: Union.ChildNode): boolean =>
+	!l.hasAlias && !r.hasAlias && !reachesDefault(l) && !reachesDefault(r)
+
+// each narrowed to the input both allow, where a transform one applies only to
+// data the other rejects, like a morph on another branch of a key's union, is
+// gone
+const narrowToOverlap = (
 	l: Union.ChildNode,
 	r: Union.ChildNode
-): boolean => {
-	if (reachesDefault(l) || reachesDefault(r)) return false
+): [l: BaseRoot, r: BaseRoot] | null => {
 	const overlap = intersectNodesRoot(l._in, r._in, l.$)
-	if (overlap instanceof Disjoint) return false
+	if (overlap instanceof Disjoint) return null
 	const lOverlap = intersectNodesRoot(l, overlap, l.$)
-	if (lOverlap instanceof Disjoint) return false
+	if (lOverlap instanceof Disjoint) return null
 	const rOverlap = intersectNodesRoot(r, overlap, l.$)
-	return !(rOverlap instanceof Disjoint) && lOverlap.equals(rOverlap)
+	return rOverlap instanceof Disjoint ? null : [lOverlap, rOverlap]
 }
 
 // whether a case's branches, pruned of what told the data they share apart from
