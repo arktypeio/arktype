@@ -487,19 +487,21 @@ export const lessThan = ((
 
 export const minLength = ((
 	rule: number,
-	description = rule === 1 ? "non-empty" : `at least length ${rule}`
+	description = rule === 1 ? "non-empty" : `at least ${rule} characters`
 ): Check =>
 	check("minLength", description, data => data.length >= rule)) satisfies Fn
 
 export const maxLength = ((
 	rule: number,
-	description = `at most length ${rule}`
+	description = `at most ${rule} character${rule === 1 ? "" : "s"}`
 ): Check =>
 	check("maxLength", description, data => data.length <= rule)) satisfies Fn
 
 export const exactLength = ((
 	rule: number,
-	description = `exactly length ${rule}`
+	description = rule === 0 ? "empty" : (
+		`exactly ${rule} character${rule === 1 ? "" : "s"}`
+	)
 ): Check =>
 	check("exactLength", description, data => data.length === rule)) satisfies Fn
 
@@ -557,8 +559,14 @@ export const arrayOf = ((
 	max?: number,
 	min?: number
 ): Checker => {
-	const tooLong = max === undefined ? arrayCheck : maxLength(max)
-	const tooShort = min === undefined ? arrayCheck : minLength(min)
+	const tooLong =
+		max === undefined ? arrayCheck : (
+			maxLength(max, `at most ${max} item${max === 1 ? "" : "s"}`)
+		)
+	const tooShort =
+		min === undefined ? arrayCheck : (
+			minLength(min, min === 1 ? "non-empty" : `at least ${min} items`)
+		)
 	const within = elementsOf(element)
 	const checker: Checker = (data: any, ctx) =>
 		!Array.isArray(data) ? !failsAt(ctx as never, arrayCheck, data)

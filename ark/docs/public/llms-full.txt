@@ -2570,7 +2570,7 @@ A [Standard Schema](https://arktype.io/docs/standard-schema) failure is `{ issue
 ```ts
 const T = type({ name: "string > 1" })
 
-// [{ message: "must be at least length 2", path: ["name"], ... }]
+// [{ message: "must be at least 2 characters", path: ["name"], ... }]
 // before: "name must be at least length 2 (was 1)"
 T["~standard"].validate({ name: "x" })
 ```
@@ -3589,7 +3589,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 // 4 to 6 digits
 const Pin = type("4 <= string.digits <= 6")
 
-// ArkErrors: must be at least length 4
+// ArkErrors: must be at least 4 characters
 Pin("123")
 ```
 
@@ -3599,7 +3599,7 @@ Pin("123")
 // 4 to 6 digits
 const Pin = type.keywords.string.digits.atLeastLength(4).atMostLength(6)
 
-// ArkErrors: must be at least length 4
+// ArkErrors: must be at least 4 characters
 Pin("123")
 ```
 

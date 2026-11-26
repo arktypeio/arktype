@@ -12,15 +12,23 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { LimitSchemaValue, LimitValue } from "./range.ts"
+import {
+	formatBoundCount,
+	type BoundUnit,
+	type BoundUnitInput,
+	type LimitSchemaValue,
+	type LimitValue
+} from "./range.ts"
 
 export declare namespace NotEqual {
 	export interface Inner {
 		readonly rule: LimitValue
+		readonly unit?: BoundUnit
 	}
 
 	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: LimitSchemaValue
+		readonly unit?: BoundUnitInput
 	}
 
 	export type Schema = ExpandedSchema | LimitSchemaValue
@@ -46,6 +54,9 @@ const implementation: nodeImplementationOf<NotEqual.Declaration> =
 		keys: {
 			rule: {
 				serialize: rule => (rule instanceof Date ? rule.toISOString() : rule)
+			},
+			unit: {
+				unserialized: true
 			}
 		},
 		ownErr: true,
@@ -55,7 +66,7 @@ const implementation: nodeImplementationOf<NotEqual.Declaration> =
 				`other than ${
 					node.rule instanceof Date ?
 						describeCollapsibleDate(node.rule)
-					:	node.rule
+					:	formatBoundCount(node.rule, node.unit)
 				}`
 		},
 		coversNoun: true

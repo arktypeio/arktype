@@ -77,7 +77,7 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			maxLength: 1
 		})
 		attest(T([0])).equals([0])
-		attest(T([0, 1]).toString()).snap("must be at most length 1")
+		attest(T([0, 1]).toString()).snap("must be at most 1 item")
 		const Empty = type({ "+": "reject" }).and("number[]")
 		attest(Empty.json).snap({
 			undeclared: "reject",

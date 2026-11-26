@@ -3,6 +3,7 @@ import {
 	Disjoint,
 	boundKindPairsByLower,
 	rootSchema,
+	writeInvalidBoundUnitMessage,
 	writeInvalidLengthBoundMessage,
 	writeInvalidRangeRuleMessage,
 	type ArkErrors
@@ -57,17 +58,17 @@ contextualize(() => {
 		})
 
 		attest(T.traverse(lengthCases.lessThanMin)?.toString()).snap(
-			"must be at least length 6"
+			"must be at least 6 characters"
 		)
 		attest(T.traverse(lengthCases.equalToExclusiveMin)?.toString()).snap(
-			"must be at least length 6"
+			"must be at least 6 characters"
 		)
 		attest(T.traverse(lengthCases.between)).equals(lengthCases.between)
 		attest(T.traverse(lengthCases.equalToInclusiveMax)).equals(
 			lengthCases.equalToInclusiveMax
 		)
 		attest(T.traverse(lengthCases.greaterThanMax)?.toString()).snap(
-			"must be at most length 10"
+			"must be at most 10 characters"
 		)
 	})
 
@@ -314,5 +315,134 @@ contextualize(() => {
 				writeInvalidRangeRuleMessage("before", bad)
 			)
 		}
+	})
+
+	describe("bound units", () => {
+		it("derives character and item units from string and Array bases", () => {
+			attest(
+				rootSchema({ domain: "string", minLength: 2 }).traverse("a")?.toString()
+			).snap("must be at least 2 characters")
+			attest(
+				rootSchema({ domain: "string", maxLength: 1 })
+					.traverse("ab")
+					?.toString()
+			).snap("must be at most 1 character")
+			attest(
+				rootSchema({ domain: "string", exactLength: 1 })
+					.traverse("ab")
+					?.toString()
+			).snap("must be exactly 1 character")
+			attest(
+				rootSchema({ domain: "string", notEqualLength: 1 })
+					.traverse("a")
+					?.toString()
+			).snap("must be other than 1 character")
+
+			attest(
+				rootSchema({ proto: Array, minLength: 2 }).traverse(["a"])?.toString()
+			).snap("must be at least 2 items")
+			attest(
+				rootSchema({ proto: Array, maxLength: 1 })
+					.traverse(["a", "b"])
+					?.toString()
+			).snap("must be at most 1 item")
+			attest(
+				rootSchema({ proto: Array, exactLength: 1 })
+					.traverse(["a", "b"])
+					?.toString()
+			).snap("must be exactly 1 item")
+			attest(
+				rootSchema({ proto: Array, notEqualLength: 1 })
+					.traverse(["a"])
+					?.toString()
+			).snap("must be other than 1 item")
+		})
+
+		it("falls back to length when no basis is attached and gains the unit on intersection", () => {
+			const BareMin = rootSchema({ minLength: 6 })
+			attest(BareMin.description).snap("at least length 6")
+			attest(BareMin.traverse("abc")?.toString()).snap(
+				"must be at least length 6"
+			)
+			attest(BareMin.and("string").traverse("abc")?.toString()).snap(
+				"must be at least 6 characters"
+			)
+			attest(BareMin.and(Array).traverse(["a"])?.toString()).snap(
+				"must be at least 6 items"
+			)
+		})
+
+		it("supports explicit custom units without affecting json or equality", () => {
+			const Runes = rootSchema({
+				domain: "string",
+				minLength: { rule: 3, unit: "rune" },
+				maxLength: { rule: 5, unit: "rune" }
+			})
+			attest(Runes.json).snap({ domain: "string", minLength: 3, maxLength: 5 })
+			attest(
+				Runes.equals(
+					rootSchema({ domain: "string", minLength: 3, maxLength: 5 })
+				)
+			).equals(true)
+			attest(Runes.traverse("ab")?.toString()).snap("must be at least 3 runes")
+			attest(Runes.traverse("abcdef")?.toString()).snap(
+				"must be at most 5 runes"
+			)
+
+			const Entries = rootSchema({
+				proto: Array,
+				maxLength: { rule: 1, unit: { singular: "entry", plural: "entries" } }
+			})
+			attest(Entries.traverse(["a", "b"])?.toString()).snap(
+				"must be at most 1 entry"
+			)
+
+			const Seconds = rootSchema({
+				domain: "number",
+				min: { rule: 0, exclusive: true, unit: "second" },
+				max: { rule: 1, unit: "second" },
+				notEqual: { rule: 0.5, unit: "second" }
+			})
+			attest(Seconds.traverse(0)?.toString()).snap(
+				"must be more than 0 seconds"
+			)
+			attest(Seconds.traverse(2)?.toString()).snap("must be at most 1 second")
+			attest(Seconds.traverse(0.5)?.toString()).snap(
+				"must be other than 0.5 seconds"
+			)
+		})
+
+		it("preserves explicit custom units through range reductions", () => {
+			const Exact = rootSchema({
+				domain: "string",
+				minLength: { rule: 3, unit: "rune" }
+			}).and({
+				domain: "string",
+				maxLength: { rule: 3, unit: "rune" }
+			})
+			attest(Exact.traverse("ab")?.toString()).snap("must be exactly 3 runes")
+
+			const Excluded = rootSchema({
+				domain: "string",
+				minLength: { rule: 3, unit: "rune" }
+			}).and({
+				domain: "string",
+				notEqualLength: 3
+			})
+			attest(Excluded.traverse("abc")?.toString()).snap(
+				"must be at least 4 runes"
+			)
+		})
+
+		it("rejects invalid bound units", () => {
+			for (const bad of ["", null, 5, { singular: "", plural: "xs" }]) {
+				attest(() =>
+					rootSchema({
+						domain: "string",
+						minLength: { rule: 2, unit: bad as never }
+					})
+				).throws(writeInvalidBoundUnitMessage(bad))
+			}
+		})
 	})
 })

@@ -89,10 +89,10 @@ contextualize(() => {
 [1] must be a number`)
 			// too short
 			attest(T.allows([""])).equals(false)
-			attest(T([""]).toString()).snap("must be exactly length 2")
+			attest(T([""]).toString()).snap("must be exactly 2 items")
 			// too long
 			attest(T.allows(["", 0, 1])).equals(false)
-			attest(T(["", 0, 1]).toString()).snap("must be exactly length 2")
+			attest(T(["", 0, 1]).toString()).snap("must be exactly 2 items")
 			// non-array
 			attest(
 				T.allows({
@@ -137,7 +137,7 @@ contextualize(() => {
 			attest(T([])).equals([])
 			attest(T(["foo"])).equals(["foo"])
 			attest(T([5]).toString()).snap("[0] must be a string")
-			attest(T(["foo", "bar"]).toString()).snap("must be at most length 1")
+			attest(T(["foo", "bar"]).toString()).snap("must be at most 1 item")
 		})
 
 		it("optional string-embedded tuple", () => {
@@ -263,26 +263,26 @@ contextualize(() => {
 		it("min", () => {
 			const T = type("number[] > 1")
 			attest(T.expression).snap("number[] >= 2")
-			attest(T.description).snap("number[] at least length 2")
+			attest(T.description).snap("number[] at least 2 items")
 		})
 
 		it("max", () => {
 			const T = type("number[] < 5")
 			attest(T.expression).snap("number[] <= 4")
-			attest(T.description).snap("number[] at most length 4")
+			attest(T.description).snap("number[] at most 4 items")
 		})
 
 		it("range", () => {
 			const T = type("0 < number[] <= 5")
 			attest(T.expression).snap("1 <= number[] <= 5")
-			attest(T.description).snap("number[] at most length 5 and non-empty")
+			attest(T.description).snap("number[] at most 5 items and non-empty")
 			attest(type.raw(T.expression).json).equals(T.json)
 		})
 
 		it("exact", () => {
 			const T = type("number[] == 1")
 			attest(T.expression).snap("number[] == 1")
-			attest(T.description).snap("number[] exactly length 1")
+			attest(T.description).snap("number[] exactly 1 item")
 		})
 
 		it("implied by tuple", () => {
@@ -296,7 +296,7 @@ contextualize(() => {
 		it("narrower than tuple", () => {
 			const T = type(["number", "number?"]).and("unknown[] == 1")
 			attest(T.expression).snap("[number, number?] == 1")
-			attest(T.description).snap("[number, number?] exactly length 1")
+			attest(T.description).snap("[number, number?] exactly 1 item")
 			attest(
 				type(["string", "...", "number[]"]).and("unknown[] > 3").expression
 			).snap("[string, ...number[]] >= 4")

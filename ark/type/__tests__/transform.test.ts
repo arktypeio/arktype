@@ -879,7 +879,7 @@ k must be a number`)
 			})
 
 			attest(T({ xa: "long", b: "b" }).toString()).snap(
-				"xa must be at most length 2"
+				"xa must be at most 2 characters"
 			)
 			attest(calls).equals(["b"])
 		})

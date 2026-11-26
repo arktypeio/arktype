@@ -15,7 +15,7 @@ contextualize(() => {
 		attest(T([])).equals([5])
 		attest(T([1])).equals([1])
 		attest(T([null]).toString()).snap("[0] must be a number")
-		attest(T([1, 2]).toString()).snap("must be at most length 1")
+		attest(T([1, 2]).toString()).snap("must be at most 1 item")
 	})
 
 	it("string", () => {
@@ -30,7 +30,7 @@ contextualize(() => {
 		attest(T([])).equals(["foo"])
 		attest(T(["bar"])).snap(["bar"])
 		attest(T([false]).toString()).snap("[0] must be a string")
-		attest(T(["foo", "bar"]).toString()).snap("must be at most length 1")
+		attest(T(["foo", "bar"]).toString()).snap("must be at most 1 item")
 	})
 
 	it("defaults following prefix", () => {
@@ -141,7 +141,7 @@ contextualize(() => {
 		attest(T([true, "hi"])).equals([true, "hi", 0])
 		attest(T([true, "hi", 5])).equals([true, "hi", 5])
 		attest(T([true, "hi", "bad"]).toString()).snap("[2] must be a number")
-		attest(T([true, "hi", 5, 6]).toString()).snap("must be at most length 3")
+		attest(T([true, "hi", 5, 6]).toString()).snap("must be at most 3 items")
 
 		const WithOptional = type([
 			"boolean",

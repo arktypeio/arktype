@@ -1701,6 +1701,8 @@ const simulatedEntriesOf = (node: BaseNode): BaseNode["kv"] =>
 		node.kv.filter(([k]) => k !== "minVariadicLength")
 	: node.is("structure") && node.inner.order ?
 		node.kv.filter(([k]) => k !== "order")
+	: node.kind !== "unit" && "unit" in node.inner ?
+		node.kv.filter(([k]) => k !== "unit")
 	:	node.kv
 
 let isSubsuming = false

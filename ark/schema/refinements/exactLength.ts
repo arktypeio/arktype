@@ -11,15 +11,23 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import { assertLengthRule, type LengthBoundableData } from "./range.ts"
+import {
+	assertLengthRule,
+	formatBoundCount,
+	type BoundUnit,
+	type BoundUnitInput,
+	type LengthBoundableData
+} from "./range.ts"
 
 export declare namespace ExactLength {
 	export interface Inner {
 		readonly rule: number
+		readonly unit?: BoundUnit
 	}
 
 	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: number
+		readonly unit?: BoundUnitInput
 	}
 
 	export type Schema = ExpandedSchema | number
@@ -43,12 +51,17 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		kind: "exactLength",
 		bareKey: "rule",
 		keys: {
-			rule: {}
+			rule: {},
+			unit: {
+				unserialized: true
+			}
 		},
 		ownErr: true,
 		defaults: {
 			description: node =>
-				node.rule === 0 ? "empty" : `exactly length ${node.rule}`
+				node.rule === 0 ?
+					"empty"
+				:	`exactly ${formatBoundCount(node.rule, node.unit, `length ${node.rule}`)}`
 		}
 	})
 

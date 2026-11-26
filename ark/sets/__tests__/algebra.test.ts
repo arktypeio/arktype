@@ -598,7 +598,9 @@ contextualize(() => {
 			})
 			const LongDate = DateCodec.and({ domain: "string", minLength: 100 })
 			const encoder = encode(LongDate)
-			attest(String(encoder(new Date(0)))).snap("must be at least length 100")
+			attest(String(encoder(new Date(0)))).snap(
+				"must be at least 100 characters"
+			)
 			attest(toJsonSchema(LongDate, { io: "in", dialect: null })).snap({
 				type: "string",
 				format: "date-time",

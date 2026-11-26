@@ -104,7 +104,7 @@ console.log(JSON.stringify([
 }
 
 // as a production build writes each message
-const appOutput = `[{"amount":5,"currency":"USD"},"amount must be positive",{"id":"a","total":{"amount":5,"currency":"USD"}},"id must be a string\\ntotal.currency must be exactly length 3"]
+const appOutput = `[{"amount":5,"currency":"USD"},"amount must be positive",{"id":"a","total":{"amount":5,"currency":"USD"}},"id must be a string\\ntotal.currency must be exactly 3 characters"]
 `
 
 const unitKind = /^(?:intersection|create|apply)/
@@ -609,7 +609,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 			const schemas = { "hot.ts": "fastest" }
 			const [warnings, js] = await bundled(root, { schemas })
 			attest(warnings).snap([
-				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.7 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.6 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 			])
 			const [setWarnings, setJs] = await bundled(root, {
 				optimize: "size",
