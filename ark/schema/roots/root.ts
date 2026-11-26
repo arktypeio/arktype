@@ -1090,6 +1090,9 @@ const splitBranch = (
 	branch: Union.ChildNode,
 	r: Union.ChildNode
 ): FilteredBranches => {
+	// nothing a branch disjoint from r splits into extends it, and its values
+	// alone can hold morphs that can't be related to r's
+	if (!branch.overlaps(r)) return unsplit(branch)
 	const intervals = intervalsOf(branch)
 	if (intervals) {
 		const extracted = intervals.filter(interval => interval.extends(r))

@@ -90,6 +90,29 @@ contextualize(() => {
 		attest(T(5).toString()).snap("must be a string")
 	})
 
+	it("objects merged at a key holding distinct morphs", () => {
+		const X = type("'x'").pipe(() => 1)
+		const T = type({ a: X })
+			.or({ a: type("'y'").pipe(() => 2) })
+			.extract({ a: X })
+
+		attest<{ a: (In: "x") => Out<number> }>(T.t)
+		attest(T.expression).snap('{ a: (In: "x") => Out<unknown> }')
+		attest(T({ a: "x" })).equals({ a: 1 })
+		attest(T({ a: "y" }).toString()).snap('a must be "x"')
+	})
+
+	it("branches holding distinct morphs at a key before the one they're disjoint at", () => {
+		const Measured = type({ a: type("string").pipe(s => s.length), k: "'a'" })
+		const Trimmed = type({ a: type("string").pipe(s => s.trim()), k: "'b'" })
+
+		const T = Measured.or(Trimmed).extract(Measured)
+
+		attest<{ a: (In: string) => Out<number>; k: "a" }>(T.t)
+		attest(T.expression).equals(Measured.expression)
+		attest(T({ a: " a ", k: "a" })).equals({ a: 3, k: "a" })
+	})
+
 	it("ranges merged at a value neither includes", () => {
 		const T = type("number < 0 | number > 0").extract("number > 0")
 

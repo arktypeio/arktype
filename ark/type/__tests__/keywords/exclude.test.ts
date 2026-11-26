@@ -100,6 +100,36 @@ contextualize(() => {
 		attest(T("5").toString()).snap("must be a number")
 	})
 
+	it("objects merged at a key holding distinct morphs", () => {
+		const X = type("'x'").pipe(() => 1)
+		const T = type({ a: X }).or({ a: type("'y'").pipe(() => 2) })
+
+		attest(T.expression).snap(
+			'{ a: (In: "x") => Out<unknown> | (In: "y") => Out<unknown> }'
+		)
+
+		const Excluded = T.exclude({ a: X })
+
+		attest<{ a: (In: "y") => Out<number> }>(Excluded.t)
+		attest(Excluded.expression).snap('{ a: (In: "y") => Out<unknown> }')
+		attest(Excluded({ a: "y" })).equals({ a: 2 })
+		attest(Excluded({ a: "x" }).toString()).snap('a must be "y"')
+
+		// a morph extends what its input does
+		attest(T.exclude({ a: "'x'" }).expression).equals(Excluded.expression)
+	})
+
+	it("branches holding distinct morphs at a key before the one they're disjoint at", () => {
+		const Measured = type({ a: type("string").pipe(s => s.length), k: "'a'" })
+		const Trimmed = type({ a: type("string").pipe(s => s.trim()), k: "'b'" })
+
+		const T = Measured.or(Trimmed).exclude(Measured)
+
+		attest<{ a: (In: string) => Out<string>; k: "b" }>(T.t)
+		attest(T.expression).equals(Trimmed.expression)
+		attest(T({ a: " a ", k: "b" })).equals({ a: "a", k: "b" })
+	})
+
 	it("ranges merged at a value neither includes", () => {
 		const T = type("number < 0 | number > 0")
 
