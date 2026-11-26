@@ -848,14 +848,26 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 	)
 	if (!issue) return withIssue
 	// its line of the summary at the path reported, as arktype writes its own
-	// there: its message, which names no path, after that path, set apart by a
-	// colon where the line errors "all" wrote is
-	const isCustom = `\n${observation.summary}\n`.includes(
+	// there: a labeled issue replaces its leaf key (keeping any parent prefix
+	// separated by a colon); otherwise its message follows the full path, set
+	// apart by a colon where the line errors "all" wrote is
+	const summaryLines = `\n${observation.summary}\n`
+	const alikeParent = stringifyPath(alike.path.slice(0, -1) as PropertyKey[])
+	const alikeLabeled =
+		alikeParent ? `${alikeParent}: ${issue.message}` : issue.message
+	const isLabeled = summaryLines.includes(`\n${alikeLabeled}\n`)
+	const isCustom = summaryLines.includes(
 		`\n${stringifyPath(alike.path as PropertyKey[])}: ${issue.message}\n`
 	)
 	const prop = stringifyPath(reported.path as PropertyKey[])
+	const reportedParent = stringifyPath(
+		reported.path.slice(0, -1) as PropertyKey[]
+	)
 	const line =
-		prop ? `${prop}${isCustom ? ":" : ""} ${issue.message}` : issue.message
+		isLabeled ?
+			reportedParent ? `${reportedParent}: ${issue.message}` : issue.message
+		: prop ? `${prop}${isCustom ? ":" : ""} ${issue.message}`
+		: issue.message
 	return {
 		...withIssue,
 		...("message" in observation && { message: line }),
