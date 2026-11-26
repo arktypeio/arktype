@@ -796,6 +796,36 @@ export const reduceBranches = ({
 	branches,
 	ordered
 }: Union.Inner): readonly Union.ChildNode[] => {
+	let unique = uniqueBranches(branches, ordered)
+	if (ordered) return unique
+	// a branch holding an alias is compared again, as its input can be built
+	// again each time it's read
+	const compared = !unique.some(branch => branch.hasAlias)
+	let signatures: Signatures | undefined
+	for (;;) {
+		// branches differing in one way union to one branch
+		const merge = mergeAlike(unique, signatures)
+		if (!merge) return unique
+		// the rest are still unique in the scope they were compared in
+		const $ = branches[0].$
+		let mergedAt: number
+		;[branches, mergedAt, signatures] = merge
+		unique = uniqueBranches(
+			branches,
+			ordered,
+			compared ? mergedAt : undefined,
+			$
+		)
+	}
+}
+
+const uniqueBranches = (
+	branches: readonly Union.ChildNode[],
+	ordered: boolean | undefined,
+	// the branch two of the rest just merged to, and the scope the rest were compared in
+	mergedAt?: number,
+	$?: BaseScope
+): readonly Union.ChildNode[] => {
 	if (branches.length < 2) return branches
 
 	// sorted, equal units are adjacent, and units that aren't equal are disjoint
@@ -805,8 +835,14 @@ export const reduceBranches = ({
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	// branches sharing no domain are disjoint, most of a union's pairs
 	const domains = branches.map(domainsOf)
-	for (let i = 0; i < branches.length; i++) {
-		for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
+	// merging two branches leaves the rest unique as they were, so each is
+	// compared with the branch they merged to alone, unless another scope would
+	// compare them
+	const at = $ === branches[0].$ ? mergedAt : undefined
+	for (let i = 0; i < (at === undefined ? branches.length : at + 1); i++) {
+		const withRest = at === undefined || i === at
+		const end = withRest ? branches.length : at + 1
+		for (let j = withRest ? i + 1 : at; j < end && uniquenessByIndex[i]; j++) {
 			if (!uniquenessByIndex[j] || !(domains[i] & domains[j])) continue
 			// its props hold the same inputs, except where reading an alias could throw,
 			// so that's left for after what would first read one
@@ -862,8 +898,7 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = joined && branches[i].alters
 		}
 	}
-	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
-	return ordered ? uniqueBranches : mergeAlike(uniqueBranches)
+	return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
 const inputOf = (prop: Prop.Node): BaseRoot => prop.value._in
@@ -886,13 +921,7 @@ const requireDisjointProps = (
 	for (const prop of required) {
 		const match = rProps[prop.key]
 		if (!match?.required || prop.value === match.value) continue
-		if (
-			!(domainsOf(prop.value) & domainsOf(match.value)) ||
-			(prop.value.is("unit") &&
-				match.value.is("unit") &&
-				prop.value.unitJson !== match.value.unitJson)
-		)
-			return true
+		if (isDisjointValue(prop.value, match.value)) return true
 		break
 	}
 	for (const prop of required) {
@@ -906,46 +935,101 @@ const requireDisjointProps = (
 	return false
 }
 
-// branches differing in one way union to one branch
+// values of no shared domain, or units of which none is the same, are disjoint
+const isDisjointValue = (l: BaseRoot, r: BaseRoot): boolean => {
+	if (!(domainsOf(l) & domainsOf(r))) return true
+	if (l.is("unit")) {
+		return r.is("unit") ?
+				l.unitJson !== r.unitJson
+			:	unitJsonsOf(r)?.has(l.unitJson) === false
+	}
+	const lUnits = unitJsonsOf(l)
+	if (!lUnits) return false
+	if (r.is("unit")) return !lUnits.has(r.unitJson)
+	const rUnits = unitJsonsOf(r)
+	if (!rUnits) return false
+	for (const unitJson of lUnits) if (rUnits.has(unitJson)) return false
+	return true
+}
+
+const unitJsonsByUnion = new WeakMap<BaseRoot, ReadonlySet<unknown> | null>()
+
+// the JSON of each unit a union of nothing else allows, unless it's ordered,
+// since intersecting two ordered unions throws
+const unitJsonsOf = (node: BaseRoot): ReadonlySet<unknown> | null => {
+	let unitJsons = unitJsonsByUnion.get(node)
+	if (unitJsons === undefined) {
+		unitJsons =
+			(
+				node.is("union") &&
+				!node.ordered &&
+				node.branches.every(branch => branch.is("unit"))
+			) ?
+				new Set(node.branches.map(branch => (branch as Unit.Node).unitJson))
+			:	null
+		unitJsonsByUnion.set(node, unitJsons)
+	}
+	return unitJsons
+}
+
+// what's written of a branch to find those alike, kept as others merge
+type Signatures = {
+	ids: Map<unknown, number>
+	byBranch: Map<Union.ChildNode, Record<PropertyKey, string | string[]>>
+}
+
+type MergedBranches = [
+	branches: readonly Union.ChildNode[],
+	mergedAt: number,
+	signatures: Signatures
+]
+
+// a number or a Date, which could extend a range
+const isRangeUnit = (branch: Union.ChildNode): boolean =>
+	branch.is("unit") &&
+	(typeof branch.unit === "number" || branch.unit instanceof Date)
+
+// the branches with the first two that union to one branch as that branch
 const mergeAlike = (
-	branches: readonly Union.ChildNode[]
-): readonly Union.ChildNode[] => {
+	branches: readonly Union.ChildNode[],
+	signatures: Signatures | undefined
+): MergedBranches | undefined => {
 	// only an intersection merges, with another or a unit extending its range
 	let intersections = 0
 	let units = 0
 	for (const branch of branches) {
 		if (branch.is("intersection")) intersections++
-		else if (
-			branch.is("unit") &&
-			(typeof branch.unit === "number" || branch.unit instanceof Date)
-		)
-			units++
+		else if (isRangeUnit(branch)) units++
 	}
-	if (!intersections || intersections + units < 2) return branches
-	const candidates = mergeCandidates(branches)
+	if (!intersections || intersections + units < 2) return
+	signatures ??= { ids: new Map(), byBranch: new Map() }
+	const candidatesOf = mergeCandidates(branches, signatures)
 	for (let i = 0; i < branches.length; i++) {
-		for (const j of candidates[i]) {
+		for (const j of candidatesOf(i)) {
 			const merged =
 				mergeRangeBranches(branches[i], branches[j]) ??
 				mergePropBranches(branches[i], branches[j])
 			if (!merged) continue
-			return reduceBranches({
-				branches: branches.flatMap((branch, k) =>
+			return [
+				branches.flatMap((branch, k) =>
 					k === i ? merged
 					: k === j ? []
 					: branch
-				)
-			})
+				),
+				i,
+				signatures
+			]
 		}
 	}
-	return branches
 }
 
-// the later branches each could merge with: those sharing everything but a
-// range or one prop, and for a unit, which could extend any range, every
+// the later branches one could merge with, in order: those sharing everything
+// but a range or one prop, and for a unit, which could extend any range, every
 // intersection
-const mergeCandidates = (branches: readonly Union.ChildNode[]): number[][] => {
-	const ids = new Map<unknown, number>()
+const mergeCandidates = (
+	branches: readonly Union.ChildNode[],
+	{ ids, byBranch }: Signatures
+): ((i: number) => number[]) => {
 	const signatureId = (hashOrKey: unknown) => {
 		let id = ids.get(hashOrKey)
 		if (id === undefined) ids.set(hashOrKey, (id = ids.size))
@@ -953,19 +1037,27 @@ const mergeCandidates = (branches: readonly Union.ChildNode[]): number[][] => {
 	}
 	const hashIds = (nodes: readonly BaseNode[]) =>
 		nodes.map(node => signatureId(node.hash)).join()
+	const signed = <signature extends string | string[]>(
+		branch: Union.ChildNode,
+		k: PropertyKey,
+		write: () => signature
+	): signature => {
+		let written = byBranch.get(branch)
+		if (!written) byBranch.set(branch, (written = {}))
+		return (written[k] ??= write()) as signature
+	}
 	const units: number[] = []
 	const intersections: number[] = []
 	for (const [i, branch] of branches.entries()) {
 		if (branch.is("intersection")) intersections.push(i)
-		else if (
-			branch.is("unit") &&
-			(typeof branch.unit === "number" || branch.unit instanceof Date)
-		)
-			units.push(i)
+		else if (isRangeUnit(branch)) units.push(i)
 	}
 	const alike: Record<string, number[]> = {}
-	const addAlike = (signature: string, i: number) =>
-		(alike[signature] ??= []).push(i)
+	const signaturesByIndex: Record<number, string[]> = {}
+	const addAlike = (signature: string, i: number) => {
+		;(alike[signature] ??= []).push(i)
+		;(signaturesByIndex[i] ??= []).push(signature)
+	}
 	// a range merges with a branch sharing everything else, even with no range of its own
 	for (const [f, family] of rangeFamilies.entries()) {
 		if (
@@ -978,42 +1070,58 @@ const mergeCandidates = (branches: readonly Union.ChildNode[]): number[][] => {
 			continue
 		for (const i of intersections) {
 			const branch = branches[i] as Intersection.Node
-			addAlike(`${f}:${hashIds(childrenExcept(branch, family.kinds))}`, i)
+			addAlike(
+				signed(
+					branch,
+					f,
+					() => `${f}:${hashIds(childrenExcept(branch, family.kinds))}`
+				),
+				i
+			)
 		}
 	}
 	// props merge only between structures with the same keys, so most never hash
 	const byKeys: Record<string, number[]> = {}
 	for (const i of intersections) {
-		const { structure } = branches[i] as Intersection.Node
+		const branch = branches[i] as Intersection.Node
+		const { structure } = branch
 		if (!structure) continue
-		const keys = structure.props.map(prop => signatureId(prop.key))
-		;(byKeys[keys.sort((l, r) => l - r).join()] ??= []).push(i)
+		;(byKeys[
+			signed(branch, "keys", () =>
+				structure.props
+					.map(prop => signatureId(prop.key))
+					.sort((l, r) => l - r)
+					.join()
+			)
+		] ??= []).push(i)
 	}
 	for (const alikeKeys in byKeys) {
 		if (byKeys[alikeKeys].length < 2) continue
 		for (const i of byKeys[alikeKeys]) {
 			const branch = branches[i] as Intersection.Node
 			const structure = branch.structure!
-			const rest = `${hashIds(childrenExcept(branch, ["structure"]))}|${structure.undeclared}|${hashIds(structure.index ?? [])}|${structure.sequence?.hash}`
-			// the other props keep their order
-			const props = structure.props.map(prop => signatureId(prop.hash))
-			for (const [p, prop] of structure.props.entries()) {
-				addAlike(
-					`${rest}|${signatureId(prop.key)}|${props.filter((_, q) => q !== p).join()}`,
-					i
+			for (const signature of signed(branch, "props", () => {
+				const rest = `${hashIds(childrenExcept(branch, ["structure"]))}|${structure.undeclared}|${hashIds(structure.index ?? [])}|${structure.sequence?.hash}`
+				// the other props keep their order
+				const props = structure.props.map(prop => signatureId(prop.hash))
+				return structure.props.map(
+					(prop, p) =>
+						`${rest}|${signatureId(prop.key)}|${props.filter((_, q) => q !== p).join()}`
 				)
-			}
+			}))
+				addAlike(signature, i)
 		}
 	}
-	const candidates = branches.map(() => new Set<number>())
-	const pair = (i: number, j: number) =>
-		i < j ? candidates[i].add(j) : candidates[j].add(i)
-	for (const indices of Object.values(alike)) {
-		for (let a = 0; a < indices.length; a++)
-			for (let b = a + 1; b < indices.length; b++) pair(indices[a], indices[b])
+	return i => {
+		const later = new Set<number>()
+		for (const signature of signaturesByIndex[i] ?? [])
+			for (const j of alike[signature]) if (j > i) later.add(j)
+		for (const j of branches[i].is("intersection") ? units
+		: isRangeUnit(branches[i]) ? intersections
+		: [])
+			if (j > i) later.add(j)
+		return [...later].sort((l, r) => l - r)
 	}
-	for (const u of units) for (const i of intersections) pair(u, i)
-	return candidates.map(set => [...set].sort((l, r) => l - r))
 }
 
 // branches alike but for their range, like 0 < number < 5 and 3 <= number < 10,

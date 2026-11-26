@@ -98,6 +98,23 @@ contextualize(() => {
 		)
 	})
 
+	it("ordered unions sharing no unit at a key of two branches", () => {
+		const branch = (...units: string[]) =>
+			rootSchema({
+				domain: "object",
+				required: [
+					{
+						key: "k",
+						value: { branches: units.map(unit => ({ unit })), ordered: true }
+					}
+				]
+			})
+
+		attest(() => rootSchema([branch("a", "b"), branch("c", "d")])).throws(
+			writeOrderedIntersectionMessage('"a" | "b"', '"c" | "d"')
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1645
 	it("disjoints stay Disjoints when map ignores Symbol.species (Hermes)", () => {
 		Object.defineProperty(Disjoint, Symbol.species, {
