@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	configureSchema,
 	parseAsSchema,
 	registerNodeId,
 	rootSchema,
@@ -23,6 +24,49 @@ contextualize(() => {
 			writeInvalidSchemaMessage({ foo: 1 })
 		)
 		attest(parseAsSchema(5)).instanceOf(ParseError)
+	})
+
+	it("a key Object.prototype has isn't a schema key", () => {
+		attest(() =>
+			rootSchema({ domain: "string", toString: 1 } as never)
+		).throws.snap("ParseError: Key toString is not valid on domain schema")
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				required: [{ key: "a", value: "string" }],
+				constructor: 1
+			} as never)
+		).throws.snap(
+			"ParseError: Key constructor is not valid on intersection schema"
+		)
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				structure: { required: [], valueOf: 1 }
+			} as never)
+		).throws.snap("ParseError: Key valueOf is not valid on structure schema")
+		attest(() => rootSchema({ hasOwnProperty: 1 } as never)).throws(
+			writeInvalidSchemaMessage({ hasOwnProperty: 1 })
+		)
+		// as JSON.parse writes it, an own key rather than a prototype
+		attest(() =>
+			rootSchema(JSON.parse('{ "domain": "object", "__proto__": 1 }'))
+		).throws.snap("ParseError: Key __proto__ is not valid on domain schema")
+		attest(() =>
+			rootSchema(
+				JSON.parse(
+					'{ "domain": "object", "required": [{ "key": "a", "value": "string" }], "__proto__": 1 }'
+				)
+			)
+		).throws.snap(
+			"ParseError: Key __proto__ is not valid on intersection schema"
+		)
+	})
+
+	it("a key Object.prototype has isn't a config option", () => {
+		attest(() => configureSchema({ toString: {} } as never)).throws.snap(
+			"ParseError: configure() has no option 'toString'"
+		)
 	})
 
 	it("structure keys both flattened and nested", () => {

@@ -1,6 +1,7 @@
 /// <reference lib="es2021.weakref" />
 
 import {
+	hasOwn,
 	holdsWeakly,
 	includes,
 	isArray,
@@ -145,7 +146,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	for (let i = 0; i < keys.length; i++) {
 		const k = keys[i]
 		if (k === "meta") continue
-		const keyImpl = impl.keys[k]
+		// own keys only, so one Object.prototype has, like toString, isn't valid
+		const keyImpl = hasOwn(impl.keys, k) ? impl.keys[k] : undefined
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 		const v = input[k]
