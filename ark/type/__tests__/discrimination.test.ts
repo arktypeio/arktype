@@ -503,12 +503,26 @@ contextualize(() => {
 				name: "string"
 			})
 
+		// rejecting undeclared keys only excludes an id that's own and enumerable,
+		// so the branch stays in each case
 		attest(discriminantJsonOf(T.internal.assertIs("union"))).snap({
 			kind: "unit",
 			path: ["id"],
 			cases: {
-				"0": { required: [{ key: "k1", value: "number" }] },
-				"1": { required: [{ key: "k2", value: "number" }] },
+				"0": [
+					{ required: [{ key: "k1", value: "number" }] },
+					{
+						undeclared: "reject",
+						required: [{ key: "name", value: "string" }]
+					}
+				],
+				"1": [
+					{ required: [{ key: "k2", value: "number" }] },
+					{
+						undeclared: "reject",
+						required: [{ key: "name", value: "string" }]
+					}
+				],
 				default: {
 					undeclared: "reject",
 					required: [{ key: "name", value: "string" }],
@@ -519,8 +533,11 @@ contextualize(() => {
 
 		// now that we are rejecting undeclared keys, all branches fail
 		attest(T({ name: "foo", id: 1 }).toString()).snap(
-			"k2 must be a number (was missing)"
+			"k2 must be a number or id must be removed"
 		)
+
+		const inheritsId = Object.assign(Object.create({ id: 1 }), { name: "foo" })
+		attest(T(inheritsId)).unknown.equals(inheritsId)
 	})
 
 	it("discriminate array and tuple", () => {
@@ -1372,24 +1389,100 @@ nested.z must be removed`)
 		attest(DeclaredOpt.allows(["a", "b"])).equals(false)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1778
+	it("keeps a branch reachable through a key it doesn't read", () => {
+		class Sized {
+			get size() {
+				return 0
+			}
+		}
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Rejecting = $.type({ size: "0", x: "string" })
+				.or({ size: "1" })
+				.or({ "+": "reject" })
+			const emptyMap = new Map()
+			// uncompiled, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				// a getter its prototype holds
+				attest(Rejecting.allows(emptyMap)).equals(true)
+				attest(Rejecting(emptyMap)).unknown.equals(emptyMap)
+				attest(Rejecting.allows(new Sized())).equals(true)
+				attest(Rejecting.allows(Object.create({ size: 0 }))).equals(true)
+				// its own, but not enumerable
+				attest(
+					Rejecting.allows(Object.defineProperty({}, "size", { value: 0 }))
+				).equals(true)
+				// its own and enumerable, so undeclared
+				attest(Rejecting.allows({ size: 0 })).equals(false)
+				attest(Rejecting({ size: 0 }).toString()).snap(
+					"x must be a string or size must be removed"
+				)
+			}
+
+			const Indexed = $.type({ kind: "'a'", x: "string" })
+				.or({ kind: "'b'" })
+				.or("Record<string, boolean>")
+			for (let pass = 0; pass < 2; pass++) {
+				attest(Indexed.allows(Object.create({ kind: "a" }))).equals(true)
+				attest(
+					Indexed.allows(Object.assign(Object.create({ kind: "a" }), { b: 1 }))
+				).equals(false)
+				attest(Indexed.allows({ kind: "a" })).equals(false)
+			}
+
+			// a domain at a path whose first key it doesn't read
+			const Nested = $.type({ a: { k: "string" }, x: "string" })
+				.or({ a: { k: "number" } })
+				.or({ "+": "reject" })
+			for (let pass = 0; pass < 2; pass++) {
+				attest(Nested.allows(Object.create({ a: { k: "s" } }))).equals(true)
+				attest(Nested.allows({ a: { k: "s" } })).equals(false)
+			}
+		}
+
+		// a key it declares is read as the switch reads it, so excludes it
+		const Declared = type({ size: "0", x: "string" })
+			.or({ size: "1" })
+			.or({ "+": "reject", "size?": "string" })
+		attest(Declared.allows(new Map())).equals(false)
+		attest(Declared.allows(new Map())).equals(false)
+	})
+
 	it("discriminates a Record union with a morph branch without spurious overlap", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
 			const U = $.type("Record<string, string>")
 				.or({ kind: "1", v: "string.trim" })
 				.or({ kind: "2" })
+			// the first branch allowing it, as the union's branches are checked
+			const inheritsKind = Object.assign(Object.create({ kind: 1 }), {
+				v: " x "
+			})
 			// call 1 and post-JIT calls must both succeed without ParseError
 			for (let i = 0; i < 3; i++) {
 				attest(U({ kind: 1, v: " x " })).equals({ kind: 1, v: "x" })
 				attest(U({ kind: 2 })).equals({ kind: 2 })
 				attest(U({ a: "ok" })).equals({ a: "ok" })
+				attest(U(inheritsKind)).unknown.equals(inheritsKind)
+			}
+
+			// a key a prototype holds
+			const ByLength = $.type("Record<string, string>")
+				.or({ length: "1", v: "string.trim" })
+				.or({ length: "2" })
+			for (let i = 0; i < 3; i++) {
+				attest(ByLength({ length: 1, v: " x " })).equals({ length: 1, v: "x" })
+				attest(ByLength(["a"])).unknown.equals(["a"])
 			}
 
 			const T = $.type("Record<string, string>")
 				.or({ k: "1", j: "'a'" })
 				.or({ k: "2", j: "'a'" })
 				.or({ k: "'b'|'c'" })
-			attest(T({ k: 1, j: "b" }).toString()).snap('j must be "a"')
+			attest(T({ k: 1, j: "b" }).toString()).snap(
+				'k must be a string or j must be "a"'
+			)
 			attest(T.allows({ k: 1, j: "a", x: 1, y: 2, z: 3 })).equals(true)
 		}
 	})

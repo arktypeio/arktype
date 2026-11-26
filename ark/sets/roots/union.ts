@@ -431,6 +431,7 @@ const resolveCase = (
 
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
+	let reachedByUnreadKey = false
 
 	// a branch with several units at the path, like "'a' | 'b'", is a case of each
 	for (const originalIndex of caseCtx.branchIndices) {
@@ -454,9 +455,12 @@ const resolveCase = (
 				discriminantNode,
 				ctx.node.$
 			)
+			const leavesKeyOverlap =
+				intersection instanceof Disjoint &&
+				disjointLeavesKeyOverlap(entry.branch._in, intersection)
 			if (
 				!(intersection instanceof Disjoint) ||
-				disjointLeavesKeyOverlap(entry.branch._in, intersection) ||
+				leavesKeyOverlap ||
 				// a branch disjoint above the case may reach it through a primitive's
 				// keys, e.g. a string's characters
 				(intersection.some(
@@ -476,6 +480,7 @@ const resolveCase = (
 				const overlapping = pruneDiscriminant(entry.branch, ctx.location)
 				if (overlapping === null) resolvedEntries = null
 				else {
+					reachedByUnreadKey ||= leavesKeyOverlap
 					resolvedEntries?.push({
 						originalIndex: entry.originalIndex,
 						branch: overlapping
@@ -484,6 +489,16 @@ const resolveCase = (
 			}
 			nextDefaults.push(entry)
 		}
+	}
+
+	// the discriminant is all that tells a branch reaching the case through a
+	// key it doesn't read from the case's own, so pruned of it, one that
+	// transforms would overlap the other. They stay as the union has them
+	if (reachedByUnreadKey && resolvedEntries?.some(entry => entry.branch.tfs)) {
+		resolvedEntries = resolvedEntries.map(({ originalIndex }) => ({
+			originalIndex,
+			branch: ctx.node.branches[originalIndex]
+		}))
 	}
 
 	ctx.defaultPairs = nextDefaults
@@ -1407,31 +1422,12 @@ const isReadableOnPrimitive = (key: PropertyKey | undefined): boolean =>
 		(typeof key === "string" && integerLikeMatcher.test(key)) ||
 		primitivePrototypes.some(proto => key in proto))
 
-const builtinObjectPrototypes = [
-	Object.prototype,
-	Array.prototype,
-	Function.prototype,
-	RegExp.prototype,
-	Error.prototype
-]
-
-// own non-enumerable properties on built-in objects not already on builtinObjectPrototypes
-const builtinNonEnumerableKeys: ReadonlySet<PropertyKey> = new Set([
-	"prototype",
-	"lastIndex",
-	"stack",
-	"cause"
-])
-
-// keys an optional chain can read on an object even though Object.keys skips them
-const isBuiltinNonEnumerableKey = (key: PropertyKey): boolean =>
-	builtinNonEnumerableKeys.has(key) ||
-	builtinObjectPrototypes.some(proto => key in proto)
-
-// index signatures and undeclared-key handling only inspect own enumerable keys,
-// whereas switch (data?.k) reads non-enumerable/inherited keys such as array or
-// function .length. A disjoint coming from an index signature (or undeclared
-// handling at a built-in non-enumerable key) does not exclude the branch.
+// a branch checks a key it declares as a switch reads it, by `in` and a
+// property access, so a disjoint there excludes it from the case. An index
+// signature or undeclared key handling checks only own enumerable keys, so a
+// disjoint from either says nothing of a key the switch reads that isn't one:
+// inherited, non-enumerable or a getter, like a Map's size, a function's name
+// or a class instance's kind
 const disjointLeavesKeyOverlap = (
 	branch: BaseRoot,
 	disjoint: Disjoint
@@ -1459,7 +1455,8 @@ const disjointEntryLeavesKeyOverlap = (
 	const key = entry.path[depth]
 	if (typeof key === "number") {
 		const sequence = node.structure.sequence
-		if (!sequence) return false
+		// without a sequence, an index is a key it doesn't declare
+		if (!sequence) return true
 		if (!sequence.postfix) {
 			const element =
 				key < sequence.leading.length ?
@@ -1474,19 +1471,9 @@ const disjointEntryLeavesKeyOverlap = (
 		)
 	}
 	const prop = node.structure.byKey[key]
-	if (prop) return disjointEntryLeavesKeyOverlap(prop.value, entry, depth + 1)
-	if (entry.undeclared) return isBuiltinNonEnumerableKey(key)
-	// a disjoint at an undeclared key without undeclared handling comes from an index signature
-	if (!node.structure.index) return false
-	if (isBuiltinNonEnumerableKey(key)) return true
-	return (
-		depth < entry.path.length - 1 &&
-		node.structure.index.some(
-			idx =>
-				idx.signature.allowsUnused(key) &&
-				disjointEntryLeavesKeyOverlap(idx.value, entry, depth + 1)
-		)
-	)
+	return prop ?
+			disjointEntryLeavesKeyOverlap(prop.value, entry, depth + 1)
+		:	true
 }
 
 export const writeIndiscriminableMorphMessage = (
