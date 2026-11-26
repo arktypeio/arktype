@@ -22,6 +22,7 @@ import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { InferredAst, inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
 import type {
+	BranchOperator,
 	Comparator,
 	InvertedComparators,
 	MaxComparator,
@@ -31,6 +32,7 @@ import type { s, StaticState } from "./reduce/static.ts"
 import type { EnclosingQuote } from "./shift/operand/enclosed.ts"
 import type { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
+import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import { parseDefault } from "./shift/operator/default.ts"
 import {
 	writeUnexpectedCharacterMessage,
@@ -53,7 +55,14 @@ export const parseString = (
 
 	const node = fullStringParse(s)
 
-	if (s.finalizer === ">") throwParseError(writeUnexpectedCharacterMessage(">"))
+	if (s.finalizer === ">") {
+		const beforeGt = s.sc.scanned.trimEnd().slice(0, -1).trimEnd()
+		throwParseError(
+			s.trailingRightBounded || beforeGt.endsWith(">") ?
+				writeUnexpectedCharacterMessage(">")
+			:	writeMissingRightOperandMessage(">")
+		)
+	}
 
 	return node
 }
@@ -352,4 +361,27 @@ export type extractFinalizedResult<s extends StaticState> =
 	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
 	: s["finalizer"] extends "?" ? [s["root"], "?"]
 	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
+	: s["finalizer"] extends ">" ? finalizeTrailingGt<s>
 	: ErrorMessage<writeUnexpectedCharacterMessage<s["finalizer"] & string>>
+
+type finalizeTrailingGt<s extends StaticState> =
+	Scanner.skipWhitespace<s["unscanned"]> extends "" ?
+		s["scanned"] extends `${infer before}>` ?
+			trimTrailingSpace<before> extends `${string}>` ?
+				ErrorMessage<writeUnexpectedCharacterMessage<">">>
+			: trimTrailingSpace<before> extends `${string})` ?
+				ErrorMessage<writeMissingRightOperandMessage<">">>
+			: trailingAst<s["root"]> extends readonly [unknown, Comparator, unknown] ?
+				ErrorMessage<writeUnexpectedCharacterMessage<">">>
+			:	ErrorMessage<writeMissingRightOperandMessage<">">>
+		:	ErrorMessage<writeUnexpectedCharacterMessage<">">>
+	:	ErrorMessage<writeUnexpectedCharacterMessage<">">>
+
+type trimTrailingSpace<s extends string> =
+	s extends `${infer rest}${WhitespaceChar}` ? trimTrailingSpace<rest> : s
+
+type trailingAst<ast> =
+	ast extends readonly [unknown, BranchOperator, infer r] ? trailingAst<r>
+	: ast extends readonly ["keyof", infer r] ? trailingAst<r>
+	: ast extends readonly [infer l, "#", unknown] ? trailingAst<l>
+	: ast

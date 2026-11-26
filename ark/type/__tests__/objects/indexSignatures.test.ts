@@ -332,6 +332,47 @@ other must be a string`)
 		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
 	})
 
+	it("invalid unit key types for index definition", () => {
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[1]": "number"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("1"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[true]": "number"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("true"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[null]": "number"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("null"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"['a' | 1]": "number"
+			})
+		)
+			.throws(writeInvalidPropertyKeyMessage('"a" | 1'))
+			.type.errors(writeInvalidPropertyKeyMessage("'a' | 1"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"['a' | number]": "number"
+			})
+		)
+			.throws(writeInvalidPropertyKeyMessage('number | "a"'))
+			.type.errors(writeInvalidPropertyKeyMessage("'a' | number"))
+	})
+
 	it("does not allow invalid key type error as value", () => {
 		attest(() =>
 			type({

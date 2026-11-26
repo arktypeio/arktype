@@ -8,6 +8,7 @@ const epoch = "an integer representing a safe Unix timestamp"
 
 /** the English phrase of each builtin keyword whose nodes carry one */
 export const keywordPhrases = {
+	"Array.index": "an array index",
 	"FormData.parsed": "an object representing parsed form data",
 	"number.epoch": {
 		noun: epoch,

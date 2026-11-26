@@ -4,10 +4,12 @@ import {
 	rootSchema,
 	type GenericAst
 } from "@ark/schema"
+import { arrayIndexMatcher } from "@ark/schema/runtime"
 import { Hkt, liftArray, type Digit } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
+import { regexStringNode } from "./string.ts"
 
 class liftFromHkt extends Hkt<[element: unknown]> {
 	declare body: liftArray<this[0]> extends infer lifted ?
@@ -32,7 +34,7 @@ export const arkArray: arkArray.module = keywordModule(
 	{
 		root: () => intrinsic.Array,
 		readonly: "root",
-		index: () => intrinsic.nonNegativeIntegerString,
+		index: () => regexStringNode(arrayIndexMatcher, "Array.index"),
 		liftFrom
 	},
 	{

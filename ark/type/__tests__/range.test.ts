@@ -227,6 +227,58 @@ contextualize(() => {
 			attest(() => type("number >=")).throwsAndHasTypeError(
 				writeMissingRightOperandMessage(">=")
 			)
+			// @ts-expect-error
+			attest(() => type("number >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("Date >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("number >  ")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("string > 0 | number >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("number % 2 > 0 % 2 >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+		})
+
+		it("stray > after bound or generic", () => {
+			// @ts-expect-error
+			attest(() => type("string > 0 >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("0 < number < 5 >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("number > 0#foo >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("0 < number < 5#foo >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			const $ = scope({ arr: type("string[]").and({ a: "number" }) })
+			// @ts-expect-error
+			attest(() => $.type("keyof arr > 0 >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("Record<string, number>>")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("Record<string, number> >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
 		})
 
 		it("missing operand after a left bound", () => {

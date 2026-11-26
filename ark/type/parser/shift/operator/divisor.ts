@@ -12,6 +12,7 @@ export const parseDivisor = (s: RootedRuntimeState): void => {
 	if (divisor === 0) s.error(writeInvalidDivisorMessage(0))
 
 	s.root = s.root.rawConstrain("divisor", divisor)
+	s.rightBounded = undefined
 }
 
 export type parseDivisor<s extends StaticState, unscanned extends string> =

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { intrinsic } from "@ark/schema"
 import { scope, type } from "arktype"
 import { createContext, runInContext } from "node:vm"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
@@ -369,5 +370,21 @@ contextualize(() => {
 		const result = T(foreign)
 		attest(result).is(foreign)
 		attest([...(result as number[])]).equals([1, 2, 3])
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1782
+	it("Array.index has a readable keyword phrase", () => {
+		const Index = type("Array.index")
+		attest(Index.description).snap("an array index")
+		attest(Index.extends(intrinsic.nonNegativeIntegerString)).equals(true)
+		attest(intrinsic.nonNegativeIntegerString.extends(Index.internal)).equals(
+			true
+		)
+		attest(Index("0")).equals("0")
+		attest(Index("42")).equals("42")
+		attest(Index("-1").toString()).snap("must be an array index")
+		attest(Index("01").toString()).snap("must be an array index")
+		attest(Index("x").toString()).snap("must be an array index")
+		attest(Index(5).toString()).snap("must be a string")
 	})
 })

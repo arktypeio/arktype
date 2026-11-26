@@ -78,6 +78,10 @@ const told: Record<string, string> = {
 			h: "string.email"
 		})
 		show(Thing, {}, { a: 1, b: 2, c: "x", d: true, e: 1, f: 1, g: 1, h: "bad" })
+	`,
+	"writes Array.index keyword phrase in standalone builds": `
+		show(type("Array.index"), "0", "-1", "x", 5)
+		show(type({ i: "Array.index" }), {}, { i: "x" }, { i: 5 })
 	`
 }
 

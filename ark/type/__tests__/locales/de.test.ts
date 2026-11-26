@@ -242,6 +242,7 @@ contextualize(() => {
 			"actual suppressed array ← [0]": "muss mindestens 2 Elemente enthalten",
 			"configured writer reading the description ← 3":
 				"muss more than 5 (!) sein",
+			'Array.index ← "x"': "muss ein Array-Index sein",
 			'number.epoch ← "x"': "muss ein Unix-Zeitstempel als Zahl sein",
 			"object.json ← Map": "muss ein einfaches Objekt oder Array sein",
 			'string.alpha ← " x"': "muss rein alphabetisch sein",

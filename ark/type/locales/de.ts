@@ -246,6 +246,7 @@ const causeOf = (cause: unknown, locale: Locale.Info) =>
 const epoch = "ein gültiger Unix-Zeitstempel als ganze Zahl"
 
 const keywordPhrases = {
+	"Array.index": "ein Array-Index",
 	"FormData.parsed": "ein Objekt mit geparsten Formulardaten",
 	"number.epoch": {
 		noun: epoch,

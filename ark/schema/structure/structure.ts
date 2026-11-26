@@ -69,7 +69,7 @@ import {
 	isResolutionFinal,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
-import type { Index } from "./index.ts"
+import { writeInvalidPropertyKeyMessage, type Index } from "./index.ts"
 import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
@@ -1844,6 +1844,20 @@ export const normalizeIndex = (
 		signature.branches,
 		k => k.is("unit")
 	)
+
+	for (const n of enumerableBranches) {
+		if (typeof n.unit !== "string" && typeof n.unit !== "symbol")
+			throwParseError(writeInvalidPropertyKeyMessage(signature.expression))
+	}
+
+	if (
+		nonEnumerableBranches.length &&
+		!signature.equals($ark.kw.string) &&
+		!signature.equals($ark.kw.symbol) &&
+		!signature.equals($ark.kw.key) &&
+		!signature.extends($ark.kw.key)
+	)
+		throwParseError(writeInvalidPropertyKeyMessage(signature.expression))
 
 	if (!enumerableBranches.length) {
 		return {

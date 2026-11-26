@@ -30,6 +30,7 @@ export type NounId = Domain | BuiltinObjectKind | "unknown" | "never"
 
 /** the flat alias of every builtin keyword that carries a localized phrase */
 export type KeywordPhraseAlias =
+	| "Array.index"
 	| "FormData.parsed"
 	| "number.epoch"
 	| "object.json"
