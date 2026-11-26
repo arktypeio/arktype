@@ -1140,6 +1140,38 @@ s must be at least length 5`)
 		)
 	})
 
+	it("morphs with disjoint inputs are disjoint", () => {
+		const X = type("'x'").pipe(() => 1)
+		const Y = type("'y'").pipe(() => 2)
+
+		attest(X.overlaps(Y)).equals(false)
+		attest(X.extends(Y)).equals(false)
+		attest(X.or(Y).extends(X)).equals(false)
+		attest(X.extends(X.or(Y))).equals(true)
+		attest(() => X.and(Y)).throws.snap(
+			'ParseError: Intersection of "x" and "y" results in an unsatisfiable type'
+		)
+	})
+
+	it("objects disjoint at a key are disjoint whatever morphs they hold", () => {
+		const Measured = type({ a: type("string").pipe(s => s.length), k: "'a'" })
+		const Trimmed = type({ a: type("string").pipe(s => s.trim()), k: "'b'" })
+
+		attest(Measured.overlaps(Trimmed)).equals(false)
+		attest(Measured.extends(Trimmed)).equals(false)
+		attest(() => Measured.and(Trimmed)).throws.snap(
+			'ParseError: Intersection at k of "a" and "b" results in an unsatisfiable type'
+		)
+		attest(() =>
+			type({ k: "'a'", z: type("string").pipe(s => s.length) }).and({
+				k: "'b'",
+				z: type("string").pipe(s => s.trim())
+			})
+		).throws.snap(
+			'ParseError: Intersection at k of "a" and "b" results in an unsatisfiable type'
+		)
+	})
+
 	it("union helper undiscriminated", () => {
 		attest(() =>
 			type("string")

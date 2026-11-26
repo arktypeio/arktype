@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type } from "arktype"
+import { scope, type, type Out } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -96,11 +96,44 @@ contextualize(() => {
 	})
 
 	it("morph union at merged property", () => {
-		const U = type({ a: type("'x'").pipe(() => 1) }).or({
+		const X = type("'x'").pipe(() => 1)
+		const U = type({ a: X }).or({
 			a: type("'y'").pipe(() => 2)
 		})
-		const Extracted = U.extract({ a: "'x'" })
-		attest(Extracted.internal({ a: "x" })).equals({ a: 1 })
-		attest(Extracted.allows({ a: "y" })).equals(false)
+		const ExtractedByMorph = U.extract({ a: X })
+		attest<{ a: (In: "x") => Out<number> }>(ExtractedByMorph.t)
+		attest(ExtractedByMorph.expression).snap('{ a: (In: "x") => Out<unknown> }')
+		attest(ExtractedByMorph({ a: "x" })).equals({ a: 1 })
+		attest(ExtractedByMorph.allows({ a: "y" })).equals(false)
+
+		const ExtractedByInput = U.extract({ a: "'x'" })
+		attest(ExtractedByInput.expression).equals(ExtractedByMorph.expression)
+	})
+
+	it("merged morph branches with shared morph", () => {
+		const print = (v: string | number) => `${v}`
+		const StrPrint = type("string").pipe(print)
+		const NumPrint = type("number").pipe(print)
+		const U = StrPrint.or(NumPrint)
+
+		const ExtractedByMorph = U.extract(StrPrint)
+		attest<(In: string) => Out<string>>(ExtractedByMorph.t)
+		attest(ExtractedByMorph.expression).equals(StrPrint.expression)
+		attest(ExtractedByMorph("hi")).equals("hi")
+		attest(ExtractedByMorph(5).toString()).snap("must be a string")
+
+		const ExtractedByInput = U.extract("string")
+		attest(ExtractedByInput.expression).equals(StrPrint.expression)
+	})
+
+	it("branches holding distinct morphs at a key before the one they're disjoint at", () => {
+		const Measured = type({ a: type("string").pipe(s => s.length), k: "'a'" })
+		const Trimmed = type({ a: type("string").pipe(s => s.trim()), k: "'b'" })
+
+		const T = Measured.or(Trimmed).extract(Measured)
+
+		attest<{ a: (In: string) => Out<number>; k: "a" }>(T.t)
+		attest(T.expression).equals(Measured.expression)
+		attest(T({ a: " a ", k: "a" })).equals({ a: 3, k: "a" })
 	})
 })

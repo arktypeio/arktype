@@ -75,7 +75,8 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		if (isPureIntersection && l.equals(r)) return l
 
 		let result =
-			isPureIntersection ? _intersectNodes(l, r, ctx)
+			isPureIntersection ?
+				(disjointInputsOf(l, r, ctx) ?? _intersectNodes(l, r, ctx))
 			: l.hasKindIn(...rootKinds) ?
 				// if l is a RootNode, r will be as well
 				_pipeNodes(l, r as never, ctx)
@@ -96,6 +97,23 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		$ark.reached?.store(mark, cacheByR, r)
 		return result as never
 	}) as never
+
+// no data reaches both of two Types whose inputs are disjoint, so they are
+// disjoint whatever morphs they hold. Morphs must be the same only for data
+// reaching both, but are compared wherever two meet, which can be at a key
+// intersected before the one the inputs are disjoint at
+const disjointInputsOf = (
+	l: BaseNode,
+	r: BaseNode,
+	ctx: IntersectionContext
+): Disjoint | undefined => {
+	if (!l.hasMorph || !r.hasMorph || !l.isRoot() || !r.isRoot()) return
+	const lIn = l._in
+	const rIn = r._in
+	if (lIn === l && rIn === r) return
+	const inputs = intersectOrPipeNodes(lIn, rIn, ctx)
+	if (inputs instanceof Disjoint) return inputs
+}
 
 // equal nodes can list their outputs' keys in different orders
 export const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>

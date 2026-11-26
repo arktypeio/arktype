@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootSchema } from "@ark/schema"
-import { scope, type } from "arktype"
+import { scope, type, type Out } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -123,12 +123,45 @@ contextualize(() => {
 	})
 
 	it("morph union at merged property", () => {
-		const U = type({ a: type("'x'").pipe(() => 1) }).or({
+		const X = type("'x'").pipe(() => 1)
+		const U = type({ a: X }).or({
 			a: type("'y'").pipe(() => 2)
 		})
-		const Excluded = U.exclude({ a: "'x'" })
-		attest(Excluded({ a: "y" })).equals({ a: 2 })
-		attest(Excluded.allows({ a: "x" })).equals(false)
+		const ExcludedByMorph = U.exclude({ a: X })
+		attest<{ a: (In: "y") => Out<number> }>(ExcludedByMorph.t)
+		attest(ExcludedByMorph.expression).snap('{ a: (In: "y") => Out<unknown> }')
+		attest(ExcludedByMorph({ a: "y" })).equals({ a: 2 })
+		attest(ExcludedByMorph.allows({ a: "x" })).equals(false)
+
+		const ExcludedByInput = U.exclude({ a: "'x'" })
+		attest(ExcludedByInput.expression).equals(ExcludedByMorph.expression)
+	})
+
+	it("merged morph branches with shared morph", () => {
+		const print = (v: string | number) => `${v}`
+		const StrPrint = type("string").pipe(print)
+		const NumPrint = type("number").pipe(print)
+		const U = StrPrint.or(NumPrint)
+
+		const ExcludedByMorph = U.exclude(StrPrint)
+		attest<(In: number) => Out<string>>(ExcludedByMorph.t)
+		attest(ExcludedByMorph.expression).equals(NumPrint.expression)
+		attest(ExcludedByMorph(5)).equals("5")
+		attest(ExcludedByMorph("5").toString()).snap("must be a number")
+
+		const ExcludedByInput = U.exclude("string")
+		attest(ExcludedByInput.expression).equals(NumPrint.expression)
+	})
+
+	it("branches holding distinct morphs at a key before the one they're disjoint at", () => {
+		const Measured = type({ a: type("string").pipe(s => s.length), k: "'a'" })
+		const Trimmed = type({ a: type("string").pipe(s => s.trim()), k: "'b'" })
+
+		const T = Measured.or(Trimmed).exclude(Measured)
+
+		attest<{ a: (In: string) => Out<string>; k: "b" }>(T.t)
+		attest(T.expression).equals(Trimmed.expression)
+		attest(T({ a: " a ", k: "b" })).equals({ a: "a", k: "b" })
 	})
 
 	it("does not blow up on many union props against unsatisfiable required keys", () => {

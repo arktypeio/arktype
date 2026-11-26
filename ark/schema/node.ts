@@ -1742,8 +1742,6 @@ const isSubsumed = (
 	other: BaseRoot,
 	s: SimulationState
 ): boolean => {
-	if (branch.is("morph") && other.is("morph") && !branch.sameMorphs(other))
-		return false
 	let intersection: BaseRoot | Disjoint
 	isSubsuming = true
 	try {

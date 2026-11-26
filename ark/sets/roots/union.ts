@@ -1951,12 +1951,17 @@ const partitionBranch = (
 	budget: PartitionBudget
 ): PartitionResult => {
 	if (branch.extends(rNode)) return { extracted: [branch], excluded: [] }
-	if (
-		!branch.is("intersection") ||
-		budget.remaining <= 0 ||
-		!branch.overlaps(rNode)
-	)
+	if (budget.remaining <= 0 || !branch.overlaps(rNode))
 		return { extracted: [], excluded: [branch] }
+	if (branch.is("morph")) {
+		return (
+			splitMorphBranch(branch, rNode, budget) ?? {
+				extracted: [],
+				excluded: [branch]
+			}
+		)
+	}
+	if (!branch.is("intersection")) return { extracted: [], excluded: [branch] }
 	return (
 		splitRangeBranch(branch, rNode, budget) ??
 		splitPropBranch(branch, rNode, budget) ?? {
@@ -1964,6 +1969,48 @@ const partitionBranch = (
 			excluded: [branch]
 		}
 	)
+}
+
+const splitMorphBranch = (
+	branch: Morph.Node,
+	rNode: BaseRoot,
+	budget: PartitionBudget
+): PartitionResult | undefined => {
+	if (!branch.head || branch.declaredIn) return
+	// a morph extends what its input does, or a morph alike whose input its own extends
+	const rHeadBranches: Union.ChildNode[] = []
+	for (const r of rNode.branches) {
+		if (!r.is("morph")) rHeadBranches.push(r)
+		else if (branch.sameMorphs(r) && !r.declaredIn && r.head)
+			rHeadBranches.push(...r.head.branches)
+	}
+	if (!rHeadBranches.length) return
+	const rHead = branch.$.schema(rHeadBranches) as BaseRoot
+	const [extractedHead, excludedHead] = partitionRoot(
+		branch.head,
+		rHead,
+		budget
+	)
+	if (
+		extractedHead.isNever() ||
+		excludedHead.isNever() ||
+		hashesMatch(extractedHead, branch.head) ||
+		hashesMatch(excludedHead, branch.head)
+	)
+		return
+	budget.remaining--
+	const withHead = (head: BaseRoot) =>
+		branch.$.node("morph", {
+			...branch.inner,
+			morphs: [head, ...branch.piped],
+			meta: branch.meta
+		})
+	const extracted = withHead(extractedHead)
+	if (!extracted.extends(rNode)) return
+	return {
+		extracted: [...extracted.branches],
+		excluded: [...withHead(excludedHead).branches]
+	}
 }
 
 const normalizeRange = (
