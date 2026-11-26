@@ -838,5 +838,25 @@ console.log(
 				attest(out).equals("false true true\n")
 			}
 		})
+
+		it("distinguishes -0 and 0 bounds in both creation orders", () => {
+			for (const posFirst of [true, false]) {
+				const out =
+					printed(`const makePos = () => [type("number").atMost(0), type("string").atMostLength(0)]
+const makeNeg = () => [type("number").atMost(-0), type("string").atMostLength(-0)]
+const first = ${posFirst ? "makePos()" : "makeNeg()"}
+const second = ${posFirst ? "makeNeg()" : "makePos()"}
+const [Pos, Neg] = ${posFirst ? "[first, second]" : "[second, first]"}
+console.log(
+	Pos[0] === Neg[0],
+	Pos[0].json.max,
+	Neg[0].json.max,
+	Pos[1] === Neg[1],
+	Pos[1].json.exactLength,
+	Neg[1].json.exactLength
+)`)
+				attest(out).equals("false 0 -0 false 0 -0\n")
+			}
+		})
 	})
 })

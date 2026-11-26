@@ -941,6 +941,8 @@ const boundMethod =
 			(!pure && (!of || over !== "array")) ||
 			!bases.includes(over) ||
 			typeof n !== "number" ||
+			// a node holds -0 apart from 0, which a key writes as one
+			Object.is(n, -0) ||
 			!(over === "number" ?
 				Number.isFinite(n)
 			:	Number.isSafeInteger(n) && n >= 0)
