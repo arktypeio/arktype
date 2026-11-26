@@ -241,10 +241,70 @@ a must be a number (was missing)`)
 		attest<array<never>>(Tuple.props)
 		attest(Tuple.props).snap([])
 
+		const FixedTuple = type(["string", "number"])
+		attest<array<never>>(FixedTuple.props)
+		attest(FixedTuple.props).snap([])
+
+		const TupleWithKey = type(["string", "number"]).and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			TupleWithKey.props
+		)
+		attest<"foo">(TupleWithKey.props[0].key)
+		attest(snapshottableProps(TupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const OptionalTupleWithKey = type(["string", "number?"]).and({
+			foo: "string"
+		})
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			OptionalTupleWithKey.props
+		)
+		attest(snapshottableProps(OptionalTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const VariadicTupleWithKey = type(["string", "...", "number[]"]).and({
+			foo: "string"
+		})
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			VariadicTupleWithKey.props
+		)
+		attest(snapshottableProps(VariadicTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const ReadonlyTupleWithKey = type(["string", "number"])
+			.readonly()
+			.and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			ReadonlyTupleWithKey.props
+		)
+		attest(snapshottableProps(ReadonlyTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const EmptyTupleWithKey = type([]).and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			EmptyTupleWithKey.props
+		)
+		attest(snapshottableProps(EmptyTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
 		const WithKey = type("string[]").and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(WithKey.props)
 		attest<"foo">(WithKey.props[0].key)
 		attest(snapshottableProps(WithKey.props)).snap([
 			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const WithZeroLength = type("string[]").and({ length: "0" })
+		attest<array<BaseTypeProp<"required", "length", 0, {}>>>(
+			WithZeroLength.props
+		)
+		attest(snapshottableProps(WithZeroLength.props)).snap([
+			{ kind: "required", key: "length", value: "0" }
 		])
 
 		const WithLength = type("string[]").and({ length: "1" })

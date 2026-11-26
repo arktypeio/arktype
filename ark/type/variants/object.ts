@@ -400,7 +400,10 @@ type arrayBaseOf<o extends array> =
 
 type mutableArrayBaseOf<o extends array> =
 	number extends o["length"] ? [...o]
-	: o["length"] extends 0 ? []
+	: o["length"] extends 0 ?
+		[o[number]] extends [never] ?
+			[]
+		:	[...o]
 	: "0" extends keyof o ? extractTuple<o>
 	: [...o]
 
