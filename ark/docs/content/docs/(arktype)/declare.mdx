@@ -35,12 +35,12 @@ const User = type.declare<User>().type({
 })
 ```
 
-`declare` works with any definition, not only objects:
+`declare` works with any definition, including spread [tuple expressions](/docs/expressions):
 
 ```ts
 type Role = "admin" | "member"
 
-const Role = type.declare<Role>().type("'admin' | 'member'")
+const Role = type.declare<Role>().type("===", "admin", "member")
 
 const Entry = type.declare<[string, number]>().type(["string", "number"])
 ```

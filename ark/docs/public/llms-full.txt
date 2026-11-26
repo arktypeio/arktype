@@ -516,6 +516,8 @@ Keywords follow a `typescriptType.constraint.subconstraint` pattern. See [Keywor
 type("string.email") // email address
 type("string.uuid") // UUID
 type("string.url") // parsable URL
+type("string.url.http") // http:// or https:// URL
+type("string.nonblank") // non-whitespace string (without trimming)
 type("string.trim") // morph: trims whitespace
 type("string.json.parse") // morph: string → parsed JSON
 type("string.date.parse") // morph: string → Date
@@ -627,6 +629,8 @@ const types = scope({
 
 const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 ```
+
+Pass `{ ambient: {} }` (or a `Module` / record of `Type`s, `Generic`s and `Module`s) as the second argument to `scope` or `type.module` to opt out of ArkType's default keywords or restrict a DSL scope's vocabulary. See [Ambient](https://arktype.io/docs/scopes#ambient).
 
 ## Morphs and pipes
 
@@ -2890,6 +2894,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 - `number.safe` and other ranges given `Infinity`: `must be a number`, before: their range error.
 - An arktype Type embedded through `~standard`: `user.age must be an integer`, before: `user.age age must be ...`.
 - Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
+- `""` and a length of `0` read as `empty`, mirroring `non-empty`: `"string.email | ''"` reads `must be an email address or empty` (before: `must be an email address or ""`), and `"string == 0"` reads `must be empty` (before: `must be exactly length 0`).
 - A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
 - A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true"`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
 - `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.
@@ -6424,6 +6429,58 @@ const $ = scope({
 })
 ```
 
+## Ambient
+
+Every scope resolves ArkType's built-in keywords as an ambient fallback. To restrict a scope's vocabulary or build a DSL without global keywords, pass `ambient` in the scope's config.
+
+Pass `{ ambient: {} }` to start from a clean slate — literals, operators, structures and local aliases still work, while built-in keywords become unresolvable:
+
+```ts
+const $ = scope(
+	{
+		Status: "'draft' | 'published'",
+		Entry: { status: "Status", tags: "Status[]" }
+	},
+	{ ambient: {} }
+)
+
+const Bad = $.type("string")
+// TypeScript: 'string' is unresolvable
+```
+
+To allow a subset of built-in keywords or your own fallback vocabulary, pass a `Module` (such as `ark.export(...)` or another scope's `.export()`), or a plain record of `Type`s, `Generic`s and `Module`s:
+
+```ts
+import { ark, generic, scope, type } from "arktype"
+
+const Id = type("string.uuid")
+const List = generic("t")("t[]")
+
+const $ = scope(
+	{
+		// local aliases can shadow ambient entries
+		id: "Id",
+		User: { id: "id", email: "string.email", tags: "List<string>" }
+	},
+	{
+		ambient: {
+			...ark.export("string"),
+			Id,
+			List
+		}
+	}
+)
+
+const types = $.export()
+// ambient entries are private to the scope, not re-exported
+Object.keys(types) // ["id", "User"]
+```
+
+- Works with both `scope(def, { ambient })` and `type.module(def, { ambient })`.
+- Ambient entries are not re-exported by `.export()` and can be shadowed by local aliases (including `#private` aliases).
+- Types created or exported from a scope keep its ambient on chained methods like `.and(...)` and `.or(...)`. Spreading an isolated `.export()` into a default scope leaves the outer scope's ambient unchanged.
+- A scope with custom `ambient` omits ArkType's default keyword attachments (`$.type.string`, `$.type.number`, etc.) and exposes its ambient entries on `$.type.keywords`.
+
 ## Configuration
 
 `scope` takes a config as its second argument. It applies to every `Type` parsed in the scope:
@@ -6438,7 +6495,7 @@ const $ = scope(
 $.export().Even(3)
 ```
 
-It accepts the same options as [global configuration](https://arktype.io/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`.
+It accepts the same options as [global configuration](https://arktype.io/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`. [`ambient`](https://arktype.io/docs/scopes#ambient) is scope-only.
 
 # Generics
 
@@ -6622,12 +6679,12 @@ const User = type.declare<User>().type({
 })
 ```
 
-`declare` works with any definition, not only objects:
+`declare` works with any definition, including spread [tuple expressions](https://arktype.io/docs/expressions):
 
 ```ts
 type Role = "admin" | "member"
 
-const Role = type.declare<Role>().type("'admin' | 'member'")
+const Role = type.declare<Role>().type("===", "admin", "member")
 
 const Entry = type.declare<[string, number]>().type(["string", "number"])
 ```
@@ -7401,6 +7458,7 @@ User({ email: "david@arktype.io", password: "ez123" })
 | [`errors`](https://arktype.io/docs/configuration#errors) | `"all"` | global, scope |
 | [`mutatesInput`](https://arktype.io/docs/configuration#mutatesinput) | `false` | global, scope |
 | [`keywords`](https://arktype.io/docs/configuration#keywords) | `{}` | global |
+| [`ambient`](https://arktype.io/docs/configuration#ambient) | ArkType's built-in keywords | scope |
 | [`locale`](https://arktype.io/docs/configuration#locale) | `en` | global |
 | [an error code](https://arktype.io/docs/configuration#by-code), like `divisor` | ArkType's messages | global, scope |
 | [`toJsonSchema`](https://arktype.io/docs/configuration#tojsonschema) | draft 2020-12, throwing for what it can't express | global, scope |
@@ -7725,6 +7783,18 @@ const User = type({
 //            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
+
+## ambient
+
+Scope-only. Overrides the ambient keywords a `scope` or `type.module` falls back to when resolving references. Pass `{}` to opt out of ArkType's built-in keywords entirely, a `Module` (such as `ark.export("string", "number")`), or a plain record of `Type`s, `Generic`s and `Module`s:
+
+```ts
+import { ark, scope } from "arktype"
+
+const dsl = scope({ Email: "string.email" }, { ambient: ark.export("string") })
+```
+
+See [Ambient](https://arktype.io/docs/scopes#ambient) for shadowing, chaining and clean-slate DSL scopes.
 
 ## onUndeclaredKey
 

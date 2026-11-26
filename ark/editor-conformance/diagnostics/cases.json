@@ -48,10 +48,10 @@
 		"name": "trailingOperator",
 		"origin": "tsc",
 		"source": "sources/arktype.ts:10 TS2345",
-		"input": "Argument of type '\"string |\"' is not assignable to parameter of type '\"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | \"string |null\" | ... 43 more ... | \"string |this\"'.",
-		"output": "\"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | \"string |null\" | ... 43 more ... | \"string |this\"",
+		"input": "Argument of type '\"string |\"' is not assignable to parameter of type '\"string |keyof\" | \"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | ... 43 more ... | \"string |this\"'.",
+		"output": "\"string |keyof\" | \"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | ... 43 more ... | \"string |this\"",
 		"rule": 3,
-		"display": "\"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | \"string |null\" | ... 43 more ... | \"string |this\""
+		"display": "\"string |keyof\" | \"string |string\" | \"string |number\" | \"string |bigint\" | \"string |boolean\" | \"string |symbol\" | \"string |undefined\" | \"string |object\" | \"string |ArrayBuffer\" | ... 43 more ... | \"string |this\""
 	},
 	{
 		"name": "unclosedGroup",

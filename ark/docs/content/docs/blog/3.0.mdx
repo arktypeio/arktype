@@ -114,7 +114,7 @@ Signup["~standard"].validate({ email: "x", password: "short", role: "admin" })
 // ] }
 ```
 
-A missing key says its value's `message` too, so it's the `required_error` as well. A `.refine()`'s message becomes `ctx.reject({ message, relativePath })` in a `.narrow()`.
+A missing key says its value's `message` too, so it's the `required_error` as well, and [`.label()`](/docs/configuration#label) names a field in every built-in message without writing a custom message per check. A `.refine()`'s message becomes `ctx.reject({ message, relativePath })` in a `.narrow()`.
 
 ### Your libraries take the Type as they took the schema
 
@@ -287,7 +287,7 @@ Parse keywords like `string.date.iso.parse` encode back to strings, and codecs [
 - **Error messages in other languages**: a [locale](/docs/i18n) writes validation errors in another language, with dynamic Types or `runtime: "arktype"`. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch.
 - **Fewer errors**: [`errors`](/docs/configuration#errors) `"first"` stops at the first error, and `"none"` returns one saying the data is invalid. `mutatesInput` writes what a Type transforms into its input instead of copying it. Each is installed by its own import, so a program that doesn't choose one doesn't ship it.
 - **Dynamic Types do less work**: a Type compiles when it's first used, and one without narrows or morphs finds its errors' issues only when they're first read. <Claim id="strictSpeedup" /> <Claim id="dynamicInit" ifBacked />
-- **Syntax**: [`!=`](/docs/primitives#number-ranges) excludes one value, unions of ranges merge where they can, and an object's [`"@"`](/docs/expressions#meta) key holds its description or meta.
+- **Syntax and scopes**: [`!=`](/docs/primitives#number-ranges) excludes one value, unions of ranges merge where they can, an object's [`"@"`](/docs/expressions#meta) key holds its description or meta, `string.nonblank` and `string.url.http` cover common form fields, and [`ambient`](/docs/scopes#ambient) lets a scope override or opt out of default keywords for DSLs.
 - **Compare any schemas**: [`fromJsonSchema`](/docs/json-schema/compare) reads a Standard JSON Schema like Zod's or plain JSON Schema into a Type, so `.extends()`, `.equals()` and `.overlaps()` relate them, [as above](#or-start-without-switching), with each other and with your Types, and `.and()`, `.or()` and `.toJsonSchema()` combine and convert them.
 - **JSON Schema**: every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, and a precompiled one keeps it where its build sees code read it, so the MCP SDK, the AI SDK and OpenAPI generators get it with [nothing to set](/docs/precompile/options#members). [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07, OpenAPI 3.0 or OpenAPI 3.1, and [`fromJsonSchema`](/docs/json-schema/from-json-schema) reads one back as a Type.
 - **Errors as data**: an `ArkErrors`' `issues` are plain objects discriminated by `code`. An issue's `message` leaves out its path, which `summary` writes before it, and one you configure is [shown as you wrote it](#your-messages-work-the-way-they-did-in-zod). ArkType's own English messages don't print the value, so they don't put what the data holds into a log.
