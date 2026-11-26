@@ -436,6 +436,21 @@ contextualize(() => {
 				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
 			})
 
+			it("extra ,", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0,  1>,")
+				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(","))
+				// @ts-expect-error
+				attest(() => $.type("number,")).throwsAndHasTypeError(
+					writeUnexpectedCharacterMessage(",")
+				)
+				// @ts-expect-error
+				attest(() => $.type({ a: "string | number ," })).throwsAndHasTypeError(
+					writeUnexpectedCharacterMessage(",")
+				)
+			})
+
 			it("too few args", ({ $ }) => {
 				attest(() =>
 					// @ts-expect-error

@@ -83,11 +83,7 @@ export const parseString = (
 
 	const s = new RuntimeState(new Scanner(def), ctx)
 
-	const node = fullStringParse(s)
-
-	if (s.finalizer === ">") throwParseError(writeUnexpectedCharacterMessage(">"))
-
-	return node
+	return fullStringParse(s)
 }
 
 /**
@@ -348,6 +344,10 @@ export const fullStringParse = (s: RuntimeState): InnerParseResult => {
 
 	if (s.finalizer === "=") result = parseDefault(s as RootedRuntimeState)
 	else if (s.finalizer === "?") result = [result, "?"]
+	// only a generic's args end at "," or ">", so either here is unexpected
+	// whatever follows it, as extractFinalizedResult has it
+	else if (s.finalizer !== "")
+		throwParseError(writeUnexpectedCharacterMessage(s.finalizer!))
 
 	s.sc.skipSpace()
 	if (s.sc.peek) {
