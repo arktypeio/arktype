@@ -44,6 +44,28 @@ const told: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => ctx.reject({ expected: "shorter", actual: "long" })) }), { k: "a" })
 		show(type({ k: type("string").narrow((s, ctx) => ctx.reject({ message: "Too long" })) }), { k: "a" })
 	`,
+	"says a keyword's message, and expects what it's described as, in the error the keyword raises": `
+		show(type({ k: type("string.json").message("Enter JSON") }), { k: "{" }, { k: 1 }, {})
+		show(type({ k: type("string.url.parse").message("must be a URL string, not that") }), { k: "!!" })
+		show(type({ k: type("string.date.parse").describe("a day") }), { k: "!!" }, { k: 1 })
+		show(type("string.json.parse").describe("a body"), "{")
+		show(type({ k: type("string.json").describe("a body") }), { k: "{" })
+		show(type({ k: type("string.regex").describe("a pattern").message("Enter a pattern") }), { k: "(" })
+		show(type({ k: type("string.integer.parse").message("Enter a count") }), { k: "9007199254740993" })
+		show(type({ k: type("string.date.epoch").describe("a send time") }), { k: "99999999999999999999" })
+		show(type({ k: type("string.date.epoch").message("Enter a time") }), { k: "99999999999999999999" })
+		show(type({ k: type("string.json").message("Enter a link").or(type("string.url").message("Enter a link")) }), { k: "!!" })
+		show(type({ k: type("string.json").describe("a body").or("string.url") }), { k: "!!" })
+		show(type({ k: type("string.json.parse").describe("a body").label("K") }), { k: "{" })
+		show(type({ k: type("string.json").label("K").message("Enter JSON") }), { k: "{" })
+		standard(type({ k: type("string.json").message("Enter JSON") }), { k: "{" })
+	`,
+	"leaves what a narrow or morph of the program's says is expected": `
+		const Foo = type("string").narrow((s, ctx) => s === "foo" || ctx.mustBe("a foo"))
+		show(type({ k: Foo.message("Enter a foo") }), { k: "x" }, { k: 1 })
+		show(type({ k: Foo.describe("a thing") }), { k: "x" })
+		show(type({ k: type("string").pipe((s, ctx) => ctx.error("a product")).describe("a thing") }), { k: "x" })
+	`,
 	"lists a union's errors whose messages begin as arktype's own, and says a sentence they share": `
 		const AsDefault = type("string").configure({ message: "must be a string" })
 		const Enter = type("string").configure({ message: "Enter text" })

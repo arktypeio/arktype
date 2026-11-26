@@ -450,6 +450,44 @@ export const raisesLabeled = (
 	supplied.relativePath === undefined &&
 	supplied.prefixPath === undefined
 
+/**
+ * @internal what the error a keyword raises says in place of the keyword's
+ * own text, where its node is configured with a message or described again
+ */
+export type Says = {
+	message?: string
+	description?: string
+	// described again, it's no longer its keyword's, whose phrase a locale writes
+	meta?: {}
+}
+
+/**
+ * @internal the keywords' narrows and morphs that raise the error their node
+ * would add, to hold what threw as its cause or to return what they parsed.
+ * raise builds that error from what it's passed, so the node calling one
+ * passes it what {@link saysOf} reads of its meta as a third argument. No
+ * callback of a program's is passed anything of the node it's on
+ */
+export const raisesAsNode: WeakSet<Function> = /* @__PURE__ */ new WeakSet()
+
+/**
+ * @internal what a node's meta has the error its keyword raises say: the
+ * message it's configured with, and what it's described as once that's no
+ * longer the keyword's phrase. Each a string, as compiled code writes them
+ * where it calls the keyword
+ */
+export const saysOf = (
+	meta: ArkEnv.meta,
+	callback: object
+): Says | undefined => {
+	if (!raisesAsNode.has(callback as never)) return
+	const says =
+		typeof meta.message === "string" ? { message: meta.message } : undefined
+	return meta.keyword === undefined && meta.description !== undefined ?
+			{ ...says, description: meta.description, meta: {} }
+		:	says
+}
+
 export class FirstIssueTraversal extends Traversal {
 	override get failFast(): boolean {
 		return true

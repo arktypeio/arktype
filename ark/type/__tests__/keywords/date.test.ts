@@ -19,6 +19,21 @@ contextualize(() => {
 		attest(parseDate(5).toString()).snap("must be a string")
 	})
 
+	it("what string.date.parse raises is written as its Type is configured", () => {
+		const parseDate = type("string.date.parse")
+		attest(parseDate.describe("a birthday")("foo").toString()).snap(
+			"must be a birthday"
+		)
+		attest(parseDate.message("Enter a date")("foo").toString()).snap(
+			"Enter a date"
+		)
+		// as what new Date reads but no calendar holds is
+		attest(parseDate.message("Enter a date")("2025-02-30").toString()).snap(
+			"Enter a date"
+		)
+		attest(parseDate.message("Enter a date")("2025-02-28")).instanceOf(Date)
+	})
+
 	it("string.date.parse reads an ISO date as string.date.iso.parse does", () => {
 		const ParseDate = type("string.date.parse")
 		// new Date reads this in local time
@@ -143,5 +158,16 @@ contextualize(() => {
 		attest(
 			type({ at: parseEpoch })({ at: "99999999999999999999" }).toString()
 		).snap("at must be a Unix timestamp before 8640000000000000")
+	})
+
+	it("what string.date.epoch rejects as out of range is written as its Type is configured", () => {
+		const epoch = type("string.date.epoch")
+		const late = "99999999999999999999"
+		attest(
+			type({ at: epoch.describe("a send time") })({ at: late }).toString()
+		).snap("at must be a send time")
+		attest(
+			type({ at: epoch.message("Enter a time") })({ at: late }).toString()
+		).snap("at: Enter a time")
 	})
 })

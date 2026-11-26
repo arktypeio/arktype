@@ -1,4 +1,4 @@
-import { arityOf, arrayEquals, isArray, type array } from "@ark/util"
+import { arityOf, arrayEquals, isArray, type array, type Fn } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode, TypeMeta } from "../shared/declare.ts"
@@ -16,9 +16,11 @@ import {
 	callMorph,
 	pipe,
 	pipeOf,
+	saysOf,
 	transform,
 	type AliasDepth,
 	type InternalTraversal,
+	type Says,
 	type Traversal
 } from "../shared/traversal.ts"
 import { composing, hasArkKind } from "../shared/utils.ts"
@@ -101,6 +103,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	// fixed at creation, as ctxMorph is
 	contextFree: boolean[] = this.morphs.map(
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
+	)
+
+	// what the error each keyword's morph raises says in place of the
+	// keyword's text, passed to it as its third argument
+	says: (Says | undefined)[] = this.morphs.map(morph =>
+		saysOf(this.meta, morph)
 	)
 
 	private _traversedMorphs: array<Morph | BaseRoot> | undefined
@@ -209,10 +217,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 					js.return("data")
 				)
 			} else {
+				const says = this.says[i]
+				const fn = js.ref(morph)
 				const call =
 					this.contextFree[i] ?
-						`${js.ref(morph)}(${result})`
-					:	`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result})`
+						`${fn}(${result})`
+					:	`${js.ref(callMorph)}(ctx, ${says ? `(In, at) => ${fn}(In, at, ${JSON.stringify(says)})` : fn}, ${result})`
 				// a labeled morph names its value in what it raises, as a labeled
 				// narrow does: only one passed ctx can raise
 				const labeled = label !== undefined && !this.contextFree[i]
@@ -256,7 +266,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				morphed = (morph as Morph.ContextFree)(result as never)
 			else {
 				if (label !== undefined) ctx.lbl = label
-				morphed = callMorph(ctx, morph, result)
+				const says = this.says[i]
+				morphed = callMorph(
+					ctx,
+					says === undefined ? morph : (In, at) => (morph as Fn)(In, at, says),
+					result
+				)
 				if (label !== undefined) ctx.lbl = undefined
 			}
 			if (morphed instanceof ArkErrors) {

@@ -1,4 +1,4 @@
-import { baseNameOf, returnsReports } from "@ark/util"
+import { baseNameOf, returnsReports, type Fn } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -10,9 +10,11 @@ import type {
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import {
 	describePredicate,
+	saysOf,
 	silentCtx,
 	type AliasDepth,
 	type InternalTraversal,
+	type Says,
 	type Traversal
 } from "./shared/traversal.ts"
 
@@ -80,18 +82,26 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		meta: this.meta
 	}
 
+	// what the error a keyword's predicate raises says in place of the
+	// keyword's text, passed to it as its third argument
+	says: Says | undefined = saysOf(this.meta, this.predicate)
+
 	tApply(data: unknown, ctx: InternalTraversal): void {
 		const errN = ctx.errN
 		const predicate = this.predicate
 		const label = this.meta.label
+		const says = this.says
 		if (label !== undefined) ctx.lbl = label
-		const valid = predicate(data, ctx.external)
+		const valid =
+			says === undefined ?
+				predicate(data, ctx.external)
+			:	(predicate as Fn)(data, ctx.external, says)
 		if (label !== undefined) ctx.lbl = undefined
 		if (!valid && ctx.errN === errN) ctx.nodeError(this.errorCtx, data)
 	}
 
 	compile(js: NodeCompiler): void {
-		const condition = `${js.ref(this.predicate)}(data, ctx)`
+		const condition = `${js.ref(this.predicate)}(data, ctx${this.says ? `, ${JSON.stringify(this.says)}` : ""})`
 		if (js.trav === "Allows") {
 			js.return(
 				returnsReports.has(this.predicate) ?

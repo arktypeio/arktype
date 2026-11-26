@@ -216,6 +216,43 @@ contextualize(() => {
 			attest(T({ r: "(" }).toString()).equals("r must be a regex pattern")
 		})
 
+		it("a description is what one raised expects, in place of the phrase", () => {
+			const T = type({ r: type("string.regex").describe("a pattern") })
+			const error = errorOf(T, { r: "(" })
+			// described again, it's no longer the keyword's
+			attest(error.meta).snap({})
+			attest(error.cause).instanceOf(SyntaxError)
+			attest(jsonOf(T, { r: "(" })).snap({
+				code: "predicate",
+				path: ["r"],
+				expected: "a pattern",
+				message: "must be a pattern"
+			})
+			attest(
+				type("string.integer.parse")
+					.describe("a count")("9007199254740993")
+					.toString()
+			).snap("must be a count")
+		})
+
+		it("a message is what one raised says, beside what it expects", () => {
+			const T = type({ r: type("string.regex").message("Enter a pattern") })
+			const error = errorOf(T, { r: "(" })
+			attest(error.meta).snap({ keyword: "string.regex" })
+			attest(error.cause).instanceOf(SyntaxError)
+			attest(jsonOf(T, { r: "(" })).snap({
+				code: "predicate",
+				path: ["r"],
+				expected: "a regex pattern",
+				message: "Enter a pattern"
+			})
+			attest(
+				type("string.integer.parse")
+					.message("Enter a count")("9007199254740993")
+					.toString()
+			).snap("Enter a count")
+		})
+
 		it("per-code config outranks the phrase", () => {
 			const $ = scope(
 				{},

@@ -214,7 +214,8 @@ const checkOf = (node: BaseNode): IssueContext | undefined => {
 // a described predicate's site, keeping the description written for it unless
 // it names the function, which a callback's only has once it's called
 const predicateSiteOf = (node: BaseNode): IssueContext | undefined => {
-	if (!node.is("predicate")) return
+	// only compiled code passes a keyword what its error says in place of its text
+	if (!node.is("predicate") || node.says) return
 	const site = issueSiteOf(node.failSite) as IssueContext
 	return (
 		!isDescribed(site) ? undefined

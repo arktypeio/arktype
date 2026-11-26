@@ -1,4 +1,4 @@
-import type { ArkError, Locale, Traversal } from "@ark/schema"
+import type { ArkError, Locale, Says, Traversal } from "@ark/schema"
 import {
 	FileConstructor,
 	hasOwn,
@@ -29,9 +29,15 @@ const integerParseError = /* @__PURE__ */ keywordError(
 	"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 )
 
-export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
+export const parseInteger = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): number | ArkError => {
 	const parsed = Number.parseInt(s)
-	return Number.isSafeInteger(parsed) ? parsed : ctx.error(integerParseError)
+	return Number.isSafeInteger(parsed) ? parsed : (
+			ctx.error({ ...integerParseError, ...says })
+		)
 }
 
 export const parseNumeric = (s: string): number => Number(s)
@@ -76,8 +82,11 @@ const dateParseError = /* @__PURE__ */ keywordError(
 	"a parsable date"
 )
 
-export const parseDate = (s: string, ctx: Traversal): Date | ArkError =>
-	readDate(s) ?? ctx.error(dateParseError)
+export const parseDate = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): Date | ArkError => readDate(s) ?? ctx.error({ ...dateParseError, ...says })
 
 // a date that doesn't exist, like 2025-02-29, isn't an ISO 8601 date either
 const isoDateParseError = /* @__PURE__ */ keywordError(
@@ -161,9 +170,15 @@ const readDate = (s: string): Date | undefined => {
 	return Number.isNaN(date.valueOf()) ? undefined : date
 }
 
-export const parseIsoDate = (s: string, ctx: Traversal): Date | ArkError => {
+export const parseIsoDate = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): Date | ArkError => {
 	const parts = isoDateParts.exec(s)
-	return (parts && isoDateOf(parts)) ?? ctx.error(isoDateParseError)
+	return (
+		(parts && isoDateOf(parts)) ?? ctx.error({ ...isoDateParseError, ...says })
+	)
 }
 
 // parsed as a number so the string is treated as milliseconds
@@ -186,7 +201,11 @@ export const epochDescriptions = {
 // number.epoch's phrase describes its errors
 const epochMeta = { keyword: "number.epoch" } as const
 
-export const isEpochString = (s: string, ctx: Traversal): boolean => {
+export const isEpochString = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): boolean => {
 	const n = Number.parseInt(s)
 	return (
 		!Number.isFinite(n) ?
@@ -195,7 +214,8 @@ export const isEpochString = (s: string, ctx: Traversal): boolean => {
 				data: n,
 				description: epochDescriptions.domain,
 				meta: epochMeta,
-				domain: "number"
+				domain: "number",
+				...says
 			})
 		: n < -maxEpoch ?
 			ctx.reject({
@@ -203,7 +223,8 @@ export const isEpochString = (s: string, ctx: Traversal): boolean => {
 				data: n,
 				description: epochDescriptions.min,
 				meta: epochMeta,
-				rule: -maxEpoch
+				rule: -maxEpoch,
+				...says
 			})
 		: n > maxEpoch ?
 			ctx.reject({
@@ -211,7 +232,8 @@ export const isEpochString = (s: string, ctx: Traversal): boolean => {
 				data: n,
 				description: epochDescriptions.max,
 				meta: epochMeta,
-				rule: maxEpoch
+				rule: maxEpoch,
+				...says
 			})
 		:	true
 	)
@@ -221,13 +243,17 @@ const jsonString = "a JSON string"
 
 const jsonError = /* @__PURE__ */ keywordError("string.json", jsonString)
 
-export const isJsonString = (s: string, ctx: Traversal): boolean => {
+export const isJsonString = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): boolean => {
 	try {
 		JSON.parse(s)
 		return true
 	} catch (e) {
 		if (!(e instanceof SyntaxError)) throw e
-		return ctx.reject({ ...jsonError, cause: e })
+		return ctx.reject({ ...jsonError, cause: e, ...says })
 	}
 }
 
@@ -258,8 +284,12 @@ const rejectInfinity = (k: string, v: unknown) => {
 	return v
 }
 
-export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
-	if (s.length === 0) return ctx.error(jsonParseError)
+export const parseJson = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): Json | ArkError => {
+	if (s.length === 0) return ctx.error({ ...jsonParseError, ...says })
 	try {
 		return JSON.parse(
 			s,
@@ -269,7 +299,7 @@ export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
 		)
 	} catch (e) {
 		if (!(e instanceof SyntaxError)) throw e
-		return ctx.error({ ...jsonParseError, cause: e })
+		return ctx.error({ ...jsonParseError, cause: e, ...says })
 	}
 }
 
@@ -317,12 +347,16 @@ const regexPattern = "a regex pattern"
 
 const regexError = /* @__PURE__ */ keywordError("string.regex", regexPattern)
 
-export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
+export const isRegexPattern = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): boolean => {
 	try {
 		new RegExp(s)
 		return true
 	} catch (e) {
-		return ctx.reject({ ...regexError, cause: e })
+		return ctx.reject({ ...regexError, cause: e, ...says })
 	}
 }
 
@@ -346,11 +380,15 @@ const urlParseError = /* @__PURE__ */ keywordError(
 	"a URL string"
 )
 
-export const parseUrl = (s: string, ctx: Traversal): URL | ArkError => {
+export const parseUrl = (
+	s: string,
+	ctx: Traversal,
+	says?: Says
+): URL | ArkError => {
 	try {
 		return new URL(s)
 	} catch {
-		return ctx.error(urlParseError)
+		return ctx.error({ ...urlParseError, ...says })
 	}
 }
 

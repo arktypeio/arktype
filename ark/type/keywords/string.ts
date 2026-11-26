@@ -4,6 +4,7 @@ import {
 	constraintInputOf,
 	intrinsic,
 	node,
+	raisesAsNode,
 	type Intersection,
 	type JsonSchema,
 	type Predicate
@@ -46,6 +47,20 @@ import {
 import { keywordMeta, type KeywordPhraseAlias } from "./phrases.ts"
 
 export { isLuhnValid } from "./functions.ts"
+
+// each raises the error its node would add, so is passed what that node's
+// configured to say in place of the keyword's text
+for (const raising of [
+	isEpochString,
+	isJsonString,
+	isRegexPattern,
+	parseDate,
+	parseInteger,
+	parseIsoDate,
+	parseJson,
+	parseUrl
+])
+	raisesAsNode.add(raising)
 
 // non-trivial expressions should have an explanation or attribution
 

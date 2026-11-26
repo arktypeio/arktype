@@ -12,6 +12,15 @@ import "arktype/errors"
 import { en } from "arktype/locales/en"
 import { withConfig } from "./locales/withConfig.ts"
 
+// each keyword that raises its own error through ctx, to hold what threw or
+// return what it parsed
+const raisingKeywords = [
+	"string.date.parse",
+	"string.json",
+	"string.json.parse",
+	"string.url.parse"
+] as const
+
 // each issue's message, as a Standard Schema consumer reads it
 const standardMessagesOf = (T: type.Any, data: unknown) =>
 	(T["~standard"].validate(data) as StandardSchemaV1.FailureResult).issues.map(
@@ -378,6 +387,64 @@ other: must be text`)
 		})
 		attest(T({ name: 5 }).toString()).snap("name: Name can't be a number")
 		attest(T({}).toString()).snap("name must be a string (was missing)")
+	})
+
+	it("a keyword that raises its own error says its Type's message, before and once compiled", () => {
+		for (const keyword of raisingKeywords) {
+			const Field = type(keyword).message("Enter a valid value")
+			const T = type({ f: Field })
+			// a Type compiles at its second call
+			attest(T({ f: "!!" }).toString()).equals("f: Enter a valid value")
+			attest(T({ f: "!!" }).toString()).equals("f: Enter a valid value")
+			attest(String(Field("!!"))).equals("Enter a valid value")
+			attest(String(Field("!!"))).equals("Enter a valid value")
+			attest(standardMessagesOf(T, { f: "!!" })).equals(["Enter a valid value"])
+		}
+	})
+
+	it("a keyword that raises its own error expects what its Type is described as, before and once compiled", () => {
+		for (const keyword of raisingKeywords) {
+			const Field = type(keyword).describe("a thing")
+			const T = type({ f: Field })
+			attest(T({ f: "!!" }).toString()).equals("f must be a thing")
+			attest(T({ f: "!!" }).toString()).equals("f must be a thing")
+			attest(String(Field("!!"))).equals("must be a thing")
+			attest(String(Field("!!"))).equals("must be a thing")
+			attest((Field("!!") as type.errors).issues[0].expected).equals("a thing")
+		}
+	})
+
+	it("a keyword's message with a selector is said by its own check only", () => {
+		const Body = type("string.json").message("Enter JSON", "predicate")
+		attest(Body("{").toString()).snap("Enter JSON")
+		attest(Body(5).toString()).snap("must be a string")
+		const Text = type("string.json").message("Enter text", "domain")
+		attest(Text("{").toString()).snap("must be a JSON string")
+		attest(Text(5).toString()).snap("Enter text")
+	})
+
+	it("a union says a message each branch's keyword was configured with", () => {
+		const message = "Enter JSON or a URL"
+		const T = type({
+			link: type("string.json")
+				.message(message)
+				.or(type("string.url").message(message))
+		})
+		attest(T({ link: "!!" }).toString()).snap("link: Enter JSON or a URL")
+		attest(T({ link: "!!" }).toString()).snap("link: Enter JSON or a URL")
+	})
+
+	it("what a narrow says is expected isn't its Type's message or description", () => {
+		const Foo = type("string").narrow(
+			(s, ctx) => s === "foo" || ctx.mustBe("a foo")
+		)
+		const Messaged = Foo.message("Enter a foo")
+		attest(Messaged("x").toString()).snap("must be a foo")
+		// what the Type checks itself says it
+		attest(Messaged(5).toString()).snap("Enter a foo")
+		const Described = Foo.describe("a thing")
+		attest(Described("x").toString()).snap("must be a foo")
+		attest(Described(5).toString()).snap("must be a thing")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1479
