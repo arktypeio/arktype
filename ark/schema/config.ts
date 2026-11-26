@@ -29,6 +29,7 @@ import {
 import {
 	isNodeKind,
 	nodeKinds,
+	type DescriptionConfig,
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
@@ -86,7 +87,7 @@ export interface CacheReach {
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	show<
 		{
-			description?: DescriptionWriter<kind>
+			description?: DescriptionConfig<kind>
 		} & (kind extends ArkErrorCode ? ErrorConfig<kind> : {})
 	>
 >

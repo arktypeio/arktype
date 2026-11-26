@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiableExpressionError
 } from "@ark/schema"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
@@ -167,5 +167,57 @@ contextualize(() => {
 			true
 		)
 		attest(Described.extends("string")).equals(false)
+	})
+
+	it("formats multi-key disjoint errors with symbol keys", () => {
+		const sym = Symbol("s")
+		attest(() =>
+			type({
+				a: type("TypedArray.Uint8").narrow(() => true),
+				[sym]: type.unit(-0)
+			}).and({
+				kind: [
+					type("Date").configure({ expected: () => "d" }),
+					"=",
+					() => new Date(0)
+				],
+				"[string.numeric]": "undefined",
+				"+": "delete"
+			})
+		).throws
+			.snap(`ParseError: The following intersections result in unsatisfiable types:
+• a: Uint8Array & fn and never
+• [Symbol(s)]: 0 and never
+a is undeclared on a side that deletes undeclared keys.
+[Symbol(s)] is undeclared on a side that deletes undeclared keys.
+To add them, use .merge(), which takes "+" from the merged object.`)
+
+		attest(() =>
+			scope(
+				{},
+				{
+					domain: { message: "Wrong type" },
+					required: { message: "Required" }
+				}
+			)
+				.type({ id: "Headers", [sym]: "number.NegativeInfinity" })
+				.and({ [sym]: "undefined", "+": "reject" })
+		).throws
+			.snap(`ParseError: The following intersections result in unsatisfiable types:
+• id: Headers and never
+• [Symbol(s)]: -Infinity and undefined
+id is undeclared on a side that rejects undeclared keys.
+To add it, use .merge(), which takes "+" from the merged object.`)
+
+		attest(() =>
+			type({ nested: { a: "string", [sym]: "number" } }).and({
+				nested: { "+": "delete" }
+			})
+		).throws
+			.snap(`ParseError: The following intersections result in unsatisfiable types:
+• nested.a: string and never
+• nested[Symbol(s)]: number and never
+nested.a is undeclared on a side that deletes undeclared keys.
+nested[Symbol(s)] is undeclared on a side that deletes undeclared keys.`)
 	})
 })

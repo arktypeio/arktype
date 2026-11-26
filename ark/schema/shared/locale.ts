@@ -299,14 +299,22 @@ const describeEachMissing = (
 }
 
 // a unit or proto's description is authored unless it is what arktype writes for it
-const describeBasis = (basis: MissingBasis, locale: Locale.Resolved): string =>
-	(
-		(basis.code === "unit" || basis.code === "proto") &&
-		basis.meta.keyword === undefined &&
-		basis.description !== defaultConfig[basis.code].description(basis as never)
-	) ?
-		locale.cite(basis.description!)
-	:	locale.basis(basis, locale)
+const describeBasis = (
+	basis: MissingBasis,
+	locale: Locale.Resolved
+): string => {
+	const defaultDescription = defaultConfig[basis.code].description
+	return (
+			(basis.code === "unit" || basis.code === "proto") &&
+				basis.meta.keyword === undefined &&
+				basis.description !==
+					(typeof defaultDescription === "string" ? defaultDescription : (
+						defaultDescription(basis as never)
+					))
+		) ?
+			locale.cite(basis.description!)
+		:	locale.basis(basis, locale)
+}
 
 // a missing value or an error, read for whether it is a unit
 type UnitCandidate = {

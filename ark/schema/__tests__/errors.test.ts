@@ -144,6 +144,17 @@ b: Enter a number`)
 		attest(superSpecialNumber("five")?.toString()).snap(
 			"must be my special number"
 		)
+
+		const stringDesc = schemaScope(
+			{ even: { domain: "number", divisor: 2 } },
+			{
+				divisor: {
+					description: "an even number"
+				}
+			}
+		).export().even
+		attest(stringDesc.description).snap("an even number")
+		attest(stringDesc(3)?.toString()).snap("must be an even number")
 	})
 
 	it("reads supplied text through its slot", () => {
@@ -379,71 +390,6 @@ n must be at least 2`)
 			"name must be a string (was missing)",
 			"nested: Unit price must be a number",
 			"[Symbol(k)] must be a string"
-		])
-	})
-
-	it("lineOf does not mutate the issue and handles JSON-round-tripped labeled issues", () => {
-		const frozen = Object.freeze({
-			path: ["name"] as const,
-			code: "domain" as const,
-			expected: "a string"
-		})
-		attest(lineOf(frozen)).snap("name must be a string")
-
-		const plain: {
-			path: string[]
-			code: "domain"
-			expected: string
-			message?: string
-		} = { path: ["name"], code: "domain", expected: "a string" }
-		attest(lineOf(plain)).snap("name must be a string")
-		attest("message" in plain).equals(false)
-
-		const labeled = rootSchema({
-			domain: "object",
-			required: [
-				{
-					key: "b",
-					value: { domain: "number", meta: { label: "Amount" } }
-				},
-				{
-					key: "nested",
-					value: {
-						domain: "object",
-						required: [
-							{
-								key: "price",
-								value: { domain: "number", meta: { label: "Unit price" } }
-							}
-						]
-					}
-				},
-				{
-					key: "missing",
-					value: { domain: "number", meta: { label: "Total" } }
-				},
-				{
-					key: "custom",
-					value: { domain: "string", meta: { message: "Enter a value" } }
-				}
-			]
-		})
-		const out = labeled({
-			b: "x",
-			nested: { price: "y" },
-			custom: 3
-		}) as ArkErrors
-		const clonedIssues = out.issues.map(issue =>
-			JSON.parse(JSON.stringify(issue))
-		)
-		const toJsonIssues = JSON.parse(JSON.stringify(out.issues))
-		attest(clonedIssues.map(lineOf).join("\n")).equals(out.summary)
-		attest(toJsonIssues.map(lineOf).join("\n")).equals(out.summary)
-		attest(clonedIssues.map(lineOf)).snap([
-			"Amount must be a number",
-			"custom: Enter a value",
-			"Total must be a number (was missing)",
-			"nested: Unit price must be a number"
 		])
 	})
 

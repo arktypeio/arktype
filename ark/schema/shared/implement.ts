@@ -334,13 +334,19 @@ export const compileObjectLiteral = (ctx: object): string => {
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
 		stacks: d["stacks"]
-		defaults: Required<NodeConfig<d["kind"]>>
+		defaults: Required<NodeConfig<d["kind"]>> & {
+			description: DescriptionWriter<d["kind"]>
+		}
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		defaults: { description: DescriptionWriter<d["kind"]> }
 	} & (d["stacks"] extends true ? { stacks: true } : {})
+
+export type DescriptionConfig<kind extends NodeKind = NodeKind> =
+	| string
+	| DescriptionWriter<kind>
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: nodeOfKind<kind>

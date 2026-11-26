@@ -1017,9 +1017,14 @@ export abstract class BaseNode<
 	}
 
 	get description(): string {
-		return (this.c.description ??=
-			this.meta?.description ??
-			composing(() => this.$.cfg[this.kind].description(this as never)))
+		if (this.c.description !== undefined) return this.c.description
+		if (this.meta?.description !== undefined)
+			return (this.c.description = this.meta.description)
+		const configured = this.$.cfg[this.kind].description
+		return (this.c.description =
+			typeof configured === "string" ? configured : (
+				composing(() => configured(this as never))
+			))
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -1742,6 +1747,8 @@ const isSubsumed = (
 	other: BaseRoot,
 	s: SimulationState
 ): boolean => {
+	if (branch.is("morph") && other.is("morph") && !branch.sameMorphs(other))
+		return false
 	let intersection: BaseRoot | Disjoint
 	isSubsuming = true
 	try {
