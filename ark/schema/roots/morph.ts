@@ -1,7 +1,7 @@
 import { arityOf, arrayEquals, isArray, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { declareNode } from "../shared/declare.ts"
+import type { declareNode, TypeMeta } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/issues.ts"
 import {
 	implementNode,
@@ -107,13 +107,18 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	private _traversedMorphs: array<Morph | BaseRoot> | undefined
 
-	// a configured message is its output's errors' too
+	// a configured message or label is its output's errors' too: the node a
+	// morph pipes to isn't a child, so configuring the morph doesn't reach it
 	get travMorphs(): array<Morph | BaseRoot> {
-		const { message } = this.meta
 		if (this._traversedMorphs) return this._traversedMorphs
-		if (message === undefined) return (this._traversedMorphs = this.morphs)
+		const { message, label } = this.meta
+		if (message === undefined && label === undefined)
+			return (this._traversedMorphs = this.morphs)
+		const meta: TypeMeta.MappableInput.Internal = {}
+		if (message !== undefined) meta.message = message
+		if (label !== undefined) meta.label = label
 		return (this._traversedMorphs = this.morphs.map((morph, i) =>
-			i && hasArkKind(morph, "root") ? morph.configure({ message }) : morph
+			i && hasArkKind(morph, "root") ? morph.configure(meta) : morph
 		))
 	}
 

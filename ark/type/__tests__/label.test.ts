@@ -297,6 +297,80 @@ quantity must be an integer`)
 		})
 	})
 
+	describe("pipe", () => {
+		it("names what a morph pipes to by the morph's label", () => {
+			const T = type({
+				quantity: type("string.numeric.parse")
+					.to("number > 5")
+					.label("Quantity")
+			})
+			attest(reportOf(T, { quantity: "five" })).snap([
+				[
+					[
+						["quantity"],
+						"quantity",
+						"Quantity must be a well-formed numeric string"
+					]
+				],
+				"Quantity must be a well-formed numeric string"
+			])
+			attest(reportOf(T, { quantity: "5" })).snap([
+				[[["quantity"], "quantity", "Quantity must be more than 5"]],
+				"Quantity must be more than 5"
+			])
+			attest(reportOf(T, {})).snap([
+				[[["quantity"], "quantity", "Quantity must be a string (was missing)"]],
+				"Quantity must be a string (was missing)"
+			])
+			// its output keeps its own meta and JSON Schema
+			attest(T.get("quantity").out.meta.label).equals(undefined)
+			attest(T.get("quantity").out.json).equals(type("number > 5").json)
+		})
+
+		it("names what a morph pipes to once compiled", () => {
+			const Quantity = type("string.numeric.parse")
+				.to("number > 5")
+				.label("Quantity")
+			// a Type compiles at its second call
+			Quantity("6")
+			attest(Quantity("6")).equals(6)
+			attest(Quantity("5").toString()).snap("Quantity must be more than 5")
+		})
+
+		it("names each node of a pipeline by the label it ends with", () => {
+			const Name = type("string.trim")
+				.to("string > 0")
+				.pipe(s => s.toUpperCase())
+				.to("string < 5")
+				.label("Name")
+			attest(Name("  ").toString()).snap("Name must be non-empty")
+			attest(Name("abcde").toString()).snap("Name must be at most length 4")
+		})
+
+		it("leaves a message the piped node says as written", () => {
+			const Quantity = type("string.numeric.parse")
+				.to(type("number").moreThan(5, "Order more than five"))
+				.label("Quantity")
+			attest(Quantity("5").toString()).snap("Order more than five")
+		})
+
+		it("names by its own label what an unlabeled morph pipes to", () => {
+			const T = type({
+				quantity: type("string.numeric.parse").to(
+					type("number > 5").label("Quantity")
+				)
+			})
+			attest(reportOf(T, { quantity: "five" })).snap([
+				[[["quantity"], "quantity", "must be a well-formed numeric string"]],
+				"quantity must be a well-formed numeric string"
+			])
+			attest(reportOf(T, { quantity: "5" })).snap([
+				[[["quantity"], "quantity", "Quantity must be more than 5"]],
+				"Quantity must be more than 5"
+			])
+		})
+	})
+
 	describe("JSON Schema", () => {
 		it("writes a label as title", () => {
 			attest(UnitPrice.toJsonSchema()).snap({
