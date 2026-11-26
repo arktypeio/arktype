@@ -151,6 +151,44 @@ contextualize(() => {
 		attest(types.actual.expression).equals(Expected.expression)
 	})
 
+	it("lists aliases as defined, whatever names one before its key", () => {
+		const $ = scope({
+			zebra: { apple: "apple" },
+			apple: "string"
+		})
+
+		attest($).type.toString.snap(
+			"Scope<{ zebra: { apple: string }; apple: string }>"
+		)
+		attest($.export()).type.toString.snap(
+			"Module<{ zebra: { apple: string }; apple: string }>"
+		)
+	})
+
+	it("lists aliases as defined beside a private one", () => {
+		const types = scope({
+			zulu: "secret",
+			"#secret": "string",
+			alpha: "zulu[]"
+		}).export()
+
+		attest(types).type.toString.snap(
+			"Module<{ zulu: string; alpha: string[] }>"
+		)
+	})
+
+	it("lists aliases as defined before a generic", () => {
+		const $ = scope({
+			zulu: "string",
+			"box<t>": { value: "t" },
+			alpha: "box<zulu>"
+		})
+
+		attest({} as { [k in keyof typeof $.t]: 1 }).type.toString.snap(
+			"{ zulu: 1; alpha: 1; box: 1 }"
+		)
+	})
+
 	it("object tuple", () => {
 		const types = scope({ ref: "string", actual: [{ c: "ref" }] }).export()
 		const Expected = type([{ c: "string" }])

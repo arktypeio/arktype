@@ -161,8 +161,8 @@ contextualize(() => {
 
 		attest(Object.keys(userModule)).equals(["payload", "db"])
 		attest(userModule).type.toString.snap(`Module<{
-	db: { id: string; name: string; age: number }
 	payload: { name: string; age: number }
+	db: { id: string; name: string; age: number }
 }>`)
 	})
 

@@ -211,28 +211,7 @@ export type node = {
 					"Branded",
 					"ParsedJson"
 				)
-				// TypeScript 7 orders keys as it declares them itself, where 6 lists optional keys last
-				if (checker === "tsjs") {
-					attest(shapes).snap(`export type Nested = {
-    sub: import("arktype").Submodule<{
-        leaf: string;
-    }>;
-    list: list;
-};
-export type Colors = import("./enums.js").Color.Red | import("./enums.js").Color.Blue;
-export type Reds = {
-    color: import("./enums.js").Color.Red;
-};
-export type Parsed = (In: string) => import("arktype").To<number>;
-export type Length = (In: string) => import("arktype").Out<number>;
-export type Branded = import("arktype").Brand<string, "id">;
-export type ParsedJson = (In: string) => import("arktype").To<import("arktype").Json>;
-export type list = {
-    value: number;
-    rest?: list | undefined;
-};`)
-				} else {
-					attest(shapes).snap(`export type Nested = {
+				attest(shapes).snap(`export type Nested = {
     list: list;
     sub: import("arktype").Submodule<{
         leaf: string;
@@ -250,7 +229,6 @@ export type list = {
     value: number;
     rest?: list | undefined;
 };`)
-				}
 			})
 
 			it("declares tuples and readonly keys", () => {
@@ -584,10 +562,8 @@ export declare const makeTree: () => import("arktype").Type<import("./~arktype.j
 				// `user` is three scopes' alias, and `types` two Modules' name
 				it("names each cycle as its scope does, numbering a name another shape took", () => {
 					const shapes = cyclesFile("~arktype.d.ts")
-					// TypeScript 7 orders a scope's aliases as it declares them itself
-					if (checker === "tsjs") {
-						attest(shapes)
-							.snap(`// the shapes of this build's Types, Scopes and Modules
+					attest(shapes)
+						.snap(`// the shapes of this build's Types, Scopes and Modules
 export type $default = {
     folder: folder;
 };
@@ -677,99 +653,6 @@ export type makeTree = {
     children?: makeTree[] | undefined;
 };
 `)
-					} else {
-						attest(shapes)
-							.snap(`// the shapes of this build's Types, Scopes and Modules
-export type $default = {
-    folder: folder;
-};
-export type post = {
-    title: string;
-    author: author;
-};
-export type postScope = {
-    author: author;
-    post: post;
-};
-export type author = {
-    name: string;
-    posts?: post[] | undefined;
-};
-export type types = {
-    group: group;
-    user: user;
-};
-export type admins = {
-    user: user$2;
-};
-export type guests = {
-    user: user$3;
-};
-export type Dashed = {
-    head: the_link;
-};
-export type DashedScope = {
-    "the-link": the_link;
-};
-export type Keyword = {
-    root: $new;
-};
-export type KeywordScope = {
-    new: $new;
-};
-export type $ = {
-    "#node": node;
-    list: {
-        head: node;
-    };
-};
-export type Tree = {
-    value: number;
-    children?: Tree[] | undefined;
-};
-export type folder = {
-    name: string;
-    folders?: folder[] | undefined;
-};
-export type user = {
-    name: string;
-    friends?: user[] | undefined;
-};
-export type group = {
-    members: user[];
-    parent?: group | undefined;
-};
-export type user$2 = {
-    role: "admin";
-    reports?: user$2[] | undefined;
-};
-export type user$3 = {
-    invitedBy?: user$3 | undefined;
-};
-export type the_link = {
-    next?: the_link | undefined;
-};
-export type $new = {
-    value: boolean;
-    child?: $new | undefined;
-};
-export type node = {
-    value: number;
-    next?: node | undefined;
-};
-export type types$2 = {
-    comment: comment;
-};
-export type comment = {
-    body: string;
-    replies?: comment[] | undefined;
-};
-export type makeTree = {
-    value: number;
-    children?: makeTree[] | undefined;
-};
-`)
-					}
 				})
 
 				it("CLI declarations read as their sources", () => {

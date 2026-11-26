@@ -210,13 +210,29 @@ type withAmbient<$, ambient> =
 
 type exportedModuleOf<$> =
 	[$] extends [{ readonly [k in AmbientKey]: unknown }] ?
-		BoundModule<{ [k in exportedNameOf<$>]: $[k] }, $>
-	:	Module<{ [k in exportedNameOf<$>]: $[k] }>
+		BoundModule<exportsOf<$>, $>
+	:	Module<exportsOf<$>>
+
+// mapped from keyof the scope rather than from its exported names, so that a
+// Module lists them as the scope lists its aliases (see bootstrapAliases). Most
+// scopes have none to leave out, and one that does can filter them in place:
+// keyof a Module's exports is only taken to bind them
+type exportsOf<$> =
+	[keyof $ & unexportedKey] extends [never] ? { [k in keyof $]: $[k] }
+	:	{ [k in keyof $ as k extends unexportedKey ? never : k]: $[k] }
+
+/** every key {@link exportedNameOf} leaves out */
+type unexportedKey = PrivateDeclaration | noSuggest | number | symbol
 
 type importedModuleOf<$> =
 	[$] extends [{ readonly [k in AmbientKey]: unknown }] ?
-		BoundModule<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }, $>
-	:	Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
+		BoundModule<importsOf<$>, $>
+	:	Module<importsOf<$>>
+
+type importsOf<$> = {
+	[k in keyof $ as k extends unexportedKey ? never
+	:	PrivateDeclaration<k & string>]: $[k]
+} & unknown
 
 interface AmbientArgument<in out ambient> {
 	validated: validateAmbient<ambient>
@@ -417,22 +433,26 @@ export type UnparsedScope = "$"
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = PreparsedNodeResolution
 
+/**
+ * The aliases of a definition, each as it's written, in the order it has them.
+ *
+ * TypeScript lists a mapped type's properties in the order of the type keyof
+ * was taken of, and those mapped from any other union of keys in the union's:
+ * up to TypeScript 6 the order it first saw each key anywhere in the program,
+ * so that an alias an earlier definition names, or a method of string does,
+ * comes before the rest, and from TypeScript 7 by name. So each mapped type
+ * from the definition to a Module takes keyof of the one before it, which
+ * lists a scope's aliases as they're defined wherever they're hovered or
+ * declared.
+ *
+ * An `as` clause would filter the keys in place, but keyof a mapped type that
+ * has one evaluates the clause for every key each time it's taken, as it is of
+ * a scope for each reference parsed in it. So the keys are filtered in a type
+ * of their own, and only where there are any to filter, which a definition
+ * without a generic rarely has.
+ */
 type bootstrapAliases<def, ambient = unknown> = withAmbient<
-	{
-		[k in Exclude<keyof def, GenericDeclaration | noSuggest>]: def[k] extends (
-			PreparsedResolution
-		) ?
-			def[k] extends { t: infer g extends GenericAst } ? g
-			: def[k] extends Module<infer $> | BoundModule<infer $, any> ?
-				Submodule<$>
-			:	def[k]
-		: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
-			thunkReturn extends { t: infer g extends GenericAst } ? g
-			: thunkReturn extends Module<infer $> | BoundModule<infer $, any> ?
-				Submodule<$>
-			:	thunkReturn
-		:	Def<def[k]>
-	} & {
+	bootstrapNonGenerics<def> & {
 		[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
 			parseValidGenericParams<
 				extractGenericParameters<k>,
@@ -444,6 +464,30 @@ type bootstrapAliases<def, ambient = unknown> = withAmbient<
 	},
 	ambient
 >
+
+type bootstrapNonGenerics<def> =
+	[keyof def & nonAliasKey] extends [never] ?
+		{ -readonly [k in keyof def]-?: bootstrapAlias<def, k> }
+	:	{ -readonly [k in keyof aliasKeysOf<def>]-?: bootstrapAlias<def, k> }
+
+/** a generic's declaration, or a meta key spread in with a module */
+type nonAliasKey = GenericDeclaration | noSuggest
+
+type aliasKeysOf<def> = {
+	[k in keyof def as k extends nonAliasKey ? never : k]: unknown
+}
+
+type bootstrapAlias<def, k extends keyof def> =
+	def[k] extends PreparsedResolution ?
+		def[k] extends { t: infer g extends GenericAst } ? g
+		: def[k] extends Module<infer $> | BoundModule<infer $, any> ? Submodule<$>
+		: def[k]
+	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
+		thunkReturn extends { t: infer g extends GenericAst } ? g
+		: thunkReturn extends Module<infer $> | BoundModule<infer $, any> ?
+			Submodule<$>
+		:	thunkReturn
+	:	Def<def[k]>
 
 type inferBootstrapped<$> = {
 	[name in keyof $]: name extends AmbientKey ? $[name]
