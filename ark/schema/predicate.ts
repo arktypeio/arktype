@@ -110,10 +110,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		const label = this.meta.label
 		// a labeled narrow names its value in what it raises, as in the error
 		// returning false adds: an unlabeled one's call is as it was
-		if (label !== undefined)
+		if (label !== undefined) {
 			js.line(`ctx.lbl = ${JSON.stringify(label)}`)
 				.const("valid", condition)
 				.line("ctx.lbl = undefined")
+		}
 		js.if(
 			// only add the default error if the predicate didn't add one itself
 			`!${label === undefined ? condition : "valid"} && ctx.errN === errN`,
