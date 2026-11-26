@@ -338,6 +338,11 @@ export interface TextContext {
 	/** a required key's: its value's meta, whose message the missing key says */
 	valueMeta?: ArkEnv.meta | undefined
 	meta?: ArkEnv.meta | undefined
+	/**
+	 * a union's written from what its bases are: the label their issues name
+	 * their value by, which arktype's union of them is named by
+	 */
+	label?: string | undefined
 }
 
 type DescribingKey = (typeof describingKeys)[number]
@@ -388,8 +393,8 @@ const keepsOf = (
 // the label a site's default message names its value by, as arktype's errors
 // read it: a missing key's value's, not that of the object around an
 // undeclared key, nor that of a union listing its branches' errors, each
-// named by its own, nor one written from what its bases are, which the union
-// names only where each base's issue does
+// named by its own. One written from what its bases are is named as each
+// base's issue is, by the label they share, not by its own
 const labelOf = (
 	context: TextContext,
 	meta: Record<string, unknown>
@@ -403,7 +408,7 @@ const labelOf = (
 				meta.expected !== undefined
 			) ?
 				meta.label
-			:	undefined
+			:	context.label
 		:	meta.label
 	return typeof label === "string" ? label : undefined
 }
