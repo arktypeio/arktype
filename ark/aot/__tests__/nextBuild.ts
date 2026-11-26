@@ -52,7 +52,7 @@ export const nextApp = (tag: string): string => join(appsDir, tag)
 
 export const removeNextApps = (): void => {
 	rmSync(appsDir, { recursive: true, force: true })
-	rmSync(join(repo, "ark/repo/node_modules/.bin/.ark"), {
+	rmSync(join(repo, "ark/repo/node_modules/.cache/ark-units"), {
 		recursive: true,
 		force: true
 	})

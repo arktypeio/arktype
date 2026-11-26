@@ -566,10 +566,13 @@ rmSync(appDir, {
 	maxRetries: 10,
 	retryDelay: 200
 })
-rmSync(fileURLToPath(new URL("./node_modules/.bin/.ark", import.meta.url)), {
-	recursive: true,
-	force: true
-})
+rmSync(
+	fileURLToPath(new URL("./node_modules/.cache/ark-units", import.meta.url)),
+	{
+		recursive: true,
+		force: true
+	}
+)
 
 console.log(
 	"✅ Next fails a dependency that defines a Type and precompiles one set to aot, and either bundler fails where Next leaves arktype external on the server"
