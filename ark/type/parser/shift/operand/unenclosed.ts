@@ -4,6 +4,7 @@ import {
 	type BaseRoot,
 	type GenericAst,
 	type GenericRoot,
+	type PrivateDeclaration,
 	type arkKind,
 	type genericParamNames,
 	type resolvableReferenceIn,
@@ -222,7 +223,8 @@ type tryResolve<
 	) ?
 		tryResolveSubmodule<
 			token,
-			ambient[submodule],
+			// a private submodule shadows the keyword of its name
+			`#${submodule}` extends keyof $ ? $[`#${submodule}`] : ambient[submodule],
 			reference,
 			s,
 			unscanned,
@@ -233,7 +235,22 @@ type tryResolve<
 	: token extends BigintLiteral<infer b> ?
 		s.setRoot<s, InferredAst<b, token>, unscanned>
 	: token extends "keyof" ? s.addPrefix<s, "keyof", unscanned>
-	: unresolvableState<s, token, $, args, []>
+	: // a private submodule no keyword is named for, checked last so a
+	// definition without one doesn't pay for it
+	`#${token}` extends (
+		`${infer submodule extends keyof $ & string}.${infer reference}`
+	) ?
+		tryResolveSubmodule<
+			token,
+			$[submodule],
+			reference,
+			s,
+			unscanned,
+			$,
+			args,
+			[submodule extends PrivateDeclaration<infer name> ? name : never]
+		>
+	:	unresolvableState<s, token, $, args, []>
 
 type tryResolveSubmodule<
 	token extends string,

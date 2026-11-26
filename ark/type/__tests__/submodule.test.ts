@@ -149,6 +149,38 @@ contextualize.each(
 				b: { domain: "number" }
 			})
 		})
+
+		it("private submodule", () => {
+			const $ = scope({
+				"#mod": scope({
+					a: "number",
+					inner: scope({ b: "string" }).export()
+				}).export(),
+				whole: "mod.a",
+				array: "mod.a[]",
+				expression: "mod.inner.b | mod.a"
+			})
+			const types = $.export()
+
+			attest<number>(types.whole.infer)
+			attest(types.whole.expression).snap("number")
+			attest<number[]>(types.array.infer)
+			attest(types.array.expression).snap("number[]")
+			attest<string | number>(types.expression.infer)
+			attest(types.expression.expression).snap("number | string")
+			attest(Object.keys(types)).equals(["whole", "array", "expression"])
+
+			// @ts-expect-error
+			attest(() => $.type("mod.c")).throwsAndHasTypeError(
+				writeUnresolvableMessage("mod.c")
+			)
+			// @ts-expect-error
+			attest(() => $.type("mod.i")).completions({ "mod.i": ["mod.inner"] })
+			// @ts-expect-error
+			attest(() => $.type("mod")).throwsAndHasTypeError(
+				writeMissingSubmoduleAccessMessage("mod")
+			)
+		})
 	}
 )
 
