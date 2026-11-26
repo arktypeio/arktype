@@ -74,7 +74,7 @@ import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
-import { arrayIndexMatcher, maxArrayLength } from "./shared.ts"
+import { arrayIndexMatcher, arrayPathKeyOf, maxArrayLength } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
@@ -652,23 +652,25 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			const keys = this.index ? ownKeysOf(data) : Object.keys(data)
+			const isArray = Array.isArray(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
 
 				if (this.index) {
+					const pathKey = isArray ? arrayPathKeyOf(k) : k
 					for (const node of this.index) {
 						if (node.allowsKey(k, ctx)) {
 							if (trav === "Allows") {
 								const result = travKey(
-									k,
+									pathKey,
 									() => node.value.tAllows(data[k as never], ctx),
 									ctx
 								)
 								if (!result) return false
 							} else {
 								travKey(
-									k,
+									pathKey,
 									() =>
 										applyValue(
 											node.value,
@@ -710,8 +712,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const errN = ctx.errN
 		const copies = !this.writesInto(ctx)
 		let out: any = data
-		const tfKey = (k: Key, value: unknown, node: BaseNode, input = value) => {
-			let transformed = travKey(k, () => transform(ctx, node, input), ctx)
+		const tfKey = (
+			k: Key,
+			value: unknown,
+			node: BaseNode,
+			input = value,
+			pathKey: PropertyKey = k
+		) => {
+			let transformed = travKey(pathKey, () => transform(ctx, node, input), ctx)
 			if (input !== value)
 				transformed = mergeTransformed(input, value, transformed)
 			if (Object.is(transformed, value)) return value
@@ -756,6 +764,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		if (this.index) {
 			const keys = ownKeysOf(data)
+			const isArray = Array.isArray(data)
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
 				if (hasIndexedProp && k in this.byKey) continue
@@ -773,7 +782,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						k,
 						value,
 						node.value,
-						value === input || node.value.allows(value) ? value : input
+						value === input || node.value.allows(value) ? value : input,
+						isArray ? arrayPathKeyOf(k) : k
 					)
 				}
 			}
@@ -798,13 +808,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
 			if (prop.holdsValue(data)) this.tfSharedKey(data, prop.key, ctx)
-		for (const k of ownKeysOf(data))
-			if (!(k in this.byKey)) this.tfSharedKey(data, k, ctx)
+		const isArray = Array.isArray(data)
+		for (const k of ownKeysOf(data)) {
+			if (!(k in this.byKey))
+				this.tfSharedKey(data, k, ctx, isArray ? arrayPathKeyOf(k) : k)
+		}
 		return !ctx.failFast || ctx.errN === errN
 	}
 
 	/** transforms a key's value through each constraint transforming it: its prop or the index signatures it matches */
-	private tfSharedKey(data: object, k: Key, ctx: InternalTraversal): void {
+	private tfSharedKey(
+		data: object,
+		k: Key,
+		ctx: InternalTraversal,
+		pathKey: PropertyKey = k
+	): void {
 		const prop = this.byKey[k]
 		if (prop && !this.tfsOf(prop).length) return
 		const constraints: BaseNode[] = prop ? [prop.value] : []
@@ -818,7 +836,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (
 			!steps.length ||
 			!travKey(
-				k,
+				pathKey,
 				() => constraints.every(n => allowsInBranch(ctx, n, input)),
 				ctx
 			)
@@ -832,7 +850,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const stepInput =
 				value === input || step.node.allows(value) ? value : input
 			const transformed = travKey(
-				k,
+				pathKey,
 				() => transform(ctx, step.node, stepInput),
 				ctx
 			)
@@ -1030,9 +1048,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence) js.check(this.sequence)
 
 		if (this.index) {
-			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.jsEntry(js.const("k", "keys[i]"), "string")
-			)
+			js.const("keys", "Object.keys(data)")
+				.const("isArray", "Array.isArray(data)")
+				.for("i < keys.length", () =>
+					this.jsEntry(js.const("k", "keys[i]"), "string")
+				)
 			if (this.indexSyms) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
 					this.jsEntry(js, "symbol")
@@ -1163,12 +1183,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			})
 		}
 		if (transformedIndex.length) {
+			js.const("isArray", "Array.isArray(data)")
 			this.jsForOwnKeys(js, "data", () => {
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.byKey)}`, () => js.line("continue"))
 				const tfKey = (steps: TransformStep[]) =>
 					js.const("value", "data[k]").tfKey("transformed", "value", steps, {
 						keyExpr: "k",
+						pathKeyExpr: jsArrayPathKey(js),
 						onChange: () => this.jsCopy(js).line("out[k] = transformed")
 					})
 				if (transformedIndex.length === 1) {
@@ -1551,7 +1573,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.index) {
 			for (const node of this.index) {
 				js.if(js.allows(node.signature, "k"), () =>
-					js.travKey("k", "data[k]", node.value)
+					js.travKey(
+						keyDomain === "string" ? jsArrayPathKey(js) : "k",
+						"data[k]",
+						node.value
+					)
 				)
 			}
 		}
@@ -1580,6 +1606,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js
 	}
 }
+
+// `k` as its path names it, where a loop over data's keys has declared isArray
+const jsArrayPathKey = (js: NodeCompiler): string =>
+	`(isArray ? ${js.ref(arrayPathKeyOf)}(k) : k)`
 
 const defaultableMorphsCache = new WeakCache<Morph>()
 

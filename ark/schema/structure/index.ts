@@ -28,6 +28,7 @@ import {
 	type TraverseAllows
 } from "../shared/traversal.ts"
 import { composing, elided } from "../shared/utils.ts"
+import { arrayPathKeyOf } from "./shared.ts"
 
 export declare namespace Index {
 	export type KeyKind = Exclude<RootKind, "unit">
@@ -117,18 +118,30 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		:	this.signature.tAllows(k, ctx)
 
 	tAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+		const isArray = Array.isArray(data)
 		return stringAndSymbolicEntriesOf(data).every(entry => {
-			if (this.allowsKey(entry[0], ctx))
-				return travKey(entry[0], () => this.value.tAllows(entry[1], ctx), ctx)
+			if (this.allowsKey(entry[0], ctx)) {
+				return travKey(
+					isArray ? arrayPathKeyOf(entry[0]) : entry[0],
+					() => this.value.tAllows(entry[1], ctx),
+					ctx
+				)
+			}
 
 			return true
 		})
 	}
 
 	tApply(data: object, ctx: InternalTraversal): void {
+		const isArray = Array.isArray(data)
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
-			if (this.allowsKey(entry[0], ctx))
-				travKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
+			if (this.allowsKey(entry[0], ctx)) {
+				travKey(
+					isArray ? arrayPathKeyOf(entry[0]) : entry[0],
+					() => applyValue(this.value, entry[1], ctx),
+					ctx
+				)
+			}
 		}
 	}
 

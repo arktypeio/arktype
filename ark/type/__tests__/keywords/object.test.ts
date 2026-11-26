@@ -42,7 +42,7 @@ contextualize(() => {
 				.throws("must be an object")
 				.type.errors("not assignable to parameter of type 'JsonStructure'")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be a number, a string, an object, boolean or null'
+				"foo[0] must be a number, a string, an object, boolean or null"
 			)
 		})
 
@@ -61,7 +61,7 @@ contextualize(() => {
 				"at must be a plain object or array"
 			)
 			attest(Json([() => {}])?.toString()).snap(
-				'["0"] must be a plain object or array'
+				"[0] must be a plain object or array"
 			)
 		})
 

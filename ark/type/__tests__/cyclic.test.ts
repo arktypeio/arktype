@@ -475,7 +475,7 @@ contextualize(() => {
 		)
 		attest(
 			String(x.onDeepUndeclaredKey("reject")({ p0: [1, { p0: [2] }] }))
-		).snap('p0["1"] must be a number')
+		).snap("p0[1] must be a number")
 		attest(
 			tagged.u
 				.onDeepUndeclaredKey("reject")({
