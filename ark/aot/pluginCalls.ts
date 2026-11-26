@@ -317,7 +317,7 @@ export const withPluginCalls = (
 			const other = setBy[key]
 			if (other && JSON.stringify(merged[key]) !== JSON.stringify(value)) {
 				throwBuildError(
-					`${call.position}  ${call.label} sets ${key} other than ${other.label} at ${other.position}, so --check can't tell which build to check\n  Pass the one to check as ${flagOf(key)}, or set it once in ark.json (or package.json's "ark" key).`
+					`${call.position}  ${call.label} sets ${key} other than ${other.label} at ${other.position}, so ark check can't tell which build to check\n  Pass the one to check as ${flagOf(key)}, or set it once in ark.json (or package.json's "ark" key).`
 				)
 			}
 			setBy[key] = call
@@ -353,11 +353,11 @@ const writeUnreadMessage = (call: PluginCall, keys: string[]): string => {
 			`Set ${key} in ark.json (or package.json's "ark" key), as { "precompile": { "${key}": ... } }`
 		:	`Set ${key === "*" ? "the options" : "them"} in ark.json (or package.json's "ark" key), as { "precompile": { ... } }`
 	const flag =
-		isOne ? `it to --check as ${flagOf(key)}` : "each to --check as a flag"
-	return `${call.position}  --check can't read the ${read} ${call.label} is passed, so it can't check what the build does\n  ${fix}, which ${call.label} reads too, or pass ${flag}.`
+		isOne ? `it to ark check as ${flagOf(key)}` : "each to ark check as a flag"
+	return `${call.position}  ark check can't read the ${read} ${call.label} is passed, so it can't check what the build does\n  ${fix}, which ${call.label} reads too, or pass ${flag}.`
 }
 
-// e.g. "vite.config.ts:5:22  precompile.vite() sets config, so --check does too"
+// e.g. "vite.config.ts:5:22  precompile.vite() sets config, so ark check does too"
 export const pluginCallLinesOf = (
 	calls: PluginCall[],
 	given: PrecompilePluginOptions
@@ -366,7 +366,7 @@ export const pluginCallLinesOf = (
 		const keys = Object.keys(call.options).filter(key => !isGiven(given, key))
 		return keys.length ?
 				[
-					`${call.position}  ${call.label} sets ${keys.join(", ")}, so --check does too`
+					`${call.position}  ${call.label} sets ${keys.join(", ")}, so ark check does too`
 				]
 			:	[]
 	})

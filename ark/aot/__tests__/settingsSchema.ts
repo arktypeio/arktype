@@ -71,6 +71,126 @@ export const ArkJson = type({
 	"+": "reject"
 })
 
+// documented ark.json schema for ark.schema.json and ESLint rule schema
+// (kept separate from the runtime validators so validation errors stay concise)
+export const ArkJsonSchema = type({
+	"$schema?": type("string").describe(
+		"JSON Schema path or URL for editor validation and hover docs"
+	),
+	"precompile?": type({
+		"preset?": type(settings["preset?"]).describe(
+			"Named preset of defaults: 'smallest' minimizes bundle size, 'introspectable' keeps all introspection members"
+		),
+		"runtime?": type(settings["runtime?"]).describe(
+			"Set to 'arktype' to ship arktype's runtime parser alongside precompiled validators"
+		),
+		"config?": type("string > 0 | false").describe(
+			"Path to the module that calls configure(), or false to forbid configure() calls"
+		),
+		"members?": type({
+			"assert?": type(flag).describe(
+				"Keep .assert() on standalone validators (default true)"
+			),
+			"meta?": type(flag).describe(
+				"Keep .meta on standalone validators (default true)"
+			),
+			"~standard?": type(flag).describe(
+				"Keep the Standard Schema '~standard' property on standalone validators (default true)"
+			),
+			"methods?": type(flag).describe(
+				"Keep .traverse(), .from(), and .toString() on standalone validators (default true)"
+			),
+			"withContext?": type(flag).describe(
+				"Keep .withContext() on standalone validators (default true)"
+			),
+			"expression?": type(flag).describe(
+				"Bake .expression onto standalone validators (auto-detected when unset)"
+			),
+			"description?": type(flag).describe(
+				"Bake .description onto standalone validators (auto-detected when unset)"
+			),
+			"json?": type(flag).describe(
+				"Bake .json onto standalone validators (auto-detected when unset)"
+			),
+			"toJSON?": type(flag).describe(
+				"Bake .toJSON() onto standalone validators (auto-detected when unset)"
+			),
+			"toJsonSchema?": type(flag).describe(
+				"Bake .toJsonSchema() onto standalone validators (auto-detected when unset)"
+			),
+			"~standard.jsonSchema?": type(flag).describe(
+				"Bake Standard JSON Schema support onto '~standard.jsonSchema' (auto-detected when unset)"
+			),
+			"+": "reject"
+		}).describe(
+			"Control which properties and introspection helpers are kept on standalone validators"
+		),
+		"errors?": type(settings["errors?"]).describe(
+			"Error reporting mode for standalone validators: 'all' (default), 'first', or 'none'"
+		),
+		"mutatesInput?": type(settings["mutatesInput?"]).describe(
+			"Allow morphs and defaults to mutate input in place: false (default), true, or 'always'"
+		),
+		"optimize?": type(settings["optimize?"]).describe(
+			"Optimize generated validators for 'speed' (default, compiled per Type) or 'size' (shared runtime checkers)"
+		),
+		"optimizeErrors?": type(settings["optimizeErrors?"]).describe(
+			"Optimize generated error paths for 'speed' or 'size' (defaults to optimize)"
+		),
+		"strategies?": type({
+			"[string]": type({
+				"optimize?": type(optimization).describe(
+					"Optimize validators using this strategy for 'speed' or 'size'"
+				),
+				"+": "reject"
+			}).describe("Named optimization strategy options")
+		}).describe(
+			"Define named optimization strategies referenced by 'schemas' or '// @ark-strategy' comments"
+		),
+		"schemas?": type({ "[string]": "string > 0" }).describe(
+			"Map module paths, globs, or 'path#Declaration' keys to a strategy name ('fastest', 'smallest', or custom)"
+		),
+		"jsonInput?": type(settings["jsonInput?"]).describe(
+			"Trust objects validated with rejected undeclared keys to be plain JSON-like objects so key counts can be used"
+		),
+		"bakedLimit?": type("number.integer > 0").describe(
+			"Maximum total characters of baked introspection metadata allowed per precompiled site (default 1 MB)"
+		),
+		"freeze?": type(settings["freeze?"]).describe(
+			"Freeze precompiled validators and their members (default true in development, false in production)"
+		),
+		"lazy?": type(settings["lazy?"]).describe(
+			"Create validators lazily on first read instead of eagerly at module load (default true, false under 'smallest')"
+		),
+		"creationChecks?": type(settings["creationChecks?"]).describe(
+			"Runtime checks emitted when validators are created: 'types' (default), 'helpers' (tests), or 'none' (production)"
+		),
+		"shadow?": type(settings["shadow?"]).describe(
+			"Run both precompiled validators and dynamic arktype in tests and fail wherever they disagree"
+		),
+		"prune?": type(settings["prune?"]).describe(
+			"Prune unused validator members in production bundles (default true where supported)"
+		),
+		"allowUnsafe?": type(settings["allowUnsafe?"]).describe(
+			"Report unsafe build patterns (like ParseErrors or late configure() imports) as warnings instead of failing the build"
+		),
+		"conditions?": type(settings["conditions?"]).describe(
+			"Package export conditions used when resolving imports during precompilation"
+		),
+		"tsconfig?": type("string > 0").describe(
+			"Path to the tsconfig.json whose paths and program settings the build uses"
+		),
+		"checker?": type(settings["checker?"]).describe(
+			"TypeScript checker used by `ark declare`: 'tsjs' (TS 5.5-6), 'tsgo' (TS 7 native), or 'tsrs'"
+		),
+		"dependencies?": type({ "[string]": "'aot' | 'arktype'" }).describe(
+			"How to handle dependencies that import arktype without opting in: 'aot' to precompile or 'arktype' to run on arktype"
+		),
+		"+": "reject"
+	}).describe("@ark/aot precompiler options"),
+	"+": "reject"
+}).describe("ArkType project configuration (ark.json)")
+
 // package.json's "ark" key: the same settings, and whether a library's
 // consumers precompile its source
 export const PackageArk = type({

@@ -8,10 +8,11 @@ import type * as tsgo from "typescript-7/sync"
 import {
 	sharedDeclarationFile,
 	writeSharedCollisionMessage,
-	writeSolutionTsconfigMessage,
 	type Frontend,
 	type Inferred,
 	type NativeChecker,
+	type OpenedDeclarationProject,
+	type SolutionReferences,
 	type TypeScript
 } from "./declare.ts"
 import type { ModuleResolver } from "./declareShapes.ts"
@@ -552,7 +553,7 @@ export const openNative = (
 	cwd: string,
 	checker: NativeChecker,
 	tsconfig: string | undefined
-): Frontend => {
+): OpenedDeclarationProject => {
 	const native = loadNative(cwd, checker)
 	const { sync, ast } = native
 	const configPath =
@@ -590,11 +591,24 @@ export const openNative = (
 	if (!emitted.length) {
 		const parsed = api.parseConfigFile(configPath)
 		if (!parsed.fileNames.length && parsed.projectReferences?.length) {
-			api.close()
+			const configDiagnostics = raw.getConfigFileParsingDiagnostics()
 			const referencePaths = parsed.projectReferences.map(({ path }) =>
 				path.endsWith(".json") ? path : join(path, "tsconfig.json")
 			)
-			throwError(writeSolutionTsconfigMessage(configPath, referencePaths, cwd))
+			const result: SolutionReferences = {
+				configPath,
+				references: referencePaths,
+				diagnostics: sync.formatDiagnostics(configDiagnostics, {
+					getCanonicalFileName: path => path,
+					getCurrentDirectory: () => cwd,
+					getNewLine: () => "\n"
+				}),
+				errors: configDiagnostics.filter(
+					diagnostic => diagnostic.category === sync.DiagnosticCategory.Error
+				).length
+			}
+			api.close()
+			return result
 		}
 	}
 	const emit = raw.getDeclarationEmit(emitted.map(file => file.fileName))
@@ -810,6 +824,7 @@ export const openNative = (
 		}
 	}
 	return {
+		configPath,
 		ts: tsView,
 		program,
 		emitted: emitted as never,

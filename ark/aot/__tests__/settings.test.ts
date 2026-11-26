@@ -12,8 +12,20 @@ import {
 import { precompile } from "@ark/aot/unplugin"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { ArkJson, ArkJsonSchema } from "./settingsSchema.ts"
 import { writeFixture } from "./utils.ts"
 import { writeSettingsFiles } from "./writeSettings.ts"
+
+const stripDescriptions = (value: unknown): unknown => {
+	if (Array.isArray(value)) return value.map(stripDescriptions)
+	if (typeof value === "object" && value !== null) {
+		const out: Record<string, unknown> = {}
+		for (const [k, v] of Object.entries(value))
+			if (k !== "description") out[k] = stripDescriptions(v)
+		return out
+	}
+	return value
+}
 
 const withArkJson = (json: object, files: Record<string, string> = {}) =>
 	writeFixture({
@@ -318,6 +330,40 @@ contextualize(() => {
 		const files = await writeSettingsFiles()
 		for (const path in files)
 			attest(readFileSync(path, "utf8")).equals(files[path])
+		const schema = JSON.parse(
+			readFileSync(join(import.meta.dirname, "..", "ark.schema.json"), "utf8")
+		) as {
+			description?: string
+			properties: {
+				$schema: { description?: string }
+				precompile: {
+					description?: string
+					properties: Record<
+						string,
+						{
+							description?: string
+							properties?: Record<string, { description?: string }>
+						}
+					>
+				}
+			}
+		}
+		attest(Boolean(schema.description)).equals(true)
+		attest(Boolean(schema.properties.$schema.description)).equals(true)
+		attest(Boolean(schema.properties.precompile.description)).equals(true)
+		const missingDescriptions: string[] = []
+		for (const [key, prop] of Object.entries(
+			schema.properties.precompile.properties
+		)) {
+			if (!prop.description) missingDescriptions.push(key)
+			for (const [subKey, subProp] of Object.entries(prop.properties ?? {}))
+				if (!subProp.description) missingDescriptions.push(`${key}.${subKey}`)
+		}
+		attest(missingDescriptions).equals([])
+		// ArkJsonSchema must stay structurally identical to ArkJson aside from descriptions
+		attest(stripDescriptions(ArkJsonSchema.toJsonSchema())).equals(
+			stripDescriptions(ArkJson.toJsonSchema())
+		)
 	})
 
 	it("accepts a UTF-8 BOM in package.json and ark.json, and warns on an unparseable dependency manifest", () => {

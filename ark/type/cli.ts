@@ -76,11 +76,11 @@ const readManifest = (dir: string): PackageManifest | undefined => {
 	}
 }
 
-const findProjectRoot = (startDir: string): string => {
+const locateProjectRoot = (startDir: string): string | undefined => {
 	for (let dir = resolve(startDir); ; dir = dirname(dir)) {
 		if (existsSync(join(dir, "package.json"))) return dir
 		const parent = dirname(dir)
-		if (parent === dir) return resolve(startDir)
+		if (parent === dir) return undefined
 	}
 }
 
@@ -154,7 +154,13 @@ export const detectMigrationSource = (
 	if ("joi" in deps) return "joi"
 	if ("@sinclair/typebox" in deps || "typebox" in deps) return "typebox"
 	const arkVer = deps.arktype
-	if (arkVer && /(?:^|[\s<=>^~])2\./.test(arkVer)) return "v2"
+	if (arkVer) {
+		const normalized = arkVer.replace(/([<>]=?|=|\^|~)\s+/g, "$1")
+		if (
+			/(?:^|[\s|]|workspace:)(?:[<>]=|=|\^|~)?v?2(?=$|[\s.|-])/.test(normalized)
+		)
+			return "v2"
+	}
 	return undefined
 }
 
@@ -466,11 +472,24 @@ const runInit = (
 		)
 		return 0
 	}
-	const projectRoot = findProjectRoot(cwd)
+	const projectRoot = locateProjectRoot(cwd)
+	if (!projectRoot) {
+		stderr(
+			`No package.json found in ${resolve(cwd)} or any parent directory. Run \`ark init\` inside a JavaScript/TypeScript project.\n`
+		)
+		return 1
+	}
 	const manifest = readManifest(projectRoot)
 	const tools = detectedToolsOf(manifest, projectRoot)
 	const settingsPath = join(projectRoot, "ark.json")
-	const settingsContent = `${JSON.stringify({ precompile: {} }, null, "\t")}\n`
+	const settingsContent = `${JSON.stringify(
+		{
+			$schema: "./node_modules/@ark/aot/ark.schema.json",
+			precompile: {}
+		},
+		null,
+		"\t"
+	)}\n`
 	const hasSettings = hasArkPrecompileSetting(manifest)
 
 	let existingSettings: Stats | undefined
@@ -585,11 +604,94 @@ const buildMigrationPrompt = (
 	].join("\n")
 }
 
-const findAgentBinary = (preferred?: string): string | undefined => {
+export type AgentCommand = {
+	command: string
+	args: string[]
+}
+
+const winShimJsPattern = /["']%(?:~dp0|dp0%)[/\\]?([^\n\r"']+?\.[cm]?js)["']/gi
+const winShimExePattern = /["']%(?:~dp0|dp0%)[/\\]?([^\n\r"']+?\.exe)["']/gi
+const winRunnableExts = new Set([".exe", ".com", ".cmd", ".bat"])
+
+export const unwrapWindowsCmdShim = (
+	shimPath: string,
+	nodeExecPath = process.execPath
+): AgentCommand | undefined => {
+	let text: string
+	try {
+		text = readFileSync(shimPath, "utf8")
+	} catch {
+		return undefined
+	}
+	const dir = dirname(shimPath)
+	const resolveTarget = (raw: string) =>
+		resolve(dir, ...raw.split(/[/\\]+/).filter(Boolean))
+	for (const match of text.matchAll(winShimJsPattern)) {
+		const target = resolveTarget(match[1])
+		if (statSync(target, { throwIfNoEntry: false })?.isFile())
+			return { command: nodeExecPath, args: [target] }
+	}
+	for (const match of text.matchAll(winShimExePattern)) {
+		const target = resolveTarget(match[1])
+		if (basename(target).toLowerCase() === "node.exe") continue
+		if (statSync(target, { throwIfNoEntry: false })?.isFile())
+			return { command: target, args: [] }
+	}
+	return undefined
+}
+
+export const resolveWindowsAgentCandidates = (
+	cmd: string,
+	env: NodeJS.ProcessEnv = process.env,
+	nodeExecPath = process.execPath
+): AgentCommand[] => {
+	const rawPathExt = (env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD")
+		.split(";")
+		.map(ext => ext.trim().toLowerCase())
+		.filter(ext => winRunnableExts.has(ext))
+	const exts = rawPathExt.length ? rawPathExt : [".exe", ".com", ".cmd", ".bat"]
+	const hasExt = exts.some(ext => cmd.toLowerCase().endsWith(ext))
+	const paths: string[] = []
+	if (cmd.includes("/") || cmd.includes("\\")) {
+		const base = resolve(cmd)
+		if (hasExt) paths.push(base)
+		else for (const ext of exts) paths.push(`${base}${ext}`)
+	} else {
+		const pathEntries = (env.PATH ?? env.Path ?? "")
+			.split(";")
+			.map(entry => entry.trim().replace(/^"(.*)"$/, "$1"))
+			.filter(Boolean)
+		for (const dir of pathEntries) {
+			if (hasExt) paths.push(join(dir, cmd))
+			else for (const ext of exts) paths.push(join(dir, `${cmd}${ext}`))
+		}
+	}
+	const commands: AgentCommand[] = []
+	for (const candidate of paths) {
+		if (!statSync(candidate, { throwIfNoEntry: false })?.isFile()) continue
+		if (/\.(?:cmd|bat)$/i.test(candidate)) {
+			const unwrapped = unwrapWindowsCmdShim(candidate, nodeExecPath)
+			if (unwrapped) commands.push(unwrapped)
+		} else commands.push({ command: candidate, args: [] })
+	}
+	return commands
+}
+
+const findAgentBinary = (preferred?: string): AgentCommand | undefined => {
 	const candidates = preferred ? [preferred] : ["claude", "codex"]
 	for (const cmd of candidates) {
-		const probe = spawnSync(cmd, ["--version"], { stdio: "ignore" })
-		if (probe.status === 0) return cmd
+		const commands: AgentCommand[] =
+			process.platform === "win32" ?
+				resolveWindowsAgentCandidates(cmd)
+			:	[{ command: cmd, args: [] }]
+		for (const resolved of commands) {
+			const probe = spawnSync(
+				resolved.command,
+				[...resolved.args, "--version"],
+				{ stdio: "ignore" }
+			)
+			if (probe.status === 0) return resolved
+		}
 	}
 	return undefined
 }
@@ -623,7 +725,14 @@ const runMigrate = (
 		)
 		return 0
 	}
-	const projectRoot = findProjectRoot(cwd)
+	const foundRoot = locateProjectRoot(cwd)
+	if (!parsed.values["no-skill"] && !foundRoot) {
+		stderr(
+			`No package.json found in ${resolve(cwd)} or any parent directory. Run \`ark migrate\` inside a project, or pass --no-skill.\n`
+		)
+		return 1
+	}
+	const projectRoot = foundRoot ?? resolve(cwd)
 	const manifest = readManifest(projectRoot)
 	const argSource = parsed.positionals[0]
 	let source: MigrationSource | undefined
@@ -665,7 +774,7 @@ const runMigrate = (
 			)
 			return 1
 		}
-		const result = spawnSync(bin, [prompt], {
+		const result = spawnSync(bin.command, [...bin.args, prompt], {
 			cwd: projectRoot,
 			stdio: "inherit"
 		})
@@ -709,9 +818,16 @@ const runSkill = (
 		return 0
 	}
 	if (action === "install") {
-		const projectRoot = findProjectRoot(cwd)
 		const target =
 			typeof parsed.values.dir === "string" ? parsed.values.dir : undefined
+		const foundRoot = locateProjectRoot(cwd)
+		if (target === undefined && !foundRoot) {
+			stderr(
+				`No package.json found in ${resolve(cwd)} or any parent directory. Run \`ark skill install\` inside a project, or pass --dir <path>.\n`
+			)
+			return 1
+		}
+		const projectRoot = foundRoot ?? resolve(cwd)
 		try {
 			const dest = installBundledSkill(projectRoot, target, {
 				allowOutside: Boolean(parsed.values["allow-outside"]),

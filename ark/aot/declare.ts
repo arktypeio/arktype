@@ -63,6 +63,7 @@ export interface DeclarationEmit {
 
 // a checker's program and how it declares each module
 export interface Frontend {
+	configPath: string
 	ts: TypeScript
 	program: ts.Program
 	emitted: ts.SourceFile[]
@@ -82,17 +83,133 @@ export interface Frontend {
 	dispose?: () => void
 }
 
+// a solution-style tsconfig (`files: []` + `references`), which delegates
+// declaration emit to each referenced project
+export interface SolutionReferences {
+	configPath: string
+	references: string[]
+	diagnostics: string
+	errors: number
+}
+
+export type OpenedDeclarationProject = Frontend | SolutionReferences
+
+const maxSettlePasses = 32
+const maxSolutionProjects = 256
+
+const canonicalConfigPath = (path: string): string => {
+	const normalized = tsPath(resolve(path))
+	return process.platform === "win32" || process.platform === "darwin" ?
+			normalized.toLowerCase()
+		:	normalized
+}
+
+const commonDirOf = (dirs: readonly string[], fallback: string): string => {
+	const split = dirs.map(dir => tsPath(dir).replace(/\/+$/, "").split("/"))
+	const first = split[0]
+	if (!first?.length) return fallback
+	let common = 0
+	while (
+		common < first.length &&
+		split.every(parts => parts[common] === first[common])
+	)
+		common++
+	if (common === 0) return fallback
+	const joined = first.slice(0, common).join("/")
+	return joined || "/"
+}
+
 export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 	const cwd = resolve(opts?.cwd ?? ".")
 	const checker = opts?.checker ?? defaultCheckerOf(cwd)
-	const frontend =
+	const open = (tsconfig: string | undefined): OpenedDeclarationProject =>
 		checker === "tsjs" ?
-			openJs(cwd, opts?.tsconfig)
-		:	openNative(cwd, checker, opts?.tsconfig)
-	try {
-		return declareWith(frontend, cwd)
-	} finally {
-		frontend.dispose?.()
+			openJs(cwd, tsconfig)
+		:	openNative(cwd, checker, tsconfig)
+	const queue: (string | undefined)[] = [opts?.tsconfig]
+	const enqueued = new Set<string>(
+		opts?.tsconfig ? [canonicalConfigPath(resolve(cwd, opts.tsconfig))] : []
+	)
+	const visited = new Set<string>()
+	const results: Declarations[] = []
+	const diagnostics: string[] = []
+	let errors = 0
+	for (let processed = 0; queue.length; processed++) {
+		if (processed >= maxSolutionProjects) {
+			throwError(
+				`Exceeded ${maxSolutionProjects} referenced projects while traversing project references. Run \`ark declare --tsconfig <path>\` for a single project.`
+			)
+		}
+		const opened = open(queue.shift())
+		const key = canonicalConfigPath(opened.configPath)
+		if (visited.has(key)) {
+			if (!("references" in opened)) opened.dispose?.()
+			continue
+		}
+		visited.add(key)
+		enqueued.add(key)
+		if ("references" in opened) {
+			if (opened.diagnostics) diagnostics.push(opened.diagnostics)
+			errors += opened.errors
+			for (const ref of opened.references) {
+				const refKey = canonicalConfigPath(ref)
+				if (!visited.has(refKey) && !enqueued.has(refKey)) {
+					enqueued.add(refKey)
+					queue.push(ref)
+				}
+			}
+			continue
+		}
+		try {
+			results.push(declareWith(opened, cwd))
+		} finally {
+			opened.dispose?.()
+		}
+	}
+	if (!results.length) {
+		return {
+			files: {},
+			root: tsPath(cwd),
+			shapes: 0,
+			diagnostics: diagnostics.join(""),
+			errors
+		}
+	}
+	if (results.length === 1) {
+		const [only] = results
+		return {
+			...only,
+			diagnostics: [...diagnostics, only.diagnostics].join(""),
+			errors: errors + only.errors
+		}
+	}
+	const files: Record<string, string> = {}
+	const emittedCanonical = new Set<string>()
+	let shapes = 0
+	for (const result of results) {
+		shapes += result.shapes
+		errors += result.errors
+		if (result.diagnostics) diagnostics.push(result.diagnostics)
+		for (const path in result.files) {
+			const canonical = canonicalConfigPath(path)
+			if (emittedCanonical.has(canonical)) {
+				throwError(
+					`${path} is emitted by more than one referenced project. Set a distinct outDir or declarationDir for each referenced tsconfig, or run \`ark declare --tsconfig <path>\` for one project at a time.`
+				)
+			}
+			emittedCanonical.add(canonical)
+			files[path] = result.files[path]
+		}
+	}
+	return {
+		files,
+		root: commonDirOf(
+			results.map(r => r.root),
+			tsPath(cwd)
+		),
+		shapes,
+		diagnostics: diagnostics.join(""),
+		errors
 	}
 }
 
@@ -142,7 +259,8 @@ const declareWith = (frontend: Frontend, cwd: string): Declarations => {
 		writeElidedMessage(relative(tsPath(cwd), tsPath(fileName)), name)
 	// a shape only a library's type holds, like a morph's input, is named once
 	// a declaration reaches it, so the modules are emitted again to read its name
-	for (let isSettled = false; !isSettled; ) {
+	let isSettled = false
+	for (let pass = 0; pass < maxSettlePasses; pass++) {
 		elided = []
 		files = frontend.emitModules({
 			inferredByNode,
@@ -157,8 +275,16 @@ const declareWith = (frontend: Frontend, cwd: string): Declarations => {
 				}),
 			onElided: (fileName, name) => elided.push(elidedMessageOf(fileName, name))
 		})
-		isSettled = !printer.nameReached()
-		if (!isSettled) shapes = printer.settle(inferred)
+		if (!printer.nameReached()) {
+			isSettled = true
+			break
+		}
+		shapes = printer.settle(inferred)
+	}
+	if (!isSettled) {
+		throwError(
+			`Declarations in ${frontend.configPath} did not settle after ${maxSettlePasses} passes. Annotate recursive or deeply nested exported Types.`
+		)
 	}
 	if (shapes.length) {
 		files[sharedPath] =
@@ -212,20 +338,25 @@ const retypeOf = ({
 	return { printed, byNode, unnamedCycles: references.unnamedCycles }
 }
 
-const openJs = (cwd: string, tsconfig: string | undefined): Frontend => {
+const openJs = (
+	cwd: string,
+	tsconfig: string | undefined
+): OpenedDeclarationProject => {
 	const ts = loadTypeScript(cwd)
 	const diagnostics: ts.Diagnostic[] = []
 	const parsed = parseConfig(ts, cwd, tsconfig, diagnostics)
+	const configPath = parsed.options.configFilePath as string
 	if (!parsed.fileNames.length && parsed.projectReferences?.length) {
-		throwError(
-			writeSolutionTsconfigMessage(
-				parsed.options.configFilePath as string,
-				parsed.projectReferences.map(reference =>
-					ts.resolveProjectReferencePath(reference)
-				),
-				cwd
-			)
-		)
+		return {
+			configPath,
+			references: parsed.projectReferences.map(reference =>
+				ts.resolveProjectReferencePath(reference)
+			),
+			diagnostics: formatDiagnostics(ts, diagnostics, cwd),
+			errors: diagnostics.filter(
+				d => d.category === ts.DiagnosticCategory.Error
+			).length
+		}
 	}
 	const config = {
 		...parsed,
@@ -246,6 +377,7 @@ const openJs = (cwd: string, tsconfig: string | undefined): Frontend => {
 	const emitted = emittedFilesOf(program)
 	let emitDiagnostics: ts.Diagnostic[] = []
 	return {
+		configPath,
 		ts,
 		program,
 		emitted,
@@ -290,16 +422,6 @@ const tsPath = (path: string) => path.split("\\").join("/")
 export const writeNoTsconfigMessage = (cwd: string): string =>
 	`No tsconfig.json is in ${cwd} or a directory above it. Create ${join(cwd, "tsconfig.json")}, as { "compilerOptions": { "rootDir": "src", "outDir": "dist" }, "include": ["src"] }, or name the one tsc builds with as --tsconfig, or as "tsconfig" in ark.json.`
 
-export const writeSolutionTsconfigMessage = (
-	configPath: string,
-	referencePaths: readonly string[],
-	cwd: string
-): string => {
-	const display = (path: string) => relative(tsPath(cwd), tsPath(path)) || path
-	const refs = referencePaths.map(display)
-	return `${display(configPath)} lists no source files of its own, only project references (${refs.join(", ")}). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. \`ark declare --tsconfig ${refs[0]}\`.`
-}
-
 export const writeSharedCollisionMessage = (file: string): string =>
 	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types. Rename ${file}.`
 
@@ -338,7 +460,7 @@ export const loadTypeScript = (cwd: string): TypeScript => {
 		}
 	}
 	return throwError(
-		"--declare and --emit read the compiler API of TypeScript 5.5 to 6. Install `typescript`, or beside TypeScript 7, `typescript-6` as an alias: `npm i -D typescript-6@npm:typescript@6`"
+		"ark declare and ark emit read the compiler API of TypeScript 5.5 to 6. Install `typescript`, or beside TypeScript 7, `typescript-6` as an alias: `npm i -D typescript-6@npm:typescript@6`"
 	)
 }
 

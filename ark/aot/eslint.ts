@@ -4,7 +4,11 @@ import { readFileSync } from "node:fs"
 import type { Diagnostic } from "./diagnostics.ts"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
-import { settingsPathsOf, withSettingsFile } from "./settings.ts"
+import {
+	resolvePrecompileOptions,
+	settingsPathsOf,
+	withSettingsFile
+} from "./settings.ts"
 import { precompileJsonSchema } from "./settingsValidators.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
@@ -14,8 +18,30 @@ type LintPrecompiler = {
 	settingsStamp: string
 }
 
-// each configuration needs a thread of its own, apart from ESLint's
-const precompilersByOptions: Record<string, LintPrecompiler> = {}
+const maxPrecompilers = 8
+
+// each configuration needs a thread of its own, apart from ESLint's, bounded
+// as an LRU so long-running editor servers across config edits don't leak workers
+const precompilersByOptions = new Map<string, LintPrecompiler>()
+
+const closeQuietly = (entry: LintPrecompiler): void => {
+	try {
+		entry.request("close")
+	} catch {
+		// worker may already have stopped; avoid aborting the current lint pass
+	}
+}
+
+const touchPrecompiler = (key: string, entry: LintPrecompiler): void => {
+	precompilersByOptions.delete(key)
+	precompilersByOptions.set(key, entry)
+	while (precompilersByOptions.size > maxPrecompilers) {
+		const oldest = precompilersByOptions.entries().next().value
+		if (!oldest) break
+		precompilersByOptions.delete(oldest[0])
+		closeQuietly(oldest[1])
+	}
+}
 
 // what each settings file holds, or that it is missing. A thread reads them
 // once to set its options, and they aren't files it reads through the host, so
@@ -26,12 +52,31 @@ const settingsStampOf = (cwd: string): string =>
 	settingsPathsOf(cwd)
 		.map(path => {
 			try {
-				return createHash("sha256").update(readFileSync(path)).digest("base64")
+				return `${path}:${createHash("sha256").update(readFileSync(path)).digest("base64")}`
 			} catch {
-				return "missing"
+				return `${path}:missing`
 			}
 		})
 		.join(",")
+
+const settingsErrorModule = (id: string, error: unknown): CheckedModule => ({
+	diagnostics: [
+		{
+			severity: "error",
+			rule: "parse",
+			file: id,
+			start: 0,
+			end: 0,
+			line: 1,
+			column: 1,
+			message: error instanceof Error ? error.message : String(error),
+			reasons: [],
+			hint: undefined
+		}
+	],
+	sites: [],
+	schemaKeys: []
+})
 
 const check = (
 	opts: PrecompilePluginOptions,
@@ -40,27 +85,44 @@ const check = (
 ): CheckedModule => {
 	const key = JSON.stringify(opts)
 	const settingsStamp = settingsStampOf(opts.cwd ?? process.cwd())
-	const existing = precompilersByOptions[key]
+	const existing = precompilersByOptions.get(key)
 	// a file read for an earlier lint may have changed the configuration, as may
 	// ark.json or package.json
-	if (
-		existing &&
-		(existing.settingsStamp !== settingsStamp || existing.request("refresh"))
-	) {
-		existing.request("close")
-		delete precompilersByOptions[key]
+	let entry = existing
+	if (entry) {
+		let stale = entry.settingsStamp !== settingsStamp
+		if (!stale) {
+			try {
+				stale = Boolean(entry.request("refresh"))
+			} catch {
+				stale = true
+			}
+		}
+		if (stale) {
+			precompilersByOptions.delete(key)
+			closeQuietly(entry)
+			entry = undefined
+		}
 	}
-	const { request } = (precompilersByOptions[key] ??= {
-		request: createSyncPrecompiler({
-			precompilerOptions: withEnvironment(withSettingsFile(opts), {
+	if (!entry) {
+		let precompilerOptions: PrecompilePluginOptions
+		try {
+			precompilerOptions = withEnvironment(withSettingsFile(opts), {
 				production: isProductionEnv(),
 				testing: false
 			})
-		}),
-		settingsStamp
-	})
+			resolvePrecompileOptions(precompilerOptions)
+		} catch (e) {
+			return settingsErrorModule(id, e)
+		}
+		entry = {
+			request: createSyncPrecompiler({ precompilerOptions }),
+			settingsStamp
+		}
+	}
+	touchPrecompiler(key, entry)
 	return (
-		(request("lint", source, id) as CheckedModule | undefined) ??
+		(entry.request("lint", source, id) as CheckedModule | undefined) ??
 		check(opts, source, id)
 	)
 }

@@ -2,91 +2,186 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"type": "object",
 	"properties": {
-		"$schema": { "type": "string" },
+		"$schema": {
+			"type": "string",
+			"description": "JSON Schema path or URL for editor validation and hover docs"
+		},
 		"precompile": {
 			"type": "object",
 			"properties": {
-				"allowUnsafe": { "type": "boolean" },
+				"allowUnsafe": {
+					"type": "boolean",
+					"description": "Report unsafe build patterns (like ParseErrors or late configure() imports) as warnings instead of failing the build"
+				},
 				"bakedLimit": {
 					"type": "integer",
-					"description": "the characters a site's baked introspection may total",
+					"description": "Maximum total characters of baked introspection metadata allowed per precompiled site (default 1 MB)",
 					"exclusiveMinimum": 0
 				},
-				"checker": { "type": "string", "enum": ["tsgo", "tsjs", "tsrs"] },
-				"conditions": { "type": "array", "items": { "type": "string" } },
+				"checker": {
+					"type": "string",
+					"enum": ["tsgo", "tsjs", "tsrs"],
+					"description": "TypeScript checker used by `ark declare`: 'tsjs' (TS 5.5-6), 'tsgo' (TS 7 native), or 'tsrs'"
+				},
+				"conditions": {
+					"type": "array",
+					"description": "Package export conditions used when resolving imports during precompilation",
+					"items": { "type": "string" }
+				},
 				"config": {
 					"anyOf": [
 						{ "type": "string", "minLength": 1 },
 						{ "type": "boolean", "const": false }
 					],
-					"description": "a module path or false"
+					"description": "Path to the module that calls configure(), or false to forbid configure() calls"
 				},
 				"creationChecks": {
 					"type": "string",
-					"enum": ["helpers", "none", "types"]
+					"enum": ["helpers", "none", "types"],
+					"description": "Runtime checks emitted when validators are created: 'types' (default), 'helpers' (tests), or 'none' (production)"
 				},
 				"dependencies": {
 					"type": "object",
+					"description": "How to handle dependencies that import arktype without opting in: 'aot' to precompile or 'arktype' to run on arktype",
 					"additionalProperties": {
 						"type": "string",
 						"enum": ["aot", "arktype"]
 					}
 				},
-				"errors": { "type": "string", "enum": ["all", "first", "none"] },
-				"freeze": { "type": "boolean" },
-				"jsonInput": { "type": "boolean" },
-				"lazy": { "type": "boolean" },
+				"errors": {
+					"type": "string",
+					"enum": ["all", "first", "none"],
+					"description": "Error reporting mode for standalone validators: 'all' (default), 'first', or 'none'"
+				},
+				"freeze": {
+					"type": "boolean",
+					"description": "Freeze precompiled validators and their members (default true in development, false in production)"
+				},
+				"jsonInput": {
+					"type": "boolean",
+					"description": "Trust objects validated with rejected undeclared keys to be plain JSON-like objects so key counts can be used"
+				},
+				"lazy": {
+					"type": "boolean",
+					"description": "Create validators lazily on first read instead of eagerly at module load (default true, false under 'smallest')"
+				},
 				"members": {
 					"type": "object",
 					"properties": {
-						"assert": { "type": "boolean" },
-						"description": { "type": "boolean" },
-						"expression": { "type": "boolean" },
-						"json": { "type": "boolean" },
-						"meta": { "type": "boolean" },
-						"methods": { "type": "boolean" },
-						"toJSON": { "type": "boolean" },
-						"toJsonSchema": { "type": "boolean" },
-						"withContext": { "type": "boolean" },
-						"~standard": { "type": "boolean" },
-						"~standard.jsonSchema": { "type": "boolean" }
+						"assert": {
+							"type": "boolean",
+							"description": "Keep .assert() on standalone validators (default true)"
+						},
+						"description": {
+							"type": "boolean",
+							"description": "Bake .description onto standalone validators (auto-detected when unset)"
+						},
+						"expression": {
+							"type": "boolean",
+							"description": "Bake .expression onto standalone validators (auto-detected when unset)"
+						},
+						"json": {
+							"type": "boolean",
+							"description": "Bake .json onto standalone validators (auto-detected when unset)"
+						},
+						"meta": {
+							"type": "boolean",
+							"description": "Keep .meta on standalone validators (default true)"
+						},
+						"methods": {
+							"type": "boolean",
+							"description": "Keep .traverse(), .from(), and .toString() on standalone validators (default true)"
+						},
+						"toJSON": {
+							"type": "boolean",
+							"description": "Bake .toJSON() onto standalone validators (auto-detected when unset)"
+						},
+						"toJsonSchema": {
+							"type": "boolean",
+							"description": "Bake .toJsonSchema() onto standalone validators (auto-detected when unset)"
+						},
+						"withContext": {
+							"type": "boolean",
+							"description": "Keep .withContext() on standalone validators (default true)"
+						},
+						"~standard": {
+							"type": "boolean",
+							"description": "Keep the Standard Schema '~standard' property on standalone validators (default true)"
+						},
+						"~standard.jsonSchema": {
+							"type": "boolean",
+							"description": "Bake Standard JSON Schema support onto '~standard.jsonSchema' (auto-detected when unset)"
+						}
 					},
+					"description": "Control which properties and introspection helpers are kept on standalone validators",
 					"additionalProperties": false
 				},
 				"mutatesInput": {
 					"anyOf": [
 						{ "type": "string", "const": "always" },
 						{ "type": "boolean" }
-					]
+					],
+					"description": "Allow morphs and defaults to mutate input in place: false (default), true, or 'always'"
 				},
-				"optimize": { "type": "string", "enum": ["size", "speed"] },
-				"optimizeErrors": { "type": "string", "enum": ["size", "speed"] },
-				"preset": { "type": "string", "enum": ["introspectable", "smallest"] },
-				"prune": { "type": "boolean" },
-				"runtime": { "type": "string", "const": "arktype" },
+				"optimize": {
+					"type": "string",
+					"enum": ["size", "speed"],
+					"description": "Optimize generated validators for 'speed' (default, compiled per Type) or 'size' (shared runtime checkers)"
+				},
+				"optimizeErrors": {
+					"type": "string",
+					"enum": ["size", "speed"],
+					"description": "Optimize generated error paths for 'speed' or 'size' (defaults to optimize)"
+				},
+				"preset": {
+					"type": "string",
+					"enum": ["introspectable", "smallest"],
+					"description": "Named preset of defaults: 'smallest' minimizes bundle size, 'introspectable' keeps all introspection members"
+				},
+				"prune": {
+					"type": "boolean",
+					"description": "Prune unused validator members in production bundles (default true where supported)"
+				},
+				"runtime": {
+					"type": "string",
+					"const": "arktype",
+					"description": "Set to 'arktype' to ship arktype's runtime parser alongside precompiled validators"
+				},
 				"schemas": {
 					"type": "object",
+					"description": "Map module paths, globs, or 'path#Declaration' keys to a strategy name ('fastest', 'smallest', or custom)",
 					"additionalProperties": { "type": "string", "minLength": 1 }
 				},
-				"shadow": { "type": "boolean" },
+				"shadow": {
+					"type": "boolean",
+					"description": "Run both precompiled validators and dynamic arktype in tests and fail wherever they disagree"
+				},
 				"strategies": {
 					"type": "object",
+					"description": "Define named optimization strategies referenced by 'schemas' or '// @ark-strategy' comments",
 					"additionalProperties": {
 						"type": "object",
 						"properties": {
-							"optimize": { "type": "string", "enum": ["size", "speed"] }
+							"optimize": {
+								"type": "string",
+								"enum": ["size", "speed"],
+								"description": "Optimize validators using this strategy for 'speed' or 'size'"
+							}
 						},
+						"description": "Named optimization strategy options",
 						"additionalProperties": false
 					}
 				},
 				"tsconfig": {
 					"type": "string",
-					"description": "a path",
+					"description": "Path to the tsconfig.json whose paths and program settings the build uses",
 					"minLength": 1
 				}
 			},
+			"description": "@ark/aot precompiler options",
 			"additionalProperties": false
 		}
 	},
+	"description": "ArkType project configuration (ark.json)",
 	"additionalProperties": false
 }

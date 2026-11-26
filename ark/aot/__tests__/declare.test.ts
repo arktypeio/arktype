@@ -854,42 +854,137 @@ export type makeTree = {
 		])
 	})
 
-	it("fails loudly on a solution-style tsconfig with files: [] and references", () => {
+	it("follows project references in a solution-style tsconfig, emitting ~arktype.d.ts per referenced project", () => {
+		const dir = tempPath("solution")
+		const baseOptions = {
+			strict: true,
+			skipLibCheck: true,
+			composite: true,
+			target: "ES2022",
+			module: "ESNext",
+			moduleResolution: "bundler",
+			customConditions: ["ark-ts"],
+			types: []
+		}
+		try {
+			writeFixture(
+				{
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							// directory-style reference resolves packages/app/tsconfig.json
+							{ path: "./packages/app" },
+							{ path: "./tsconfig.nested.json" }
+						]
+					}),
+					"tsconfig.nested.json": JSON.stringify({
+						compilerOptions: { composite: true },
+						files: [],
+						references: [
+							{ path: "./tsconfig.lib.json" },
+							// diamond reference to packages/app and cyclic back-reference to root
+							{ path: "./packages/app" },
+							{ path: "./tsconfig.json" }
+						]
+					}),
+					"packages/app/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "src",
+							outDir: "../../dist-app"
+						},
+						include: ["src"]
+					}),
+					"tsconfig.lib.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "lib",
+							outDir: "dist-lib"
+						},
+						include: ["lib"]
+					}),
+					"packages/app/src/index.ts":
+						'import { type } from "arktype"\nexport const AppUser = type({ name: "string" })\n',
+					"lib/index.ts":
+						'import { type } from "arktype"\nexport const LibItem = type({ id: "number" })\n'
+				},
+				dir
+			)
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: dir, checker })
+				attest(res.diagnostics).equals("")
+				attest(res.errors).equals(0)
+				attest(res.shapes).equals(2)
+				const relFiles = Object.keys(res.files)
+					.map(path => relative(tsPath(dir), path))
+					.sort()
+				attest(relFiles).equals([
+					"dist-app/index.d.ts",
+					"dist-app/~arktype.d.ts",
+					"dist-lib/index.d.ts",
+					"dist-lib/~arktype.d.ts"
+				])
+				attest(res.files[tsPath(join(dir, "dist-app", "~arktype.d.ts"))]).snap(
+					`// the shapes of this build's Types, Scopes and Modules\nexport type AppUser = {\n    name: string;\n};\n`
+				)
+				attest(res.files[tsPath(join(dir, "dist-lib", "~arktype.d.ts"))]).snap(
+					`// the shapes of this build's Types, Scopes and Modules\nexport type LibItem = {\n    id: number;\n};\n`
+				)
+			}
+			const cli = runCli(dir, "--declare", "--checker", "tsjs")
+			attest([cli.status, cli.stdout, cli.stderr]).equals([
+				0,
+				"4 declaration files in ., with 2 shapes in ~arktype.d.ts\n",
+				""
+			])
+			attest(existsSync(join(dir, "dist-app", "~arktype.d.ts"))).equals(true)
+			attest(existsSync(join(dir, "dist-lib", "~arktype.d.ts"))).equals(true)
+		} finally {
+			rmSync(dir, { recursive: true, force: true })
+		}
+	}).timeout(180_000)
+
+	it("fails loudly when referenced projects in a solution tsconfig collide on an emitted declaration file", () => {
 		const dir = writeFixture({
 			"tsconfig.json": JSON.stringify({
 				files: [],
 				references: [
-					{ path: "./tsconfig.app.json" },
-					{ path: "./tsconfig.lib.json" }
+					{ path: "./tsconfig.a.json" },
+					{ path: "./tsconfig.b.json" }
 				]
 			}),
-			"tsconfig.app.json": JSON.stringify({
-				compilerOptions: { composite: true, outDir: "dist-app", types: [] },
-				include: ["src"]
+			"tsconfig.a.json": JSON.stringify({
+				compilerOptions: {
+					composite: true,
+					rootDir: "a",
+					outDir: "dist",
+					types: []
+				},
+				include: ["a"]
 			}),
-			"tsconfig.lib.json": JSON.stringify({
-				compilerOptions: { composite: true, outDir: "dist-lib", types: [] },
-				include: ["src"]
+			"tsconfig.b.json": JSON.stringify({
+				compilerOptions: {
+					composite: true,
+					rootDir: "b",
+					outDir: "dist",
+					types: []
+				},
+				include: ["b"]
 			}),
-			"src/index.ts": "export const id = 1\n"
+			"a/index.ts": "export const a = 1\n",
+			"b/index.ts": "export const b = 2\n"
 		})
-		const expected =
-			"tsconfig.json lists no source files of its own, only project references (tsconfig.app.json, tsconfig.lib.json). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. `ark declare --tsconfig tsconfig.app.json`."
-		for (const checker of ["tsjs", "tsgo"] as const)
-			attest(() => emitDeclarations({ cwd: dir, checker })).throws(expected)
-		const cli = runCli(dir, "--declare")
-		attest([cli.status, cli.stdout, cli.stderr]).equals([
-			1,
-			"",
-			`${expected}\n`
-		])
+		const colliding = tsPath(join(dir, "dist", "index.d.ts"))
+		attest(() => emitDeclarations({ cwd: dir, checker: "tsjs" })).throws(
+			`${colliding} is emitted by more than one referenced project. Set a distinct outDir or declarationDir for each referenced tsconfig, or run \`ark declare --tsconfig <path>\` for one project at a time.`
+		)
 	}).timeout(60000)
 
 	it("refuses the CLI's other modes and options with --declare", () => {
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
 		attest([cli.status, cli.stderr.split("\n")[0]]).snap([
 			2,
-			"--declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was --check --preset)"
+			"ark declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was --check --preset)"
 		])
 	})
 
