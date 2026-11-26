@@ -20,7 +20,7 @@ import {
 	type show,
 	type unionToTuple
 } from "@ark/util"
-import type { distill, Out } from "./attributes.ts"
+import type { distill, isDistillableOn, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type {
 	inferDefinition,
@@ -36,18 +36,35 @@ type MatchParserContext<input = unknown> = {
 	input: input
 	checked: boolean
 	key: PropertyKey | null
+	// where `in` is a morph, its input, which the match is called with while
+	// its cases narrow the morph's output as `input`. never otherwise
+	pipedIn: unknown
 }
 
 declare namespace ctx {
 	export type from<ctx extends MatchParserContext> = ctx
 
-	export type init<$, input = unknown, checked extends boolean = false> = from<{
+	export type init<
+		$,
+		input = unknown,
+		checked extends boolean = false,
+		pipedIn = never
+	> = from<{
 		cases: []
 		$: $
 		input: input
 		checked: checked
 		key: null
+		pipedIn: pipedIn
 	}>
+
+	// a definition's input is validated, then its output matched. they differ
+	// where it has a morph or a default, including a morph that returns `any`
+	// or `unknown`, which the definition itself is assignable to
+	export type fromDef<$, t> =
+		isDistillableOn<t, "out"> extends true ?
+			init<$, distill.Out<t>, true, distill.In<t>>
+		:	init<$, t, true>
 
 	export type atKey<ctx extends MatchParserContext, key extends string> = from<{
 		cases: ctx["cases"]
@@ -55,13 +72,14 @@ declare namespace ctx {
 		input: ctx["input"]
 		checked: ctx["checked"]
 		key: key
+		pipedIn: ctx["pipedIn"]
 	}>
 }
 
 export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, inferDefinition<def, $>, true>>
+	): ChainableMatchParser<ctx.fromDef<$, inferDefinition<def, $>>>
 	in<const typedInput = never>(
 		...args: [typedInput] extends [never] ?
 			[
@@ -72,7 +90,7 @@ export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	// include this signature a second time so that e.g. `match.in({ foo: "strin" })` shows the right error
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, inferDefinition<def, $>, true>>
+	): ChainableMatchParser<ctx.fromDef<$, inferDefinition<def, $>>>
 
 	case: CaseParser<ctx.init<$>>
 
@@ -90,6 +108,7 @@ type addCasesToContext<
 			cases: [...ctx["cases"], ...cases]
 			checked: ctx["checked"]
 			key: ctx["key"]
+			pipedIn: ctx["pipedIn"]
 		}>
 	:	never
 
@@ -110,6 +129,7 @@ type addDefaultToContext<
 		[...ctx["cases"], (In: ctx["input"]) => ArkErrors]
 	checked: ctx["checked"]
 	key: ctx["key"]
+	pipedIn: ctx["pipedIn"]
 }>
 
 type CaseKeyKind = "def" | "string"
@@ -304,8 +324,16 @@ type finalizeMatchParser<
 	addDefaultToContext<ctx, defaultCase> extends (
 		infer ctx extends MatchParserContext
 	) ?
-		Match<ctx["input"], ctx["cases"]>
+		[ctx["pipedIn"]] extends [never] ?
+			Match<ctx["input"], ctx["cases"]>
+		:	Match<ctx["pipedIn"], pipeCasesFrom<ctx["pipedIn"], ctx["cases"]>>
 	:	never
+
+// which case a piped input reaches depends on its output, so a call can
+// return any of them
+type pipeCasesFrom<pipedIn, cases extends Morph[]> = {
+	[i in keyof cases]: (In: pipedIn) => ReturnType<cases[i]>
+}
 
 export interface Match<in out In = any, in out cases extends Morph[] = Morph[]>
 	extends Inferred<

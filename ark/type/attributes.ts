@@ -40,6 +40,10 @@ export type distill<t, side extends distill.Side> =
 	// returning t as is when nothing changes preserves names like interfaces
 	[distilledSidesOf<t>] extends [undistilledOn<side>] ? t : _distill<t, side>
 
+// whether distilling t on a side changes anything in it
+export type isDistillableOn<t, side extends distill.Side> =
+	[distilledSidesOf<t>] extends [undistilledOn<side>] ? false : true
+
 // what a Type's encode writes: its input, with each defaulted key present,
 // since encoding an output reads every key the default filled in
 export type distillEncoded<t> =

@@ -547,6 +547,99 @@ contextualize(() => {
 		attest<null>(parseNum(12.34)).equals(null)
 	})
 
+	it("morph in", () => {
+		const parsePositive = match.in("string.numeric.parse").match({
+			"number > 0": n => n,
+			default: "reject"
+		})
+
+		attest(parsePositive).type.toString.snap(`Match<
+	string,
+	[(In: string) => number, (In: string) => ArkErrors]
+>`)
+		attest<number | ArkErrors>(parsePositive("5")).equals(5)
+		attest(parsePositive("-5").toString()).snap("must be positive")
+		// @ts-expect-error
+		attest(() => parsePositive(5)).type.errors.snap(
+			"Argument of type 'number' is not assignable to parameter of type 'string'."
+		)
+	})
+
+	it("morph in at key", () => {
+		const parseA = match.in({ a: "string.numeric.parse" }).at("a", {
+			"number > 0": o => o.a,
+			default: "assert"
+		})
+
+		attest(parseA).type.toString.snap(`Match<
+	{ a: string },
+	[(In: { a: string }) => number]
+>`)
+		attest<number>(parseA({ a: "5" })).equals(5)
+	})
+
+	it("morph in returning any", () => {
+		const parseNumber = match
+			.in(type("string").pipe(s => JSON.parse(s)))
+			.match({
+				number: n => n,
+				default: "assert"
+			})
+
+		attest(parseNumber).type.toString.snap(
+			"Match<string, [(In: string) => number]>"
+		)
+		attest<number>(parseNumber("5")).equals(5)
+		// @ts-expect-error
+		attest(() => parseNumber(5)).type.errors(
+			"Argument of type 'number' is not assignable to parameter of type 'string'."
+		)
+	})
+
+	it("morph in returning unknown", () => {
+		const parseNumber = match
+			.in(type("string").pipe((s): unknown => JSON.parse(s)))
+			.match({
+				number: n => n,
+				default: "assert"
+			})
+
+		attest(parseNumber).type.toString.snap(
+			"Match<string, [(In: string) => number]>"
+		)
+		attest<number>(parseNumber("5")).equals(5)
+	})
+
+	it("morph in returning any at key", () => {
+		const parseA = match
+			.in({ a: type("string").pipe(s => JSON.parse(s)) })
+			.at("a", {
+				number: o => o.a,
+				default: "assert"
+			})
+
+		attest(parseA).type.toString.snap(
+			"Match<{ a: string }, [(In: { a: string }) => any]>"
+		)
+		attest(parseA({ a: "5" })).equals(5)
+	})
+
+	it("branded in", () => {
+		const id = match.in("string#id").match({
+			string: s => s,
+			default: "assert"
+		})
+
+		attest(id).type.toString.snap(`Match<
+	Brand<string, "id">,
+	[(In: Brand<string, "id">) => Brand<string, "id">]
+>`)
+		// @ts-expect-error
+		attest(() => id("foo")).type.errors(
+			`Argument of type 'string' is not assignable to parameter of type 'Brand<string, "id">'.`
+		)
+	})
+
 	it("fluent morph", () => {
 		const parseInt = match
 			.case("string.integer.parse", function _matchFluentMorph1(valid) {
