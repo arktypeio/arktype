@@ -44,6 +44,13 @@ export const parseTupleLiteral = (
 		const [valueNode, operator, possibleDefaultValue] =
 			!isArray(parsedProperty) ? [parsedProperty] : parsedProperty
 
+		// what's spread is its elements, which an optional or a default can't be
+		if (spread && operator) {
+			return throwParseError(
+				operator === "?" ? spreadOptionalMessage : spreadDefaultableMessage
+			)
+		}
+
 		// string defaults run no user code
 		if (
 			typeof def[i] === "string" &&

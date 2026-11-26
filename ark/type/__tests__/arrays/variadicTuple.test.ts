@@ -4,6 +4,8 @@ import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
 	optionalOrDefaultableAfterVariadicMessage,
+	spreadDefaultableMessage,
+	spreadOptionalMessage,
 	writeNonArraySpreadMessage
 } from "arktype/internal/parser/tupleLiteral.ts"
 
@@ -89,6 +91,21 @@ contextualize(() => {
 		attest(() => type(["...", "string[]", "...", ["string?"]])).throws(
 			optionalOrDefaultableAfterVariadicMessage
 		)
+	})
+
+	it("errors on an optional or defaultable spread", () => {
+		attest(() =>
+			// @ts-expect-error
+			type(["string", "...", "number[]?"])
+		).throwsAndHasTypeError(spreadOptionalMessage)
+		attest(() =>
+			// @ts-expect-error
+			type(["...", ["number[]", "?"]])
+		).throwsAndHasTypeError(spreadOptionalMessage)
+		attest(() =>
+			// @ts-expect-error
+			type(["...", "number[] = []"])
+		).throwsAndHasTypeError(spreadDefaultableMessage)
 	})
 
 	it("errors on optional or defaultable following variadic", () => {
