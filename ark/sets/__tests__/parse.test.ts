@@ -273,6 +273,32 @@ contextualize(() => {
 		).throws.snap(
 			"ParseError: #/minLength must be a non-negative integer (was -1)"
 		)
+		// 2019-09 ignores 2020-12's prefixItems and $dynamicRef, while enforcing 2019-09 keywords
+		const draft2019 = "https://json-schema.org/draft/2019-09/schema"
+		attest(
+			parse({
+				$schema: draft2019,
+				type: "array",
+				prefixItems: 5 as never,
+				items: [{ type: "number" }]
+			}).expression
+		).snap("[number?, ...unknown[]]")
+		attest(
+			parse({
+				$schema: draft2019,
+				type: "object",
+				$dynamicRef: "#foo"
+			} as never).expression
+		).snap("object & isNonArray")
+		attest(() =>
+			parse({
+				$schema: draft2019,
+				type: "array",
+				minContains: -1
+			})
+		).throws.snap(
+			"ParseError: #/minContains must be a non-negative integer (was -1)"
+		)
 	})
 
 	it("throws a ParseError when a Standard Schema can't write its JSON Schema", () => {

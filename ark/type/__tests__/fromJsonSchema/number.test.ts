@@ -75,5 +75,43 @@ contextualize(() => {
 		).throws.snap(
 			'ParseError: #/exclusiveMinimum must be a number or a boolean (was "0")'
 		)
+
+		// explicit draft-04 allows boolean exclusive bounds
+		const Draft04Gt = fromJsonSchema({
+			$schema: "http://json-schema.org/draft-04/schema#",
+			type: "number",
+			minimum: 0,
+			exclusiveMinimum: true
+		})
+		attest(Draft04Gt.expression).snap("number > 0")
+
+		// explicit draft-06 / draft-07 / 2019-09 / 2020-12 reject boolean exclusive bounds
+		for (const $schema of [
+			"http://json-schema.org/draft-06/schema#",
+			"http://json-schema.org/draft-07/schema#",
+			"https://json-schema.org/draft/2019-09/schema",
+			"https://json-schema.org/draft/2020-12/schema"
+		]) {
+			attest(() =>
+				fromJsonSchema({
+					$schema,
+					type: "number",
+					minimum: 0,
+					exclusiveMinimum: true
+				} as never)
+			).throws.snap(
+				"ParseError: #/exclusiveMinimum must be a number (was true)"
+			)
+			attest(() =>
+				fromJsonSchema({
+					$schema,
+					type: "number",
+					maximum: 10,
+					exclusiveMaximum: false
+				} as never)
+			).throws.snap(
+				"ParseError: #/exclusiveMaximum must be a number (was false)"
+			)
+		}
 	})
 })

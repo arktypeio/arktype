@@ -39,9 +39,9 @@ contextualize(() => {
 			attest(() =>
 				inferred({
 					type: "object",
-					title: 5,
-					description: null,
-					deprecated: "yes",
+					title: "User",
+					description: "A user object",
+					deprecated: true,
 					$comment: ["array"],
 					"x-nested": { type: "strin", minLength: -1 },
 					errorMessage: { type: "must be an object" },
@@ -721,6 +721,130 @@ contextualize(() => {
 			>()
 		})
 
+		it("annotation keyword value types", () => {
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					description: 5
+				})
+			).type.errors("Type 'number' is not assignable to type 'string'.")
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					title: { bad: true }
+				})
+			).type.errors("Type '{ bad: true; }' is not assignable to type 'string'.")
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					examples: { a: 1 }
+				})
+			).type.errors(
+				"Object literal may only specify known properties, and 'a' does not exist in type 'readonly unknown[]'."
+			)
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					deprecated: "yes"
+				})
+			).type.errors("Type 'string' is not assignable to type 'boolean'.")
+			attest<
+				[true, false, false, false, false],
+				[
+					isValid<{
+						type: "string"
+						title?: string | undefined
+						description?: string | undefined
+						examples?: unknown[] | undefined
+						deprecated?: boolean | undefined
+					}>,
+					isValid<{ description: 5 }>,
+					isValid<{ title: { bad: true } }>,
+					isValid<{ examples: { a: 1 } }>,
+					isValid<{ deprecated: "yes" }>
+				]
+			>()
+		})
+
+		it("prefixItems beside array items", () => {
+			attest(() =>
+				inferred({
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					// @ts-expect-error
+					items: [{ type: "number" }]
+				})
+			).type.errors("items must be a schema beside prefixItems")
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					// @ts-expect-error
+					items: [{ type: "number" }]
+				})
+			).type.errors("items must be a schema beside prefixItems")
+			// draft-07 and 2019-09 treat prefixItems as an unknown keyword
+			attest(() =>
+				inferred({
+					$schema: "http://json-schema.org/draft-07/schema#",
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					items: [{ type: "number" }]
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2019-09/schema",
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					items: [{ type: "number" }]
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2019-09/schema",
+					type: "array",
+					prefixItems: 5
+				})
+			).type.errors.is("")
+			attest<
+				[false, false, true, true, true],
+				[
+					isValid<{
+						type: "array"
+						prefixItems: [{ type: "string" }]
+						items: [{ type: "number" }]
+					}>,
+					isValid<{
+						type: "array"
+						prefixItems: [{ type: "string" }]
+						items: { type: "boolean" } | [{ type: "number" }]
+					}>,
+					isValid<{
+						type: "array"
+						prefixItems?: [{ type: "string" }]
+						items: [{ type: "number" }]
+					}>,
+					isValid<{
+						$schema: "http://json-schema.org/draft-07/schema#"
+						type: "array"
+						prefixItems: 5
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2019-09/schema"
+						type: "array"
+						prefixItems: 5
+						items: [{ type: "number" }]
+					}>
+				]
+			>()
+		})
+
 		it("draft-04 boolean exclusive bounds", () => {
 			attest(() =>
 				inferred({
@@ -729,6 +853,16 @@ contextualize(() => {
 					exclusiveMinimum: true,
 					maximum: 10,
 					exclusiveMaximum: true
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					$schema: "http://json-schema.org/draft-04/schema#",
+					type: "number",
+					minimum: 0,
+					exclusiveMinimum: true,
+					maximum: 10,
+					exclusiveMaximum: false
 				})
 			).type.errors.is("")
 			attest(() =>
@@ -756,6 +890,55 @@ contextualize(() => {
 			).type.errors
 				.snap(`Type 'true' is not assignable to type '"exclusiveMinimum can't be true without minimum\u200b"'.
 Type 'true' is not assignable to type '"exclusiveMaximum can't be true without maximum\u200b"'.`)
+			// explicit draft-06 / draft-07 / 2019-09 / 2020-12 reject boolean exclusive bounds
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "number",
+					minimum: 0,
+					// @ts-expect-error
+					exclusiveMinimum: true,
+					maximum: 10,
+					// @ts-expect-error
+					exclusiveMaximum: false
+				})
+			).type.errors.snap(`Type 'boolean' is not assignable to type 'number'.
+Type 'boolean' is not assignable to type 'number'.`)
+			attest<
+				[false, false, false, false, true],
+				[
+					isValid<{
+						$schema: "http://json-schema.org/draft-06/schema#"
+						type: "number"
+						minimum: 0
+						exclusiveMinimum: true
+					}>,
+					isValid<{
+						$schema: "http://json-schema.org/draft-07/schema#"
+						type: "number"
+						minimum: 0
+						exclusiveMinimum: false
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2019-09/schema"
+						type: "number"
+						maximum: 10
+						exclusiveMaximum: true
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2020-12/schema"
+						type: "number"
+						maximum: 10
+						exclusiveMaximum: false
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2020-12/schema"
+						type: "number"
+						exclusiveMinimum: 0
+						exclusiveMaximum: 10
+					}>
+				]
+			>()
 		})
 
 		it("nullable", () => {

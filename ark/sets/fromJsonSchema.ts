@@ -38,6 +38,11 @@ interface ReadContext {
 	// draft-07 and earlier ignore the keywords beside a $ref, and have none of
 	// the 2019-09 keywords arksets can't read
 	dialectBefore2019: boolean
+	// 2019-09 and earlier don't define 2020-12's prefixItems or $dynamicRef
+	dialectBefore2020: boolean
+	// draft-06 onward replaced draft-04's boolean exclusive bounds with numbers;
+	// unversioned schemas still allow booleans for OpenAPI 3.0 compatibility
+	numericExclusiveBounds: boolean
 	// draft-04 identifies a resource with `id`
 	idKey: "$id" | "id"
 	documentResource: Resource
@@ -109,9 +114,12 @@ export const readJsonSchema = (
 		isJsonSchemaObject(document) && (document as dict).$schema
 	)
 	const documentResource = { schema: document, uri: documentUri }
+	const dialectBefore2019 = /draft-0[3-7]/.test($schema)
 	const ctx: ReadContext = {
 		document,
-		dialectBefore2019: /draft-0[3-7]/.test($schema),
+		dialectBefore2019,
+		dialectBefore2020: dialectBefore2019 || /2019-09/.test($schema),
+		numericExclusiveBounds: /draft-0[67]|2019-09|2020-12/.test($schema),
 		idKey: /draft-0[34]/.test($schema) ? "id" : "$id",
 		documentResource,
 		resource: documentResource,
@@ -445,7 +453,11 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 		}
 		// a keyword's value is checked only where it's read, so one here may be invalid
 		for (const k in o) {
-			if (ctx.dialectBefore2019 && keywordsFrom2019.has(k)) continue
+			if (
+				(ctx.dialectBefore2019 && keywordsFrom2019.has(k)) ||
+				(ctx.dialectBefore2020 && k === "prefixItems")
+			)
+				continue
 			const kind = keywordValueKinds[k]
 			const keyPointer = `${pointer}/${escapePointer(k)}`
 			if (kind === "schema") visit(o[k], resource, keyPointer, depth + 1)
@@ -676,7 +688,7 @@ const readArray = (
 	if (
 		o.prefixItems !== undefined &&
 		isArray(o.items) &&
-		!ctx.dialectBefore2019
+		!ctx.dialectBefore2020
 	) {
 		return throwParseError(
 			writeInvalidKeywordMessage(
@@ -686,12 +698,12 @@ const readArray = (
 			)
 		)
 	}
-	// draft-07 lists a tuple's elements as items, followed by additionalItems,
-	// and ignores 2020-12's prefixItems
+	// draft-07 and 2019-09 list a tuple's elements as items, followed by
+	// additionalItems, and ignore 2020-12's prefixItems
 	const elementsKey = isArray(o.items) ? "items" : "prefixItems"
 	const restKey = elementsKey === "items" ? "additionalItems" : "items"
 	const [elements, rest] = withChildValue(ctx, () => [
-		elementsKey === "prefixItems" && ctx.dialectBefore2019 ?
+		elementsKey === "prefixItems" && ctx.dialectBefore2020 ?
 			[]
 		:	readEach(
 				(o[elementsKey] ?? []) as array,
@@ -1576,10 +1588,9 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	definitions: "schemasByKey"
 }
 
-// validation keywords from 2019-09 / 2020-12, ignored as unknown annotations
+// validation keywords introduced in 2019-09, ignored as unknown annotations
 // under draft-07 and earlier
 const keywordsFrom2019: ReadonlySet<string> = new Set([
-	"prefixItems",
 	"dependentRequired",
 	"dependentSchemas",
 	"minContains",
@@ -1587,12 +1598,11 @@ const keywordsFrom2019: ReadonlySet<string> = new Set([
 ])
 
 // keywords from 2019-09 on, which a draft-07 or earlier validator ignores
-const unsupportedKeywords = [
-	"$dynamicRef",
+const unsupportedKeywordsFrom2019: ReadonlySet<string> = new Set([
 	"$recursiveRef",
 	"unevaluatedItems",
 	"unevaluatedProperties"
-]
+])
 
 const checkKeyword = (
 	o: dict,
@@ -1600,12 +1610,26 @@ const checkKeyword = (
 	pointer: string,
 	ctx: ReadContext
 ): void => {
+	// JSON has no `undefined`, so explicit undefined values on JS schema
+	// objects (e.g. optional properties or spreads) are treated as absent,
+	// matching JSON.stringify as well as static inference and validation
 	if (o[k] === undefined) return
 	if (ctx.dialectBefore2019 && keywordsFrom2019.has(k)) return
-	if (unsupportedKeywords.includes(k) && !ctx.dialectBefore2019)
+	if (ctx.dialectBefore2020 && k === "prefixItems") return
+	if (
+		(unsupportedKeywordsFrom2019.has(k) && !ctx.dialectBefore2019) ||
+		(k === "$dynamicRef" && !ctx.dialectBefore2020)
+	)
 		throwParseError(writeUnsupportedKeywordMessage(`${pointer}/${k}`))
 	if (!hasOwn(keywordValueKinds, k)) return
-	const [expected, allows] = keywordValues[keywordValueKinds[k]]
+	const kind =
+		(
+			ctx.numericExclusiveBounds &&
+			(k === "exclusiveMinimum" || k === "exclusiveMaximum")
+		) ?
+			"number"
+		:	keywordValueKinds[k]
+	const [expected, allows] = keywordValues[kind]
 	if (!(allows as (v: unknown) => boolean)(o[k])) {
 		throwParseError(
 			writeInvalidKeywordMessage(`${pointer}/${k}`, expected, o[k])

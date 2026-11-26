@@ -160,7 +160,7 @@ contextualize(() => {
 	})
 
 	it("promoted Object.prototype key alongside string and constrained indexes", () => {
-		// Blocker 1: OpenAPI 3.0 must not leak patternProperties when [string] narrows a promoted proto key
+		// OpenAPI 3.0 must not leak patternProperties when [string] narrows a promoted proto key
 		const T = type({ "[string]": "'a'", "[/^toString$/]": "string" })
 		attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws
 			.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
@@ -197,7 +197,7 @@ contextualize(() => {
 			additionalProperties: { type: "string" }
 		})
 
-		// Blocker 2 (false rejection): proto key "toString" does not match string >= 20
+		// proto key "toString" does not match string >= 20
 		const DisjointKey = type({
 			"[/^toString$/]": "number",
 			"[string >= 20]": "string",
@@ -208,7 +208,7 @@ contextualize(() => {
 			'ToJsonSchemaError: Can\'t convert "indexKey" to JSON Schema'
 		)
 
-		// Blocker 2 (false acceptance): proto key matches string >= 1, so index value must also apply to it
+		// proto key matches string >= 1, so index value must also apply to it
 		const NarrowedProto = type({
 			"[/^toString$/]": "number",
 			"[string >= 1]": "string",

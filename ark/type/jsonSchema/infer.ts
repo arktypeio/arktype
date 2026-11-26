@@ -36,7 +36,9 @@ export type inferSchema<schema, root, seen> =
 		:	never
 	: // before 2019-09, a `$ref`'s siblings are ignored. Every other node shares
 	// one inferNode, since inferring a generic schema walks each instantiation
-	(schema extends RefNode ? draftsOf<root> : "2020-12") extends "2020-12" ?
+	(schema extends RefNode ? draftsOf<root> : "2020-12") extends (
+		SiblingRefDraft
+	) ?
 		inferNode<
 			schema,
 			schema extends IdentifiedSchema ? rootOf<schema, root> : root,
@@ -46,7 +48,7 @@ export type inferSchema<schema, root, seen> =
 	:	inferLegacyRef<schema, root, seen>
 
 /** before 2019-09, a `$ref`'s siblings are ignored; a widened `$schema` may
- * also be 2020-12, where a standalone `nullable` widens the target with `null` */
+ * also be 2019-09/2020-12, where a standalone `nullable` widens the target with `null` */
 export type inferLegacyRef<schema, root, seen> = applyLegacyNullable<
 	schema,
 	root,
@@ -54,11 +56,9 @@ export type inferLegacyRef<schema, root, seen> = applyLegacyNullable<
 >
 
 export type applyLegacyNullable<schema, root, t> =
-	"2020-12" extends draftsOf<root> ?
-		schema extends NonNullableNode | DefinedTypedSchema ?
-			t
-		:	applyNullable<schema, t>
-	:	t
+	[Extract<draftsOf<root>, SiblingRefDraft>] extends [never] ? t
+	: schema extends NonNullableNode | DefinedTypedSchema ? t
+	: applyNullable<schema, t>
 
 /** excludes `nullable`, including from an index signature that may hold it,
  * which an optional `nullable?: never` wouldn't */
@@ -89,7 +89,7 @@ export type IdentifiedSchema = { $id: unknown } | { id: string }
  * siblings (including its identifier) are ignored */
 export type rootOf<schema extends IdentifierKeywords, root> =
 	schema extends RefNode ?
-		draftsOf<root> extends "2020-12" ? resourceRootOf<schema, root>
+		draftsOf<root> extends SiblingRefDraft ? resourceRootOf<schema, root>
 		: draftsOf<root> extends SiblinglessRefDraft ? root
 		: sameRoot<resourceRootOf<schema, root>, root>
 	:	resourceRootOf<schema, root>
@@ -107,7 +107,7 @@ export interface IdentifierKeywords {
  * `$id`, so where either may apply, a node identified by only one of them
  * has refs that can't be resolved */
 export type resourceRootOf<schema extends IdentifierKeywords, root> =
-	draftsOf<root> extends "2020-12" ? identifiedRootOf<"$id", schema, root>
+	draftsOf<root> extends SiblingRefDraft ? identifiedRootOf<"$id", schema, root>
 	: draftsOf<root> extends "draft-04" ? identifiedRootOf<"id", schema, root>
 	: "draft-04" extends draftsOf<root> ?
 		sameRoot<
@@ -133,8 +133,9 @@ export type identifiedRootOf<
  * its own */
 export type resourceIn<schema, root> =
 	"$schema" extends keyof schema ? schema
-	: draftsOf<root> extends "2020-12" ? schema
-	: schema & { $schema: root["$schema" & keyof root] }
+	: "$schema" extends keyof root ?
+		schema & { $schema: root["$schema" & keyof root] }
+	:	schema
 
 /** a root that differs between the dialects a document may be read as can't
  * be resolved */
@@ -150,6 +151,7 @@ export type draftsOf<root> =
 export type draftOf<uri> =
 	uri extends Draft04Uri ? "draft-04"
 	: uri extends LegacyDraftUri ? "draft-07"
+	: uri extends Draft2019Uri ? "2019-09"
 	: uri extends string ?
 		{} extends Record<uri, 0> ?
 			Draft
@@ -157,16 +159,24 @@ export type draftOf<uri> =
 	: unknown extends uri ? Draft
 	: "2020-12"
 
-/** dialects that differ in how they identify resources and read `$ref` */
-export type Draft = "draft-04" | "draft-07" | "2020-12"
+/** dialects that differ in how they identify resources and read `$ref` / `prefixItems` */
+export type Draft = "draft-04" | "draft-07" | "2019-09" | "2020-12"
 
 export type SiblinglessRefDraft = "draft-04" | "draft-07"
+
+export type SiblingRefDraft = "2019-09" | "2020-12"
+
+export type Pre2020Draft = "draft-04" | "draft-07" | "2019-09"
 
 export type Draft04Uri =
 	`${string}json-schema.org/draft-0${0 | 1 | 2 | 3 | 4 | 5}/${string}`
 
 /** draft-06 and draft-07, which ignore a `$ref`'s siblings like draft-04 */
 export type LegacyDraftUri = `${string}json-schema.org/draft-0${string}`
+
+export type Draft2019Uri = `${string}json-schema.org/draft/2019-09/${string}`
+
+export type Draft2020Uri = `${string}json-schema.org/draft/2020-12/${string}`
 
 export interface StringSchema extends Unmodified {
 	type: "string"
@@ -1569,10 +1579,10 @@ export type inferValues<schemas, root> =
  * tuple's elements so they don't cost a union's level of instantiation depth */
 export type inferArray<schema, root, seen, domains = never> =
 	schema extends PrefixItemsSchema ?
-		// a draft-07 items array is read in place of prefixItems, and draft-07 ignores prefixItems
+		// a draft-07/2019-09 items array is read in place of prefixItems, and earlier drafts ignore prefixItems
 		schema extends ItemsListSchema ?
 			inferArray<Omit<schema, "prefixItems">, root, seen, domains>
-		: draftsOf<root> extends SiblinglessRefDraft ?
+		: draftsOf<root> extends Pre2020Draft ?
 			inferArray<Omit<schema, "prefixItems">, root, seen, domains>
 		: [Extract<schema["items" & keyof schema], array>] extends [never] ?
 			inferTupleSchema<

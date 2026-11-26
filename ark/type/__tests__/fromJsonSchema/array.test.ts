@@ -33,19 +33,28 @@ contextualize(() => {
 			fromJsonSchema({
 				type: "array",
 				prefixItems: [{ type: "string" }],
+				// @ts-expect-error
 				items: [{ type: "number" }]
-			} as never)
+			})
 		).throws.snap(
 			'ParseError: #/items must be a schema beside prefixItems (was [{"type":"number"}])'
 		)
-		// draft-07 ignores unknown prefixItems and reads items array
+		// draft-07 and 2019-09 ignore unknown prefixItems and read items array
 		attest(
 			fromJsonSchema({
 				$schema: "http://json-schema.org/draft-07/schema#",
 				type: "array",
 				prefixItems: [{ type: "string" }],
 				items: [{ type: "number" }]
-			} as never).expression
+			}).expression
+		).snap("[number?, ...unknown[]]")
+		attest(
+			fromJsonSchema({
+				$schema: "https://json-schema.org/draft/2019-09/schema",
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				items: [{ type: "number" }]
+			}).expression
 		).snap("[number?, ...unknown[]]")
 	})
 

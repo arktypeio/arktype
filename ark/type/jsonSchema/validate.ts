@@ -9,9 +9,12 @@ import type {
 import type {
 	Anchor,
 	AnnotationKeyword,
+	Draft2019Uri,
+	Draft2020Uri,
 	draftsOf,
 	IdentifiedSchema,
 	isUnion,
+	Pre2020Draft,
 	replaceAll,
 	resolveRef,
 	rootOf,
@@ -119,9 +122,14 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 			  : k extends "additionalProperties" ?
 					validateSchema<schema[k], root, propertyPositionOf<schema, position>>
 			  : k extends "items" ?
-					validateItems<schema[k], root, itemPositionOf<schema, position>>
+					validateItems<
+						schema[k],
+						root,
+						itemPositionOf<schema, position>,
+						hasActivePrefixItems<schema, root>
+					>
 			  : k extends "prefixItems" ?
-					draftsOf<root> extends SiblinglessRefDraft ?
+					draftsOf<root> extends Pre2020Draft ?
 						schema[k]
 					:	validateSchemaList<schema[k], root, itemPositionOf<schema, position>>
 			  : k extends SchemaKeyword | BranchKeyword ?
@@ -152,16 +160,21 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 			  : k extends "additionalItems" ?
 					validateSchema<schema[k], root, "branch">
 			  : k extends UnsupportedKeyword ?
-					// a widened schema type may omit it, and draft-07 ignores 2019-09+ keywords
+					// a widened schema type may omit it, and earlier drafts ignore newer keywords
 					undefined extends schema[k] ? schema[k]
 					: draftsOf<root> extends SiblinglessRefDraft ? schema[k]
-					: ErrorMessage<writeUnsupportedKeywordMessage<k>>
+					: k extends "$dynamicRef" ?
+						draftsOf<root> extends Pre2020Draft ?
+							schema[k]
+						:	ErrorMessage<writeUnsupportedKeywordMessage<k>>
+					:	ErrorMessage<writeUnsupportedKeywordMessage<k>>
 			  : k extends ExclusiveBoundKeyword ?
 					validateExclusiveBound<
 						schema[k],
 						k extends "exclusiveMinimum" ? schema["minimum" & keyof schema]
 						:	schema["maximum" & keyof schema],
-						k
+						k,
+						root
 					>
 			  : k extends "propertyNames" ? validatePropertyNames<schema[k], root>
 			  : schema[k])
@@ -197,13 +210,22 @@ export type validateSchemaList<schemas, root, position extends SchemaPosition> =
 		{ [i in keyof schemas]: validateSchema<schemas[i], root, position> }
 	:	readonly (boolean | object)[]
 
-/** unlike prefixItems, a draft-07 items array is never on a checked path */
-export type validateItems<items, root, position extends SchemaPosition> =
+/** unlike prefixItems, a draft-07/2019-09 items array is never on a checked path */
+export type validateItems<
+	items,
+	root,
+	position extends SchemaPosition,
+	hasPrefix extends boolean = false
+> =
 	JsonSchema extends items ? items
-	: [items] extends [array] ? validateSchemaList<items, root, "branch">
+	: [items] extends [array] ?
+		hasPrefix extends true ?
+			ErrorMessage<ItemsBesidePrefixItemsMessage>
+		:	validateSchemaList<items, root, "branch">
 	: [items] extends [Exclude<items, array>] ?
 		validateSchema<items, root, position>
-	:	| validateSchemaList<Extract<items, array>, root, "branch">
+	:	| (hasPrefix extends true ? ErrorMessage<ItemsBesidePrefixItemsMessage>
+		  :	validateSchemaList<Extract<items, array>, root, "branch">)
 		| validateSubschema<Exclude<items, array>, root, position>
 
 export type validateDependencies<dependencies, root> =
@@ -295,9 +317,11 @@ export type validateNullable<nullable, type> =
 export type validateExclusiveBound<
 	exclusive,
 	bound,
-	keyword extends ExclusiveBoundKeyword
+	keyword extends ExclusiveBoundKeyword,
+	root = unknown
 > =
 	[exclusive] extends [anyOrNever] ? exclusive
+	: forbidsBooleanExclusive<root> extends true ? number
 	: [exclusive] extends [true] ?
 		[bound] extends [never] ?
 			ErrorMessage<writeExclusiveBoundRequiresBaseMessage<keyword>>
@@ -305,6 +329,18 @@ export type validateExclusiveBound<
 		: ErrorMessage<writeExclusiveBoundRequiresBaseMessage<keyword>>
 	: exclusive extends number | boolean | undefined ? exclusive
 	: number | boolean
+
+export type NumericExclusiveUri =
+	| `${string}json-schema.org/draft-0${6 | 7}/${string}`
+	| Draft2019Uri
+	| Draft2020Uri
+
+export type forbidsBooleanExclusive<root> =
+	"$schema" extends keyof root ?
+		[root["$schema" & keyof root]] extends [NumericExclusiveUri] ?
+			true
+		:	false
+	:	false
 
 export type validateRef<ref, root> =
 	ref extends LocalRef ?
@@ -461,6 +497,10 @@ export type KeywordValueTypes = {
 	pattern: string | RegExp
 	format: string
 	uniqueItems: boolean
+	title: string
+	description: string
+	deprecated: boolean
+	examples: readonly unknown[]
 }
 
 export type ValidatedKeyword =
@@ -521,7 +561,7 @@ export interface StaticallyValidSchemaObject extends ContextFreeKeywords {
 	dependentSchemas?: StaticallyValidObjectRecord
 	dependentRequired?: DependentRequired
 	dependencies?: StaticDependencies
-	items?: StaticallyValidSchema | StaticallyValidObjectList
+	items?: StaticallyValidSchema
 	prefixItems?: StaticallyValidObjectList
 	allOf?: StaticallyValidObjectList
 	anyOf?: StaticallyValidObjectList
@@ -553,11 +593,11 @@ export interface ContextFreeKeywords {
 	format?: string
 	uniqueItems?: boolean
 	const?: unknown
-	title?: unknown
-	description?: unknown
+	title?: string
+	description?: string
 	default?: unknown
-	examples?: unknown
-	deprecated?: unknown
+	examples?: readonly unknown[]
+	deprecated?: boolean
 	readOnly?: unknown
 	writeOnly?: unknown
 	$comment?: unknown
@@ -631,8 +671,8 @@ export interface ValidSchemaObject<schema extends KeywordObject, root>
 	dependentRequired?: draftsOf<root> extends SiblinglessRefDraft ? unknown
 	:	DependentRequired
 	dependencies?: checkDependencies<schema["dependencies"], root>
-	items?: checkItems<schema["items"], root>
-	prefixItems?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	items?: checkItems<schema["items"], schema, root>
+	prefixItems?: draftsOf<root> extends Pre2020Draft ? unknown
 	:	checkList<schema["prefixItems"], root>
 	allOf?: checkList<schema["allOf"], root>
 	anyOf?: checkList<schema["anyOf"], root>
@@ -647,7 +687,7 @@ export interface ValidSchemaObject<schema extends KeywordObject, root>
 	:	never
 	unevaluatedItems?: draftsOf<root> extends SiblinglessRefDraft ? unknown
 	:	never
-	$dynamicRef?: draftsOf<root> extends SiblinglessRefDraft ? unknown : never
+	$dynamicRef?: draftsOf<root> extends Pre2020Draft ? unknown : never
 	$recursiveRef?: draftsOf<root> extends SiblinglessRefDraft ? unknown : never
 	contentSchema?: checkSchema<schema["contentSchema"], root>
 	additionalItems?: checkSchema<schema["additionalItems"], root>
@@ -691,13 +731,26 @@ export type checkList<schemas, root> =
 		{ [i in keyof schemas]: checkSchema<schemas[i], root> }
 	:	never
 
-export type checkItems<items, root> =
+export type checkItems<items, schema, root> =
 	JsonSchema extends items ?
 		unknown extends items ?
 			never
 		:	unknown
-	: items extends array ? checkList<items, root>
-	: checkSchema<items, root>
+	: items extends array ?
+		hasActivePrefixItems<schema, root> extends true ?
+			never
+		:	checkList<items, root>
+	:	checkSchema<items, root>
+
+export type hasActivePrefixItems<schema, root> =
+	draftsOf<root> extends Pre2020Draft ? false : hasPrefixItems<schema>
+
+export type hasPrefixItems<schema> =
+	"prefixItems" extends keyof schema ?
+		[schema["prefixItems"]] extends [anyOrNever] ? false
+		: undefined extends schema["prefixItems"] ? false
+		: true
+	:	false
 
 export type checkDependencies<dependencies, root> =
 	dependencies extends StaticDependencies ? StaticDependencies
@@ -798,11 +851,16 @@ export interface Draft07KeywordCompletions
 	[k: string]: any
 }
 
+export interface Draft2019KeywordCompletions
+	extends Omit<SubschemaCompletions, "prefixItems"> {
+	[k: string]: any
+}
+
 type completionsFor<root> =
 	root extends unknown ?
-		draftsOf<root> extends SiblinglessRefDraft ?
-			Draft07KeywordCompletions
-		:	KeywordCompletions
+		draftsOf<root> extends SiblinglessRefDraft ? Draft07KeywordCompletions
+		: draftsOf<root> extends "2019-09" ? Draft2019KeywordCompletions
+		: KeywordCompletions
 	:	never
 
 /** completions without an index signature, which would make the elements
@@ -880,6 +938,9 @@ export type writeUnsupportedKeywordMessage<keyword extends string> =
 
 export type NonNullableNullMessage =
 	"nullable can't be false beside a type that includes null"
+
+export type ItemsBesidePrefixItemsMessage =
+	"items must be a schema beside prefixItems"
 
 export type writeExclusiveBoundRequiresBaseMessage<
 	keyword extends ExclusiveBoundKeyword
