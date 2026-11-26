@@ -82,6 +82,8 @@ type distilledSidesOf<t> =
 		keyof t extends ArrayKey ?
 			{ [i: number]: distilledSidesOf<t[number]> }
 		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
+	: // like object, which a homomorphic mapped type would return as is
+	[keyof t] extends [never] ? never
 	: isSafelyMappable<t> extends true ?
 		string extends keyof t ? indexedSidesOf<t>
 		: symbol extends keyof t ? indexedSidesOf<t>
@@ -120,6 +122,9 @@ type _distill<t, side extends DistillSide> =
 		: t
 	: t extends Default<infer constraint> ? _distill<constraint, side>
 	: t extends array ? distillArray<t, side>
+	: // a type with no keys, like object, has nothing to distill, where mapping
+	// it would widen it to {}
+	[keyof t] extends [never] ? t
 	: isSafelyMappable<t> extends true ? distillMappable<t, side>
 	: t
 

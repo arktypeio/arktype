@@ -13,6 +13,18 @@ contextualize(() => {
 		attest(type("Date").infer).type.toString.snap("Date")
 	})
 
+	it("object input", () => {
+		const O = type("object")
+		attest(O.inferIn).type.toString.snap("object")
+		attest(type({ a: "object", b: "string = 'b'" }).inferIn).type.toString.snap(
+			"{ a: object; b?: string }"
+		)
+		// @ts-expect-error
+		attest(() => O.from(5))
+			.throws("must be an object")
+			.type.errors("not assignable to parameter of type 'object'")
+	})
+
 	it("invalid Date", () => {
 		class NaNTime extends Date {
 			override getTime() {
