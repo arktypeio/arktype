@@ -65,6 +65,15 @@ contextualize(() => {
 		attest(t.internal.kind as string).equals("intersection")
 	})
 
+	it("a range that ends below zero builds nothing until it's read", () => {
+		const t = type({ below: "number <= -1", under: "number.integer < -3" })
+		attest(isUnread(t)).equals(true)
+		attest(t.expression).snap("{ below: number <= -1, under: number % 1 < -3 }")
+		attest(t.allows({ below: -1, under: -4 })).equals(true)
+		attest(t.allows({ below: 0, under: -4 })).equals(false)
+		attest(t.allows({ below: -1, under: -3 })).equals(false)
+	})
+
 	it("asking its kind's class is a read", () => {
 		const t = type({ asked: "string" })
 		attest(isUnread(t)).equals(true)

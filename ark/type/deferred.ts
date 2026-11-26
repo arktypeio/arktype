@@ -349,7 +349,7 @@ const scanRange = (def: string): Facts | undefined => {
 		(max !== undefined && !Number.isFinite(max))
 	)
 		return
-	if ((min ?? 0) > (max ?? Infinity)) return
+	if ((min ?? -Infinity) > (max ?? Infinity)) return
 	if (min === max && (op.length === 1 || leftOp === "<")) return
 	if (isLength && ((max ?? 0) < 0 || (min ?? 0) < 0)) return
 	if (isLength || (op.length === 2 && (!left || leftOp === "<=")))
