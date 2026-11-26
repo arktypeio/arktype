@@ -1104,6 +1104,49 @@ contextualize(() => {
 				"ParseError: Invalid intersection of default values 5 & 6"
 			)
 		})
+
+		it("an index signature checks the default of a key it matches", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				// as it checks a value the data holds at the key
+				attest(() =>
+					$.type({ "[string]": "number > 0", count: "number = 0" })
+				).throws("ParseError: Default for count must be positive")
+				attest(() =>
+					$.type({ count: "number = 0" }).and({ "[string]": "number > 0" })
+				).throws("ParseError: Default for count must be positive")
+				// with no value both allow, the key allows nothing
+				attest(() =>
+					$.type({ "[string]": "string", count: "number = 0" })
+				).throws("ParseError: Default for count must be never")
+				attest(() =>
+					$.type({ "[string]": "string" }).and({ count: "number = 0" })
+				).throws("ParseError: Default for count must be never")
+				// what a morph of the signature's is given
+				attest(() =>
+					$.type({
+						"[string]": "string.numeric.parse",
+						count: "string = 'five'"
+					})
+				).throws(
+					"ParseError: Default for count must be a well-formed numeric string"
+				)
+
+				// one its signatures allow, or whose key they don't match, is kept
+				const T = $.type({
+					"[string]": "number >= 0",
+					"[/^x/]": "string",
+					"[symbol]": "string",
+					count: "number = 0"
+				})
+				attest(T({})).equals({ count: 0 })
+				attest(T({ count: -1 }).toString()).equals("count must be non-negative")
+				// as is a key without one, which then allows nothing
+				attest(
+					$.type({ "[string]": "string", "count?": "number" }).expression
+				).equals("{ [string]: string, count?: never }")
+			}
+		})
 	})
 
 	describe("functions", () => {

@@ -1,5 +1,6 @@
 import {
 	$ark,
+	assertDefaultValueAssignability,
 	Disjoint,
 	inProgress,
 	normalizeIndex,
@@ -40,6 +41,15 @@ const intersectPropsAndIndex = <
 			intersectNodesRoot(lValue._in, rValue._in, $)
 		:	intersectNodesRoot(lValue, rValue, $)
 	const value = intersectValues(l.value, r.value)
+	// a default is a value of its key, which the signature checks as it would
+	// one the data held
+	if (l.is("optional") && l.hasDef()) {
+		assertDefaultValueAssignability(
+			value instanceof Disjoint ? $ark.kw.never.internal : r.value,
+			l.default,
+			l.key
+		)
+	}
 	// a cyclic value a definition's key meets is decided once definitions close
 	if (
 		kind === "required" &&
