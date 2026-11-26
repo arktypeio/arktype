@@ -295,6 +295,15 @@ if (unstableReferences.length) {
 	)
 }
 
+// tsc writes a class it can't name out by its members, with `this` resolved
+// to never: an Hkt declared that way, by the key its arguments are held at,
+// infers never from whatever its generic is called with
+if (consumerDeclarations.includes('" args"')) {
+	throw new Error(
+		"⚠️  Declarations emitted for a library built on arktype write an Hkt out by its members. Export its class from arktype's root."
+	)
+}
+
 const runtimeNames = Object.keys(
 	await importBuilt("arktype/schema/runtime")
 ).join()

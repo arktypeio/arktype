@@ -9,7 +9,7 @@ import { cached, Hkt, type Key, type Thunk } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 
-class MergeHkt extends Hkt<[base: object, props: object]> {
+export class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
 
 	description =

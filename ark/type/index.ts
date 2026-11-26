@@ -85,3 +85,17 @@ export type {
 	ObjectType
 } from "./variants/object.ts"
 export type { StringType } from "./variants/string.ts"
+// a generic keyword is declared by its Hkt, a class, which tsc can only name:
+// unable to, it writes the class out by its members with `this` resolved to
+// never, declaring a generic that infers never
+export type { LiftFromHkt } from "./keywords/Array.ts"
+export type { MergeHkt } from "./keywords/builtins.ts"
+export type {
+	ExcludeHkt,
+	ExtractHkt,
+	OmitHkt,
+	PartialHkt,
+	PickHkt,
+	RecordHkt,
+	RequiredHkt
+} from "./keywords/ts.ts"

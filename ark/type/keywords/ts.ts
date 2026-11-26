@@ -162,7 +162,7 @@ const Record = cached(() =>
 	)
 )
 
-class PickHkt extends Hkt<[object, Key]> {
+export class PickHkt extends Hkt<[object, Key]> {
 	declare body: pick<this[0], this[1] & keyof this[0]>
 
 	description =
@@ -176,7 +176,7 @@ const Pick = cached(() =>
 	)
 )
 
-class OmitHkt extends Hkt<[object, Key]> {
+export class OmitHkt extends Hkt<[object, Key]> {
 	declare body: omit<this[0], this[1] & keyof this[0]>
 
 	description =
@@ -190,7 +190,7 @@ const Omit = cached(() =>
 	)
 )
 
-class PartialHkt extends Hkt<[object]> {
+export class PartialHkt extends Hkt<[object]> {
 	declare body: show<Partial<this[0]>>
 
 	description =
@@ -201,7 +201,7 @@ const Partial = cached(() =>
 	genericNode(["T", intrinsic.object])(args => args.T.partial(), PartialHkt)
 )
 
-class RequiredHkt extends Hkt<[object]> {
+export class RequiredHkt extends Hkt<[object]> {
 	declare body: show<required<this[0]>>
 
 	description =
@@ -212,7 +212,7 @@ const Required = cached(() =>
 	genericNode(["T", intrinsic.object])(args => args.T.required(), RequiredHkt)
 )
 
-class ExcludeHkt extends Hkt<[unknown, unknown]> {
+export class ExcludeHkt extends Hkt<[unknown, unknown]> {
 	declare body: Exclude<this[0], this[1]>
 
 	description = 'exclude branches of a union like `Exclude("boolean", "true")`'
@@ -235,7 +235,7 @@ const Exclude = cached(() =>
 	)
 )
 
-class ExtractHkt extends Hkt<[unknown, unknown]> {
+export class ExtractHkt extends Hkt<[unknown, unknown]> {
 	declare body: Extract<this[0], this[1]>
 
 	description =

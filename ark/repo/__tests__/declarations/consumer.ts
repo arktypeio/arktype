@@ -120,9 +120,22 @@ export const stringKeywords = keywords.string
 export const numberKeywords = keywords.number
 export const objectKeywords = keywords.object
 export const unknownKeywords = keywords.unknown
+export const arrayKeywords = keywords.Array
 export const typedArrayKeywords = keywords.TypedArray
 export const formDataKeywords = keywords.FormData
 export const dateKeywords = keywords.string.date
+
+// each generic keyword, declared by its Hkt
+export const RecordOf = type.Record
+export const recordKeyword = keywords.Record
+export const pickKeyword = keywords.Pick
+export const omitKeyword = keywords.Omit
+export const partialKeyword = keywords.Partial
+export const requiredKeyword = keywords.Required
+export const excludeKeyword = keywords.Exclude
+export const extractKeyword = keywords.Extract
+export const mergeKeyword = keywords.Merge
+export const liftFromKeyword = keywords.Array.liftFrom
 
 // a locale written from one arktype ships
 export const locale = { ...de, tag: "de-AT" }
