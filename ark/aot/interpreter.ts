@@ -123,6 +123,8 @@ import {
 export interface InterpreterOptions {
 	// ship arktype, precompiling only the code it compiles
 	runtime?: "arktype" | undefined
+	// false silences dropped-narrow warnings
+	droppedNarrow?: boolean | undefined
 }
 
 type InputRoot =
@@ -2416,7 +2418,7 @@ export class Interpreter {
 				this.definitionsByScope.set(result, converted[0])
 			if (opaque && hasDomain(result, "object"))
 				this.opaqueStandInsByValue.set(result, opaque)
-			if (ctx.site) {
+			if (ctx.site && this.opts.droppedNarrow !== false) {
 				recordDroppedNarrows({
 					fn,
 					receiver,

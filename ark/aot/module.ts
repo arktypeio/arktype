@@ -248,6 +248,13 @@ const markedBy = <read>(
 	return result
 }
 
+const isAllowDropNarrowComment = (value: string): boolean => {
+	const trimmed = value.trim()
+	if (!trimmed.startsWith(allowDropNarrowMarker)) return false
+	const next = trimmed[allowDropNarrowMarker.length]
+	return next === undefined || /[\s:]/.test(next)
+}
+
 const dropNarrowSuppressionsOf = (
 	program: Program,
 	source: string,
@@ -261,12 +268,19 @@ const dropNarrowSuppressionsOf = (
 	for (let i = 0; i < comments.length; i++) {
 		const comment = comments[i]
 		if (
-			comment.type !== "Line" ||
-			comment.value.trim().split(/\s/, 1)[0] !== allowDropNarrowMarker
+			(comment.type !== "Line" && comment.type !== "Block") ||
+			!isAllowDropNarrowComment(comment.value)
 		)
 			continue
 		const lineStart = source.lastIndexOf("\n", comment.start - 1) + 1
-		if (source.slice(lineStart, comment.start).trim().length > 0) {
+		const hasCodeBefore =
+			source.slice(lineStart, comment.start).trim().length > 0
+		const lineEnd = source.indexOf("\n", comment.end)
+		const hasCodeAfterOnLine =
+			comment.type === "Block" &&
+			source.slice(comment.end, lineEnd === -1 ? source.length : lineEnd).trim()
+				.length > 0
+		if (hasCodeBefore && !hasCodeAfterOnLine) {
 			trailingLines.add(lineOf(comment.start))
 			continue
 		}

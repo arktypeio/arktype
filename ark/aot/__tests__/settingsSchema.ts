@@ -42,6 +42,7 @@ const settings = {
 	"shadow?": flag,
 	"prune?": flag,
 	"allowUnsafe?": flag,
+	"droppedNarrow?": flag,
 	"conditions?": "string[]",
 	"tsconfig?": type("string > 0").describe("a path"),
 	// what reads the program for declarations: TypeScript 5.5 to 6's JS API, or
@@ -173,6 +174,9 @@ export const ArkJsonSchema = type({
 		),
 		"allowUnsafe?": type(settings["allowUnsafe?"]).describe(
 			"Report unsafe build patterns (like ParseErrors or late configure() imports) as warnings instead of failing the build"
+		),
+		"droppedNarrow?": type(settings["droppedNarrow?"]).describe(
+			"Warn when structural operations ('...', .merge(), .pick(), .omit(), .partial(), .required(), .map()) drop a root .narrow() predicate (default true)"
 		),
 		"conditions?": type(settings["conditions?"]).describe(
 			"Package export conditions used when resolving imports during precompilation"

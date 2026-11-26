@@ -631,6 +631,8 @@ export const unionKeySiteOf = (
 	return issueSiteOf({ v: value, m: missing })
 }
 
+export { jsonSchemaPredicateKeywords } from "arksets/internal"
+
 // runtime keywords (or madeMorphs of runtime factories) with one param never read Traversal
 export const isKeyword = (predicate: unknown): boolean => {
 	if (typeof predicate !== "function" || predicate.length >= 2) return false

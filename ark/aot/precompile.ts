@@ -434,6 +434,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	prune?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
 	allowUnsafe?: boolean | undefined
+	/** false silences dropped-narrow warnings when a structural operation drops a root .narrow() */
+	droppedNarrow?: boolean | undefined
 	/** packages that don't opt in, precompiled ("aot") or run on arktype */
 	dependencies?: DependencyModes | undefined
 	/**
@@ -769,6 +771,7 @@ export class Precompiler {
 	private configures: boolean
 	private shadow: boolean
 	private allowUnsafe: boolean
+	private droppedNarrow: boolean
 	// e.g. `{"members":{"meta":false}}`, so shadow mode skips the meta
 	private shadowContract: string | undefined
 	private members: ValidatorMembers
@@ -869,6 +872,7 @@ export class Precompiler {
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
 		this.allowUnsafe = !!opts.allowUnsafe
+		this.droppedNarrow = opts.droppedNarrow !== false
 		this.members = opts.members ?? {}
 		this.errors = opts.errors
 		this.variant = runtimeVariantOf(opts)
@@ -7315,7 +7319,11 @@ export class Precompiler {
 				)
 			)
 		}
-		if (!site.parseError && candidate.state.droppedNarrows.length) {
+		if (
+			this.droppedNarrow &&
+			!site.parseError &&
+			candidate.state.droppedNarrows.length
+		) {
 			result.push(
 				...resolveDroppedNarrowDiagnostics(
 					candidate.state,

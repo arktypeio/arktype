@@ -7,7 +7,10 @@ import {
 } from "arktype/schema"
 import { hasOwn } from "arktype/util"
 import { type } from "arktype"
-import { isKeyword } from "arktype/internal/standalone.ts"
+import {
+	isKeyword,
+	jsonSchemaPredicateKeywords
+} from "arktype/internal/standalone.ts"
 import type { CallExpression, Node, ObjectProperty, Span } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import type { Diagnostic, Rule } from "./diagnostics.ts"
@@ -37,6 +40,8 @@ export interface DroppedNarrow {
 	operand: Node | string
 	module: SourceModule
 	operatorNode?: Node | undefined
+	// root Type whose narrow was dropped, cleared if immediately re-narrowed
+	targetRoot?: BaseRoot | undefined
 	// deferred until diagnosticsOf so un-exported scopes aren't mutated while evaluating
 	pending?: {
 		scope: BaseScope
@@ -55,8 +60,13 @@ export const writeDroppedNarrowMessage = (
 	op: DroppedNarrowOp
 ): string => `\`${operand}\` has a narrow that \`${op}\` drops`
 
+const isUserPredicateFn = (fn: unknown): boolean =>
+	typeof fn === "function" &&
+	!isKeyword(fn) &&
+	!jsonSchemaPredicateKeywords.has(fn)
+
 const isUserPredicate = (p: PredicateNode): boolean =>
-	p.meta.keyword === undefined && !isKeyword(p.predicate)
+	p.meta.keyword === undefined && isUserPredicateFn(p.predicate)
 
 // whether a spread operand is a spreadable object intersection carrying a
 // user-authored root predicate (matches parseObjectLiteral's exact runtime check)
@@ -150,6 +160,18 @@ const structuralRootMethods = new Map<Function, DroppedNarrowOp>([
 	[BaseRoot.prototype.map, ".map()"]
 ])
 
+const renarrowRootMethods = new Set<Function>([
+	BaseRoot.prototype.narrow,
+	BaseRoot.prototype.filter
+])
+
+const rootPropagatingMethods = new Set<Function>([
+	BaseRoot.prototype.describe,
+	BaseRoot.prototype.configure,
+	BaseRoot.prototype.and,
+	BaseRoot.prototype.intersect
+])
+
 const definitionRootMethods = new Set<Function>([
 	BaseRoot.prototype.and,
 	BaseRoot.prototype.intersect,
@@ -210,20 +232,11 @@ const structuralGenericOf = (
 	fn: GenericRoot
 ): [op: DroppedNarrowOp, argIndices: number[]] | undefined => {
 	structuralGenerics ??= new Map([
-		[(type.keywords.Pick as unknown as GenericRoot).bodyDef, [".pick()", [0]]],
-		[(type.keywords.Omit as unknown as GenericRoot).bodyDef, [".omit()", [0]]],
-		[
-			(type.keywords.Partial as unknown as GenericRoot).bodyDef,
-			[".partial()", [0]]
-		],
-		[
-			(type.keywords.Required as unknown as GenericRoot).bodyDef,
-			[".required()", [0]]
-		],
-		[
-			(type.keywords.Merge as unknown as GenericRoot).bodyDef,
-			[".merge()", [0, 1]]
-		]
+		[type.keywords.Pick.internal.bodyDef, [".pick()", [0]]],
+		[type.keywords.Omit.internal.bodyDef, [".omit()", [0]]],
+		[type.keywords.Partial.internal.bodyDef, [".partial()", [0]]],
+		[type.keywords.Required.internal.bodyDef, [".required()", [0]]],
+		[type.keywords.Merge.internal.bodyDef, [".merge()", [0, 1]]]
 	])
 	return structuralGenerics.get(fn.bodyDef)
 }
@@ -258,6 +271,21 @@ export const recordDroppedNarrows = ({
 
 	// 1. Structural methods directly on a BaseRoot / Type
 	if (hasArkKind(receiver, "root") && hasArkKind(result, "root")) {
+		if (
+			renarrowRootMethods.has(fn) &&
+			args.length > 0 &&
+			isUserPredicateFn(args[0])
+		) {
+			for (let i = site.droppedNarrows.length - 1; i >= 0; i--) {
+				if (site.droppedNarrows[i].targetRoot === receiver)
+					site.droppedNarrows.splice(i, 1)
+			}
+			return
+		}
+		if (rootPropagatingMethods.has(fn)) {
+			for (const drop of site.droppedNarrows)
+				if (drop.targetRoot === receiver) drop.targetRoot = result
+		}
 		const op = structuralRootMethods.get(fn)
 		if (op) {
 			const operatorNode = member?.property ?? node
@@ -267,7 +295,8 @@ export const recordDroppedNarrows = ({
 					node,
 					operand: member?.object ?? node,
 					module,
-					operatorNode
+					operatorNode,
+					targetRoot: result
 				})
 			}
 			if (op === ".merge()" && args.length > 0) {
@@ -279,7 +308,8 @@ export const recordDroppedNarrows = ({
 						node,
 						operand: argNode,
 						module,
-						operatorNode
+						operatorNode,
+						targetRoot: result
 					})
 				}
 			}
@@ -317,7 +347,8 @@ export const recordDroppedNarrows = ({
 					node,
 					operand: argNodeOf(call, i) ?? node,
 					module,
-					operatorNode
+					operatorNode,
+					targetRoot: result
 				})
 			}
 		}
@@ -347,7 +378,8 @@ export const recordDroppedNarrows = ({
 						node,
 						operand: argNodeOf(call, i) ?? node,
 						module,
-						operatorNode
+						operatorNode,
+						targetRoot: result
 					})
 				}
 			}
@@ -432,7 +464,16 @@ export const recordDroppedNarrows = ({
 			module,
 			site,
 			spreadsByObject,
-			stringPropsByObject
+			stringPropsByObject,
+			false,
+			undefined,
+			(
+				parserMember === undefined ||
+					parserMember === "type" ||
+					parserMember === "and"
+			) ?
+				result
+			:	undefined
 		)
 	}
 }
@@ -526,13 +567,14 @@ const recordDefinitionDrops = (
 	spreadsByObject: WeakMap<object, SpreadSource>,
 	stringPropsByObject: WeakMap<object, Map<PropertyKey, SpreadSource>>,
 	deferScopeLookups = false,
-	shadowed?: ReadonlySet<string>
+	shadowed?: ReadonlySet<string>,
+	targetRoot?: BaseRoot
 ): void => {
 	const seen = new Set<unknown>()
 	for (const def of defs) {
 		walkDefinition(
 			def,
-			(obj, spreadVal) =>
+			(obj, spreadVal, dropTargetRoot) =>
 				recordSpreadDrop(
 					obj,
 					spreadVal,
@@ -542,9 +584,10 @@ const recordDefinitionDrops = (
 					site,
 					spreadsByObject,
 					deferScopeLookups,
-					shadowed
+					shadowed,
+					dropTargetRoot
 				),
-			(expr, source) => {
+			(expr, source, dropTargetRoot) => {
 				if (scope) {
 					recordStringGenericDrop(
 						expr,
@@ -553,12 +596,15 @@ const recordDefinitionDrops = (
 						source?.module ?? fallbackModule,
 						site,
 						deferScopeLookups,
-						shadowed
+						shadowed,
+						dropTargetRoot
 					)
 				}
 			},
 			stringPropsByObject,
-			seen
+			seen,
+			undefined,
+			targetRoot
 		)
 	}
 }
@@ -572,7 +618,8 @@ const recordSpreadDrop = (
 	site: SiteState,
 	spreadsByObject: WeakMap<object, SpreadSource>,
 	deferScopeLookups: boolean,
-	shadowed?: ReadonlySet<string>
+	shadowed?: ReadonlySet<string>,
+	targetRoot?: BaseRoot
 ): void => {
 	const source = spreadsByObject.get(obj)
 	const dropNode = source?.property ?? fallbackNode
@@ -586,7 +633,8 @@ const recordSpreadDrop = (
 				op: '"..."',
 				node: dropNode,
 				operand,
-				module: dropModule
+				module: dropModule,
+				targetRoot
 			})
 		}
 		return
@@ -598,6 +646,7 @@ const recordSpreadDrop = (
 				node: dropNode,
 				operand,
 				module: dropModule,
+				targetRoot,
 				pending: { scope, def: spreadVal, shadowed }
 			})
 		} else if (
@@ -610,7 +659,8 @@ const recordSpreadDrop = (
 				op: '"..."',
 				node: dropNode,
 				operand,
-				module: dropModule
+				module: dropModule,
+				targetRoot
 			})
 		}
 	}
@@ -623,7 +673,8 @@ const recordStringGenericDrop = (
 	dropModule: SourceModule,
 	site: SiteState,
 	deferScopeLookups: boolean,
-	shadowed?: ReadonlySet<string>
+	shadowed?: ReadonlySet<string>,
+	targetRoot?: BaseRoot
 ): void => {
 	if (deferScopeLookups) {
 		site.droppedNarrows.push({
@@ -631,6 +682,7 @@ const recordStringGenericDrop = (
 			node: dropNode,
 			operand: expr,
 			module: dropModule,
+			targetRoot,
 			pendingString: { scope, expr, shadowed }
 		})
 		return
@@ -640,7 +692,8 @@ const recordStringGenericDrop = (
 			op: found.op,
 			node: dropNode,
 			operand: found.operand,
-			module: dropModule
+			module: dropModule,
+			targetRoot
 		})
 	}
 }
@@ -694,8 +747,7 @@ const defDropsUserPredicate = (
 		if (def.length === 3 && def[1] === ":") {
 			if (spreadOnly && !isSpreadableObjectDef(def[0], scope)) return false
 			if (
-				typeof def[2] === "function" &&
-				!isKeyword(def[2]) &&
+				isUserPredicateFn(def[2]) &&
 				!after?.branches.some(
 					branch =>
 						branch.is("intersection") &&
@@ -755,14 +807,25 @@ const defDropsUserPredicate = (
 
 const walkDefinition = (
 	def: unknown,
-	visitSpread: (obj: Record<PropertyKey, unknown>, spreadVal: unknown) => void,
-	visitString: (expr: string, source?: SpreadSource) => void,
+	visitSpread: (
+		obj: Record<PropertyKey, unknown>,
+		spreadVal: unknown,
+		targetRoot?: BaseRoot
+	) => void,
+	visitString: (
+		expr: string,
+		source?: SpreadSource,
+		targetRoot?: BaseRoot
+	) => void,
 	stringPropsByObject: WeakMap<object, Map<PropertyKey, SpreadSource>>,
 	seen: Set<unknown>,
-	propSource?: SpreadSource
+	propSource?: SpreadSource,
+	targetRoot?: BaseRoot,
+	renarrowed = false
 ): void => {
 	if (typeof def === "string") {
-		if (def.includes("<")) visitString(def, propSource)
+		if (def.includes("<") && !renarrowed)
+			visitString(def, propSource, targetRoot)
 		return
 	}
 	if (!def || typeof def !== "object" || seen.has(def)) return
@@ -798,7 +861,45 @@ const walkDefinition = (
 				visitString,
 				stringPropsByObject,
 				seen,
-				propSource
+				propSource,
+				targetRoot,
+				renarrowed
+			)
+			return
+		}
+		if (def.length === 3 && def[1] === ":" && isUserPredicateFn(def[2])) {
+			walkDefinition(
+				def[0],
+				visitSpread,
+				visitString,
+				stringPropsByObject,
+				seen,
+				propSource,
+				undefined,
+				true
+			)
+			return
+		}
+		if (def.length === 3 && def[1] === "&") {
+			walkDefinition(
+				def[0],
+				visitSpread,
+				visitString,
+				stringPropsByObject,
+				seen,
+				propSource,
+				targetRoot,
+				renarrowed
+			)
+			walkDefinition(
+				def[2],
+				visitSpread,
+				visitString,
+				stringPropsByObject,
+				seen,
+				propSource,
+				targetRoot,
+				renarrowed
 			)
 			return
 		}
@@ -817,9 +918,10 @@ const walkDefinition = (
 	if (!isPlainContainer(def)) return
 	const obj = def as Record<PropertyKey, unknown>
 	const propSources = stringPropsByObject.get(obj)
-	if (hasOwn(obj, "...")) visitSpread(obj, obj["..."])
+	if (hasOwn(obj, "...") && !renarrowed)
+		visitSpread(obj, obj["..."], targetRoot)
 	for (const k of Reflect.ownKeys(obj)) {
-		if (k === "@" || k === "+") continue
+		if (k === "@" || k === "+" || (k === "..." && renarrowed)) continue
 		walkDefinition(
 			obj[k],
 			visitSpread,
@@ -1137,7 +1239,7 @@ const evalDefInScope = (
 			}
 			return undefined
 		}
-		if (isPlainContainer(def)) return type.raw(def) as unknown as BaseRoot
+		if (isPlainContainer(def)) return type.raw(def).internal
 	} catch {
 		return undefined
 	}
@@ -1183,7 +1285,7 @@ const evalStringTypeInScope = (
 			return inner?.array()
 		}
 		const lit = unescapeStringLiteral(expr)
-		if (lit !== undefined) return type.unit(lit) as unknown as BaseRoot
+		if (lit !== undefined) return type.unit(lit).internal
 		// single generic instantiation spanning the whole expression
 		const genMatch = /^([#$A-Z_a-z][\w#$.]*)\s*</.exec(expr)
 		if (genMatch) {

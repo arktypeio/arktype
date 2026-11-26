@@ -48,6 +48,10 @@
 						"enum": ["aot", "arktype"]
 					}
 				},
+				"droppedNarrow": {
+					"type": "boolean",
+					"description": "Warn when structural operations ('...', .merge(), .pick(), .omit(), .partial(), .required(), .map()) drop a root .narrow() predicate (default true)"
+				},
 				"errors": {
 					"type": "string",
 					"enum": ["all", "first", "none"],

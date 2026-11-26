@@ -940,10 +940,10 @@ var intersectionj0sv370oqte88 = [
 		"removed"
 	)
 ]
-var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
+var intersectionielnw11y5lwhc = /* @__PURE__ */ (([
 	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersectiona1747b08zjj0xAllows = /* @__PURE__ */ sited(
+	const intersectionielnw11y5lwhcAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -964,14 +964,15 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[18](data.conditions)) ||
-				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
-				("checker" in data && !checkers[20](data.checker)) ||
-				("dependencies" in data && !checkers[21](data.dependencies)) ||
-				("cwd" in data && !checkers[19](data.cwd)) ||
+				("droppedNarrow" in data && !booleanChecker(data.droppedNarrow)) ||
+				("conditions" in data && !checkers[19](data.conditions)) ||
+				("tsconfig" in data && !checkers[20](data.tsconfig)) ||
+				("checker" in data && !checkers[21](data.checker)) ||
+				("dependencies" in data && !checkers[22](data.dependencies)) ||
+				("cwd" in data && !checkers[20](data.cwd)) ||
 				("inline" in data && !booleanChecker(data.inline)) ||
 				("declare" in data && !booleanChecker(data.declare)) ||
-				("defers" in data && !checkers[25](data.defers))
+				("defers" in data && !checkers[26](data.defers))
 			)
 				return false
 			for (const k in data)
@@ -994,6 +995,7 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 					case "shadow":
 					case "prune":
 					case "allowUnsafe":
+					case "droppedNarrow":
 					case "conditions":
 					case "tsconfig":
 					case "checker":
@@ -1090,6 +1092,7 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 			shadow: /* @__PURE__ */ optional(booleanChecker),
 			prune: /* @__PURE__ */ optional(booleanChecker),
 			allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
+			droppedNarrow: /* @__PURE__ */ optional(booleanChecker),
 			conditions: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					arrayCheck,
@@ -1129,7 +1132,7 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectiona1747b08zjj0xAllows]
+	return [intersectionielnw11y5lwhcAllows]
 })(intersectionj0sv370oqte88)
 var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -1144,10 +1147,10 @@ var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 	validator.withContext = freeze(context => withContextOf(validator, context))
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
+var intersection1wq6sd31bdhaey = /* @__PURE__ */ (([
 	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersection1kiu37t1iquj2hAllows = /* @__PURE__ */ sited(
+	const intersection1wq6sd31bdhaeyAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -1168,10 +1171,11 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[18](data.conditions)) ||
-				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
-				("checker" in data && !checkers[20](data.checker)) ||
-				("dependencies" in data && !checkers[21](data.dependencies))
+				("droppedNarrow" in data && !booleanChecker(data.droppedNarrow)) ||
+				("conditions" in data && !checkers[19](data.conditions)) ||
+				("tsconfig" in data && !checkers[20](data.tsconfig)) ||
+				("checker" in data && !checkers[21](data.checker)) ||
+				("dependencies" in data && !checkers[22](data.dependencies))
 			)
 				return false
 			for (const k in data)
@@ -1194,6 +1198,7 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 					case "shadow":
 					case "prune":
 					case "allowUnsafe":
+					case "droppedNarrow":
 					case "conditions":
 					case "tsconfig":
 					case "checker":
@@ -1286,6 +1291,7 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 			shadow: /* @__PURE__ */ optional(booleanChecker),
 			prune: /* @__PURE__ */ optional(booleanChecker),
 			allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
+			droppedNarrow: /* @__PURE__ */ optional(booleanChecker),
 			conditions: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					arrayCheck,
@@ -1312,34 +1318,34 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection1kiu37t1iquj2hAllows]
+	return [intersection1wq6sd31bdhaeyAllows]
 })(intersectionj0sv370oqte88)
-var intersection84g0ee1bxihyt = /* @__PURE__ */ (([
-	intersection1kiu37t1iquj2hAllows
+var intersection128xenx0krshz5 = /* @__PURE__ */ (([
+	intersection1wq6sd31bdhaeyAllows
 ]) => {
-	const intersection84g0ee1bxihytAllows = /* @__PURE__ */ closedProps({
+	const intersection128xenx0krshz5Allows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows)
+		precompile: /* @__PURE__ */ optional(intersection1wq6sd31bdhaeyAllows)
 	})
-	return [intersection84g0ee1bxihytAllows]
-})(intersection1kiu37t1iquj2h)
-var intersection1j4pd4n1jwocfa = /* @__PURE__ */ (([
-	intersection1kiu37t1iquj2hAllows
+	return [intersection128xenx0krshz5Allows]
+})(intersection1wq6sd31bdhaey)
+var intersection1w95fmx179ztfg = /* @__PURE__ */ (([
+	intersection1wq6sd31bdhaeyAllows
 ]) => {
-	const intersection1j4pd4n1jwocfaAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows),
+	const intersection1w95fmx179ztfgAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection1wq6sd31bdhaeyAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection1j4pd4n1jwocfaAllows]
-})(intersection1kiu37t1iquj2h)
+	return [intersection1w95fmx179ztfgAllows]
+})(intersection1wq6sd31bdhaey)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("1vfc2j508amzo4", () =>
-					create1q5hta0h0lh5t(intersectiona1747b08zjj0x, "1706xit1")
+				const validator0 = interned("dihdgb0qumxg0", () =>
+					create1q5hta0h0lh5t(intersectionielnw11y5lwhc, "zokowg0r")
 				)
 				return validator0
 			})())
@@ -1348,8 +1354,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("inq2he0srsmw8", () =>
-					create1q5hta0h0lh5t(intersection84g0ee1bxihyt, "1y1ytoj0")
+				const validator0 = interned("1x3u6900kz0z2t", () =>
+					create1q5hta0h0lh5t(intersection128xenx0krshz5, "1p25wxc1")
 				)
 				return validator0
 			})())
@@ -1358,8 +1364,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("73gcco1k0mhoe", () =>
-					create1q5hta0h0lh5t(intersection1j4pd4n1jwocfa, "12jiwy81")
+				const validator0 = interned("116rgl111vng2h", () =>
+					create1q5hta0h0lh5t(intersection1w95fmx179ztfg, "i3dt9i04")
 				)
 				return validator0
 			})())
@@ -1378,6 +1384,7 @@ export const cliOptions = {
 	declare: { type: "boolean", values: "true|false" },
 	defers: { type: "string", values: "large|true|false" },
 	dependencies: { type: "object", values: "json" },
+	droppedNarrow: { type: "boolean", values: "true|false" },
 	errors: { type: "string", values: "all|first|none" },
 	freeze: { type: "boolean", values: "true|false" },
 	inline: { type: "boolean", values: "true|false" },
@@ -1442,6 +1449,11 @@ export const precompileJsonSchema = {
 			description:
 				"How to handle dependencies that import arktype without opting in: 'aot' to precompile or 'arktype' to run on arktype",
 			additionalProperties: { type: "string", enum: ["aot", "arktype"] }
+		},
+		droppedNarrow: {
+			type: "boolean",
+			description:
+				"Warn when structural operations ('...', .merge(), .pick(), .omit(), .partial(), .required(), .map()) drop a root .narrow() predicate (default true)"
 		},
 		errors: {
 			type: "string",

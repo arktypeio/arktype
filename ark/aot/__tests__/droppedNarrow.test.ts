@@ -104,7 +104,7 @@ export const Escaped = type({ "\\\\...": type({ a: "string" }).narrow(o => o.a.l
 			attest(diagnosticsOf(source)).equals([])
 		})
 
-		it("does not warn for built-in internal predicates like fromJsonSchema isNonArray or object.json", () => {
+		it("does not warn for built-in internal predicates like fromJsonSchema isNonArray, minProperties, or object.json", () => {
 			const source = `import { fromJsonSchema, type } from "arktype"
 const FromSchema = fromJsonSchema({
 	type: "object",
@@ -120,6 +120,72 @@ const ConstObj = fromJsonSchema({ const: { a: 1 } })
 export const ExtendedConst = type({ "...": ConstObj, b: "number" })
 export const MergedConst = ConstObj.merge({ b: "number" })`
 			attest(diagnosticsOf(source)).equals([])
+
+			const minPropsSource = `import { fromJsonSchema, type } from "arktype"
+const MinPropsSchema = fromJsonSchema({
+	type: "object",
+	properties: { a: { type: "string" } },
+	minProperties: 1,
+	maxProperties: 3
+})
+export const ExtendedMinProps = type({ "...": MinPropsSchema, b: "number" })
+export const MergedMinProps = MinPropsSchema.merge({ b: "number" })`
+			attest(
+				analyze(minPropsSource, {}, { runtime: "arktype" }).diagnostics.filter(
+					d => d.rule === "dropped-narrow"
+				)
+			).equals([])
+		})
+
+		it("does not warn when immediately re-narrowed via .narrow(), .filter(), or tuple narrow syntax", () => {
+			const source = `import { keywords, scope, type } from "arktype"
+${datesDecl}
+const check = (o: { issued: string; due: string }) => o.due >= o.issued
+export const SpreadNarrow = type({ "...": Dates, total: "number" }).narrow(check)
+export const SpreadFilter = type({ "...": Dates, total: "number" }).filter(check)
+export const SpreadDescribedNarrow = type({ "...": Dates, total: "number" }).describe("invoice").narrow(check)
+export const SpreadAndNarrow = type({ "...": Dates, total: "number" }).and({ note: "string" }).narrow(check)
+export const MergeNarrow = Dates.merge({ total: "number" }).narrow(check)
+export const MergeFilter = Dates.merge({ total: "number" }).filter(check)
+export const PartialNarrow = Dates.partial().narrow(o => !o.issued || !o.due || o.due >= o.issued)
+export const StaticMergeNarrow = type.merge(Dates, { total: "number" }).narrow(check)
+export const GenericPartialNarrow = keywords.Partial(Dates).narrow(o => !!o)
+export const TupleNaryNarrow = type({ "...": Dates, total: "number" }, ":", check)
+export const TupleArrNarrow = type([{ "...": Dates, total: "number" }, ":", check])
+const $ = scope({
+	dates: Dates,
+	invoice: [{ "...": "dates", total: "number" }, ":", check],
+	partialChecked: ["Partial<dates>", ":", (o: { issued?: string }) => !!o]
+})
+export const scoped = $.export()
+export const ScopedSpreadNarrow = $.type({ "...": "dates", total: "number" }).narrow(check)
+export const ScopedGenericNarrow = $.type("Partial<dates>").narrow(o => !!o)`
+			attest(diagnosticsOf(source)).equals([])
+		})
+
+		it("still warns when a nested spread is not narrowed, when a later op drops the re-narrow, or across separate declarations", () => {
+			const source = `import { scope, type } from "arktype"
+${datesDecl}
+const check = (o: { issued: string; due: string }) => o.due >= o.issued
+// nested spread inside a property is NOT re-narrowed by an outer .narrow()
+export const NestedOuterNarrow = type({ invoice: { "...": Dates, total: "number" } }).narrow(o => o.invoice.total > 0)
+// chained .pick() after .narrow() drops the new narrow -> warns for .pick(), not "..."
+export const ReDropped = type({ "...": Dates, total: "number" }).narrow(check).pick("issued")
+// separate declaration still warns on the un-narrowed Invoice
+export const Invoice = type({ "...": Dates, total: "number" })
+export const Checked = Invoice.narrow(check)
+// nested spread inside scope tuple narrow still warns
+const $ = scope({
+	dates: Dates,
+	order: [{ invoice: { "...": "dates", total: "number" } }, ":", (o: { invoice: { total: number } }) => o.invoice.total > 0]
+})
+export const scoped = $.export()`
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+				'/main.ts:11:52  `Dates` has a narrow that `"..."` drops',
+				'/main.ts:13:26  `type({ "...": Dates, total: "number" }).narrow(check)` has a narrow that `.pick()` drops',
+				'/main.ts:15:31  `Dates` has a narrow that `"..."` drops',
+				'/main.ts:20:23  `dates` has a narrow that `"..."` drops'
+			])
 		})
 
 		it("does not warn on non-definition arguments in n-ary type() calls", () => {
@@ -524,6 +590,30 @@ export const TrailingOnLaterChainAnd = Dates.pick("issued")
 			])
 		})
 
+		it("suppresses with // @ark-allow-drop-narrow: reason and /* @ark-allow-drop-narrow */ layouts without over-suppressing", () => {
+			const source = `import { type } from "arktype"
+${datesDecl}
+// @ark-allow-drop-narrow: validated separately
+export const ColonReason = type({ "...": Dates, total: "number" })
+export const TrailingColonReason = Dates.omit("due") // @ark-allow-drop-narrow: partial update
+/* @ark-allow-drop-narrow */
+export const BlockLeading = type({ "...": Dates, total: "number" })
+/* @ark-allow-drop-narrow: intentional drop */
+export const BlockLeadingReason = Dates.partial()
+export const BlockTrailing = Dates.pick("issued") /* @ark-allow-drop-narrow */
+export const BlockInlineProp = type({ /* @ark-allow-drop-narrow */ "...": Dates, total: "number" })
+export const BlockInlineMethod = Dates./* @ark-allow-drop-narrow */pick("issued")
+export const BlockInlineSibling = type({
+	a: { /* @ark-allow-drop-narrow */ "...": Dates, x: "number" }, b: { "...": Dates, y: "number" }
+})
+/* @ark-allow-drop-narrows */
+export const BlockMisspelled = Dates.merge({ total: "number" })`
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+				'/main.ts:20:70  `Dates` has a narrow that `"..."` drops',
+				"/main.ts:23:32  `Dates` has a narrow that `.merge()` drops"
+			])
+		})
+
 		it("suppresses comment-after-dot, optional chaining, computed member, multiline trailing, local def trailing, and string generics", () => {
 			const source = `import { scope, type } from "arktype"
 ${datesDecl}
@@ -632,6 +722,37 @@ export const Invoice = type({ "...": Dates, total: "number" })`
 			// per-line directive silences it
 			const suppressedCode = `import { type } from "arktype"\nimport { Dates } from "./dates.ts"\n// @ark-allow-drop-narrow\nexport const Invoice = type({ "...": Dates, total: "number" })\n`
 			attest(lintCode(suppressedCode)).equals([])
+			// droppedNarrow: false option silences dropped-narrow while keeping @ark/aot/warnings enabled
+			attest(
+				lintCode(warningCode, [
+					{ rules: { "@ark/aot/warnings": ["warn", { droppedNarrow: false }] } }
+				])
+			).equals([])
+		}).timeout(60_000)
+
+		it("silences dropped-narrow warnings when droppedNarrow: false is configured", () => {
+			const source = `import { type } from "arktype"
+${datesDecl}
+export const Invoice = type({ "...": Dates, total: "number" })
+export const Merged = Dates.merge({ total: "number" })`
+			attest(analyze(source, {}, { droppedNarrow: false }).diagnostics).equals(
+				[]
+			)
+			attest(
+				analyze(source, {}, { runtime: "arktype", droppedNarrow: false })
+					.diagnostics
+			).equals([])
+
+			// ark check with droppedNarrow: false option and ark.json
+			const root = writeFixture({
+				"package.json": "{}",
+				"ark.json": JSON.stringify({ precompile: { droppedNarrow: false } }),
+				"dates.ts": `import { type } from "arktype"\nexport ${datesDecl}\n`,
+				"invoice.ts": `import { type } from "arktype"\nimport { Dates } from "./dates.ts"\nexport const Invoice = type({ "...": Dates, total: "number" })\n`
+			})
+			const report = check([], { cwd: root })
+			attest(report.errors).equals(0)
+			attest(report.diagnostics).equals([])
 		}).timeout(60_000)
 	})
 })
