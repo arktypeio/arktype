@@ -352,6 +352,13 @@ contextualize(() => {
 			)
 		})
 
+		it("unboundable builtin object", () => {
+			// @ts-expect-error
+			attest(() => type("Map>10")).throwsAndHasTypeError(
+				writeUnboundableMessage("Map")
+			)
+		})
+
 		it("morph", () => {
 			// @ts-expect-error
 			attest(() => type("string.trim > 2"))

@@ -115,6 +115,18 @@ contextualize(() => {
 			)
 		})
 
+		it("indivisible builtin object", () => {
+			// structurally a Set is also a WeakSet, which it isn't at runtime
+			// @ts-expect-error
+			attest(() => type("Set % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was a Set)"
+			)
+			// @ts-expect-error
+			attest(() => type("File % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was a File instance)"
+			)
+		})
+
 		it("morph", () => {
 			// @ts-expect-error
 			attest(() => type("string.numeric.parse > 2"))
