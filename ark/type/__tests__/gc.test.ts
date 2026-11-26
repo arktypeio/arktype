@@ -124,6 +124,15 @@ contextualize(() => {
 				})
 					.export()
 					.a({ b: { a: null } })
+			),
+			// b is registered as a copy of never, which outlives it
+			keyword: capture(captured =>
+				scope({
+					a: { value: ["object", "=", () => captured], "b?": "b" },
+					b: "a & never"
+				})
+					.export()
+					.a({})
 			)
 		}
 		for (const ref of Object.values(refs)) await collectTarget(ref)

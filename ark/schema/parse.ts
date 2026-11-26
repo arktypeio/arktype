@@ -422,7 +422,9 @@ export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	return createNode({
 		id,
 		kind: node.kind,
-		inner: node.inner,
+		// a copy, since an inner holds what its node is registered under, and
+		// `node` can be a keyword, which is held for good
+		inner: { ...node.inner },
 		meta: node.meta,
 		$: node.$,
 		ignoreCache: true
