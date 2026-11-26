@@ -25,12 +25,12 @@ import {
 import { fingerprintOfCode } from "./cache.ts"
 import {
 	emitDeclarations,
-	type Checker,
 	refuseDeclare,
 	writeDeclaredOutsideMessage,
 	type Declarations
 } from "./declare.ts"
 import type {
+	Checker,
 	PrecompilePluginOptions,
 	PrecompileRequest,
 	RenderedDiagnostics,

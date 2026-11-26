@@ -1,8 +1,8 @@
 export { cleanup, setup, teardown, writeAssertionData } from "./fixtures.ts"
 // ensure fixtures are exported before config so additional settings can load
 export { caller, type CallerOfOptions } from "@ark/fs"
-export { attest } from "./assert/attest.ts"
-export { bench } from "./bench/bench.ts"
+export { attest, type AttestFn } from "./assert/attest.ts"
+export { bench, type Bench, type BenchFn } from "./bench/bench.ts"
 export {
 	getBenchAssertionAtPosition,
 	getTypeAssertionAtPosition,

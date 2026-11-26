@@ -44,6 +44,8 @@ import { settingsPathsOf, withSettingsFile } from "./settings.ts"
 import { SchemaStrategies } from "./strategies.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
+export type Checker = "tsjs" | "tsgo" | "tsrs"
+
 export interface PrecompilePluginOptions
 	extends PrecompileOptions,
 		NodeHostOptions {}

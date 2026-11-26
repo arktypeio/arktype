@@ -12,10 +12,11 @@ import {
 	type ModuleResolver,
 	type ShapeNames
 } from "./declareShapes.ts"
+import type { Checker } from "./driver.ts"
 
 // TypeScript's JS API (5.5 to 6), its native port (7.1 or later) or tsrs, a
 // port of that, which serves the same API
-export type Checker = "tsjs" | "tsgo" | "tsrs"
+export type { Checker }
 
 export type NativeChecker = Exclude<Checker, "tsjs">
 

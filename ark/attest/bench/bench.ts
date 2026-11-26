@@ -22,7 +22,7 @@ export type TimeAssertionName = StatName | "mark"
 
 let benchHasRun = false
 
-type BenchFn = <fn extends BenchableFunction>(
+export type BenchFn = <fn extends BenchableFunction>(
 	name: string,
 	fn: fn,
 	options?: BenchOptions
