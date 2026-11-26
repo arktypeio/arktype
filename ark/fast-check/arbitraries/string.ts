@@ -1,13 +1,57 @@
-import type { nodeOfKind, PrestructuralKind } from "arktype/schema"
+import type {
+	IntersectionNode,
+	nodeOfKind,
+	PrestructuralKind
+} from "arktype/schema"
 import { throwInternalError, type array } from "arktype/util"
 import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
+
+const minIsoDate = new Date("0000-01-01T00:00:00.000Z")
+const maxIsoDate = new Date("9999-12-31T23:59:59.999Z")
+
+const getKeywordStringArbitrary = (
+	node: IntersectionNode
+): fc.Arbitrary<string> | undefined => {
+	const predicates = node.inner.predicate
+	if (!predicates) return
+	for (const pred of predicates) {
+		switch (pred.meta.keyword) {
+			case "string.url":
+			case "string.url.http":
+				return fc.webUrl()
+			case "string.date":
+				return fc
+					.date({ min: minIsoDate, max: maxIsoDate, noInvalidDate: true })
+					.map(d => d.toISOString())
+			case "string.json":
+				return fc.json()
+		}
+	}
+}
 
 export const buildStringArbitrary = (
 	node: DomainInputNode
 ): fc.Arbitrary<string> => {
 	if (node.is("domain")) return fc.string()
 	const stringConstraints = getFastCheckStringConstraints(node.preStruct)
+	const keywordArbitrary = getKeywordStringArbitrary(node)
+	if (keywordArbitrary) {
+		const { minLength, maxLength, pattern, flags } = stringConstraints
+		const regex = pattern !== undefined ? new RegExp(pattern, flags) : undefined
+		return (
+				minLength !== undefined ||
+					maxLength !== undefined ||
+					regex !== undefined
+			) ?
+				keywordArbitrary.filter(
+					s =>
+						(minLength === undefined || s.length >= minLength) &&
+						(maxLength === undefined || s.length <= maxLength) &&
+						(regex === undefined || regex.test(s))
+				)
+			:	keywordArbitrary
+	}
 	if ("pattern" in stringConstraints) {
 		if (
 			stringConstraints.minLength !== undefined ||

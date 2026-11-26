@@ -1,4 +1,4 @@
-import type { NodeKind, nodeOfKind, SequenceTuple } from "arktype/schema"
+import type { NodeKind, nodeOfKind } from "arktype/schema"
 import { hasKey, throwError, throwInternalError } from "arktype/util"
 import * as fc from "fast-check"
 import {
@@ -20,12 +20,11 @@ export const buildArbitrary = (
 		case "intersection":
 			ctx.seenIntersectionIds[node.id] = true
 
-			//specifically in the case of unknown, it is represented as an empty intersection so we just return anything here.
-			if (node.basis === null) return fc.anything()
-
+			// unknown and narrowed unknown are intersections with no basis
 			const basisArbitrary =
-				node.basis?.kind === "domain" ?
-					buildDomainArbitrary[node.basis?.domain](node, ctx)
+				node.basis === null ? fc.anything()
+				: node.basis.kind === "domain" ?
+					buildDomainArbitrary[node.basis.domain](node, ctx)
 				:	buildProtoArbitrary(node.basis.proto, node, ctx)
 
 			// generated around the values a != excludes or a narrow filters
@@ -78,8 +77,11 @@ export const buildArbitrary = (
 		case "required":
 		case "optional":
 			return buildArbitrary(node.value as never, ctx)
-		case "morph":
-			return node.head ? buildArbitrary(node.head as never, ctx) : fc.anything()
+		case "morph": {
+			if (node.meta.keyword === "string.json.parse") return fc.json()
+			const input = node.declaredIn ?? node.head
+			return input ? buildArbitrary(input as never, ctx) : fc.anything()
+		}
 		case "alias":
 			if (ctx.tieStack.length < 1)
 				throwInternalError("Tie has not been initialized")
@@ -128,22 +130,24 @@ export const buildStructureArbitrary = (
 			})
 	}
 
-	if (node.inner.exactLength?.rule === 0) return fc.tuple()
+	let arrArbitrary: fc.Arbitrary<unknown[]>
+	if (node.inner.exactLength?.rule === 0) arrArbitrary = fc.tuple()
+	else {
+		const fcArrayConstraints: fc.ArrayConstraints = {}
+		if (node.inner.exactLength) {
+			fcArrayConstraints.minLength = node.inner.exactLength.rule
+			fcArrayConstraints.maxLength = node.inner.exactLength.rule
+		}
+		if (node.inner.minLength)
+			fcArrayConstraints.minLength = node.inner.minLength.rule
+		if (node.inner.maxLength)
+			fcArrayConstraints.maxLength = node.inner.maxLength.rule
 
-	const fcArrayConstraints: fc.ArrayConstraints = {}
-	if (node.inner.exactLength) {
-		fcArrayConstraints.minLength = node.inner.exactLength.rule
-		fcArrayConstraints.maxLength = node.inner.exactLength.rule
+		arrArbitrary =
+			structure?.sequence ?
+				buildArrayArbitrary(structure.sequence, fcArrayConstraints, ctx)
+			:	fc.array(fc.anything(), fcArrayConstraints)
 	}
-	if (node.inner.minLength)
-		fcArrayConstraints.minLength = node.inner.minLength.rule
-	if (node.inner.maxLength)
-		fcArrayConstraints.maxLength = node.inner.maxLength.rule
-
-	const arrArbitrary =
-		structure?.sequence ?
-			buildArrayArbitrary(structure.sequence, fcArrayConstraints, ctx)
-		:	fc.array(fc.anything(), fcArrayConstraints)
 
 	if (structure?.required || structure?.optional) {
 		const objectArbitrary = buildObjectArbitrary(structure, ctx)
@@ -246,16 +250,17 @@ const buildArrayArbitrary = (
 		return getPossiblyWeightedArray(arrArbitrary, node, refinements, ctx)
 	}
 
-	return getSpreadVariadicElementsTuple(node.tuple, refinements, ctx)
+	return getSpreadVariadicElementsTuple(node, refinements, ctx)
 }
 
 const getSpreadVariadicElementsTuple = (
-	tupleElements: SequenceTuple,
+	node: nodeOfKind<"sequence">,
 	refinements: fc.ArrayConstraints,
 	ctx: Ctx
 ) =>
 	spreadVariadicElements(
-		tupleElements.map(element => buildArbitrary(element.node as never, ctx)),
-		tupleElements,
-		refinements
+		node.tuple.map(element => buildArbitrary(element.node as never, ctx)),
+		node,
+		refinements,
+		ctx
 	)
