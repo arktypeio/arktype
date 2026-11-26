@@ -221,7 +221,8 @@ Resolution: ${printable(resolution)}`)
 			return `(${this.expression})`
 		const referenced = nodesById[this.reference as NodeId]
 		return (
-				hasArkKind(referenced, "root") &&
+				referenced !== this &&
+					hasArkKind(referenced, "root") &&
 					referenced.expression === this.expression
 			) ?
 				referenced.nestedExpr
@@ -365,16 +366,31 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 export const identityOf = (node: BaseNode): string =>
 	node.is("alias") ? node.reference : node.id
 
+// the aliases isResolvable is following, so a shallow cycle back to one, which
+// resolving it would report, ends the walk rather than repeating it
+const followedAliases: AliasNode[] = []
+
 export const isResolvable = (node: BaseRoot): boolean => {
 	if (!node.topAlias) return true
 	if (node.is("union")) return node.branches.every(isResolvable)
 	if (node.is("morph")) return !node.head || isResolvable(node.head)
-	if (!node.is("alias") || resolvingAliases.includes(node)) return false
+	if (
+		!node.is("alias") ||
+		resolvingAliases.includes(node) ||
+		followedAliases.includes(node)
+	)
+		return false
 	if (node.isIo) return isResolvable(node.operands![0])
 	// a transform's alias resolves to what it transformed once the transform returns
 	if (node.resolve && !node.operator) return isResolutionFinal()
 	const referenced = nodesById[node.reference as NodeId]
-	return hasArkKind(referenced, "root") && isResolvable(referenced)
+	if (!hasArkKind(referenced, "root")) return false
+	followedAliases.push(node)
+	try {
+		return isResolvable(referenced)
+	} finally {
+		followedAliases.pop()
+	}
 }
 
 export const writeUnresolvableMessage = <token extends string>(

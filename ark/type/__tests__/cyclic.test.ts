@@ -1472,6 +1472,27 @@ swap.swap.order[1] must be "on"`)
 		)
 	})
 
+	it("rejects a generic instantiating itself shallowly in a union or intersection", () => {
+		const $ = scope({ "pair<k>": "pair<k>" })
+		attest(() => $.type("string | pair<string>" as never)).throws(
+			writeShallowCycleErrorMessage("pair<string>", ["pair<string>"])
+		)
+		attest(() => $.type("string & pair<string>" as never)).throws(
+			writeShallowCycleErrorMessage("pair<string>", ["pair<string>"])
+		)
+		attest(() =>
+			scope({ "a<t>": "b<t>", "b<t>": "a<t>" }).type(
+				"string | a<string>" as never
+			)
+		).throws(writeShallowCycleErrorMessage("a<string>", ["a<string>"]))
+		const $$ = scope({ "pair<k>": "k | pair<string>" })
+		attest(() => $$.type("pair<string> & number" as never)).throws(
+			writeShallowCycleErrorMessage("pair<string>", ["pair<string>"])
+		)
+		// what pair<string> adds to string is a string, so there's no cycle to resolve
+		attest($$.type("pair<string> & string" as never).expression).snap("string")
+	})
+
 	it("structural self-reference", () => {
 		const types = scope({
 			nested: "(nested | number)[]",
