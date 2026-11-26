@@ -199,6 +199,16 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		}),
 		{}
 	)
+	add(
+		"required described union",
+		$.type({ a: $.type("string | number").describe("ein x", "self") }),
+		{}
+	)
+	add(
+		"required described unknown",
+		$.type({ a: $.type("unknown").describe("ein x") }),
+		{}
+	)
 	add("required instanceOf", $.type({ a: $.type.instanceOf(Foo) }), {})
 	add(
 		"required string.uuid | number",

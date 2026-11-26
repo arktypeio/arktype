@@ -318,6 +318,30 @@ other: must be text`)
 		).snap("id must be an ID (was missing)")
 	})
 
+	it("a missing key says its union's own description, as its error does", () => {
+		const T = type({ id: type("string | number").describe("an ID", "self") })
+		attest(T({}).toString()).snap("id must be an ID (was missing)")
+		attest(T({ id: true }).toString()).snap("id must be an ID")
+	})
+
+	it("a missing key says the description of a value with no basis", () => {
+		attest(
+			type({ a: type("unknown").describe("anything") })({}).toString()
+		).snap("a must be anything (was missing)")
+		attest(type({ a: "unknown" })({}).toString()).snap(
+			"a must be present (was missing)"
+		)
+		// as fromJsonSchema keeps the description of a schema with no type
+		attest(
+			type({
+				a: type("unknown").configure({
+					description: "anything",
+					expected: "unknown"
+				})
+			})({}).toString()
+		).snap("a must be present (was missing)")
+	})
+
 	it("message is configure({ message }), a missing key's included", () => {
 		const T = type({ name: type("string >= 1").message("Name is required") })
 		attest(T.expression).snap("{ name: string >= 1 }")

@@ -36,7 +36,10 @@ export declare namespace Required {
 	export type Node = RequiredNode
 }
 
-/** what a missing value should have been; each entry has its node's kind */
+/**
+ * what a missing value should have been; each entry has its node's kind,
+ * unless a description names the value as a whole, which is written as a morph's
+ */
 export type MissingValue =
 	| MissingBasis
 	// a value with no basis, such as unknown: "present" in English
@@ -48,7 +51,8 @@ export type MissingBasis =
 	| errorCtx<"domain">
 	| errorCtx<"unit">
 	| errorCtx<"proto">
-	// a morph whose input has a description: the input's meta
+	// a value named by a description no basis of its carries: a morph whose
+	// input has one, a union, or a value with no basis. the meta that has it
 	| { readonly code: "morph"; readonly meta: ArkEnv.meta }
 
 const implementation: nodeImplementationOf<Required.Declaration> =
@@ -111,16 +115,29 @@ export const Required = {
 
 const unknownValue: MissingValue = Object.freeze({ code: "intersection" })
 
+// whether brief says a description you wrote for the node itself
+const isDescribed = (value: BaseRoot): boolean =>
+	value.meta.description !== undefined &&
+	value.meta.keyword === undefined &&
+	value.meta.expected === undefined
+
 // the walk of brief, keeping each basis's context
 const missingValueOf = (value: BaseRoot): MissingValue => {
 	if (value.is("union")) {
-		return Object.freeze({
-			code: "union",
-			branches: Object.freeze(value.branches.map(missingValueOf))
-		})
+		return isDescribed(value) ?
+				Object.freeze({ code: "morph", meta: value.meta })
+			:	Object.freeze({
+					code: "union",
+					branches: Object.freeze(value.branches.map(missingValueOf))
+				})
 	}
-	if (value.is("intersection"))
-		return value.basis ? missingValueOf(value.basis) : unknownValue
+	if (value.is("intersection")) {
+		return (
+			value.basis ? missingValueOf(value.basis)
+			: isDescribed(value) ? Object.freeze({ code: "morph", meta: value.meta })
+			: unknownValue
+		)
+	}
 	if (value.is("morph")) {
 		return value._in.meta.description === undefined ?
 				missingValueOf(value._in)

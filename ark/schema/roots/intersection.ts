@@ -256,8 +256,16 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			:	[]
 	}
 
+	// with no basis to name, like unknown, a description you wrote for it, as
+	// its own error says it unless expected is beside it
 	get brief(): string {
-		return this.basis?.brief ?? "present"
+		return (
+			this.basis?.brief ??
+			(this.meta.keyword === undefined && this.meta.expected === undefined ?
+				this.meta.description
+			:	undefined) ??
+			"present"
+		)
 	}
 
 	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {

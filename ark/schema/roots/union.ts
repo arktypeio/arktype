@@ -291,8 +291,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		})
 	}
 
+	// a description you wrote for the union itself, as its own error says it
+	// unless expected is beside it
 	get brief(): string {
-		return this.distribute(branch => branch.brief, describeBranches)
+		return (
+				this.meta.description !== undefined &&
+					this.meta.keyword === undefined &&
+					this.meta.expected === undefined
+			) ?
+				this.meta.description
+			:	this.distribute(branch => branch.brief, describeBranches)
 	}
 
 	/**
