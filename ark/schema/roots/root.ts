@@ -7,6 +7,7 @@ import {
 	isEmptyObject,
 	isInstanceOf,
 	omit,
+	printable,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -510,7 +511,9 @@ export abstract class BaseRoot<
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		return this._pipe(
 			...morphs.map(morph =>
-				hasArkKind(morph, "root") ? morph : makeMorph(tryMorph, morph)
+				hasArkKind(morph, "root") ? morph
+				: typeof morph === "function" ? makeMorph(tryMorph, morph)
+				: throwParseError(writeInvalidPipeOperandMessage(morph))
 			)
 		)
 	}
@@ -544,6 +547,8 @@ export abstract class BaseRoot<
 				isInstanceOf(morph, BaseRoot) ? morph.internal : this.$.parseDef(morph)
 			)
 		}
+		if (typeof morph !== "function")
+			return throwParseError(writeInvalidPipeOperandMessage(morph))
 
 		return this.distribute(
 			branch =>
@@ -1072,3 +1077,6 @@ export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,
 	operand extends string
 > = `${operation} operand must be an object (was ${operand})`
+
+const writeInvalidPipeOperandMessage = (operand: unknown): string =>
+	`pipe operand must be a function or Type (was ${printable(operand)}). To pipe to a definition, use .to() instead.`

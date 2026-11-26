@@ -1782,4 +1782,25 @@ Item[1].Meta must be an object (was missing)`)
 		})
 		attest(m('{"a":"hi","b":{"a":1}}').toString()).snap("b.a must be a string")
 	})
+
+	it("rejects non-function, non-Type operands in .pipe() and .pipe.try()", () => {
+		attest(() =>
+			(type("string.trim") as any).pipe("string.integer.parse")
+		).throws.snap(
+			'ParseError: pipe operand must be a function or Type (was "string.integer.parse"). To pipe to a definition, use .to() instead.'
+		)
+		attest(() =>
+			(type("string") as any).pipe((s: string) => s, { a: "string" })
+		).throws.snap(
+			'ParseError: pipe operand must be a function or Type (was {"a":"string"}). To pipe to a definition, use .to() instead.'
+		)
+		attest(() => (type("string") as any).pipe(null)).throws.snap(
+			"ParseError: pipe operand must be a function or Type (was null). To pipe to a definition, use .to() instead."
+		)
+		attest(() =>
+			(type("string.trim") as any).pipe.try("string.integer.parse")
+		).throws.snap(
+			'ParseError: pipe operand must be a function or Type (was "string.integer.parse"). To pipe to a definition, use .to() instead.'
+		)
+	})
 })
