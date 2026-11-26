@@ -52,6 +52,7 @@ import {
 } from "./issues.ts"
 import {
 	applyRejected,
+	raisesLabeled,
 	throwOnProblem,
 	Traversal,
 	type FailHandler,
@@ -639,6 +640,10 @@ export class ArkTraversal extends SiteTraversal {
 			const { expected, actual, message, ...rest } = meta
 			errCtx.meta = rest
 		}
+		// what a labeled narrow says its value must be names it by its label,
+		// as the error it adds by returning false does
+		if (raisesLabeled(this, errCtx as never))
+			errCtx.meta = { label: this.lbl, ...errCtx.meta }
 		return errorFromContext(this, errCtx)
 	}
 }

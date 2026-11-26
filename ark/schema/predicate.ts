@@ -83,8 +83,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	tApply(data: unknown, ctx: InternalTraversal): void {
 		const errN = ctx.errN
 		const predicate = this.predicate
-		if (!predicate(data, ctx.external) && ctx.errN === errN)
-			ctx.nodeError(this.errorCtx, data)
+		const label = this.meta.label
+		if (label !== undefined) ctx.lbl = label
+		const valid = predicate(data, ctx.external)
+		if (label !== undefined) ctx.lbl = undefined
+		if (!valid && ctx.errN === errN) ctx.nodeError(this.errorCtx, data)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -104,9 +107,16 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		}
 
 		js.initErrCount()
+		const label = this.meta.label
+		// a labeled narrow names its value in what it raises, as in the error
+		// returning false adds: an unlabeled one's call is as it was
+		if (label !== undefined)
+			js.line(`ctx.lbl = ${JSON.stringify(label)}`)
+				.const("valid", condition)
+				.line("ctx.lbl = undefined")
 		js.if(
 			// only add the default error if the predicate didn't add one itself
-			`!${condition} && ctx.errN === errN`,
+			`!${label === undefined ? condition : "valid"} && ctx.errN === errN`,
 			() => js.return(`!${js.error(this)}`)
 		)
 		js.return("!ctx.failFast || ctx.errN === errN")

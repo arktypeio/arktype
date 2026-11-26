@@ -161,6 +161,13 @@ const labeled: Record<string, string> = {
 		show(LineItem.pipe(o => o), { unitPriceCents: 0 })
 		show(type({ p: type("string").pipe(s => LineItem(JSON.parse(s))) }), { p: '{"unitPriceCents":0}' })
 		show(type({ p: type("string.json.parse").to(LineItem) }), { p: '{"unitPriceCents":0}' })
+	`,
+	"names a value by its label in what a narrow raises it must be": `
+		const pct = (s: string) => +s >= 0 && +s <= 100
+		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.mustBe("between 0 and 100")).label("Pct") }), { k: "200" })
+		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ expected: "between 0 and 100", actual: "200" })).label("Pct") }), { k: "200" })
+		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ message: "Pct is out of range" })).label("Pct") }), { k: "200" })
+		show(type({ k: type({ a: "string" }).narrow((o, ctx) => pct(o.a) || ctx.reject({ expected: "between 0 and 100", relativePath: ["a"] })).label("Pct") }), { k: { a: "200" } })
 	`
 }
 

@@ -1,5 +1,22 @@
 # arktype
 
+## 3.0.0-rc.11
+
+### A label names its value in what a narrow says it must be
+
+`.label()` now names the value in an error a narrow raises with `ctx.mustBe()`, `ctx.reject({ expected })` or `ctx.error()`, as it already did for one added by returning `false`:
+
+```ts
+const Percent = type("string")
+	.narrow((s, ctx) => (+s >= 0 && +s <= 100) || ctx.mustBe("between 0 and 100"))
+	.label("Percent")
+
+// was "must be between 0 and 100"
+Percent("200") // ArkErrors: Percent must be between 0 and 100
+```
+
+`ctx.reject({ message })` is still said as written, and an error raised at another path, like `ctx.reject({ relativePath: ["a"] })`, names its own key. Standalone validators write the same.
+
 ## 3.0.0-rc.9
 
 ### Per-scope `ambient` config

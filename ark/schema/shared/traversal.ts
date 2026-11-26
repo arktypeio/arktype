@@ -23,7 +23,9 @@ import type {
 import {
 	ArkErrors as BaseArkErrors,
 	issueAt,
+	labeledIssue,
 	mergeIssues,
+	messageOf,
 	notedAs,
 	pathOf,
 	type ArkIssue,
@@ -34,7 +36,12 @@ import {
 	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
-import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
+import {
+	callsSiteText,
+	findsOnRead,
+	labelsValues,
+	listsUnions
+} from "./issueFeatures.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import { setOwnValue, TransformErrors } from "./transform.ts"
 import { inProgress, removedProblemMessage } from "./utils.ts"
@@ -99,6 +106,12 @@ export class InternalTraversal implements FailureContext {
 	 * returning any error ctx.error adds after
 	 */
 	declare retFrom: number | undefined
+	/**
+	 * the label of the value a running narrow is about, which an error it
+	 * raises names it by. Set only by a labeled narrow, so a traversal of
+	 * none assigns it
+	 */
+	declare lbl?: string | undefined
 	// a valid input's transforms write into it
 	declare inPlace?: true
 
@@ -410,9 +423,32 @@ export class Traversal extends InternalTraversal {
 		// what the value was is written only where it's supplied
 		else if (supplied.actual)
 			issue.message = `must be ${issue.expected} (was ${supplied.actual})`
+		// as arktype labels its error in en, the only locale a standalone
+		// validator, whose traversal this is, writes
+		if (labelsValues && raisesLabeled(this, supplied)) {
+			issue.message = `${this.lbl} ${issue.message ?? messageOf(issue)}`
+			labeledIssue(issue, this.lbl)
+		}
 		return this.addError(issue) as never
 	}
 }
+
+/**
+ * @internal whether an error a narrow raises is what arktype writes of the
+ * value it narrows, which it names by the label of the narrow running: one
+ * saying what the value must be, not a message of its own or an error about
+ * another path
+ */
+export const raisesLabeled = (
+	ctx: InternalTraversal,
+	supplied: SuppliedIssue
+): ctx is InternalTraversal & { lbl: string } =>
+	ctx.lbl !== undefined &&
+	(supplied.code ?? "predicate") === "predicate" &&
+	supplied.message === undefined &&
+	supplied.path === undefined &&
+	supplied.relativePath === undefined &&
+	supplied.prefixPath === undefined
 
 export class FirstIssueTraversal extends Traversal {
 	override get failFast(): boolean {
