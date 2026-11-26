@@ -166,7 +166,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 				if (
 					reduced.c.key &&
 					isEmptyObject(reduced.meta) &&
-					isEmptyObject(meta)
+					isEmptyObject(meta) &&
+					!Object.getOwnPropertySymbols(meta).length
 				) {
 					$ark.reached?.node(reduced)
 					return reduced
@@ -248,7 +249,7 @@ export const createNode = ({
 	const key =
 		ignoreCache || !$ark.sets ?
 			undefined
-		:	nodeKeyOf(kind, impl, inner, metaJson, $)
+		:	nodeKeyOf(kind, impl, inner, meta, metaJson, $)
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
@@ -303,6 +304,7 @@ const nodeKeyOf = (
 	kind: NodeKind,
 	impl: UnknownNodeImplementation,
 	inner: dict,
+	meta: ArkEnv.meta,
 	metaJson: JsonObject | undefined,
 	$: BaseScope
 ): string => {
@@ -323,7 +325,15 @@ const nodeKeyOf = (
 		hasArkKind(nodesById[inner.reference as NodeId], "root")
 	)
 		key += ",!"
-	return metaJson ? `${key},${JSON.stringify(metaJson)}` : key
+	if (metaJson) key += `,${JSON.stringify(metaJson)}`
+	// meta's json drops symbol keys, so they're keyed by name as a symbol unit is
+	const symbols = Object.getOwnPropertySymbols(meta)
+	for (let i = 0; i < symbols.length; i++) {
+		key += `,[$${nameOf(symbols[i])}]:${literalKeyOf(
+			(meta as Record<symbol, unknown>)[symbols[i]]
+		)}`
+	}
+	return key
 }
 
 const idsOf = (nodes: readonly BaseNode[], $: BaseScope): string => {

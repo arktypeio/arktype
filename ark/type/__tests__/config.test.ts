@@ -4,7 +4,8 @@ import {
 	configureAfterTypeMessage,
 	writeMissingImportMessage,
 	rootSchema,
-	type StandardSchemaV1
+	type StandardSchemaV1,
+	type TypeMeta
 } from "@ark/schema"
 import { configure, messageIn, scope, type } from "arktype"
 import "arktype/errors"
@@ -482,6 +483,32 @@ age must be non-negative`)
 
 		// should give the shallow custom error
 		attest(User(null).toString()).snap("must be a valid user")
+	})
+
+	it("symbol-keyed meta is the Type's own", () => {
+		const tag = Symbol("tag")
+		// meta keys declared on ArkEnv.meta, as a symbol key would be
+		const tagged = (meta: TypeMeta, value: string): TypeMeta =>
+			Object.assign({}, meta, { [tag]: value })
+		const symbolMetaOf = (T: type.Any) =>
+			(T.meta as Record<symbol, unknown>)[tag]
+
+		const Tagged = type("string").configure(tagged({ description: "d" }, "v"))
+		const Untagged = type("string").configure({ description: "d" })
+		attest(symbolMetaOf(Tagged)).equals("v")
+		attest(symbolMetaOf(Untagged)).equals(undefined)
+
+		const Other = type("string").configure(tagged({ description: "d" }, "w"))
+		attest(symbolMetaOf(Other)).equals("w")
+		// meta alike is still one node
+		attest(
+			type("string").configure(tagged({ description: "d" }, "v")).internal
+		).equals(Tagged.internal)
+
+		// symbol keys alone are meta
+		const Obj = type({ a: "string" }).configure(tagged({}, "o"))
+		attest(symbolMetaOf(Obj)).equals("o")
+		attest(symbolMetaOf(type({ a: "string" }))).equals(undefined)
 	})
 
 	it("jitless", () => {
