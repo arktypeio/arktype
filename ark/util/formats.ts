@@ -110,19 +110,17 @@ export const isIpv6 = (s: string): boolean => {
 
 // ISO 8601 date/time modernized from https://github.com/validatorjs/validator.js/blob/master/src/lib/isISO8601.js
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
-// delimiter for date/time is mandatory. The language of validator.js's strict
-// matcher without its lookaheads and backreferences, since it's written as a
-// JSON Schema pattern and RE2 (e.g. LLM structured outputs) reads neither:
-// - (-?)…\1 is a day separated from its month as the month is from its year,
-//   so an extended and a basic date are alternatives
-// - (?!\d{2}\b) is YYYYMM only before a time, so that's its own alternative
-//   and the time is written twice
-// - (:?)…\2 and (?!:) are seconds after a colon only where the minutes had
-//   one and their fraction didn't come first
-// - a day must exist in its month, so February 29th is its own alternative
-//   after a leap year: divisible by 4 and not by 100, or by 400
+// delimiter for date/time is mandatory. Written without lookaheads or
+// backreferences so JSON Schema (RE2) and fast-check can read it:
+// - extended (YYYY-MM-DD) and basic (YYYYMMDD) dates are separate alternatives
+//   so mixed delimiters are rejected
+// - extended (HH:mm:ss) and basic (HHmmss) times are separate alternatives,
+//   with 24:00 / 2400 allowing only zero seconds and fractional parts
+// - a day must exist in its month, so February 29th and ordinal day 366 are
+//   alternatives after a leap year: divisible by 4 and not by 100, or by 400
+// - week 53 exists only in 53-week ISO years (determined by year mod 400)
 export const iso8601Matcher: RegExp =
-	/^[+-]?(?:(?:\d{4}(?:-(?:(?:(?:0[13578]|1[02])(?:-(?:[12]\d|0[1-9]|3[01]))?|(?:0[469]|11)(?:-(?:[12]\d|0[1-9]|30))?|02(?:-(?:1\d|0[1-9]|2[0-8]))?)|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))|(?:(?:0[13578]|1[02])(?:[12]\d|0[1-9]|3[01])|(?:0[469]|11)(?:[12]\d|0[1-9]|30)|02(?:1\d|0[1-9]|2[0-8]))|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))|(?:\d\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)(?:-02-29|0229))(?:T(?:(?:[01]\d|2[0-3]):[0-5]\d(?:[,.]\d+|:[0-5]\d(?:[,.]\d+)?)?|(?:(?:(?:[01]\d|2[0-3])(?:[0-5]\d)?|24:?00)(?:[,.]\d+)?)?(?:[0-5]\d(?:[,.]\d+)?)?)(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?|\d{4}(?:(?:0[1-9]|1[0-2])T(?:(?:[01]\d|2[0-3]):[0-5]\d(?:[,.]\d+|:[0-5]\d(?:[,.]\d+)?)?|(?:(?:(?:[01]\d|2[0-3])(?:[0-5]\d)?|24:?00)(?:[,.]\d+)?)?(?:[0-5]\d(?:[,.]\d+)?)?)(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)$/
+	/^(?:[+-]?(?:\d{4}(?:-(?:(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|1\d|2[0-8]))?|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|-?(?:W(?:0[1-9]|[1-4]\d|5[0-2])(?:-?[1-7])?|00[1-9]|0[1-9]\d|[12]\d\d|3(?:[0-5]\d|6[0-5])))?|(?:\d\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)(?:-02-29|0229|-?366))|\+?(?:(?:[02468][048]|[13579][26])(?:0[49]|15|2[06]|3[27]|4[38]|54|6[05]|7[16]|8[28]|9[39])|(?:[02468][159]|[13579][37])(?:05|1[16]|2[28]|3[39]|44|5[06]|6[17]|7[28]|8[49]|95)|(?:[02468][26]|[13579][048])(?:0[17]|1[28]|2[49]|35|4[06]|5[27]|6[38]|74|8[05]|9[16])|(?:[02468][37]|[13579][159])(?:[27]0|[38]1|[49]2|[05]3|[16]4|25|[37]6|87|[049]8|59))-?W53(?:-?[1-7])?)(?:T(?:(?:[01]\d|2[0-3])(?:(?::[0-5]\d){1,2}|(?:[0-5]\d){1,2})?(?:[,.]\d+)?|24(?::00(?::00)?|00(?:00)?)(?:[,.]0+)?)(?:[Zz]|[+-](?:[01]\d|2[0-3])(?::?[0-5]\d)?)?)?$/
 
 // iso8601Matcher's YYYY-MM-DD and YYYY-MM-DDTHH:mm:ss with a fraction and Z or an
 // offset, which V8 tests faster than its alternations, for days every month has

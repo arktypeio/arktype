@@ -249,6 +249,10 @@ contextualize(() => {
 			required: [{ key: "a?", value: "string" }],
 			domain: "object"
 		})
+		attest(T.expression).snap('{ "a?": string }')
+
+		const Escaped = type({ "isAdmin\\?": "boolean", "\\[id]": "string" })
+		attest(Escaped.expression).snap('{ "[id]": string, "isAdmin?": boolean }')
 	})
 
 	it("traverse optional", () => {

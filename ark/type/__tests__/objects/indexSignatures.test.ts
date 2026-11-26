@@ -351,6 +351,7 @@ other must be a string`)
 			domain: "object",
 			required: [{ key: "[string]", value: "string" }]
 		})
+		attest(O.expression).snap('{ "[string]": string }')
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1525
@@ -370,6 +371,7 @@ other must be a string`)
 			optional: [{ key: "[string]", value: "string" }],
 			domain: "object"
 		})
+		attest(O.expression).snap('{ "[string]"?: string }')
 		attest(O({})).equals({})
 	})
 

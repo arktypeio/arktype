@@ -27,6 +27,8 @@ export interface SetEngine {
 	// orders a node's unordered children in place, so equal nodes share a key
 	sort(kind: NodeKind, inner: dict): void
 	discriminate(node: Union.Node): Discriminant | null
+	extract(l: BaseRoot, r: BaseRoot): BaseRoot
+	exclude(l: BaseRoot, r: BaseRoot): BaseRoot
 	toJsonSchema(node: BaseRoot, opts: ToJsonSchema.Options): JsonSchema
 	toJsonSchemaRecurse(node: BaseRoot, ctx: ToJsonSchema.Context): JsonSchema
 	// proves intersections empty; installed by readers that need it

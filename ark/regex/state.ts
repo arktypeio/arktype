@@ -37,6 +37,7 @@ export declare namespace State {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: contains<flags, "i">
+		multiline: contains<flags, "m">
 		flags: flags
 	}>
 
@@ -56,6 +57,7 @@ export declare namespace State {
 		sequence: RegexAst
 		root: RegexAst
 		caseInsensitive: boolean
+		multiline: boolean
 	}
 
 	export namespace Group {
@@ -112,6 +114,7 @@ export declare namespace s {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: false
+		multiline: false
 		flags: ""
 	}>
 
@@ -127,6 +130,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], s["root"]>
 		root: root
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -142,6 +146,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], quantified>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -166,6 +171,7 @@ export declare namespace s {
 		>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -180,6 +186,7 @@ export declare namespace s {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -195,6 +202,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], pushQuantifiable<s["root"], a>>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -202,7 +210,8 @@ export declare namespace s {
 		s extends State,
 		capture extends string | State.UnnamedCaptureKind,
 		unscanned extends string,
-		caseInsensitive extends boolean | undefined
+		caseInsensitive extends boolean | undefined,
+		multiline extends boolean | undefined = undefined
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
@@ -212,6 +221,7 @@ export declare namespace s {
 		root: ""
 		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
 		:	s["caseInsensitive"]
+		multiline: multiline extends boolean ? multiline : s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -236,6 +246,7 @@ export declare namespace s {
 				: // non-capturing
 					State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
+				multiline: last["multiline"]
 				flags: s["flags"]
 			}>
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
@@ -267,7 +278,7 @@ export declare namespace s {
 				:	ErrorMessage<writeMidAnchorError<"^">>
 			:	never
 		:	// if there were errors, return the first one
-			r["ctx"]["errors"][0]
+			Exclude<r["ctx"]["errors"][0], undefined>
 
 	type finalizeContext<ctx extends FinalizationContext> =
 		ctx["captures"] extends EmptyCaptures ? finalizeContextWithoutCaptures<ctx>
@@ -403,6 +414,7 @@ export declare namespace UnionTree {
 		pattern: string
 		captures: IndexedCaptures
 		names: NamedCaptures
+		errors: ErrorMessage[]
 	}
 
 	namespace FinalizedBranch {
@@ -464,6 +476,7 @@ export declare namespace UnionTree {
 				// undefined will be added to named captures as needed
 				// by finalizeBranches since it can be done in one step
 				names: r["ctx"]["names"]
+				errors: r["ctx"]["errors"]
 			}>
 		:	never
 
@@ -503,7 +516,7 @@ export declare namespace UnionTree {
 							branch["names"][k]
 						:	undefined
 					}
-					errors: ctx["errors"]
+					errors: branch["errors"]
 				}
 			}>
 		:	never
@@ -541,7 +554,12 @@ export declare namespace GroupTree {
 		self extends GroupTree,
 		ctx extends FinalizationContext
 	> =
-		finalizeGroupAst<self, ctx> extends infer r ?
+		self["capture"] extends string & keyof ctx["names"] ?
+			FinalizationResult.error<
+				ctx,
+				writeDuplicateCaptureGroupNameError<self["capture"]>
+			>
+		: finalizeGroupAst<self, ctx> extends infer r ?
 			// allow the result to distribute to a particular branch
 			// to preserve associations between groups and references
 			// so that e.g. "(a|b)\\1" is inferred as "aa" | "bb"
@@ -850,3 +868,11 @@ export const writeMidAnchorError = <anchor extends Anchor>(
 
 type writeMidAnchorError<anchor extends Anchor> =
 	`Anchor ${anchor} may not appear mid-pattern`
+
+export const writeDuplicateCaptureGroupNameError = <name extends string>(
+	name: name
+): writeDuplicateCaptureGroupNameError<name> =>
+	`Duplicate capture group name '${name}'`
+
+export type writeDuplicateCaptureGroupNameError<name extends string> =
+	`Duplicate capture group name '${name}'`

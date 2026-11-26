@@ -4,12 +4,17 @@ import {
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
 import { regex, type Regex } from "arkregex"
-import { emptyCharacterSetMessage } from "arkregex/internal/charset.ts"
+import {
+	emptyCharacterSetMessage,
+	writeOutOfOrderRangeMessage
+} from "arkregex/internal/charset.ts"
 import {
 	caretNotationMessage,
 	missingBackreferenceNameMessage,
 	trailingBackslashMessage,
+	writeInvalidUnicodePropertyMessage,
 	writeStringEscapableMessage,
+	writeUnicodePropertyRequiresFlagMessage,
 	writeUnnecessaryEscapeMessage,
 	writeUnresolvableBackreferenceMessage
 } from "arkregex/internal/escape.ts"
@@ -23,11 +28,18 @@ import {
 } from "arkregex/internal/group.ts"
 import type { next } from "arkregex/internal/parse.ts"
 import {
+	incompleteQuantifierMessage,
 	writeMinExceedsMaxQuantifierError,
 	writeUnmatchedQuantifierError,
 	writeUnnaturalNumberQuantifierError
 } from "arkregex/internal/quantify.ts"
 import {
+	mutuallyExclusiveUnicodeFlagsMessage,
+	writeDuplicateFlagMessage,
+	writeInvalidFlagMessage
+} from "arkregex/internal/regex.ts"
+import {
+	writeDuplicateCaptureGroupNameError,
 	writeIncompleteReferenceError,
 	writeMidAnchorError,
 	type finalizeTree,
@@ -329,6 +341,21 @@ contextualize(() => {
 			attest<Regex<"a{,2}", {}>>(r).type.toString.snap('Regex<"a{,2}", {}>')
 		})
 
+		it("rejects incomplete quantifiers under u and v flags", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{,2}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
+			// @ts-expect-error
+			attest(() => regex("^a{,2}$", "v"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
+			// @ts-expect-error
+			attest(() => regex("^a{}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
+		})
+
 		it("fallsback to literal on empty", () => {
 			const r = regex("^a{}$")
 			attest<Regex<"a{}", {}>>(r).type.toString.snap('Regex<"a{}", {}>')
@@ -584,6 +611,35 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => regex("[]")).type.errors(emptyCharacterSetMessage)
 		})
+
+		it("out of order range", () => {
+			// @ts-expect-error
+			attest(() => regex("^[z-a]$"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("z", "a"))
+			// @ts-expect-error
+			attest(() => regex("^[9-0]$"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("9", "0"))
+			// @ts-expect-error
+			attest(() => regex("^[a-Z]$"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("a", "Z"))
+			// @ts-expect-error
+			attest(() => regex("^[^z-a]$"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("z", "a"))
+			// @ts-expect-error
+			attest(() => regex("^[a--b]$"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("a", "-"))
+
+			// valid boundary cases
+			attest<Regex<string, {}>>(regex("^[Z-a]$"))
+			attest<Regex<string, {}>>(regex("^[a-a]$"))
+			attest<Regex<string, {}>>(regex("^[!--]$"))
+			attest<Regex<string, {}>>(regex("^[a-\\d]$"))
+		})
 	})
 
 	describe("escapes", () => {
@@ -740,6 +796,25 @@ contextualize(() => {
 		it("caret notation error", () => {
 			// @ts-expect-error
 			attest(() => regex("\\cA")).type.errors(caretNotationMessage)
+		})
+
+		it("unicode property escapes require u or v flag", () => {
+			attest<Regex<string, { flags: "u" }>>(regex("^\\p{Emoji}$", "u"))
+			attest<Regex<string, { flags: "v" }>>(regex("^\\P{ASCII}$", "v"))
+			// @ts-expect-error
+			attest(() => regex("^\\p{Emoji}$")).type.errors(
+				writeUnicodePropertyRequiresFlagMessage("p")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\P{Emoji}$")).type.errors(
+				writeUnicodePropertyRequiresFlagMessage("P")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\p$", "u"))
+				.throws("Invalid property name")
+				.type.errors(writeInvalidUnicodePropertyMessage("p"))
+			// inside a charset without u/v, \p is literal "p"
+			attest<Regex<"p" | "{" | "a" | "}", {}>>(regex("^[\\p{a}]$"))
 		})
 	})
 
@@ -1314,6 +1389,47 @@ contextualize(() => {
 				writeUnresolvableBackreferenceMessage("")
 			)
 		})
+
+		it("duplicate capture group names", () => {
+			// @ts-expect-error
+			attest(() => regex("^(?<x>a)(?<x>b)$"))
+				.throws("Duplicate capture group name")
+				.type.errors(writeDuplicateCaptureGroupNameError("x"))
+			// @ts-expect-error
+			attest(() => regex("^(?<x>(?<x>a))$"))
+				.throws("Duplicate capture group name")
+				.type.errors(writeDuplicateCaptureGroupNameError("x"))
+			// @ts-expect-error
+			attest(() => regex("^(?:(?<x>a)|b)(?<x>c)$"))
+				.throws("Duplicate capture group name")
+				.type.errors(writeDuplicateCaptureGroupNameError("x"))
+			// @ts-expect-error
+			attest(() => regex("^(?<x>a)(?<x>b)|c$"))
+				.throws("Duplicate capture group name")
+				.type.errors(writeDuplicateCaptureGroupNameError("x"))
+
+			// duplicate names in distinct alternation branches are valid JS
+			const Alt = regex("^(?<x>a)|(?<x>b)$")
+			attest<
+				Regex<
+					`a${string}` | `${string}b`,
+					{
+						captures: ["a", undefined] | [undefined, "b"]
+						names: { x: "a" } | { x: "b" }
+					}
+				>
+			>(Alt)
+			const GroupedAlt = regex("^((?<x>a)|(?<x>b))$")
+			attest<
+				Regex<
+					"a" | "b",
+					{
+						captures: ["a", "a", undefined] | ["b", undefined, "b"]
+						names: { x: "a" } | { x: "b" }
+					}
+				>
+			>(GroupedAlt)
+		})
 	})
 
 	describe("lookarounds", () => {
@@ -1407,6 +1523,33 @@ contextualize(() => {
 		it("m allows anchors mid-pattern", () => {
 			const S = regex("a$\n^b", "m")
 			attest<Regex<`${string}a\nb${string}`, { flags: "m" }>>(S)
+		})
+
+		it("non-canonical flag order is accepted and normalized", () => {
+			const S = regex("^a$", "ig")
+			attest<Regex<"a" | "A", { flags: "gi" }>>(S)
+			attest(S.flags).equals("gi")
+
+			const Multi = regex("^a$", "ymgids")
+			attest<Regex<`${string}${"a" | "A"}${string}`, { flags: "dgimsy" }>>(
+				Multi
+			)
+			attest(Multi.flags).equals("dgimsy")
+		})
+
+		it("rejects duplicate, invalid, and mutually exclusive flags", () => {
+			// @ts-expect-error
+			attest(() => regex("^a$", "ii"))
+				.throws("Invalid flags")
+				.type.errors(writeDuplicateFlagMessage("i"))
+			// @ts-expect-error
+			attest(() => regex("^a$", "uv"))
+				.throws("Invalid flags")
+				.type.errors(mutuallyExclusiveUnicodeFlagsMessage)
+			// @ts-expect-error
+			attest(() => regex("^a$", "z"))
+				.throws("Invalid flags")
+				.type.errors(writeInvalidFlagMessage("z"))
 		})
 	})
 
@@ -1533,6 +1676,30 @@ contextualize(() => {
 			it("modifier group with colon but no content", () => {
 				const S = regex("^(?i:)$")
 				attest<Regex<"", {}>>(S)
+			})
+
+			it("m enable disables anchoring inside group", () => {
+				const S = regex("^a(?m:$)")
+				attest<Regex<`a${string}`, {}>>(S)
+				attest(S.test("a\nb")).equals(true)
+			})
+
+			it("m disable restores anchoring inside group", () => {
+				const S = regex("(?-m:^a$)", "m")
+				attest<Regex<"a", { flags: "m" }>>(S)
+				attest(S.test("a")).equals(true)
+				attest(S.test("a\nb")).equals(false)
+			})
+
+			it("m enable allows mid-pattern anchor", () => {
+				const S = regex("^a(?m:$)\nb$")
+				attest<Regex<"a\nb", {}>>(S)
+				attest(S.test("a\nb")).equals(true)
+			})
+
+			it("nested m enable/disable", () => {
+				const S = regex("(?m:^a(?-m:$))")
+				attest<Regex<`${string}a`, {}>>(S)
 			})
 		}
 	})

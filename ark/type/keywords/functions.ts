@@ -89,7 +89,7 @@ const isoDateParseError = /* @__PURE__ */ keywordError(
 
 // a calendar, week or ordinal date, then a time whose last unit can have a fraction, then an offset
 const isoDateParts =
-	/^([+-]?\d{4})(?:-?(?:(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?([1-7]))?|(\d{3})))?(?:T(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?(?:[,.](\d+))?(?:[Zz]|([+-])(\d{2}):?(\d{2})?)?)?$/
+	/^([+-]?\d{4})(?:-?(?:(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?([1-7]))?|(\d{3})))?(?:T(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?(?:[,.](\d+))?(?:[Zz]|([+-])(\d{2})(?::?(\d{2}))?)?)?$/
 
 // read in UTC unless it has an offset, so it's one instant on every machine
 const isoDateOf = (parts: RegExpExecArray): Date | undefined => {

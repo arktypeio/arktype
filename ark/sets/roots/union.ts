@@ -1678,10 +1678,12 @@ const mergeRangeBranches = (
 		l.inner.proto?.dateAllowsInvalid
 	)
 		return
-	const family = rangeFamilies.find(family =>
-		family.kinds.some(
-			kind => l.inner[kind] || (r.is("intersection") && r.inner[kind])
-		)
+	const family = rangeFamilies.find(
+		family =>
+			rangeFamilyMatchesNode(family, l) &&
+			family.kinds.some(
+				kind => l.inner[kind] || (r.is("intersection") && r.inner[kind])
+			)
 	)
 	if (!family) return
 	const rest = childrenExcept(l, family.kinds)
@@ -1762,6 +1764,14 @@ const rangeFamilies: RangeFamily[] = [
 		integral: true
 	}
 ]
+
+const rangeFamilyMatchesNode = (
+	family: RangeFamily,
+	node: Intersection.Node
+): boolean =>
+	family.lower === "after" ? node.inner.proto?.proto === Date
+	: family.lower === "min" ? node.inner.domain?.domain === "number"
+	: true
 
 interface Limit {
 	value: number
@@ -1872,6 +1882,452 @@ const rangeInner = (
 				$.node(family.excluded, { rule: ruleOf(value), meta })
 			)
 		})
+	}
+}
+
+export const extractRoot = (l: BaseRoot, r: BaseRoot): BaseRoot =>
+	partitionRoot(l, r, { remaining: maxPartitionSplits })[0]
+
+export const excludeRoot = (l: BaseRoot, r: BaseRoot): BaseRoot =>
+	partitionRoot(l, r, { remaining: maxPartitionSplits })[1]
+
+const maxPartitionSplits = 64
+const maxDateMs = 8_640_000_000_000_000
+
+type PartitionBudget = {
+	remaining: number
+}
+
+type PartitionResult = {
+	extracted: Union.ChildNode[]
+	excluded: Union.ChildNode[]
+}
+
+const partitionRoot = (
+	l: BaseRoot,
+	r: BaseRoot,
+	budget: PartitionBudget
+): [extracted: BaseRoot, excluded: BaseRoot] => {
+	const extracted: Union.ChildNode[] = []
+	const excluded: Union.ChildNode[] = []
+	for (const branch of l.branches) {
+		const res = partitionBranch(branch, r, budget)
+		extracted.push(...res.extracted)
+		excluded.push(...res.excluded)
+	}
+	return [l.$.schema(extracted) as BaseRoot, l.$.schema(excluded) as BaseRoot]
+}
+
+const partitionBranch = (
+	branch: Union.ChildNode,
+	rNode: BaseRoot,
+	budget: PartitionBudget
+): PartitionResult => {
+	if (branch.extends(rNode)) return { extracted: [branch], excluded: [] }
+	if (
+		!branch.is("intersection") ||
+		budget.remaining <= 0 ||
+		!branch.overlaps(rNode)
+	)
+		return { extracted: [], excluded: [branch] }
+	return (
+		splitRangeBranch(branch, rNode, budget) ??
+		splitPropBranch(branch, rNode, budget) ?? {
+			extracted: [],
+			excluded: [branch]
+		}
+	)
+}
+
+const normalizeRange = (
+	range: Range,
+	family: RangeFamily
+): Range | undefined => {
+	let lower =
+		family.lower === "minLength" && (!range.lower || range.lower.value < 0) ?
+			{ value: 0 }
+		:	range.lower
+	let upper = range.upper
+	const excludedSet = new Set(range.excluded)
+	if (family.integral) {
+		if (lower?.exclusive) lower = { value: lower.value + 1 }
+		if (upper?.exclusive) upper = { value: upper.value - 1 }
+		while (lower && excludedSet.has(lower.value))
+			lower = { value: lower.value + 1 }
+		while (upper && excludedSet.has(upper.value))
+			upper = { value: upper.value - 1 }
+		if (family.lower === "after") {
+			if (lower && lower.value > maxDateMs) return
+			if (upper && upper.value < -maxDateMs) return
+			if (lower && lower.value < -maxDateMs) lower = { value: -maxDateMs }
+			if (upper && upper.value > maxDateMs) upper = { value: maxDateMs }
+		}
+		if (lower && upper && lower.value > upper.value) return
+	} else {
+		if (lower && !lower.exclusive && excludedSet.has(lower.value))
+			lower = { value: lower.value, exclusive: true }
+		if (upper && !upper.exclusive && excludedSet.has(upper.value))
+			upper = { value: upper.value, exclusive: true }
+		if (
+			lower &&
+			upper &&
+			(lower.value > upper.value ||
+				(lower.value === upper.value && (lower.exclusive || upper.exclusive)))
+		)
+			return
+	}
+	const excluded = [...excludedSet]
+		.filter(v => (!lower || v > lower.value) && (!upper || v < upper.value))
+		.sort((a, b) => a - b)
+	return { lower, upper, excluded }
+}
+
+const stricterLower = (
+	l: Limit | undefined,
+	r: Limit | undefined
+): Limit | undefined =>
+	!l ? r
+	: !r ? l
+	: l.value > r.value ? l
+	: r.value > l.value ? r
+	: l.exclusive ? l
+	: r
+
+const stricterUpper = (
+	l: Limit | undefined,
+	r: Limit | undefined
+): Limit | undefined =>
+	!l ? r
+	: !r ? l
+	: l.value < r.value ? l
+	: r.value < l.value ? r
+	: l.exclusive ? l
+	: r
+
+const intersectRange = (
+	l: Range,
+	r: Range,
+	family: RangeFamily
+): Range | undefined =>
+	normalizeRange(
+		{
+			lower: stricterLower(l.lower, r.lower),
+			upper: stricterUpper(l.upper, r.upper),
+			excluded: [...l.excluded, ...r.excluded]
+		},
+		family
+	)
+
+const subtractRange = (l: Range, r: Range, family: RangeFamily): Range[] => {
+	const parts: Range[] = []
+	if (r.lower) {
+		const below = intersectRange(
+			l,
+			{
+				lower: undefined,
+				upper: {
+					value: r.lower.value,
+					exclusive: r.lower.exclusive ? undefined : true
+				},
+				excluded: []
+			},
+			family
+		)
+		if (below) parts.push(below)
+	}
+	if (r.upper) {
+		const above = intersectRange(
+			l,
+			{
+				lower: {
+					value: r.upper.value,
+					exclusive: r.upper.exclusive ? undefined : true
+				},
+				upper: undefined,
+				excluded: []
+			},
+			family
+		)
+		if (above) parts.push(above)
+	}
+	for (const v of r.excluded) {
+		if (rangeIncludes(l, v)) {
+			const point = normalizeRange(
+				{ lower: { value: v }, upper: { value: v }, excluded: [] },
+				family
+			)
+			if (point) parts.push(point)
+		}
+	}
+	return parts
+}
+
+const rRangeOf = (
+	r: Union.ChildNode,
+	family: RangeFamily
+): Range | undefined => {
+	if (r.is("intersection")) {
+		if (
+			rangeFamilyMatchesNode(family, r) &&
+			family.kinds.some(kind => r.inner[kind])
+		)
+			return rangeOf(r, family)
+		return
+	}
+	if (r.is("unit")) {
+		if (family.lower === "after" && r.unit instanceof Date) {
+			const value = r.unit.valueOf()
+			return { lower: { value }, upper: { value }, excluded: [] }
+		}
+		if (family.lower === "min" && typeof r.unit === "number") {
+			return {
+				lower: { value: r.unit },
+				upper: { value: r.unit },
+				excluded: []
+			}
+		}
+		if (family.lower === "minLength" && r.unit === "")
+			return { lower: { value: 0 }, upper: { value: 0 }, excluded: [] }
+	}
+}
+
+const branchWithRange = (
+	branch: Intersection.Node,
+	range: Range,
+	family: RangeFamily,
+	boundMeta: ArkEnv.meta
+): Union.ChildNode | undefined => {
+	if (
+		family.lower === "minLength" &&
+		branch.inner.domain?.domain === "string" &&
+		range.lower?.value === 0 &&
+		range.upper?.value === 0
+	) {
+		return (
+				childrenExcept(branch, family.kinds).every(child =>
+					child.allowsUnused("" as never)
+				)
+			) ?
+				(branch.$.node("unit", {
+					unit: "",
+					meta: branch.meta
+				}) as Union.ChildNode)
+			:	undefined
+	}
+	const inner: dict = { ...branch.inner }
+	for (const kind of family.kinds) delete inner[kind]
+	Object.assign(inner, rangeInner(range, family, boundMeta, branch.$))
+	const reduced = $ark.sets!.reduce("intersection", inner, branch.$)
+	if (reduced instanceof Disjoint) return
+	return branch.$.node("intersection", {
+		...inner,
+		meta: branch.meta
+	}) as Union.ChildNode
+}
+
+const splitRangeBranch = (
+	branch: Intersection.Node,
+	rNode: BaseRoot,
+	budget: PartitionBudget
+): PartitionResult | undefined => {
+	if (
+		branch.inner.domain?.numberAllowsNaN ||
+		branch.inner.proto?.dateAllowsInvalid
+	)
+		return
+	const family = rangeFamilies.find(
+		f => rangeFamilyMatchesNode(f, branch) && f.kinds.some(k => branch.inner[k])
+	)
+	if (!family) return
+	const lRange = rangeOf(branch, family)
+	const bounds = branch.children.filter(child =>
+		family.kinds.includes(child.kind as RangeKind)
+	)
+	const boundMeta = sameMeta(bounds) ? (bounds[0]?.meta ?? {}) : {}
+	for (const r of rNode.branches) {
+		if (!branch.overlaps(r)) continue
+		const rRange = rRangeOf(r, family)
+		if (!rRange) continue
+		const inRange = intersectRange(lRange, rRange, family)
+		if (!inRange) continue
+		const inNode = branchWithRange(branch, inRange, family, boundMeta)
+		if (!inNode || hashesMatch(inNode, branch) || !inNode.extends(rNode))
+			continue
+		const outRanges = subtractRange(lRange, rRange, family)
+		const outNodes: Union.ChildNode[] = []
+		for (const outRange of outRanges) {
+			const outNode = branchWithRange(branch, outRange, family, boundMeta)
+			if (outNode && !hashesMatch(outNode, branch)) outNodes.push(outNode)
+		}
+		if (!outNodes.length) continue
+		budget.remaining--
+		const extracted: Union.ChildNode[] = [inNode]
+		const excluded: Union.ChildNode[] = []
+		for (const outNode of outNodes) {
+			const sub = partitionBranch(outNode, rNode, budget)
+			extracted.push(...sub.extracted)
+			excluded.push(...sub.excluded)
+		}
+		return { extracted, excluded }
+	}
+}
+
+const replaceProp = (
+	branch: Intersection.Node,
+	prop: Prop.Node,
+	kind: Prop.Kind,
+	value: BaseRoot
+): Union.ChildNode => {
+	const structure: dict = {
+		...branch.structure!.inner,
+		order: branch.structure!.keyOrder
+	}
+	const nextProp = branch.$.node(kind, {
+		key: prop.key,
+		value,
+		meta: prop.meta
+	})
+	if (kind === prop.kind) {
+		structure[prop.kind] = branch.structure![prop.kind]!.map(p =>
+			p === prop ? nextProp : p
+		)
+	} else {
+		const remaining = branch.structure![prop.kind]!.filter(p => p !== prop)
+		if (remaining.length) structure[prop.kind] = remaining
+		else delete structure[prop.kind]
+		structure[kind] = [
+			...((structure[kind] as Prop.Node[] | undefined) ?? []),
+			nextProp
+		]
+	}
+	return branch.$.node("intersection", {
+		...branch.inner,
+		structure: branch.$.node("structure", {
+			...structure,
+			meta: branch.structure!.meta
+		} as never),
+		meta: branch.meta
+	}) as Union.ChildNode
+}
+
+// whether narrowing branch's existing props can possibly satisfy r's non-value constraints
+const canBranchNarrowTo = (
+	branch: Intersection.Node,
+	r: Intersection.Node
+): boolean => {
+	const bStruct = branch.structure!
+	const rStruct = r.structure!
+	if (
+		r.inner.proto &&
+		(!branch.inner.proto || !branch.inner.proto.extends(r.inner.proto))
+	)
+		return false
+	if (
+		r.inner.predicate &&
+		!r.inner.predicate.every(rp =>
+			branch.inner.predicate?.some(bp => hashesMatch(bp, rp))
+		)
+	)
+		return false
+	for (const req of rStruct.required ?? []) {
+		const bProp = bStruct.byKey[req.key]
+		if (!bProp || (bProp.is("optional") && bProp.hasDef())) return false
+	}
+	if (rStruct.undeclared === "reject") {
+		if (bStruct.undeclared !== "reject") return false
+		for (const bProp of bStruct.required ?? []) {
+			if (
+				!(bProp.key in rStruct.byKey) &&
+				!rStruct.index?.some(idx =>
+					idx.signature.allowsUnused(bProp.key as never)
+				)
+			)
+				return false
+		}
+	} else if (rStruct.undeclared === "delete" && !bStruct.undeclared)
+		return false
+	if (rStruct.index?.length && !bStruct.undeclared && !bStruct.index?.length)
+		return false
+	if (rStruct.sequence && !bStruct.sequence) return false
+	return true
+}
+
+const splitPropBranch = (
+	branch: Intersection.Node,
+	rNode: BaseRoot,
+	budget: PartitionBudget
+): PartitionResult | undefined => {
+	if (!branch.structure) return
+	const rStructures: Intersection.Node[] = []
+	for (const r of rNode.branches) {
+		const resolved = r.is("alias") ? peekAliasResolution(r) : r
+		if (
+			resolved?.is("intersection") &&
+			resolved.structure &&
+			canBranchNarrowTo(branch, resolved) &&
+			branch.overlaps(r)
+		)
+			rStructures.push(resolved)
+	}
+	if (!rStructures.length) return
+	for (const prop of branch.structure.props) {
+		if (prop.is("optional") && prop.hasDef()) continue
+		const targets: { value: BaseRoot; permitsMissing: boolean }[] = []
+		for (const r of rStructures) {
+			const rProp = r.structure!.byKey[prop.key]
+			if (
+				rProp &&
+				!prop.value.extends(rProp.value) &&
+				prop.value.overlaps(rProp.value)
+			)
+				targets.push({ value: rProp.value, permitsMissing: rProp.optional })
+			if (r.structure!.index) {
+				for (const idx of r.structure!.index) {
+					if (
+						idx.signature.allowsUnused(prop.key as never) &&
+						!prop.value.extends(idx.value) &&
+						prop.value.overlaps(idx.value)
+					)
+						targets.push({ value: idx.value, permitsMissing: true })
+				}
+			}
+		}
+		for (const { value: target, permitsMissing } of targets) {
+			const [extractedVal, excludedVal] = partitionRoot(
+				prop.value,
+				target,
+				budget
+			)
+			if (
+				extractedVal.isNever() ||
+				excludedVal.isNever() ||
+				hashesMatch(extractedVal, prop.value) ||
+				hashesMatch(excludedVal, prop.value)
+			)
+				continue
+			budget.remaining--
+			const extractedKind: Prop.Kind =
+				prop.required ? "required"
+				: permitsMissing ? "optional"
+				: "required"
+			const excludedKind: Prop.Kind =
+				prop.required ? "required"
+				: permitsMissing ? "required"
+				: "optional"
+			const withExtracted = replaceProp(
+				branch,
+				prop,
+				extractedKind,
+				extractedVal
+			)
+			const withExcluded = replaceProp(branch, prop, excludedKind, excludedVal)
+			const left = partitionBranch(withExtracted, rNode, budget)
+			const right = partitionBranch(withExcluded, rNode, budget)
+			return {
+				extracted: [...left.extracted, ...right.extracted],
+				excluded: [...left.excluded, ...right.excluded]
+			}
+		}
 	}
 }
 

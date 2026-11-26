@@ -1,4 +1,5 @@
-import type { ErrorMessage, Scanner } from "@ark/util"
+import type { contains, ErrorMessage, Scanner } from "@ark/util"
+import type { UnicodeFlag } from "./regex.ts"
 import type { Control, ReferenceNode, s, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
@@ -6,7 +7,11 @@ export type parseEscape<s extends State, unscanned extends string> =
 		char extends NonZeroDigit ? parseNumericBackreference<s, unscanned>
 		: char extends "k" ? parseNamedBackreference<s, nextUnscanned>
 		: char extends UnicodePropertyChar ?
-			parseUnicodeProperty<s, char, nextUnscanned>
+			contains<s["flags"], UnicodeFlag> extends true ?
+				parseUnicodeProperty<s, char, nextUnscanned>
+			: nextUnscanned extends `{${string}}${string}` ?
+				s.error<writeUnicodePropertyRequiresFlagMessage<char>>
+			:	parseSingleEscapedCharacter<s, char, nextUnscanned>
 		:	parseSingleEscapedCharacter<s, char, nextUnscanned>
 	:	s.error<trailingBackslashMessage>
 
@@ -81,13 +86,23 @@ export const writeInvalidUnicodePropertyMessage = <
 	char extends UnicodePropertyChar
 >(
 	char: char
-): writeInvalidUnicodePropertyMessage<char> =>
-	`\\${char} must be followed by a property like \\${char}{Emoji_Presentation}`
+): string =>
+	`\\\\${char} must be followed by a property like \\\\${char}{Emoji_Presentation}`
 
 export type writeInvalidUnicodePropertyMessage<
 	char extends UnicodePropertyChar
 > =
 	`\\${char} must be followed by a property like \\${char}{Emoji_Presentation}`
+
+export const writeUnicodePropertyRequiresFlagMessage = <
+	char extends UnicodePropertyChar
+>(
+	char: char
+): string => `\\\\${char}{...} requires the 'u' or 'v' flag`
+
+export type writeUnicodePropertyRequiresFlagMessage<
+	char extends UnicodePropertyChar
+> = `\\${char}{...} requires the 'u' or 'v' flag`
 
 export const writeUnnecessaryEscapeMessage = <char extends string>(
 	char: char

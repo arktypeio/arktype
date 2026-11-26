@@ -65,7 +65,9 @@ export abstract class BaseProp<
 
 	/** its key as a path prints it, a symbol by its name */
 	get keyStr(): string {
-		return typeof this.key === "string" ? this.key : printable(this.key)
+		return typeof this.key === "string" ?
+				formatPropKey(this.key)
+			:	printable(this.key)
 	}
 
 	protected override initFlat(): void {
@@ -199,3 +201,15 @@ export abstract class BaseProp<
 		)
 	}
 }
+
+const formatPropKey = (key: string): string =>
+	(
+		key === "" ||
+		key.endsWith("?") ||
+		(key.startsWith("[") && key.endsWith("]")) ||
+		key === "+ (undeclared)" ||
+		key.includes(":") ||
+		key.includes(",")
+	) ?
+		JSON.stringify(key)
+	:	key

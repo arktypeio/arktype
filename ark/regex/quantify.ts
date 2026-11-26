@@ -1,4 +1,5 @@
-import type { parseNonNegativeInteger, Scanner } from "@ark/util"
+import type { contains, parseNonNegativeInteger, Scanner } from "@ark/util"
+import type { UnicodeFlag } from "./regex.ts"
 import type { s, State } from "./state.ts"
 
 export type parseBuiltinQuantifier<
@@ -123,6 +124,8 @@ export type parsePossibleRange<
 				writeMinExceedsMaxQuantifierError<parseQuantifier<unscanned, parsed>>
 			>
 		:	s.pushQuantifier<s, parsed["min"], parsed["max"], parsed["unscanned"]>
+	: contains<s["flags"], UnicodeFlag> extends true ?
+		s.error<incompleteQuantifierMessage>
 	:	s.shiftQuantifiable<s, "{", unscanned>
 
 export type quantify<
@@ -213,3 +216,9 @@ export const writeMinExceedsMaxQuantifierError = <quantifier extends string>(
 
 export type writeMinExceedsMaxQuantifierError<quantifier extends string> =
 	`Quantifier ${quantifier} min cannot exceed max`
+
+export const incompleteQuantifierMessage =
+	"Incomplete quantifier: escape '{' with '\\\\{' to match literally with the 'u' or 'v' flag"
+
+export type incompleteQuantifierMessage =
+	"Incomplete quantifier: escape '{' with '\\{' to match literally with the 'u' or 'v' flag"

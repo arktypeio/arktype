@@ -1242,7 +1242,7 @@ extra must be a string or null (was missing)`)
 		}>(urDOOMed.t)
 
 		attest(urDOOMed.expression).snap(
-			'{ escapes?: "a | b" | "c | d", grouping: (((((4 | 5)[] | 3)[] | 2)[] | 1)[] | 0)[], nestedGenerics: 0n }'
+			'{ "escapes?": "a | b" | "c | d", grouping: (((((4 | 5)[] | 3)[] | 2)[] | 1)[] | 0)[], nestedGenerics: 0n }'
 		)
 	})
 

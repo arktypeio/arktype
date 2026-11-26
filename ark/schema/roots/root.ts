@@ -378,16 +378,12 @@ export abstract class BaseRoot<
 
 	extract(r: unknown): BaseRoot {
 		const rNode = this.$.parseDef(r)
-		return this.$.schema(
-			this.branches.filter(branch => branch.extends(rNode))
-		) as never
+		return sets().extract(this, rNode)
 	}
 
 	exclude(r: unknown): BaseRoot {
 		const rNode = this.$.parseDef(r)
-		return this.$.schema(
-			this.branches.filter(branch => !branch.extends(rNode))
-		) as never
+		return sets().exclude(this, rNode)
 	}
 
 	array(): BaseRoot {

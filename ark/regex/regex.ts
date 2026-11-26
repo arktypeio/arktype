@@ -7,8 +7,63 @@ export type IndexedCaptures = Array<string | undefined>
 export type NamedCaptures = Record<string, string | undefined>
 
 export type UnicodeFlag = "v" | "u"
+export type Flag = "d" | "g" | "i" | "m" | "s" | UnicodeFlag | "y"
 export type Flags =
 	`${"d" | ""}${"g" | ""}${"i" | ""}${"m" | ""}${"s" | ""}${UnicodeFlag | ""}${"y" | ""}`
+
+type canonicalFlags<seen extends Flag> =
+	`${"d" extends seen ? "d" : ""}${"g" extends seen ? "g" : ""}${"i" extends seen ? "i" : ""}${"m" extends seen ? "m" : ""}${"s" extends seen ? "s" : ""}${"u" extends (
+		seen
+	) ?
+		"u"
+	: "v" extends seen ? "v"
+	: ""}${"y" extends seen ? "y" : ""}`
+
+type parseFlags<flags extends string, seen extends Flag = never> =
+	flags extends "" ? canonicalFlags<seen>
+	: flags extends `${infer f}${infer rest}` ?
+		f extends Flag ?
+			f extends seen ? ErrorMessage<writeDuplicateFlagMessage<f>>
+			: f extends UnicodeFlag ?
+				UnicodeFlag extends seen | f ?
+					ErrorMessage<mutuallyExclusiveUnicodeFlagsMessage>
+				:	parseFlags<rest, seen | f>
+			:	parseFlags<rest, seen | f>
+		:	ErrorMessage<writeInvalidFlagMessage<f>>
+	:	Flags
+
+export type normalizeFlags<flags extends string> =
+	flags extends "" ? ""
+	: parseFlags<flags> extends infer normalized extends Flags ? normalized
+	: ""
+
+export type validateFlags<flags extends string> =
+	flags extends "" ? ""
+	: string extends flags ? Flags
+	: parseFlags<flags> extends infer e extends ErrorMessage ? e
+	: flags
+
+export const writeDuplicateFlagMessage = <flag extends Flag>(
+	flag: flag
+): writeDuplicateFlagMessage<flag> =>
+	`Flag '${flag}' cannot be specified multiple times`
+
+export type writeDuplicateFlagMessage<flag extends Flag> =
+	`Flag '${flag}' cannot be specified multiple times`
+
+export const writeInvalidFlagMessage = <flag extends string>(
+	flag: flag
+): writeInvalidFlagMessage<flag> =>
+	`Flag '${flag}' must be one of 'd', 'g', 'i', 'm', 's', 'u', 'v' or 'y'`
+
+export type writeInvalidFlagMessage<flag extends string> =
+	`Flag '${flag}' must be one of 'd', 'g', 'i', 'm', 's', 'u', 'v' or 'y'`
+
+export const mutuallyExclusiveUnicodeFlagsMessage =
+	"Flags 'u' and 'v' cannot be used together"
+
+export type mutuallyExclusiveUnicodeFlagsMessage =
+	typeof mutuallyExclusiveUnicodeFlagsMessage
 
 export type RegexContext = {
 	flags?: Flags
@@ -42,9 +97,9 @@ export interface Regex<
 }
 
 export interface RegexParser {
-	<src extends string, flags extends Flags = "">(
-		src: regex.validate<src, flags>,
-		flags?: flags
+	<src extends string, flags extends string = "">(
+		src: regex.validate<src, normalizeFlags<flags>>,
+		flags?: validateFlags<flags>
 	): regex.parse<src, flags>
 
 	as: <pattern extends string = string, ctx extends RegexContext = {}>(
@@ -64,13 +119,15 @@ export type regex<
 > = Regex<pattern, ctx>
 
 export declare namespace regex {
-	export type infer<src extends string, flags extends Flags = ""> =
+	export type infer<src extends string, flags extends string = ""> =
 		parse<src, flags> extends Regex<infer pattern> ? pattern : never
 
-	export type validate<src extends string, flags extends Flags = ""> =
+	export type validate<src extends string, flags extends string = ""> =
 		parse<src, flags> extends infer e extends ErrorMessage ? e : src
 
-	export type parse<src extends string, flags extends Flags = ""> = parseState<
-		State.initialize<src, flags>
-	>
+	export type parse<src extends string, flags extends string = ""> =
+		flags extends "" ? parseState<State.initialize<src, "">>
+		: parseFlags<flags> extends infer normalized extends Flags ?
+			parseState<State.initialize<src, normalized>>
+		:	parseFlags<flags>
 }

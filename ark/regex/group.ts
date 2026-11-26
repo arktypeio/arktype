@@ -38,6 +38,9 @@ type parseNonCapturingGroup<s extends State, unscanned extends string> =
 					following,
 					"i" extends flags ? true
 					: "i" extends negated ? false
+					: undefined,
+					"m" extends flags ? true
+					: "m" extends negated ? false
 					: undefined
 				>
 		:	never

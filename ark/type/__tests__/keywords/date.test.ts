@@ -63,15 +63,34 @@ contextualize(() => {
 
 	it("string.date.iso.parse rejects a date that doesn't exist", () => {
 		const ParseIso = type("string.date.iso.parse")
-		attest(ParseIso("2025-02-29").toString()).snap(
-			"must be an ISO 8601 date or date-time"
-		)
-		attest(ParseIso("2025-W53-1").toString()).snap(
-			"must be an ISO 8601 date or date-time"
-		)
-		attest(ParseIso("2025-366").toString()).snap(
-			"must be an ISO 8601 date or date-time"
-		)
+		const IsoDate = type("string.date.iso")
+		for (const invalid of [
+			"2025-02-29",
+			"2025-W53",
+			"2025-W53-1",
+			"2025-W00",
+			"2025-366",
+			"2025-01-01T",
+			"2025-01-01TZ",
+			"2025-01-01T59",
+			"2025-01-01T24:00.5",
+			"2025-01-01T12:00+05:"
+		]) {
+			attest(IsoDate.allows(invalid)).equals(false)
+			attest(ParseIso(invalid).toString()).equals(
+				"must be an ISO 8601 date or date-time"
+			)
+		}
+		for (const valid of [
+			"2020-W53",
+			"2020-W53-7",
+			"2026-W53",
+			"2024-366",
+			"2025-360"
+		]) {
+			attest(IsoDate.allows(valid)).equals(true)
+			attest(ParseIso(valid) instanceof Date).equals(true)
+		}
 	})
 
 	it("string.date.iso rejects days that don't exist in the month", () => {
