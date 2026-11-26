@@ -281,15 +281,13 @@ const publicSpecifiers = new Set(
 		.map(path => `arktype${path.slice(1)}`)
 )
 // a library re-exporting a keyword submodule (keywords.string) names it by the
-// namespaces arktype/internal/keywords/* declare, as it does @ark/schema's
-// Locale exporting ArkErrors' summaryIn, which takes any keywords' locale:
-// leaks arktype knows of (#1777), each counted by how often consumer.ts reaches
-// it, until it chooses public names for them. Any other reference is new
+// namespaces arktype/internal/keywords/* declare: leaks arktype knows of
+// (#1777), each counted by how often consumer.ts reaches it, until it chooses
+// public names for them. Any other reference is new
 const knownLeaks: Record<string, number> = {
 	"arktype/internal/keywords/string.ts#string.$": 1,
 	"arktype/internal/keywords/number.ts#number.$": 1,
-	"arktype/internal/keywords/ts.ts#object.$": 1,
-	"arktype/internal/_internal/schema/index.ts#Locale": 1
+	"arktype/internal/keywords/ts.ts#object.$": 1
 }
 const unstableReferences = [
 	...readFileSync(`${declaringConsumer}out/consumer.d.ts`, "utf8").matchAll(

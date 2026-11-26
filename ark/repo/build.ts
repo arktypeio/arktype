@@ -102,16 +102,41 @@ const resolveInlinedDtsTarget = (
 	return undefined
 }
 
+// the public entries of arktype exporting all a package it bundles does. Its
+// own declarations import the package by its entry, so a program loading them
+// has the entry among its modules. Emitting a library's declarations, tsc
+// names a type by the shortest specifier of a module in the program that
+// exports it: arktype/schema, where without the entry it would write the path
+// under arktype/internal/_internal the package's declarations are copied to
+const publicEntries: Record<string, string> = {
+	"@ark/util": "util",
+	"@ark/schema": "schema",
+	arkregex: "regex"
+}
+
 const rewriteDtsSpecifiers = (
 	rootDir: string,
-	targets: Partial<Record<PackageScope, string>>
+	targets: Partial<Record<PackageScope, string>>,
+	inlinedDir?: string
 ) => {
 	for (const file of walkPaths(rootDir, {
 		include: path => path.endsWith(".d.ts")
 	})) {
 		const original = readFile(file)
+		const publicEntryOf = (specifier: string) => {
+			if (
+				!inlinedDir ||
+				!(specifier in publicEntries) ||
+				!relative(inlinedDir, file).startsWith("..")
+			)
+				return
+			const entry = join(rootDir, publicEntries[specifier])
+			// the entry itself exports the package from where it was copied to
+			if (file !== `${entry}.d.ts`) return `${entry}.js`
+		}
 		const replaceSpecifier = (specifier: string) => {
-			const target = resolveInlinedDtsTarget(specifier, targets)
+			const target =
+				publicEntryOf(specifier) ?? resolveInlinedDtsTarget(specifier, targets)
 			if (!target) return specifier
 			const rel = relative(dirname(file), target).replace(/\\/g, "/")
 			return rel.startsWith(".") ? rel : `./${rel}`
@@ -160,7 +185,7 @@ const inlineDeclarations = () => {
 			join(schemaShared, "issueFeatures.d.ts"),
 			join(sharedDir, "issueFeatures.d.ts")
 		)
-		rewriteDtsSpecifiers(outDir, targets)
+		rewriteDtsSpecifiers(outDir, targets, internalDir)
 	}
 }
 

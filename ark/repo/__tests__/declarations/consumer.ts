@@ -14,6 +14,7 @@ import {
 	type ArkErrors
 } from "arktype"
 import { codec } from "arktype/codecs"
+import { de } from "arktype/locales/de"
 import { regex } from "arktype/regex"
 
 export const User = type({ name: "string", age: "number" })
@@ -117,3 +118,6 @@ export const messageWriter = messageIn
 export const stringKeywords = keywords.string
 export const numberKeywords = keywords.number
 export const objectKeywords = keywords.object
+
+// a locale written from one arktype ships
+export const locale = { ...de, tag: "de-AT" }
