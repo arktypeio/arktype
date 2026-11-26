@@ -1,6 +1,6 @@
 # arktype
 
-## 3.0.0-rc.11
+## 3.0.0-rc.12
 
 ### A label names its value in what a narrow says it must be
 
