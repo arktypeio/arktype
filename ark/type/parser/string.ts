@@ -382,6 +382,10 @@ type next<s extends StaticState, $, args> =
 export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends "" ? s["root"]
 	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
-	: s["finalizer"] extends "?" ? [s["root"], "?"]
+	: s["finalizer"] extends "?" ?
+		// as at runtime, nothing but whitespace may follow an optional
+		Scanner.skipWhitespace<s["unscanned"]> extends `${infer next}${string}` ?
+			ErrorMessage<writeUnexpectedCharacterMessage<next>>
+		:	[s["root"], "?"]
 	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
 	: ErrorMessage<writeUnexpectedCharacterMessage<s["finalizer"] & string>>

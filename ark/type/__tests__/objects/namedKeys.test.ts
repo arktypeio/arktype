@@ -76,6 +76,22 @@ contextualize(() => {
 		})
 	})
 
+	it("nothing but whitespace follows a string-embedded optional", () => {
+		attest<{ a?: string }>(type({ a: "string ?" }).infer)
+		// @ts-expect-error
+		attest(() => type({ a: "string?foo" })).throwsAndHasTypeError(
+			"'f' is not allowed here"
+		)
+		// @ts-expect-error
+		attest(() => type({ a: "string??" })).throwsAndHasTypeError(
+			"'?' is not allowed here"
+		)
+		// @ts-expect-error
+		attest(() => type(["string? | number"])).throwsAndHasTypeError(
+			"'|' is not allowed here"
+		)
+	})
+
 	it("tuple value optional", () => {
 		const s = Symbol("ok")
 		const ref = registeredReference(s)
