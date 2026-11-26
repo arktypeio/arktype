@@ -288,6 +288,37 @@ contextualize(() => {
 				'["a@b.com"] must be an integer'
 			)
 		})
+
+		it("neither resolves nor completes a private key of an ambient", () => {
+			const base = scope({ Foo: "'a'" })
+
+			attest(() =>
+				scope(
+					{
+						// @ts-expect-error
+						a: "Foo"
+					},
+					{ ambient: base.import() }
+				).export()
+			).throwsAndHasTypeError(writeUnresolvableMessage("Foo"))
+
+			const $ = scope(
+				{ a: "bar" },
+				{ ambient: { "#foo": type.string, bar: type.number } }
+			)
+			attest<number>($.export().a.infer)
+			// @ts-expect-error
+			attest(() => $.type("foo")).throwsAndHasTypeError(
+				writeUnresolvableMessage("foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("f")).type.errors(writeUnresolvableMessage("f"))
+
+			// the same aliases exported are what an ambient resolves
+			const exported = scope({ a: "Foo" }, { ambient: base.export() })
+			attest<"a">(exported.export().a.infer)
+			attest(exported.export().a.expression).snap('"a"')
+		})
 	})
 
 	describe("plain record ambient", () => {

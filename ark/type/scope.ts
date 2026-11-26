@@ -183,15 +183,22 @@ type normalizeAmbientEntry<v> =
 	: v extends { [inferred]: infer t } ? t
 	: never
 
+// a `#private` key is never what a reference resolves, so it's not one
+// a definition can be checked or completed against either
 type normalizeAmbientRecord<ambient> = {
-	[k in Exclude<keyof ambient, arkKind>]: normalizeAmbientEntry<ambient[k]>
+	[k in Exclude<
+		keyof ambient,
+		arkKind | PrivateDeclaration
+	>]: normalizeAmbientEntry<ambient[k]>
 } & unknown
 
 type normalizeAmbient<ambient> =
 	[ambient] extends [anyOrNever] ? ambient
 	: ambient extends Module<infer exports> | BoundModule<infer exports, any> ?
 		Exclude<keyof ambient, arkKind> extends keyof exports ?
-			exports
+			[keyof exports & PrivateDeclaration] extends [never] ?
+				exports
+			:	{ [k in Exclude<keyof exports, PrivateDeclaration>]: exports[k] }
 		:	normalizeAmbientRecord<ambient>
 	: ambient extends Primitive | Fn | readonly unknown[] ? {}
 	: normalizeAmbientRecord<ambient>
