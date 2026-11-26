@@ -35,6 +35,10 @@ import {
 	shallowDefaultableMessage,
 	shallowOptionalMessage
 } from "./ast/validate.ts"
+import type {
+	unbrandKeyofOperand,
+	writeKeyofOperandError
+} from "./ast/keyof.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import {
 	checkWrittenIntersection,
@@ -95,7 +99,14 @@ export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
 	def["length"] extends 1 ?
 		readonly [ErrorMessage<writeMissingRightOperandMessage<def[0]>>]
 	: def[0] extends "keyof" ?
-		readonly [def[0], validateDefinition<def[1], $, args>]
+		readonly [
+			def[0],
+			inferDefinition<def[1], $, args> extends infer data ?
+				[unbrandKeyofOperand<data>] extends [object] ?
+					validateDefinition<def[1], $, args>
+				:	writeKeyofOperandError<data>
+			:	never
+		]
 	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof" ? readonly [def[0], ...Constructor[]]
 	: never
@@ -157,7 +168,7 @@ export const parseKeyOfTuple: IndexZeroParser<"keyof"> = (def, ctx) => {
 }
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
-	keyof inferDefinition<operandDef, $, args>
+	keyof unbrandKeyofOperand<inferDefinition<operandDef, $, args>>
 >
 
 const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {

@@ -60,6 +60,24 @@ contextualize(() => {
 		)
 	})
 
+	it("branded non-object", () => {
+		// @ts-expect-error
+		attest(() => type("keyof string#id")).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "string")
+		)
+	})
+
+	it("non-object tuple expression", () => {
+		// @ts-expect-error
+		attest(() => type(["keyof", "string"])).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "string")
+		)
+		// @ts-expect-error
+		attest(() => type(["keyof", "number#id"])).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "number")
+		)
+	})
+
 	it("missing operand", () => {
 		// @ts-expect-error
 		attest(() => type("keyof "))
@@ -107,6 +125,14 @@ contextualize.each(
 			const T = $.type("keyof bc & string")
 			attest<"b" | "c">(T.t)
 			attest(T.json).equals(type("===", "b", "c").json)
+		})
+
+		it("branded object", $ => {
+			const T = $.type("keyof ab#id")
+			attest<"a" | "b">(T.t)
+			attest(T.json).equals(type("===", "a", "b").json)
+			const Tuple = $.type(["keyof", "ab#id"])
+			attest<"a" | "b">(Tuple.t)
 		})
 
 		it("union precedence", $ => {
