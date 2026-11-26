@@ -755,16 +755,29 @@ export declare namespace Scope {
 	export type infer<s extends { [arkKind]: "scope"; t: unknown }> =
 		inferScopeExports<s["t"], "out">
 
-	/**
-	 * #### map each exported alias in a `Scope` to its inferred input type, recursing into nested submodules
-	 *
-	 * @example
-	 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
-	 * // { id: string; user: { id: string; age?: number } }
-	 * type Inputs = Scope.inferIn<typeof $>
-	 */
-	export type inferIn<s extends { [arkKind]: "scope"; t: unknown }> =
-		inferScopeExports<s["t"], "in">
+	export namespace infer {
+		/**
+		 * #### map each exported alias in a `Scope` to its inferred input type, recursing into nested submodules
+		 *
+		 * @example
+		 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+		 * // { id: string; user: { id: string; age?: number } }
+		 * type Inputs = Scope.infer.In<typeof $>
+		 */
+		export type In<s extends { [arkKind]: "scope"; t: unknown }> =
+			inferScopeExports<s["t"], "in">
+
+		/**
+		 * #### map each exported alias in a `Scope` to its inferred output type, recursing into nested submodules
+		 *
+		 * @example
+		 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+		 * // { id: string; user: { id: string; age: number } }
+		 * type Outputs = Scope.infer.Out<typeof $>
+		 */
+		export type Out<s extends { [arkKind]: "scope"; t: unknown }> =
+			inferScopeExports<s["t"], "out">
+	}
 }
 
 type inferScopeExports<$, side extends "in" | "out"> = {

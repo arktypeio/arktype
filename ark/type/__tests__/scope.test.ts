@@ -693,7 +693,7 @@ b.c.c must be an object (was missing)`)
 		attest(parser.number("x").toString()).snap("must be a number")
 	})
 
-	it("Module.infer / Module.inferIn and Scope.infer / Scope.inferIn", () => {
+	it("Module.infer / Module.infer.In and Scope.infer / Scope.infer.In", () => {
 		const $ = scope({
 			"#secret": "string",
 			id: "string",
@@ -759,9 +759,11 @@ b.c.c must be an object (was missing)`)
 		}
 
 		attest<ExpectedOut, Module.infer<typeof mod>>()
-		attest<ExpectedIn, Module.inferIn<typeof mod>>()
+		attest<ExpectedOut, Module.infer.Out<typeof mod>>()
+		attest<ExpectedIn, Module.infer.In<typeof mod>>()
 		attest<ExpectedOut, Scope.infer<typeof $>>()
-		attest<ExpectedIn, Scope.inferIn<typeof $>>()
+		attest<ExpectedOut, Scope.infer.Out<typeof $>>()
+		attest<ExpectedIn, Scope.infer.In<typeof $>>()
 
 		// BoundModule from selective export
 		const partialMod = $.export("user", "parsed")
@@ -771,7 +773,7 @@ b.c.c must be an object (was missing)`)
 		>()
 		attest<
 			{ user: ExpectedIn["user"]; parsed: string },
-			Module.inferIn<typeof partialMod>
+			Module.infer.In<typeof partialMod>
 		>()
 
 		// BoundModule from custom ambient scope
@@ -821,9 +823,9 @@ b.c.c must be an object (was missing)`)
 			children?: CyclicNode[]
 		}
 		attest<{ node: CyclicNode }, Scope.infer<typeof cyclicScope>>()
-		attest<{ node: CyclicNode }, Scope.inferIn<typeof cyclicScope>>()
+		attest<{ node: CyclicNode }, Scope.infer.In<typeof cyclicScope>>()
 		attest<{ node: CyclicNode }, Module.infer<typeof cyclicMod>>()
-		attest<{ node: CyclicNode }, Module.inferIn<typeof cyclicMod>>()
+		attest<{ node: CyclicNode }, Module.infer.In<typeof cyclicMod>>()
 
 		// top-level aliases literally named "infer", "inferIn", "internal"
 		const reservedScope = scope({

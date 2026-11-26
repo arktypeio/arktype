@@ -196,7 +196,9 @@ export type ExportedHelpers = [
 	FromJsonSchemaFn,
 	ScopeParser,
 	Module.infer<typeof exported>,
-	Module.inferIn<typeof exported>,
+	Module.infer.In<typeof exported>,
+	Module.infer.Out<typeof exported>,
 	Scope.infer<typeof types>,
-	Scope.inferIn<typeof types>
+	Scope.infer.In<typeof types>,
+	Scope.infer.Out<typeof types>
 ]

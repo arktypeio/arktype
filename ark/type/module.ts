@@ -25,15 +25,27 @@ export declare namespace Module {
 	 */
 	export type infer<m extends RootModule> = inferModule<m, "out">
 
-	/**
-	 * #### map each exported `Type` in a `Module` to its inferred input type, recursing into nested submodules
-	 *
-	 * @example
-	 * const mod = type.module({ User: { name: "string", age: "number = 0" } })
-	 * // { User: { name: string; age?: number } }
-	 * type ModInputs = Module.inferIn<typeof mod>
-	 */
-	export type inferIn<m extends RootModule> = inferModule<m, "in">
+	export namespace infer {
+		/**
+		 * #### map each exported `Type` in a `Module` to its inferred input type, recursing into nested submodules
+		 *
+		 * @example
+		 * const mod = type.module({ User: { name: "string", age: "number = 0" } })
+		 * // { User: { name: string; age?: number } }
+		 * type ModInputs = Module.infer.In<typeof mod>
+		 */
+		export type In<m extends RootModule> = inferModule<m, "in">
+
+		/**
+		 * #### map each exported `Type` in a `Module` to its inferred output type, recursing into nested submodules
+		 *
+		 * @example
+		 * const mod = type.module({ User: { name: "string", age: "number = 0" } })
+		 * // { User: { name: string; age: number } }
+		 * type ModOutputs = Module.infer.Out<typeof mod>
+		 */
+		export type Out<m extends RootModule> = inferModule<m, "out">
+	}
 }
 
 export type isGenericExport<v> =
