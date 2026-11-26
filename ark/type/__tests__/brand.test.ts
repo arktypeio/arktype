@@ -1,5 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { type, type Brand, type Json } from "arktype"
+import { type, type Brand, type Json, type Type } from "arktype"
+
+const acceptObject = (t: Type<object>) => t
 
 contextualize(() => {
 	it("fluent", () => {
@@ -80,6 +82,78 @@ contextualize(() => {
 
 		attest(String.json).equals(Fluent.json)
 		attest<typeof Fluent.t>(String.t)
+	})
+
+	it("branded primitive keeps its constraint methods and brand", () => {
+		const Id = type("string#id").atLeastLength(1)
+		attest<Brand<string, "id">>(Id.t)
+		attest(Id.expression).snap("string >= 1")
+
+		const Cents = type("number").brand("cents").moreThan(0)
+		attest<Brand<number, "cents">>(Cents.t)
+		attest(Cents.expression).snap("number > 0")
+	})
+
+	it("branded primitive isn't an object", () => {
+		const Id = type("string#id")
+		// @ts-expect-error
+		attest(() => acceptObject(Id)).type.errors(
+			"is missing the following properties from type 'Type<object, {}>'"
+		)
+		// @ts-expect-error
+		attest(() => Id.pick).type.errors("Property 'pick' does not exist")
+
+		const Flag = type("boolean#flag")
+		attest<Brand<false, "flag"> | Brand<true, "flag">>(Flag.t)
+		// @ts-expect-error
+		attest(() => acceptObject(Flag)).type.errors(
+			"is missing the following properties from type 'Type<object, {}>'"
+		)
+		// @ts-expect-error
+		attest(() => Flag.pick).type.errors("Property 'pick' does not exist")
+
+		const Big = type("bigint").brand("big")
+		attest<Brand<bigint, "big">>(Big.t)
+		// @ts-expect-error
+		attest(() => acceptObject(Big)).type.errors(
+			"is missing the following properties from type 'Type<object, {}>'"
+		)
+		// @ts-expect-error
+		attest(() => Big.pick).type.errors("Property 'pick' does not exist")
+	})
+
+	it("union of branded primitives isn't an object", () => {
+		const T = type("string#a | number#b")
+		attest<Brand<string, "a"> | Brand<number, "b">>(T.t)
+		// @ts-expect-error
+		attest(() => acceptObject(T)).type.errors(
+			"is missing the following properties from type 'Type<object, {}>'"
+		)
+		// @ts-expect-error
+		attest(() => T.pick).type.errors("Property 'pick' does not exist")
+	})
+
+	it("union of a branded primitive and an object isn't an object", () => {
+		const T = type("string#id | string[]")
+		// @ts-expect-error
+		attest(() => acceptObject(T)).type.errors(
+			"is missing the following properties from type 'Type<object, {}>'"
+		)
+	})
+
+	it("branded object is an object", () => {
+		const T = type({ a: "string", b: "number" }).brand("ab")
+		acceptObject(T)
+		attest(T.pick("a").expression).snap("{ a: string }")
+	})
+
+	it("branded object keeps its constraint methods and brand", () => {
+		const Tags = type("string[]#tags").atLeastLength(1)
+		attest<Brand<string[], "tags">>(Tags.t)
+		attest(Tags.expression).snap("string[] >= 1")
+
+		const Since = type("Date#since").laterThan(new Date(0))
+		attest<Brand<Date, "since">>(Since.t)
 	})
 
 	it("docs example", () => {
