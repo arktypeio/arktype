@@ -6,7 +6,8 @@ import {
 	parseInteger,
 	parseIsoDate,
 	parseJson,
-	parseUrl
+	parseUrl,
+	stringifyJson
 } from "./keywords/functions.ts"
 
 // each reads ctx only to raise an error at its input
@@ -15,6 +16,7 @@ for (const morph of [
 	parseInteger,
 	parseIsoDate,
 	parseJson,
-	parseUrl
+	parseUrl,
+	stringifyJson
 ])
 	inputOnlyMorphs.add(morph)

@@ -275,7 +275,25 @@ export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
 	}
 }
 
-export const stringifyJson = (data: Json): string => JSON.stringify(data)
+const jsonStringifyError = {
+	code: "predicate",
+	description: "a JSON-serializable value"
+} as const
+
+export const stringifyJson = (
+	data: Json,
+	ctx?: Traversal
+): string | ArkError => {
+	try {
+		const result = JSON.stringify(data)
+		if (result !== undefined) return result
+		if (!ctx) throw new TypeError("Value is not JSON-serializable")
+		return ctx.error(jsonStringifyError)
+	} catch (e) {
+		if (!ctx || !(e instanceof TypeError)) throw e
+		return ctx.error({ ...jsonStringifyError, cause: e })
+	}
+}
 
 // inverses of parse keywords, which arktype/codecs encodes with
 export const writeIsoDate = (date: Date): string => date.toISOString()

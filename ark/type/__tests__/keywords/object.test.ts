@@ -108,6 +108,29 @@ contextualize(() => {
 			// has declared out
 			attest<string>(stringify.out.t)
 			attest(stringify.out.expression).snap("string")
+
+			// circular objects and arrays return ArkErrors instead of throwing TypeError
+			const circ: Record<string, unknown> = {}
+			circ.self = circ
+			const circArr: unknown[] = []
+			circArr.push(circArr)
+			for (const T of [
+				stringify,
+				scope({}, { jitless: true }).type("object.json.stringify")
+			]) {
+				// call twice to exercise both uncompiled and JIT-compiled paths
+				for (let i = 0; i < 2; i++) {
+					const err = T(circ)
+					if (!(err instanceof type.errors)) throw new Error("expected errors")
+					attest(err.toString()).snap("must be a JSON-serializable value")
+					attest((err.issues[0] as { cause?: unknown }).cause).instanceOf(
+						TypeError
+					)
+					attest(T(circArr).toString()).snap(
+						"must be a JSON-serializable value"
+					)
+				}
+			}
 		})
 	})
 

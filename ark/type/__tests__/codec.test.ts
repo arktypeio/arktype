@@ -694,4 +694,30 @@ pair[1] must be a Date`)
 			"v must be a number, a string, an object, boolean or null"
 		)
 	})
+
+	it("returns ArkErrors when encoding circular structures with string.json.parse", () => {
+		const circ: Record<string, unknown> = {}
+		circ.self = circ
+		const circArr: unknown[] = []
+		circArr.push(circArr)
+
+		for (const T of [
+			type("string.json.parse"),
+			type("string.json.parse").to("object"),
+			scope({}, { jitless: true }).type("string.json.parse")
+		]) {
+			// call twice to cover uncompiled and JIT-compiled paths
+			for (let i = 0; i < 2; i++) {
+				const err = T.encode(circ)
+				if (!(err instanceof type.errors)) throw new Error("expected errors")
+				attest(err.toString()).snap("must be a JSON-serializable value")
+				attest((err.issues[0] as { cause?: unknown }).cause).instanceOf(
+					TypeError
+				)
+				attest(T.encode(circArr).toString()).snap(
+					"must be a JSON-serializable value"
+				)
+			}
+		}
+	})
 })
