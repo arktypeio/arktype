@@ -310,22 +310,86 @@ contextualize(() => {
 
 		// TypeScript types every such function of a scope before it knows what
 		// any of them returns, so the output of one can't type another's
-		// parameter
+		// parameter. Where that's all the parameter is, it's never, and nothing
+		// is said of the morph but that it is one
 		it("a morph of another's output needs its parameter annotated", () => {
 			const types = scope({
 				Base: { text: "string" },
 				first: ["Base", "=>", d => d.text],
 				second: ["first", "=>", s => s],
-				annotated: ["first", "=>", (s: string) => s.length]
+				annotated: ["first", "=>", (s: string) => s.length],
+				holder: { s: "second", list: "second[]", u: "second | number" }
 			}).export()
 
-			attest(types.second.t).type.toString.snap("(In: never) => Out<any>")
+			attest(types.second.t).type.toString.snap("(In: unknown) => Out<unknown>")
 			attest(types.annotated.t).type.toString.snap(
 				"(In: { text: string }) => Out<number>"
 			)
+			attest(types.holder.infer).type.toString.snap(
+				"{ s: unknown; list: unknown[]; u: unknown }"
+			)
+			attest(types.holder.inferIn).type.toString.snap(
+				"{ s: unknown; list: unknown[]; u: unknown }"
+			)
 		})
 
-		// nor can its own input, which isn't known until the morph is
+		it("a generic's morph of another's output is one of unknown", () => {
+			const types = scope({
+				"boxed<t>": [{ box: "t" }, "=>", b => b.box],
+				"unboxed<t>": ["boxed<t>", "=>", u => u],
+				strings: "unboxed<string>"
+			}).export()
+
+			attest(types.strings.t).type.toString.snap(
+				"(In: unknown) => Out<unknown>"
+			)
+		})
+
+		// where it's part of the parameter, the function is typed and checked
+		// without it: never as a property or an element, and absent from a
+		// union. What the morph infers is what TypeScript made of that function
+		it("another morph's output within an input is never in the parameter", () => {
+			const types = scope({
+				User: {
+					name: "string",
+					createdAt: ["string", "=>", s => new Date(s)]
+				},
+				toDto: ["User", "=>", u => ({ name: u.name, created: u.createdAt })],
+				toDates: ["User[]", "=>", users => users.map(u => u.createdAt)],
+				Parsed: ["string", "=>", s => s.length],
+				fromUnion: ["Parsed | boolean", "=>", b => b]
+			}).export()
+
+			attest(types.toDto.t).type.toString.snap(`(In: {
+	name: string
+	createdAt: never
+}) => Out<{ name: string; created: never }>`)
+			attest(types.toDates.t).type.toString.snap(`(
+	In: { name: string; createdAt: never }[]
+) => Out<never[]>`)
+			attest(types.fromUnion.t).type.toString.snap(
+				"(In: boolean) => Out<boolean>"
+			)
+		})
+
+		it("annotating the morph an input holds types what's typed from it", () => {
+			const types = scope({
+				User: {
+					name: "string",
+					createdAt: ["string", "=>", (s: string) => new Date(s)]
+				},
+				toDto: ["User", "=>", u => ({ name: u.name, created: u.createdAt })]
+			}).export()
+
+			attest(types.toDto.t).type.toString.snap(`(In: {
+	name: string
+	createdAt: string
+}) => Out<{ name: string; created: Date }>`)
+		})
+
+		// nor can its own input, which isn't known until the morph is. The
+		// input inferred is narrower than what's allowed: one cycle deeper is
+		// never there
 		it("a cycle through a morph ends at it in the morph's input", () => {
 			const types = scope({
 				A: { "b?": "B", v: "string" },

@@ -54,7 +54,7 @@ import {
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets/internal"
-import type { InferredMorph } from "./attributes.ts"
+import type { InferredMorph, Out } from "./attributes.ts"
 import type { AmbientKey } from "./config.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
@@ -68,7 +68,7 @@ import {
 	type parseGenericParams,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { Ark } from "./keywords/keywords.ts"
+import type { Ark, type } from "./keywords/keywords.ts"
 import { InternalMatchParser, type MatchParser } from "./match.ts"
 import type {
 	BoundModule,
@@ -316,8 +316,10 @@ type inferScopeArgument<def, ambient, partial> =
  * that's the input it's inferred with. Resolved in `$`, an input that reaches
  * its own morph through a cycle would have to be inferred to learn whether
  * it's a morph, which TypeScript reports as a type that refers to itself. In
- * `$partial` the cycle ends at that morph, as does an input that is another
- * such morph, neither having had a type the parameter could be given.
+ * `$partial` the cycle ends at that morph, which had no type its own parameter
+ * could be given. Nor had any other such morph: where an input holds one, its
+ * output is never there, as it was in the parameter the function was checked
+ * with.
  *
  * Everything else is inferred in `$`. An alias without such a morph is left as
  * it is, so that whatever refers to it, itself included, refers to one type. A
@@ -330,25 +332,26 @@ type contextualizeAliases<$, $partial> = {
 		: [$[k], $partial[k]] extends [Def<infer def>, Def<infer partial>] ?
 			// such a morph is most often the whole alias, inferred here rather
 			// than held in a definition to be inferred from again
-			partial extends readonly [unknown, "=>", infer untyped] ?
+			partial extends readonly [infer partialIn, "=>", infer untyped] ?
 				unknown extends untyped ?
-					parseMorph<def[0 & keyof def], def[2 & keyof def], $partial, {}>
+					contextualizeMorph<def, partialIn, $partial>
 				:	contextualizeAlias<
 						$[k],
 						def,
 						contextualizeEach<def, partial, $partial>
 					>
 			:	contextualizeAlias<$[k], def, contextualizeEach<def, partial, $partial>>
-		: $[k] extends GenericAst<infer params, infer bodyDef, UnparsedScope> ?
+		: [$[k], $partial[k]] extends (
 			[
-				contextualizeDefinition<
-					bodyDef,
-					$partial[k]["bodyDef" & keyof $partial[k]],
-					$partial
-				>
-			] extends [bodyDef] ?
+				GenericAst<infer params, infer bodyDef, UnparsedScope>,
+				{ bodyDef: infer partialBodyDef }
+			]
+		) ?
+			[contextualizeDefinition<bodyDef, partialBodyDef, $partial>] extends (
+				[bodyDef]
+			) ?
 				$[k]
-			:	GenericAst<params, bodyDef, $partial>
+			:	GenericAst<params, contextualizeBody<bodyDef, partialBodyDef>, $partial>
 		:	$[k]
 	:	$[k]
 } & unknown
@@ -363,11 +366,9 @@ type contextualizeAlias<alias, def, contextualized> =
 type contextualizeDefinition<def, partial, $> =
 	[partial] extends [def] ? def
 	: unknown extends partial ? def
-	: partial extends readonly [unknown, "=>", infer untyped] ?
+	: partial extends readonly [infer partialIn, "=>", infer untyped] ?
 		unknown extends untyped ?
-			{
-				[inferred]: parseMorph<def[0 & keyof def], def[2 & keyof def], $, {}>
-			}
+			{ [inferred]: contextualizeMorph<def, partialIn, $> }
 		:	contextualizeEach<def, partial, $>
 	:	contextualizeEach<def, partial, $>
 
@@ -377,6 +378,32 @@ type contextualizeEach<def, partial, $> = {
 		partial[k & keyof partial],
 		$
 	>
+}
+
+// The parameter's type is read as validateIndexOneExpression instantiated it.
+// It's never where the input is a morph TypeScript had yet to type. Next to
+// nothing a function does with a never is checked, and ReturnType of one with
+// such a parameter is any, so no more is said of the morph than that it is one
+type contextualizeMorph<def, partialIn, $> =
+	[type.infer.Out<partialIn, $, {}>] extends [never] ?
+		(In: unknown) => Out<unknown>
+	:	parseMorph<def[0 & keyof def], def[2 & keyof def], $, {}>
+
+// a generic's morph is inferred once it has arguments, so it's left a
+// definition unless its function has such a parameter
+type contextualizeBody<def, partial> =
+	[partial] extends [def] ? def
+	: unknown extends partial ? def
+	: def extends (
+		readonly [unknown, "=>", (In: infer i, ...args: never) => unknown]
+	) ?
+		[i] extends [never] ?
+			{ [inferred]: (In: unknown) => Out<unknown> }
+		:	contextualizeBodyEach<def, partial>
+	:	contextualizeBodyEach<def, partial>
+
+type contextualizeBodyEach<def, partial> = {
+	[k in keyof def]: contextualizeBody<def[k], partial[k & keyof partial]>
 }
 
 export type bindThis<def> = { this: Def<def> }
