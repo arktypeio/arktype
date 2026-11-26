@@ -197,6 +197,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			result = "transformedIn"
 		}
 		const morphs = this.travMorphs
+		const label = this.meta.label
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]
 			const morphed = `morphed${i}`
@@ -212,12 +213,16 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 					this.contextFree[i] ?
 						`${js.ref(morph)}(${result})`
 					:	`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result})`
-				js.const(morphed, call).if(
-					`${morphed} instanceof ${js.ref(ArkErrors)}`,
-					() =>
-						js.needsCtx ?
-							js.line(`${js.ref(addErrors)}(ctx, ${morphed})`).return("data")
-						:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
+				// a labeled morph names its value in what it raises, as a labeled
+				// narrow does: only one passed ctx can raise
+				const labeled = label !== undefined && !this.contextFree[i]
+				if (labeled) js.line(`ctx.lbl = ${JSON.stringify(label)}`)
+				js.const(morphed, call)
+				if (labeled) js.line("ctx.lbl = undefined")
+				js.if(`${morphed} instanceof ${js.ref(ArkErrors)}`, () =>
+					js.needsCtx ?
+						js.line(`${js.ref(addErrors)}(ctx, ${morphed})`).return("data")
+					:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
 				)
 			}
 			result = morphed
@@ -238,6 +243,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		let result = this.head?.tfs ? transform(ctx, this.head, data) : data
 		if (ctx.errN > errN) return data
 		const morphs = this.travMorphs
+		const label = this.meta.label
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]
 			if (hasArkKind(morph, "root")) {
@@ -245,10 +251,14 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				if (ctx._errors !== undefined && result === ctx._errors) return data
 				continue
 			}
-			const morphed =
-				this.contextFree[i] ?
-					(morph as Morph.ContextFree)(result as never)
-				:	callMorph(ctx, morph, result)
+			let morphed: unknown
+			if (this.contextFree[i])
+				morphed = (morph as Morph.ContextFree)(result as never)
+			else {
+				if (label !== undefined) ctx.lbl = label
+				morphed = callMorph(ctx, morph, result)
+				if (label !== undefined) ctx.lbl = undefined
+			}
 			if (morphed instanceof ArkErrors) {
 				addErrors(ctx, morphed)
 				return data

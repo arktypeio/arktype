@@ -183,6 +183,13 @@ contextualize(() => {
 			attest((T("abcd") as type.errors).summary).snap("Too long")
 		})
 
+		it("a morph raises is said as written", () => {
+			const T = type("string")
+				.pipe((s, ctx) => ctx.error({ message: "No such product" }))
+				.label("Product")
+			attest((T("kiwi") as type.errors).summary).snap("No such product")
+		})
+
 		it("configured for its code is said as written", () => {
 			const $ = scope({}, { min: { message: "Too small" } })
 			const T = $.type({ price: $.type("number > 0").label("Price") })
@@ -381,6 +388,73 @@ quantity must be an integer`)
 				[[["quantity"], "quantity", "Quantity must be more than 5"]],
 				"Quantity must be more than 5"
 			])
+		})
+	})
+
+	describe("a morph", () => {
+		it("names its value in what ctx.error says it must be", () => {
+			const Price = type("string")
+				.pipe((name, ctx) =>
+					name === "apple" ? 1.25 : ctx.error("a product we sell")
+				)
+				.label("Product")
+			const T = type({ product: Price })
+			attest(reportOf(T, { product: "kiwi" })).snap([
+				[[["product"], "product", "Product must be a product we sell"]],
+				"Product must be a product we sell"
+			])
+			// a Type compiles at its second call
+			attest(Price("kiwi") && Price("kiwi").toString()).snap(
+				"Product must be a product we sell"
+			)
+			attest(Price("apple")).equals(1.25)
+		})
+
+		it("names a value nothing else checks", () => {
+			const Product = type("unknown")
+				.pipe((v, ctx) => ctx.error("a product"))
+				.label("Product")
+			attest(Product("kiwi").toString()).snap("Product must be a product")
+		})
+
+		it("names its value in what a keyword's morph raises", () => {
+			const T = type({
+				born: type("string.date.parse").label("Birthday"),
+				site: type("string.url.parse").label("Homepage"),
+				body: type("string.json.parse").label("Body"),
+				count: type("string.integer.parse").label("Count")
+			})
+			const data = { born: "!!", site: "!!", body: "{", count: "9".repeat(20) }
+			attest(T(data).toString()).snap(`Birthday must be a parsable date
+Homepage must be a URL string
+Body must be a JSON string
+Count must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER`)
+			// a Type compiles at its second call
+			attest(T(data).toString()).snap(`Birthday must be a parsable date
+Homepage must be a URL string
+Body must be a JSON string
+Count must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER`)
+		})
+
+		it("names its value in what pipe.try's morph threw", () => {
+			const T = type({
+				id: type("string")
+					.pipe.try(function toId(): number {
+						throw new Error("no such id")
+					})
+					.label("ID")
+			})
+			attest(T({ id: "x" }).toString()).snap(
+				"ID must be valid according to toId (Error: no such id)"
+			)
+		})
+
+		it("names no value its label is set before", () => {
+			const T = type("string")
+				.label("Product")
+				.pipe((s, ctx) => ctx.error("a product we sell"))
+			attest(T("kiwi").toString()).snap("must be a product we sell")
+			attest(T(5).toString()).snap("Product must be a string")
 		})
 	})
 

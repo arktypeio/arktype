@@ -168,6 +168,24 @@ const labeled: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ expected: "between 0 and 100", actual: "200" })).label("Pct") }), { k: "200" })
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ message: "Pct is out of range" })).label("Pct") }), { k: "200" })
 		show(type({ k: type({ a: "string" }).narrow((o, ctx) => pct(o.a) || ctx.reject({ expected: "between 0 and 100", relativePath: ["a"] })).label("Pct") }), { k: { a: "200" } })
+	`,
+	"names a value by its label in what a morph raises it must be": `
+		show(type({ k: type("string").pipe((s, ctx) => ctx.error("a product")).label("K") }), { k: "x" }, { k: 1 })
+		show(type({ k: type("string").pipe((s, ctx) => ctx.error({ message: "No such product" })).label("K") }), { k: "x" })
+		show(type({ k: type("string").pipe.try(function toId(): number { throw new Error("no such id") }).label("K") }), { k: "x" })
+		show(type({ k: type("string.date.parse").label("K") }), { k: "!!" })
+		show(type("string.url.parse").label("K"), "!!")
+		show(type({ k: type("string.json.parse").label("K") }), { k: "{" })
+		show(type({ ks: type("string.date.parse").label("K").array() }), { ks: ["!!", "2020-01-01"] })
+		show(type({ k: type("string.json.parse").label("K").or("number") }), { k: "{" }, { k: true })
+		standard(type({ k: type("string.date.parse").label("K") }), { k: "!!" })
+	`
+}
+
+// a label no site names a value by, as its Type checks nothing itself
+const labeledRaised: Record<string, string> = {
+	"names a value only a morph checks by its label": `
+		show(type("unknown").pipe((v, ctx) => ctx.error("a product")).label("Product"), "x")
 	`
 }
 
@@ -366,6 +384,10 @@ console.log(JSON.stringify({
 			})
 		}
 	)
+
+	itWritesAsArktype("a label only a morph's error is named by", labeledRaised, {
+		"main.ts": appOf(labeledRaised)
+	})
 
 	itWritesAsArktype(
 		"a label beside text a function writes",

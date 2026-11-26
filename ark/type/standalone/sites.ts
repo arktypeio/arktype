@@ -186,7 +186,11 @@ export const addIssueFeatures = (
 			features.bracketsKeys = true
 			features.writesText = true
 			features.readsErrors = true
-			if (node.is("morph")) features.listsUnions = true
+			if (node.is("morph")) {
+				features.listsUnions = true
+				// one labeled names what its morphs raise, where no site may
+				if (node.meta.label !== undefined) features.labelsValues = true
+			}
 		} else if (node.is("union") && node.tfs) {
 			features.transformsBranches = true
 			if (node.hasMorph || node.hasAlias) features.failsInBranches = true
