@@ -2,19 +2,20 @@ import {
 	type ArkEnv,
 	$ark,
 	Disjoint,
+	canJit,
 	compileLiteralPropAccess,
 	compileSerializedValue,
 	constraintInputOf,
 	flatMorphsAreEqual,
 	flatRefsAreEqual,
 	hashesMatch,
+	isIoFinal,
 	isResolutionFinal,
 	queueUnchecked,
 	type BaseNode,
 	type BaseRange,
 	type BaseRoot,
 	type BaseScope,
-	type CaseContext,
 	type CaseDiscriminant,
 	type CaseKey,
 	type Discriminant,
@@ -30,15 +31,16 @@ import {
 	type NodeKind,
 	type Prop,
 	type Sequence,
+	type Structure,
 	type Union,
 	type Unit
 } from "@ark/schema"
 import {
-	appendUnique,
 	arrayEquals,
 	flatMorph,
 	type dict,
 	integerLikeMatcher,
+	isArray,
 	isDate,
 	isEmptyObject,
 	range,
@@ -49,8 +51,9 @@ import {
 	defineRightwardIntersections,
 	type setImplementationOf
 } from "../implement.ts"
-import { sortSiblings } from "../constraint.ts"
+import { flattenInner, sortSiblings } from "../constraint.ts"
 import { intersectNodesRoot, intersectOrPipeNodes } from "../intersections.ts"
+import { allowedKeysOf } from "../structure/structure.ts"
 
 export const unionImplementation: setImplementationOf<Union.Declaration> = {
 	sort: inner => {
@@ -144,57 +147,67 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		}
 	}
 	const candidates: DiscriminantCandidate[] = []
+	// a disjoint many pairs share, like two values of a key, adds to the same cases
+	const casesByEntry = new Map<DisjointEntry, EntryCases | null>()
+	const casesByUnitProp = new Map<Prop.Node, CandidateCase>()
+	const unitCaseOf = (prop: Prop.Node): CandidateCase => {
+		let held = casesByUnitProp.get(prop)
+		if (!held) {
+			held = caseAt(
+				candidateAt(candidates, "unit", [prop.key]).cases,
+				(prop.value as Unit.Node).jsUnit,
+				prop.value
+			)
+			casesByUnitProp.set(prop, held)
+		}
+		return held
+	}
+	// an input is built as its first pair reads it, and one an alias leaves open
+	// again each time it's read, so a union holding one reads them for each pair
+	const inputs: BaseRoot[] = []
+	const props: (ObjectProps | undefined)[] = []
+	const readInput = (i: number): void => {
+		const input = node.branches[i]._in
+		if (inputs[i] !== input) props[i] = propsOf((inputs[i] = input))
+	}
+	const rereads = node.branches.some(branch => branch.hasAlias)
 	for (let lIndex = 0; lIndex < node.branches.length - 1; lIndex++) {
-		const l = node.branches[lIndex]
+		const pair: IntersectionContext = {
+			$: node.branches[lIndex].$,
+			invert: false,
+			pipe: false
+		}
 		for (let rIndex = lIndex + 1; rIndex < node.branches.length; rIndex++) {
-			const r = node.branches[rIndex]
-			const result = intersectNodesRoot(l._in, r._in, l.$)
-			if (!(result instanceof Disjoint)) continue
+			if (rereads || lIndex === 0) {
+				readInput(lIndex)
+				readInput(rIndex)
+			}
+			const result =
+				disjointProp(props[lIndex], props[rIndex], pair) ??
+				intersectOrPipeNodes(inputs[lIndex], inputs[rIndex], pair)
+			if (!(result instanceof Disjoint)) {
+				if (isArray(result)) {
+					unitCaseOf(result[0]).branchIndices.add(lIndex)
+					unitCaseOf(result[1]).branchIndices.add(rIndex)
+				}
+				continue
+			}
 
 			for (const entry of result) {
-				if (!entry.kind || entry.optional) continue
-
-				if (entry.kind === "union") {
-					addUnitCases(
-						candidates,
-						entry as DisjointEntry<"union">,
-						lIndex,
-						rIndex
-					)
-					continue
-				}
-
-				let lSerialized: string
-				let rSerialized: string
-
-				if (entry.kind === "domain") {
-					const lValue = entry.l as Domain.Node | Domain.Enumerable
-					const rValue = entry.r as Domain.Node | Domain.Enumerable
-					lSerialized = `"${typeof lValue === "string" ? lValue : lValue.domain}"`
-					rSerialized = `"${typeof rValue === "string" ? rValue : rValue.domain}"`
-				} else if (entry.kind === "unit") {
-					const lUnit = entry.l as Unit.Node
-					const rUnit = entry.r as Unit.Node
-					if (!isCaseUnit(lUnit) || !isCaseUnit(rUnit)) continue
-					lSerialized = lUnit.jsUnit
-					rSerialized = rUnit.jsUnit
-				} else continue
-
-				// an optional chain reads undefined at a missing key or below a non-object
 				if (
-					entry.path.length &&
-					(isUndefinedCase(lSerialized) || isUndefinedCase(rSerialized))
+					entry.optional ||
+					(entry.kind !== "union" &&
+						entry.kind !== "domain" &&
+						entry.kind !== "unit")
 				)
 					continue
 
-				const matching = candidates.find(
-					d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
-				)
-				const cases = matching?.cases ?? {}
-				addCase(cases, lSerialized, lIndex, entry.l)
-				addCase(cases, rSerialized, rIndex, entry.r)
-				if (!matching)
-					candidates.push({ kind: entry.kind, cases, path: entry.path })
+				let cases = casesByEntry.get(entry)
+				if (cases === undefined)
+					casesByEntry.set(entry, (cases = casesOfEntry(candidates, entry)))
+				if (!cases) continue
+				for (const held of cases[0]) held.branchIndices.add(lIndex)
+				for (const held of cases[1]) held.branchIndices.add(rIndex)
 			}
 		}
 	}
@@ -202,11 +215,11 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	// a pair's disjoint is its first differing key, so a branch may hold a case
 	// at a key no pair recorded
 	for (const candidate of candidates) {
-		const cases = Object.values(candidate.cases) as CaseContext[]
+		const held = branchesHeldBy(candidate)
 		for (let i = 0; i < node.branches.length; i++) {
-			if (cases.some(c => c.branchIndices.includes(i))) continue
+			if (held.has(i)) continue
 			for (const [k, condition] of casesHeldAt(node.branches[i], candidate))
-				addCase(candidate.cases, k, i, condition)
+				caseAt(candidate.cases, k, condition).branchIndices.add(i)
 		}
 	}
 
@@ -266,30 +279,173 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	return Object.assign(ctx.location, members ? { cases, members } : { cases })
 }
 
+type EntryCases = [l: CandidateCase[], r: CandidateCase[]]
+
+type CaseOperand = [k: string, condition: CaseDiscriminant]
+
+// the candidate's cases a disjoint's operands are, or null if it tells none apart
+const casesOfEntry = (
+	candidates: DiscriminantCandidate[],
+	entry: DisjointEntry
+): EntryCases | null => {
+	const l = caseOperandsOf(entry, entry.l)
+	const r = l && caseOperandsOf(entry, entry.r)
+	if (!r) return null
+	const { cases } = candidateAt(
+		candidates,
+		entry.kind === "union" ? "unit" : (entry.kind as DiscriminantKind),
+		entry.path
+	)
+	const held = (operands: CaseOperand[]) =>
+		operands.map(([k, condition]) => caseAt(cases, k, condition))
+	return [held(l!), held(r)]
+}
+
+const candidateAt = (
+	candidates: DiscriminantCandidate[],
+	kind: DiscriminantKind,
+	path: PropertyKey[]
+): DiscriminantCandidate => {
+	let candidate = candidates.find(
+		d => arrayEquals(d.path, path) && d.kind === kind
+	)
+	if (!candidate) candidates.push((candidate = { kind, cases: {}, path }))
+	return candidate
+}
+
 // each unit of literal unions disjoint at a path is its own case, so data
 // matching none misses every branch
-const addUnitCases = (
-	candidates: DiscriminantCandidate[],
-	entry: DisjointEntry<"union">,
-	lIndex: number,
-	rIndex: number
-) => {
-	const isCase = (branch: BaseRoot): branch is Unit.Node =>
-		branch.is("unit") &&
-		isCaseUnit(branch) &&
-		!(entry.path.length && isUndefinedCase(branch.jsUnit))
-	if (!entry.l.every(isCase) || !entry.r.every(isCase)) return
-	let candidate = candidates.find(
-		d => arrayEquals(d.path, entry.path) && d.kind === "unit"
-	)
-	if (!candidate) {
-		candidate = { kind: "unit", cases: {}, path: entry.path }
-		candidates.push(candidate)
+const caseOperandsOf = (
+	entry: DisjointEntry,
+	operand: unknown
+): CaseOperand[] | null => {
+	const operands: CaseOperand[] = []
+	for (const condition of (entry.kind === "union" ? operand : [operand]) as (
+		| BaseRoot
+		| Domain.Enumerable
+	)[]) {
+		let k: string
+		if (entry.kind === "domain")
+			k = `"${typeof condition === "string" ? condition : (condition as Domain.Node).domain}"`
+		else if (
+			typeof condition !== "string" &&
+			condition.is("unit") &&
+			isCaseUnit(condition)
+		)
+			k = condition.jsUnit
+		else return null
+		// an optional chain reads undefined at a missing key or below a non-object
+		if (entry.path.length && isUndefinedCase(k)) return null
+		operands.push([k, condition as CaseDiscriminant])
 	}
-	for (const unit of entry.l)
-		addCase(candidate.cases, unit.jsUnit, lIndex, unit)
-	for (const unit of entry.r)
-		addCase(candidate.cases, unit.jsUnit, rIndex, unit)
+	return operands
+}
+
+type ObjectProps = {
+	basis: BaseRoot | null
+	byKey: Structure.Node["byKey"]
+	// in the order intersecting meets them
+	props: readonly Prop.Node[]
+	// its structure, if that handles undeclared keys
+	closed: Structure.Node | undefined
+}
+
+// the structure of an object nothing but its props constrains before a narrow,
+// and which holds no morph, whose input would be intersected first
+const propStructureOf = (node: BaseRoot): Structure.Node | undefined => {
+	if (!node.is("intersection") || node.preStruct.length || node.hasMorph) return
+	const structure = node.structure
+	if (!structure || structure.index || structure.sequence) return
+	// one handling undeclared keys checks each key it meets against the keys
+	// it allows, a union it discriminates to check them if it can't compile
+	if (structure.handlesUndeclared && !canJit(structure.$.cfg)) return
+	return structure
+}
+
+const propsOf = (node: BaseRoot): ObjectProps | undefined => {
+	const structure = propStructureOf(node)
+	return (
+		structure && {
+			basis: (node as Intersection.Node).basis,
+			byKey: structure.byKey,
+			props: flattenInner(structure.inner) as Prop.Node[],
+			closed: structure.handlesUndeclared && structure
+		}
+	)
+}
+
+// equal bases intersect to one of them, like two scopes' object
+const sameBasis = (l: BaseRoot | null, r: BaseRoot | null): boolean =>
+	l === r || (!!l && !!r && l.equals(r))
+
+type UnitProps = [l: Prop.Node, r: Prop.Node]
+
+// intersecting two such objects meets each of r's props with l's at its key
+// until they're disjoint, which is then all it finds, so the rest of their
+// structures needn't meet. Units a key requires are disjoint if they differ,
+// each a case there, so most pairs needn't write how they're disjoint either
+const disjointProp = (
+	l: ObjectProps | undefined,
+	r: ObjectProps | undefined,
+	ctx: IntersectionContext
+): Disjoint | UnitProps | undefined => {
+	if (!l || !r || !sameBasis(l.basis, r.basis)) return
+	// structures that aren't equal are first narrowed to the keys each allows,
+	// which are written then and take no prop the other requires from it
+	let narrows = l.closed || r.closed
+	for (const rProp of r.props) {
+		const lProp = l.byKey[rProp.key]
+		if (!lProp || lProp === rProp || lProp.key !== rProp.key) continue
+		if (narrows) {
+			if (lProp.equals(rProp)) continue
+			if (l.closed) allowedKeysOf(l.closed)
+			if (r.closed) allowedKeysOf(r.closed)
+			narrows = undefined
+		}
+		if (
+			isUnitCase(lProp) &&
+			isUnitCase(rProp) &&
+			(lProp.value as Unit.Node).unitJson !==
+				(rProp.value as Unit.Node).unitJson
+		)
+			return [lProp, rProp]
+		const result = intersectOrPipeNodes(lProp, rProp, ctx)
+		if (result instanceof Disjoint) return result
+	}
+}
+
+const isUnitCase = (prop: Prop.Node): boolean =>
+	prop.required &&
+	prop.value.is("unit") &&
+	isCaseUnit(prop.value) &&
+	!isUndefinedCase(prop.value.jsUnit)
+
+// whether an object requires a value disjoint from a case's at its key, where
+// intersecting the two would only meet their props
+const requiresDisjointProp = (
+	branch: BaseRoot,
+	caseNode: BaseRoot,
+	caseProps: readonly Prop.Node[]
+): boolean => {
+	const structure = propStructureOf(branch)
+	if (
+		!structure ||
+		!sameBasis(
+			(branch as Intersection.Node).basis,
+			(caseNode as Intersection.Node).basis
+		) ||
+		!caseProps.some(caseProp => {
+			const prop = structure.byKey[caseProp.key]
+			return (
+				prop !== undefined &&
+				prop.key === caseProp.key &&
+				isDisjointValue(prop.value, caseProp.value)
+			)
+		})
+	)
+		return false
+	if (structure.handlesUndeclared) allowedKeysOf(structure)
+	return true
 }
 
 // the cases a branch holds at a candidate's path, each key to it required, as
@@ -344,16 +500,20 @@ const domainCaseOf = (node: BaseRoot): Domain | undefined => {
 	)
 }
 
-const addCase = (
+const caseAt = (
 	cases: CandidateCases,
 	k: string,
-	branchIndex: number,
 	condition: unknown
-) => {
-	if (cases[k])
-		cases[k].branchIndices = appendUnique(cases[k].branchIndices, branchIndex)
-	else
-		cases[k] = { branchIndices: [branchIndex], condition: condition as never }
+): CandidateCase =>
+	(cases[k] ??= { branchIndices: new Set(), condition: condition as never })
+
+const branchesHeldBy = (candidate: DiscriminantCandidate): Set<number> => {
+	const held = new Set<number>()
+	for (const { branchIndices } of Object.values(
+		candidate.cases
+	) as CandidateCase[])
+		for (const i of branchIndices) held.add(i)
+	return held
 }
 
 type CaseResolutionContext = {
@@ -373,7 +533,9 @@ const createCaseResolutionContext = (
 	node: Union.Node
 ): CaseResolutionContext => {
 	const covering = new Set(
-		viableCandidates.filter(c => holdsEveryBranch(c, node.branches.length))
+		viableCandidates.filter(
+			c => branchesHeldBy(c).size === node.branches.length
+		)
 	)
 	// shorter paths first, then keys every branch holds (no default case), then
 	// the most cases
@@ -407,16 +569,6 @@ const createCaseResolutionContext = (
 	}
 }
 
-const holdsEveryBranch = (
-	candidate: DiscriminantCandidate,
-	branchCount: number
-): boolean => {
-	const held = new Set<number>()
-	for (const { branchIndices } of Object.values(candidate.cases))
-		for (const i of branchIndices) held.add(i)
-	return held.size === branchCount
-}
-
 const resolveCase = (
 	ctx: CaseResolutionContext,
 	key: CaseKey
@@ -428,6 +580,13 @@ const resolveCase = (
 		ctx.node.$
 	)
 	let anyValueDiscriminantNode: BaseRoot | undefined
+
+	// a case at a key of the data itself excludes each object requiring another
+	// value there, as reducing decides, without intersecting the two
+	const caseProps =
+		ctx.location.path.length === 1 ?
+			propStructureOf(discriminantNode)?.props
+		:	undefined
 
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
@@ -449,7 +608,15 @@ const resolveCase = (
 
 	for (let i = 0; i < ctx.defaultPairs.length; i++) {
 		const entry = ctx.defaultPairs[i]
-		if (!caseCtx.branchIndices.includes(entry.originalIndex)) {
+		if (!caseCtx.branchIndices.has(entry.originalIndex)) {
+			nextDefaults.push(entry)
+			if (
+				caseProps &&
+				// an input an alias leaves open is built again each time it's read
+				(!entry.branch.hasAlias || isIoFinal()) &&
+				requiresDisjointProp(entry.branch._in, discriminantNode, caseProps)
+			)
+				continue
 			const intersection = intersectNodesRoot(
 				entry.branch._in,
 				discriminantNode,
@@ -488,7 +655,6 @@ const resolveCase = (
 					})
 				}
 			}
-			nextDefaults.push(entry)
 		}
 	}
 
@@ -1475,7 +1641,13 @@ type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 }
 
 type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
-	[caseKey in CaseKey<kind>]: CaseContext
+	[caseKey in CaseKey<kind>]: CandidateCase
+}
+
+// the branches holding a case, in the order they're found to
+type CandidateCase = {
+	branchIndices: Set<number>
+	condition: CaseDiscriminant
 }
 
 export const discriminantJsonOf = (node: Union.Node): JsonStructure | null =>
