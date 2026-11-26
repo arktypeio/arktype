@@ -109,6 +109,18 @@ contextualize(() => {
 		attest(T.expression).snap("{ foo: string }")
 	})
 
+	it("spread leaving no props", () => {
+		const T = type({ "...": "object" })
+		// an object, as {} would be any value but null or undefined
+		attest(T.infer).type.toString.snap("object")
+		attest(T.expression).snap("{}")
+		// @ts-expect-error
+		attest(() => T.from(5))
+			.throws("must be an object")
+			.type.errors("not assignable to parameter of type 'object'")
+		attest(type({ "...": {} }).infer).type.toString.snap("object")
+	})
+
 	it("narrowed object keyword treated as empty", () => {
 		const T = type({
 			"...": type.object.narrow(() => true),

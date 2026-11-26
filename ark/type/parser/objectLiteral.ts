@@ -224,9 +224,11 @@ const appendNamedProp = <kind extends Prop.Kind>(
 export type inferObjectLiteral<def extends object, $, args> =
 	"..." extends keyof def ?
 		show<
-			merge<
-				inferDefinition<def["..."], $, args>,
-				inferKeyedObjectLiteral<def, $, args>
+			objectIfEmpty<
+				merge<
+					inferDefinition<def["..."], $, args>,
+					inferKeyedObjectLiteral<def, $, args>
+				>
 			>
 		>
 	: [keyof def & PreparsedKeyPattern] extends [never] ?
@@ -234,6 +236,15 @@ export type inferObjectLiteral<def extends object, $, args> =
 	: // keyed only by "+" or "@", it's an object with no props, which {} isn't
 	[Exclude<keyof def, MetaKey>] extends [never] ? object
 	: show<inferKeyedObjectLiteral<def, $, args>>
+
+// a spread that leaves no props, like that of object or {}, is an object,
+// which {} isn't to TypeScript
+type objectIfEmpty<t> =
+	t extends unknown ?
+		[keyof t] extends [never] ?
+			object
+		:	t
+	:	never
 
 // keys whose kind or name only preparseKey can determine
 type PreparsedKeyPattern =
