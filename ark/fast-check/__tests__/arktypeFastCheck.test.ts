@@ -98,6 +98,13 @@ contextualize(() => {
 				"No values within range -1 - 6 divisible by 5 satisfy != constraints."
 			)
 		})
+		it("exclusive infinite bounds", () => {
+			const aboveNegInf = type.number.moreThan(-Infinity)
+			assertProperty(arkToArbitrary(aboveNegInf), aboveNegInf)
+
+			const belowInf = type.number.lessThan(Infinity)
+			assertProperty(arkToArbitrary(belowInf), belowInf)
+		})
 	})
 
 	describe("string", () => {

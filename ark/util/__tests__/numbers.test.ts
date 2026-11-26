@@ -30,24 +30,25 @@ contextualize(() => {
 			attest(nearestFloat(-5555555555555555, "-")).equals(-5555555555555556)
 		})
 
-		it("throws on non-finite input", () => {
+		it("an infinity toward the finite floats", () => {
+			attest(nearestFloat(-Infinity)).equals(-Number.MAX_VALUE)
+			attest(nearestFloat(Infinity, "-")).equals(Number.MAX_VALUE)
+			attest(nearestFloat(Number.MAX_VALUE)).equals(Infinity)
+			attest(nearestFloat(-Number.MAX_VALUE, "-")).equals(-Infinity)
+		})
+
+		it("throws where no float is in that direction", () => {
 			attest(() => nearestFloat(Infinity)).throws.snap(
-				"Error: nearestFloat input must be a finite number (was Infinity)"
-			)
-			attest(() => nearestFloat(Infinity, "-")).throws.snap(
-				"Error: nearestFloat input must be a finite number (was Infinity)"
-			)
-			attest(() => nearestFloat(-Infinity)).throws.snap(
-				"Error: nearestFloat input must be a finite number (was -Infinity)"
+				"RangeError: No float is after Infinity"
 			)
 			attest(() => nearestFloat(-Infinity, "-")).throws.snap(
-				"Error: nearestFloat input must be a finite number (was -Infinity)"
+				"RangeError: No float is before -Infinity"
 			)
-			attest(() => nearestFloat(NaN)).throws.snap(
-				"Error: nearestFloat input must be a finite number (was NaN)"
+			attest(() => nearestFloat(Number.NaN)).throws.snap(
+				"RangeError: No float is after NaN"
 			)
-			attest(() => nearestFloat(NaN, "-")).throws.snap(
-				"Error: nearestFloat input must be a finite number (was NaN)"
+			attest(() => nearestFloat(Number.NaN, "-")).throws.snap(
+				"RangeError: No float is before NaN"
 			)
 		})
 	})
