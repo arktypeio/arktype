@@ -199,6 +199,23 @@ seen false
 `)
 	})
 
+	it("a narrow of a union checks a unit a built morph outputs at its call", () => {
+		const seen: unknown[] = []
+		const sees = (value: unknown) => {
+			seen.push(value)
+			return true
+		}
+		const union = type.or("number[]", type.raw("string.trim").to("'a' | 'b'"))
+		attest(isUnread(union)).equals(true)
+		union.narrow(sees)
+		attest(seen).equals(["a", "b"])
+		const unitless = type.or(
+			"number[]",
+			type.raw("string.trim").to("string > 1")
+		)
+		attest(isUnread(unitless.narrow(sees))).equals(true)
+	})
+
 	it("a union with a unit calls what it narrows at its call", () => {
 		const seen: unknown[] = []
 		const narrowed = type("string").narrow(s => {

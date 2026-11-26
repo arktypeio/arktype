@@ -586,6 +586,17 @@ const isUnit = (node: BaseNode) => node.is("unit")
 const isNarrow = (node: BaseNode) =>
 	node.is("predicate") && node.meta.keyword === undefined
 
+// a narrow of a morph is of its output, so a unit that allows is one it checks
+const outputsUnit = (branch: BaseRoot) => {
+	if (!branch.is("morph")) return false
+	try {
+		return branch._out.branches.some(isUnit)
+	} catch {
+		// an output that can't be written could be anything
+		return true
+	}
+}
+
 const nodeFacts = (node: BaseRoot): Facts | undefined => {
 	if (node.isNever() || node.topAlias) return
 	const key = `@${node.id}`
@@ -598,7 +609,10 @@ const nodeFacts = (node: BaseRoot): Facts | undefined => {
 			units = true
 			if (typeof branch.unit !== "object") values?.push(branch.unit)
 			else values = undefined
-		} else values = undefined
+		} else {
+			values = undefined
+			units ||= outputsUnit(branch)
+		}
 	}
 	// a node says nothing of where it holds a predicate or a unit
 	const narrowed = node.userCode && node.selectReferences(isNarrow).length !== 0
