@@ -86,6 +86,10 @@ const print = (value: unknown, locale: Locale.Info): string =>
 			: printable(value)
 		)
 
+// "" is leer, as a length of 0 is
+const printUnit = (value: unknown, locale: Locale.Info): string =>
+	value === "" ? "leer" : print(value, locale)
+
 // errors print an object by its kind, so its contents never reach a message
 const printKind = (data: unknown, locale: Locale.Resolved): string =>
 	typeof data === "function" ? locale.nouns.Function
@@ -223,7 +227,7 @@ const casesOf: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 	: e.cases.length === 2 && e.cases.every(value => typeof value === "boolean") ?
 		locale.nouns.boolean
 	:	locale.list(
-			e.cases.map(value => print(value, locale)),
+			e.cases.map(value => printUnit(value, locale)),
 			"or"
 		)
 
@@ -283,6 +287,7 @@ const keywordPhrases = {
 	"string.normalize.NFD.preformatted": "NFD-normalisiert",
 	"string.normalize.NFKC.preformatted": "NFKC-normalisiert",
 	"string.normalize.NFKD.preformatted": "NFKD-normalisiert",
+	"string.nonblank": "nicht leer und nicht nur Leerraum",
 	"string.numeric": "eine wohlgeformte numerische Zeichenkette",
 	"string.numeric.parse": "endlich",
 	"string.regex": "ein Regex-Muster",
@@ -290,6 +295,7 @@ const keywordPhrases = {
 	"string.trim.preformatted": "ohne Leerraum am Anfang und Ende",
 	"string.upper.preformatted": "durchgehend großgeschrieben",
 	"string.url": "eine URL",
+	"string.url.http": "eine HTTP- oder HTTPS-URL",
 	"string.url.parse": "eine URL",
 	"string.uuid": "eine UUID",
 	"string.uuid.v1": "eine UUIDv1",
@@ -317,7 +323,7 @@ export const de: Locale.Complete = {
 			writeKeywordExpected(basis, locale) ??
 			(basis.code === "morph" || basis.meta.description !== undefined ?
 				locale.cite(basis.meta.description!)
-			: basis.code === "unit" ? print(basis.unit, locale)
+			: basis.code === "unit" ? printUnit(basis.unit, locale)
 			: describeProto(basis.proto, locale))
 		)
 	},
@@ -379,13 +385,13 @@ export const de: Locale.Complete = {
 		message: (e, locale) => mustBe(locale.nouns[e.domain], e)
 	},
 	unit: {
-		expected: (e, locale) => print(e.unit, locale),
+		expected: (e, locale) => printUnit(e.unit, locale),
 		actual: (data, e, locale) =>
 			data instanceof Date && isValidDate(data) ?
 				theDate(data, locale)
 			:	printKind(data, locale),
 		message: (e, locale) => {
-			const unit = print(e.unit, locale)
+			const unit = printUnit(e.unit, locale)
 			return unit === printedActualOf(e) ?
 					`muss referenzgleich mit ${unit} sein (wird zum selben Wert serialisiert)`
 				:	mustBe(unit, e)

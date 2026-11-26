@@ -260,6 +260,7 @@ contextualize(() => {
 			'string.json ← "x"': "muss eine JSON-Zeichenkette sein",
 			'string.json.parse ← "x"': "muss eine JSON-Zeichenkette sein",
 			'string.lower.preformatted ← "X"': "muss kleingeschrieben sein",
+			'string.nonblank ← ""': "muss nicht leer und nicht nur Leerraum sein",
 			'string.numeric ← "x"':
 				"muss eine wohlgeformte numerische Zeichenkette sein",
 			'string.numeric.parse ← "1e400"': "muss endlich sein",
@@ -271,6 +272,7 @@ contextualize(() => {
 			'string.upper.preformatted ← "x"':
 				"muss durchgehend großgeschrieben sein",
 			'string.url ← "x"': "muss eine URL sein",
+			'string.url.http ← "x"': "muss eine HTTP- oder HTTPS-URL sein",
 			'string.url.parse ← "x"': "muss eine URL sein",
 			'string.uuid ← "x"': "muss eine UUID sein",
 			'string.uuid.v1 ← "x"': "muss eine UUIDv1 sein",

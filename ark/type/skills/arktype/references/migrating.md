@@ -392,7 +392,7 @@ A [precompiled](https://arktype.io/docs/precompile) build takes a function for t
 | `z.nanoid()`, `z.ulid()`, `z.cuid2()`, `z.e164()`, `z.guid()` | no keyword: a regex, like the one Zod exports as `z.regexes.ulid`                              |
 | `z.iso.time()`, `z.iso.duration()`                            | the same, from `z.regexes.time({})` and `z.regexes.duration`                                   |
 | `z.hostname()`, `z.cidrv4()`, `z.cidrv6()`                    | the same, from `z.regexes.hostname`, `z.regexes.cidrv4` and `z.regexes.cidrv6`                 |
-| `z.httpUrl()`                                                 | `type("string.url").and(/^https?:\/\//i)`                                                      |
+| `z.httpUrl()`                                                 | `"string.url.http"`                                                                            |
 | `.lowercase()`, `.uppercase()`, `.normalize()`                | `"string.lower.preformatted"`, `"string.upper.preformatted"`, `"string.normalize"`             |
 | `z.templateLiteral(["user-", z.number()])`                    | a regex, like `/^user-\d+$/`                                                                   |
 | `z.int32()`, `z.uint32()`                                     | `"-2147483648 <= number.integer <= 2147483647"`, `"0 <= number.integer <= 4294967295"`         |

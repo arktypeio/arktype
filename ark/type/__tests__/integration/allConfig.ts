@@ -194,6 +194,9 @@ configure({
 		"string.normalize.NFKD.preformatted": {
 			description: "configured"
 		},
+		"string.nonblank": {
+			description: "configured"
+		},
 		"string.numeric.parse": {
 			description: "configured"
 		},
@@ -207,6 +210,9 @@ configure({
 			description: "configured"
 		},
 		"string.upper.preformatted": {
+			description: "configured"
+		},
+		"string.url.http": {
 			description: "configured"
 		},
 		"string.url.parse": {

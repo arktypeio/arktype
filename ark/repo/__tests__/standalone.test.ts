@@ -970,7 +970,7 @@ nick must be a string or null`)
 		]).snap([
 			"must be a URL string",
 			"must be a parsable date",
-			"a must be at least length 2\na must be exactly length 0"
+			"a must be at least length 2\na must be empty"
 		])
 	})
 

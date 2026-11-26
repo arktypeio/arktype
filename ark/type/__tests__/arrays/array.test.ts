@@ -74,7 +74,7 @@ contextualize(() => {
 			attest(T.expression).snap("[]")
 			attest(T.json).snap({ proto: "Array", exactLength: 0 })
 			attest(T([])).equals([])
-			attest(T([1]).toString()).snap("must be exactly length 0")
+			attest(T([1]).toString()).snap("must be empty")
 		})
 
 		it("shallow", () => {
