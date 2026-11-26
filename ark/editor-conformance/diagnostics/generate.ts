@@ -29,29 +29,47 @@ export type DiagnosticCase = {
 	display: string
 }
 
+export const matchDiagnosticSource = (
+	fileName: string,
+	fileEntries: readonly (readonly [source: string, filePath: string])[]
+): string | undefined => {
+	const normalized = fileName.replace(/\\/g, "/")
+	const lower = normalized.toLowerCase()
+	for (const [source, filePath] of fileEntries) {
+		const candidate = filePath.replace(/\\/g, "/")
+		if (normalized === candidate || lower === candidate.toLowerCase())
+			return source
+	}
+	return undefined
+}
+
 const tscCases = (): DiagnosticCase[] => {
-	const files = sources.map(source => fileURLToPath(new URL(source, here)))
-	const program = ts.createProgram(files, {
-		strict: true,
-		noEmit: true,
-		skipLibCheck: true,
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.NodeNext,
-		moduleResolution: ts.ModuleResolutionKind.NodeNext,
-		customConditions: ["ark-ts"],
-		allowImportingTsExtensions: true
-	})
-	return ts
-		.getPreEmitDiagnostics(program)
-		.filter(d => d.file && files.includes(d.file.fileName))
-		.map(d => {
-			const { line } = d.file!.getLineAndCharacterOfPosition(d.start!)
-			const sourceLine = d.file!.text.split("\n")[line]
-			// tsserver flattens a message chain the same way for VS Code
-			const input = ts.flattenDiagnosticMessageText(d.messageText, "\n")
-			const { message, rule } = rewrite(input)
-			const file = sources.find(s => d.file!.fileName.endsWith(s))!
-			return {
+	const fileEntries = sources.map(
+		source => [source, fileURLToPath(new URL(source, here))] as const
+	)
+	const program = ts.createProgram(
+		fileEntries.map(([, filePath]) => filePath),
+		{
+			strict: true,
+			noEmit: true,
+			skipLibCheck: true,
+			target: ts.ScriptTarget.ES2022,
+			module: ts.ModuleKind.NodeNext,
+			moduleResolution: ts.ModuleResolutionKind.NodeNext,
+			customConditions: ["ark-ts"],
+			allowImportingTsExtensions: true
+		}
+	)
+	return ts.getPreEmitDiagnostics(program).flatMap(d => {
+		const file = d.file && matchDiagnosticSource(d.file.fileName, fileEntries)
+		if (!file) return []
+		const { line } = d.file!.getLineAndCharacterOfPosition(d.start!)
+		const sourceLine = d.file!.text.split(/\r?\n/)[line]
+		// tsserver flattens a message chain the same way for VS Code
+		const input = ts.flattenDiagnosticMessageText(d.messageText, "\n")
+		const { message, rule } = rewrite(input)
+		return [
+			{
 				name: sourceLine.replace(/^export const (\w+).*$/, "$1"),
 				origin: "tsc" as const,
 				source: `${file}:${line + 1} TS${d.code}`,
@@ -60,7 +78,8 @@ const tscCases = (): DiagnosticCase[] => {
 				rule,
 				display: display(message)
 			}
-		})
+		]
+	})
 }
 
 /** cases.json and rules.json as they should read now. */

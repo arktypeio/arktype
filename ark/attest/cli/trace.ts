@@ -255,16 +255,31 @@ class ProgressDisplay {
 	}
 }
 
+export const resolveTraceTsconfig = (
+	packageDir: string,
+	configTsconfig: string | null | undefined,
+	cwd: string = process.cwd()
+): string | undefined => {
+	const cwdDefault = resolve(cwd, "tsconfig.json")
+	if (configTsconfig && resolve(cwd, configTsconfig) !== cwdDefault) {
+		const relativeToPackage = resolve(packageDir, configTsconfig)
+		return existsSync(relativeToPackage) ? relativeToPackage : (
+				resolve(cwd, configTsconfig)
+			)
+	}
+	const packageTsconfig = join(packageDir, "tsconfig.json")
+	return existsSync(packageTsconfig) ? packageTsconfig : undefined
+}
+
 export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = resolve(args[0] ?? process.cwd())
 	const config = getConfig()
+	const tsconfig = resolveTraceTsconfig(packageDir, config.tsconfig)
 
-	if (!config.tsconfig) {
+	if (!tsconfig) {
 		// This message should go to console.error and also be captured if needed,
 		// but since it exits, direct console.error is fine.
-		console.error(
-			`attest trace must be run from a directory with a tsconfig.json file`
-		)
+		console.error(`attest trace requires a tsconfig.json file in ${packageDir}`)
 		process.exit(1)
 	}
 
@@ -277,7 +292,7 @@ export const trace = async (args: string[]): Promise<void> => {
 	initialMessages.push(`⏳ Gathering type trace data for ${packageDir}...`)
 	outputCapture.write(initialMessages[0]) // This goes to console and buffer
 
-	const tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
+	const tracingOutput = generateTraceData(traceDir, tsconfig, packageDir)
 
 	const traceFile = join(traceDir, "trace.json")
 
@@ -319,7 +334,7 @@ const generateTraceData = (
 	try {
 		const output = getDiagnosticTscOutput(
 			packageDir,
-			`--project ${tsconfigPath} --generateTrace ${traceDir}`
+			`--project "${tsconfigPath}" --generateTrace "${traceDir}"`
 		)
 		process.stdout.write(output) // Display tsc output directly
 		return output
@@ -499,6 +514,25 @@ const calculateSelfTimes = (call: CallRange): number => {
 	return call.duration
 }
 
+export const parseCallSite = (
+	callSite: string
+): { path: string; pos: number; end: number } => {
+	const colonIndex = callSite.lastIndexOf(":")
+	if (colonIndex <= 0 || colonIndex === callSite.length - 1)
+		throw new Error(`Invalid callSite format: ${callSite}`)
+	const path = callSite.slice(0, colonIndex)
+	const positionRange = callSite.slice(colonIndex + 1)
+	const [posStr, endStr] = positionRange.split("-")
+	const pos = parseInt(posStr, 10)
+	const end = parseInt(endStr, 10)
+	if (isNaN(pos) || isNaN(end)) {
+		throw new Error(
+			`Invalid position in callSite: ${callSite}. Pos: ${posStr}, End: ${endStr}`
+		)
+	}
+	return { path, pos, end }
+}
+
 const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	if (!ctx.functionStats[call.typeId]) {
 		ctx.functionStats[call.typeId] = {
@@ -513,17 +547,7 @@ const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	}
 
 	const stats = ctx.functionStats[call.typeId]
-	const [filePath, positionRange] = call.callSite.split(":")
-	if (!filePath || !positionRange)
-		throw new Error(`Invalid callSite format: ${call.callSite}`)
-	const [posStr, endStr] = positionRange.split("-")
-	const pos = parseInt(posStr, 10)
-	const end = parseInt(endStr, 10)
-	if (isNaN(pos) || isNaN(end)) {
-		throw new Error(
-			`Invalid position in callSite: ${call.callSite}. Pos: ${posStr}, End: ${endStr}`
-		)
-	}
+	const { path: filePath, pos, end } = parseCallSite(call.callSite)
 
 	stats.detailedCallSites.push({
 		path: filePath,

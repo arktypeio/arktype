@@ -1,4 +1,4 @@
-import { throwParseError } from "./errors.ts"
+import { throwError, throwParseError } from "./errors.ts"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
@@ -273,6 +273,8 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
  * console.log(nearestFloat(5555555555555555, "-")); // 5555555555555554
  */
 export const nearestFloat = (n: number, direction: "+" | "-" = "+"): number => {
+	if (!Number.isFinite(n))
+		throwError(`nearestFloat input must be a finite number (was ${n})`)
 	const buffer = new ArrayBuffer(8)
 	const f64 = new Float64Array(buffer)
 	const u32 = new Uint32Array(buffer)

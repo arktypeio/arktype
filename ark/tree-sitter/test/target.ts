@@ -27,6 +27,7 @@ const modules = (relative: string) => path(`node_modules/${relative}`)
 
 export const arktypeWasm = path("tree-sitter-arktype.wasm")
 export const ecmaInjections = path("queries/ecma/injections.scm")
+export const treeSitterCli = modules("tree-sitter-cli/cli.js")
 
 const categories: string[] = JSON.parse(
 	readFileSync(
@@ -57,8 +58,9 @@ const markdownWasm = (): string | undefined => {
 	mkdirSync(path("test/.wasm"), { recursive: true })
 	try {
 		execFileSync(
-			modules(".bin/tree-sitter"),
+			process.execPath,
 			[
+				treeSitterCli,
 				"build",
 				"--wasm",
 				"-o",

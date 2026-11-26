@@ -29,6 +29,27 @@ contextualize(() => {
 			attest(nearestFloat(-5555555555555555)).snap(-5555555555555554)
 			attest(nearestFloat(-5555555555555555, "-")).equals(-5555555555555556)
 		})
+
+		it("throws on non-finite input", () => {
+			attest(() => nearestFloat(Infinity)).throws.snap(
+				"Error: nearestFloat input must be a finite number (was Infinity)"
+			)
+			attest(() => nearestFloat(Infinity, "-")).throws.snap(
+				"Error: nearestFloat input must be a finite number (was Infinity)"
+			)
+			attest(() => nearestFloat(-Infinity)).throws.snap(
+				"Error: nearestFloat input must be a finite number (was -Infinity)"
+			)
+			attest(() => nearestFloat(-Infinity, "-")).throws.snap(
+				"Error: nearestFloat input must be a finite number (was -Infinity)"
+			)
+			attest(() => nearestFloat(NaN)).throws.snap(
+				"Error: nearestFloat input must be a finite number (was NaN)"
+			)
+			attest(() => nearestFloat(NaN, "-")).throws.snap(
+				"Error: nearestFloat input must be a finite number (was NaN)"
+			)
+		})
 	})
 
 	describe("number matchers", () => {

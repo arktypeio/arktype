@@ -10,10 +10,13 @@ import { grammarSourceHash, stampPath } from "./stamp.ts"
 
 const root = fileURLToPath(new URL("../", import.meta.url))
 const cli = fileURLToPath(
-	new URL("../node_modules/.bin/tree-sitter", import.meta.url)
+	new URL("../node_modules/tree-sitter-cli/cli.js", import.meta.url)
 )
 const run = (...args: string[]) =>
-	execFileSync(cli, args, { cwd: root, stdio: "inherit" })
+	execFileSync(process.execPath, [cli, ...args], {
+		cwd: root,
+		stdio: "inherit"
+	})
 
 run("generate")
 // so pnpm checkPrettier passes on what generate writes
