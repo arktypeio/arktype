@@ -752,6 +752,17 @@ console.log(Whole === Output, String(Whole(5)), String(Output(5)))`)
 			}
 		})
 
+		it("an intersection is its operands in order", () => {
+			const dateFirst = type({ a: "string.date & string.url" })
+			const urlFirst = type({ a: "string.url & string.date" })
+			attest(dateFirst.description).snap(
+				"{ a: a parsable date and a URL string }"
+			)
+			attest(urlFirst.description).snap(
+				"{ a: a URL string and a parsable date }"
+			)
+		})
+
 		it("an intersection of a union isn't a union with an intersection", () => {
 			for (const andFirst of [true, false]) {
 				const out = printed(`const makeAnd = () => type(/a/).or(/b/).and(/c/)

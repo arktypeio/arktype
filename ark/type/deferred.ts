@@ -445,10 +445,10 @@ const andFacts = (l: Facts, r: Facts): Facts | undefined => {
 		(r.min !== undefined || r.max !== undefined)
 	)
 		return
-	const [first, last] = l.key < r.key ? [l, r] : [r, l]
 	return {
-		// enclosed, so what's written after it isn't its last operand's
-		key: `(${wrap(first)}&${wrap(last)})`,
+		// enclosed, so what's written after it isn't its last operand's, and in
+		// order, since a node both hold keeps the meta of the left's
+		key: `(${wrap(l)}&${wrap(r)})`,
 		domains: stringBits,
 		pure: true,
 		min: l.min ?? r.min,
