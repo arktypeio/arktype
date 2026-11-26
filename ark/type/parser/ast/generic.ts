@@ -4,6 +4,7 @@ import type {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import type { array, ErrorMessage, Hkt, Key, typeToString } from "@ark/util"
+import type { distill } from "../../attributes.ts"
 import type { RecordHkt } from "../../keywords/ts.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
@@ -66,6 +67,11 @@ type validateGenericArgs<
 	argAsts extends readonly [infer arg, ...infer argsTail] ?
 		validateAst<arg, $, args> extends infer e extends ErrorMessage ? e
 		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
+			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
+		: // like the runtime check, a morph satisfies a constraint its input does
+		distill.In<inferAstRoot<arg, $, args>> extends (
+			params[indices["length"]][1]
+		) ?
 			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
 		:	ErrorMessage<
 				writeUnsatisfiedParameterConstraintMessage<

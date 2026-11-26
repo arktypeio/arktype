@@ -8,7 +8,14 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
-import { generic, scope, type, type Generic, type GenericAst } from "arktype"
+import {
+	generic,
+	scope,
+	type,
+	type Generic,
+	type GenericAst,
+	type To
+} from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeParameterizedGenericKeyMessage } from "arktype/internal/scope.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
@@ -156,6 +163,31 @@ contextualize(() => {
 			attest(() => positiveToInteger("number")).throws(
 				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
 			)
+		})
+
+		it("a morph satisfies a constraint its input does", () => {
+			const Boxed = generic(["t", "string"])({ v: "t" })
+			const T = Boxed("string.numeric.parse")
+
+			attest<{ v: (In: string) => To<number> }>(T.t)
+			attest(T({ v: "5" })).snap({ v: 5 })
+
+			const types = scope({
+				"Box<t extends string>": { v: "t" },
+				Parsed: "Box<string.numeric.parse>"
+			}).export()
+
+			attest<{ v: (In: string) => To<number> }>(types.Parsed.t)
+			attest(types.Parsed({ v: "5" })).snap({ v: 5 })
+		})
+
+		it("a morph whose input doesn't satisfy a constraint is unsatisfied", () => {
+			const Boxed = generic(["t", "number"])({ v: "t" })
+
+			// @ts-expect-error
+			attest(() => Boxed("string.numeric.parse"))
+				.throws("t must be assignable to number")
+				.type.errors(`ErrorType<["Invalid argument for t", expected: number]>`)
 		})
 
 		it("unsatisfied parameter string", () => {

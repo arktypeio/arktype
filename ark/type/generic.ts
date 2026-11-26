@@ -20,6 +20,7 @@ import {
 	type Scanner,
 	type WhitespaceChar
 } from "@ark/util"
+import type { distill } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
@@ -43,7 +44,9 @@ export type validateParameterString<s extends ParameterString, $> =
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
 	inferDefinition<arg, $> extends param[1] ? unknown
-	:	ErrorType<[`Invalid argument for ${param[0]}`, expected: param[1]]>
+	: // like the runtime check, a morph satisfies a constraint its input does
+	distill.In<inferDefinition<arg, $>> extends param[1] ? unknown
+	: ErrorType<[`Invalid argument for ${param[0]}`, expected: param[1]]>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
