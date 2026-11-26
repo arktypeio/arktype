@@ -1,5 +1,13 @@
 # @ark/aot
 
+## 3.0.0-rc.10
+
+Fixed R4 false positives on reads of Type-named properties like `.label` and `.message` where the build can prove no Type reaches the value, and closed an interface inheritance soundness gap:
+
+- Callbacks passed as props or render-prop children of resolved JSX components read their parameter types from the component's prop annotations, explicit JSX type arguments (`<Comp<Item>>`) and covariant sibling props (`items={options}`), while still refusing components that pass a Type or spread opaque props.
+- Reads guarded by `typeof x === "object"` (or any other non-function `typeof`), `typeof x !== "function"` or `Array.isArray(x)` on an un-reassigned binding are narrowed out as Types, since every Type and standalone validator is callable.
+- Generic type aliases and interfaces now bind their type arguments (`Box<Item>`), `typeof` queries resolve local block/function bindings as well as module-level ones, conditional types without `infer` and nested indexed accesses (`Config["headers"][number]`) evaluate their branches/elements, method signatures in interfaces and type literals (`reset(): void`) read their return types instead of marking the object opaque, objects holding functions that return opaque data keep `opaque` instead of escalating to `unknown`, and `interface Sub extends Base` now checks inherited members so a Type held in `Base` is no longer missed.
+
 ## 3.0.0-rc.9
 
 Removed the standalone `arktype-precompile` binary; all precompiler CLI commands now run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`).

@@ -931,6 +931,197 @@ export const db = {} as Db`
 				)
 			).equals([])
 		})
+
+		it("narrows out Types where typeof or Array.isArray proves a value isn't a function", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+export const T = type("string")
+export const messagesOf = (errors: unknown[]): string[] => {
+	const messages: string[] = []
+	for (const issue of errors) {
+		if (
+			issue &&
+			typeof issue === "object" &&
+			"message" in issue &&
+			typeof issue.message === "string"
+		) {
+			messages.push(issue.message)
+		}
+	}
+	return messages
+}
+export const labelOf = (raw: unknown) => {
+	if (!raw || typeof raw !== "object") return
+	return raw.label
+}
+export const nonFnLabel = (raw: unknown) => {
+	if (typeof raw === "function") return
+	return raw.label
+}
+export const arrayLabel = (raw: unknown) => {
+	let out
+	if (Array.isArray(raw)) out = raw.label
+	return out
+}
+export const stillFn = (raw: unknown) => {
+	let out
+	if (typeof raw === "function") out = raw.label
+	return out
+}
+export const notString = (raw: unknown) => {
+	let out
+	if (typeof raw !== "string") out = raw.label
+	return out
+}
+export const reassigned = (raw: unknown) => {
+	let x = raw
+	if (typeof x === "object") {
+		x = T
+		return x.label
+	}
+}`)
+			).snap([
+				"/main.ts:32:39  raw.label reads label, which a standalone validator lacks\n  `raw` is a parameter of stillFn, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:37:37  raw.label reads label, which a standalone validator lacks\n  `raw` is a parameter of notString, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:44:10  x.label reads label, which a standalone validator lacks\n  the build can't tell where `x` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("reads generic type arguments, method signatures, conditional types and interface extends", () => {
+			attest(
+				unhinted(
+					`import { type, type Type } from "arktype"
+import type { Box } from "./box.ts"
+export const T = type("string")
+interface Item {
+	reset(): void
+	label: string
+}
+interface Holder {
+	schema(): Type
+	label: string
+}
+interface Base {
+	schema: Type
+}
+interface Sub extends Base {
+	name: string
+}
+interface Config {
+	acceptHeaders: readonly { label: string }[]
+	schemas: readonly Type[]
+}
+type Header = Config["acceptHeaders"][number]
+type SchemaItem = Config["schemas"][number]
+type Enabled<flag> = flag extends true ? { label: string } : never
+type MaybeType<flag> = flag extends true ? Type : { label: string }
+type Inferred<x> = x extends Promise<infer u> ? u : never
+export const ok = (
+	a: Box<{ label: string }>,
+	b: Item,
+	h: Header,
+	e: Enabled<true>
+) => [a.item.label, b.label, h.label, e.label]
+export const badType = (a: Box<Type>) => a.item.label
+export const badUnknown = (a: Box<unknown>) => a.item.label
+export const badMethod = (h: Holder) => h.schema().or("null")
+export const badExtends = (s: Sub) => s.schema.or("null")
+export const badIndexed = (s: SchemaItem) => {
+	let out = s.label
+	return out
+}
+export const badCond = (m: MaybeType<boolean>) => {
+	let out = m.label
+	return out
+}
+export const badInfer = (i: Inferred<Promise<unknown>>) => {
+	let out
+	if (i) out = i.label
+	return out
+}`,
+					{
+						"/box.ts": `export type Box<T> = { item: T; reset(): void }`
+					}
+				)
+			).snap([
+				"/main.ts:33:42  a.item.label reads label, which a standalone validator lacks\n  the build can't tell where `a.item` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:34:48  a.item.label reads label, which a standalone validator lacks\n  the build can't tell where `a.item` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:35:41  h.schema().or reads or, which a standalone validator lacks\n  the build can't tell where `h.schema()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:36:39  s.schema.or reads or, which a standalone validator lacks\n  the build can't tell where `s.schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:38:12  s.label reads label, which a standalone validator lacks\n  `s` is a parameter of badIndexed, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:42:12  m.label reads label, which a standalone validator lacks\n  `m` is a parameter of badCond, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:47:15  i.label reads label, which a standalone validator lacks\n  `i` is a parameter of badInfer, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
+		it("reads JSX component callback props from the component's prop types", () => {
+			attest(
+				unhintedTsx({
+					"/select.tsx": `import type { PropsWithChildren, ReactNode } from "react"
+export type ItemWithCallbacks<T> = {
+	item: T
+	callbacks: { onClick: (item: T) => void }
+}
+type RootProps<T> =
+	| { items: T[]; getSearchFields: (item: T) => string[] }
+	| { items?: never; getSearchFields?: never }
+const Root = <T,>(props: PropsWithChildren<RootProps<T>>) => null
+const EachItem = <T,>(props: { children: (row: ItemWithCallbacks<T>) => ReactNode }) => null
+export const SearchableSelect = { Root, EachItem }
+type BaseItem = { value: string; label: string }
+const SingleValue = <T extends BaseItem>(props: {
+	children?: (item: T | null) => ReactNode
+}) => null
+export const Select = { SingleValue }`,
+					"/main.tsx": `import { type } from "arktype"
+import { SearchableSelect, Select } from "./select.tsx"
+export const User = type({ name: "string" })
+const OPTIONS = [{ value: "a", label: "A" }]
+export const Ok = () => {
+	const localOptions = [{ value: "b", label: "B" }]
+	return (
+		<div>
+			<SearchableSelect.Root
+				items={OPTIONS}
+				getSearchFields={item => [item.label]}
+			>
+				<SearchableSelect.EachItem<{ value: string; label: string }>>
+					{({ item }) => <span>{item.label}</span>}
+				</SearchableSelect.EachItem>
+				<SearchableSelect.EachItem<(typeof localOptions)[number]>>
+					{({ item }) => <span>{item.label}</span>}
+				</SearchableSelect.EachItem>
+			</SearchableSelect.Root>
+			<Select.SingleValue>{item => item?.label ?? "None"}</Select.SingleValue>
+		</div>
+	)
+}
+export const Bad = (extra: any) => {
+	const LocalUser = type({ name: "string" })
+	return (
+		<div>
+			<SearchableSelect.Root
+				items={[User]}
+				getSearchFields={item => [item.label("x")]}
+			/>
+			<SearchableSelect.Root
+				{...extra}
+				items={OPTIONS}
+				getSearchFields={item => [item.label]}
+			/>
+			<SearchableSelect.EachItem<typeof LocalUser>>
+				{({ item }) => item.label("x")}
+			</SearchableSelect.EachItem>
+		</div>
+	)
+}`
+				})
+			).snap([
+				"/main.tsx:30:31  item.label reads label, which a standalone validator lacks\n  the build can't tell where `item` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.tsx:35:31  item.label reads label, which a standalone validator lacks\n  the build can't tell where `item` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.tsx:38:20  item.label reads label, which a standalone validator lacks\n  the build can't tell where `item` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
 	})
 
 	describe("helpers", () => {
