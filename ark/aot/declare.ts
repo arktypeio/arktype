@@ -96,6 +96,7 @@ export interface SolutionReferences {
 export type OpenedDeclarationProject = Frontend | SolutionReferences
 
 const maxSettlePasses = 32
+const maxShapeSettlePasses = 256
 const maxSolutionProjects = 256
 
 const canonicalConfigPath = (path: string): string => {
@@ -957,7 +958,8 @@ class ShapePrinter implements ShapeNames {
 		for (const declaration of inferred) this.printInferred(declaration)
 		let shapes: string[] = []
 		let isSettled = false
-		while (!isSettled) {
+		const maxPasses = Math.max(maxShapeSettlePasses, this.shapeNames.size * 4)
+		for (let pass = 0; pass < maxPasses; pass++) {
 			shapes = []
 			this.unnamed.clear()
 			const unprintable: ts.Type[] = []
@@ -982,7 +984,15 @@ class ShapePrinter implements ShapeNames {
 				this.shapeNames.delete(t)
 				this.refused.add(t)
 			}
-			isSettled = !unprintable.length
+			if (!unprintable.length) {
+				isSettled = true
+				break
+			}
+		}
+		if (!isSettled) {
+			throwError(
+				`Declaration shapes in ${this.root} (${this.shapeNames.size} shapes) did not settle after ${maxPasses} passes. Annotate recursive or deeply nested exported Types.`
+			)
 		}
 		return shapes
 	}
