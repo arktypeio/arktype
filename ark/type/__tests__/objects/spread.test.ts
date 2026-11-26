@@ -80,6 +80,38 @@ contextualize(() => {
 		)
 	})
 
+	it("with an object type runtime won't spread", () => {
+		const $ = scope({
+			a: { x: "string" },
+			b: { y: "number" },
+			c: { x: "string", "y?": "number" }
+		})
+		// @ts-expect-error
+		attest(() => $.type({ "...": "a | b" }))
+			.throws(writeInvalidSpreadTypeMessage("{ x: string } | { y: number }"))
+			.type.errors(writeInvalidSpreadTypeMessage("object"))
+		// TypeScript would take a morph for a function
+		// @ts-expect-error
+		attest(() => type({ "...": "string.json.parse" }))
+			.throws(
+				"Spread operand must resolve to an object literal type (was (In: "
+			)
+			.type.errors(writeInvalidSpreadTypeMessage("Function"))
+		// @ts-expect-error
+		attest(() => type({ "...": "never" })).throwsAndHasTypeError(
+			writeInvalidSpreadTypeMessage("never")
+		)
+		// any is unknown at runtime
+		// @ts-expect-error
+		attest(() => type({ "...": "unknown.any" })).throwsAndHasTypeError(
+			writeInvalidSpreadTypeMessage("unknown")
+		)
+		// a union that reduces to one of its branches is spread as that branch
+		attest($.type({ "...": "a | c", z: "1" }).expression).snap(
+			"{ x: string, z: 1 }"
+		)
+	})
+
 	// this is a regression test to ensure nodes are handled even if they aren't just an object
 	it("with complex type", () => {
 		const AdminUser = type({

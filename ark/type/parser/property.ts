@@ -11,6 +11,7 @@ import {
 	type ErrorType,
 	type typeToString
 } from "@ark/util"
+import type { InferredMorph } from "../attributes.ts"
 import {
 	parseInnerDefinition,
 	type inferDefinition,
@@ -71,13 +72,16 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 		def
 	: keyKind extends "spread" ?
 		def extends validateInnerDefinition<def, $, args> ?
-			inferDefinition<def, $, args> extends object ?
-				def
-			:	ErrorType<
-					writeInvalidSpreadTypeMessage<
-						typeToString<inferDefinition<def, $, args>>
+			inferDefinition<def, $, args> extends infer operand ?
+				isSpreadOperand<operand> extends true ?
+					def
+				:	ErrorType<
+						writeInvalidSpreadTypeMessage<
+							// runtime has unknown where TypeScript has any
+							typeToString<unknown extends operand ? unknown : operand>
+						>
 					>
-				>
+			:	never
 		:	validateInnerDefinition<def, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
 	: keyKind extends "meta" ? TypeMeta.Collapsible
@@ -88,6 +92,30 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 	: isDefaultable<def, $, args> extends true ?
 		ErrorMessage<invalidDefaultableKeyKindMessage>
 	:	validateInnerDefinition<def, $, args>
+
+/**
+ * One object type, as at runtime, where any is unknown, and where a union of
+ * objects isn't spread, nor is a morph, which TypeScript would take for a
+ * function
+ */
+type isSpreadOperand<t> =
+	[t] extends [anyOrNever] ? false
+	: [t] extends [object] ?
+		[Extract<t, InferredMorph>] extends [never] ?
+			isUnionOfDistinct<t> extends true ?
+				false
+			:	true
+		:	false
+	:	false
+
+// a union none of whose branches the whole reduces to, as runtime would reduce
+// one with a branch the rest are subtypes of
+type isUnionOfDistinct<t, branch = t> =
+	branch extends unknown ?
+		[t] extends [branch] ?
+			false
+		:	true
+	:	never
 
 export type isDefaultable<def, $, args> =
 	def extends DefaultablePropertyTuple ? true
