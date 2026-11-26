@@ -555,6 +555,16 @@ contextualize(() => {
 			attest(T.json).equals(type("Date != d'2000-05-03'").json)
 		})
 
+		it("union of an excluded Date and a bound", () => {
+			attest(type("Date != d'2000-05-03' | Date > d'2000-05-01'").json).equals(
+				type("Date").json
+			)
+			const T = type("Date > d'2000-05-01'")
+				.and("Date != d'2000-05-03'")
+				.or("Date <= d'2000-05-01'")
+			attest(T.json).equals(type("Date != d'2000-05-03'").json)
+		})
+
 		it("union of bounds allowing NaN", () => {
 			const nanable = { domain: "number", numberAllowsNaN: true } as const
 			const T = rootSchema([
@@ -783,6 +793,10 @@ contextualize(() => {
 
 		it("unit at an excluded value", () => {
 			attest(type("number != 5 | number == 5").json).equals(type("number").json)
+			attest(type("string != 2 | string == 2").json).equals(type("string").json)
+			attest(type("Date != d'2000-05-03' | Date == d'2000-05-03'").json).equals(
+				type("Date").json
+			)
 		})
 
 		it("unit the rest excludes", () => {

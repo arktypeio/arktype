@@ -1305,10 +1305,13 @@ const mergeRangeBranches = (
 		l.inner.proto?.dateAllowsInvalid
 	)
 		return
-	const family = rangeFamilies.find(family =>
-		family.kinds.some(
-			kind => l.inner[kind] || (r.is("intersection") && r.inner[kind])
-		)
+	const family = rangeFamilies.find(
+		family =>
+			// a Date excludes values by the kind a number does
+			!(family.lower === "min" && l.inner.proto) &&
+			family.kinds.some(
+				kind => l.inner[kind] || (r.is("intersection") && r.inner[kind])
+			)
 	)
 	if (!family) return
 	const rest = childrenExcept(l, family.kinds)
