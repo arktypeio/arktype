@@ -3,7 +3,7 @@ import {
 	registeredReference,
 	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
-import { deepClone } from "@ark/util"
+import { deepClone, writeMalformedNumericLiteralMessage } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
@@ -513,6 +513,28 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: "string", bar: "unknown = number" })
 			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("number"))
+		})
+
+		it("number literal TypeScript can't narrow", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "number = 1.50" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("1.50", "number")
+			)
+			// malformed before it's unassignable, as parsing reads it first
+			// @ts-expect-error
+			attest(() => type({ foo: "string = 0x10" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10", "number")
+			)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "number = 9007199254740993" })
+			).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("9007199254740993", "number")
+			)
+			// @ts-expect-error
+			attest(() => type({ foo: "bigint = 0x10n" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10n", "bigint")
+			)
 		})
 
 		it("operand that sets no root", () => {

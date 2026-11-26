@@ -1,5 +1,11 @@
 import type { writeUnassignableDefaultValueMessage } from "@ark/schema"
-import type { EmptyObject, ErrorMessage } from "@ark/util"
+import type {
+	BigintLiteral,
+	EmptyObject,
+	ErrorMessage,
+	NumberLiteral,
+	writeMalformedNumericLiteralMessage
+} from "@ark/util"
 import type {
 	DefaultLiteral,
 	inferDefaultLiteral
@@ -15,7 +21,29 @@ export type validateDefault<
 	args
 > =
 	validateAst<baseAst, $, args> extends infer e extends ErrorMessage ? e
-	: // check against the output of the type since morphs will not occur
+	: // as at runtime, a number literal TypeScript can't narrow, like 1.50 or
+	// 9007199254740993, is malformed
+	defaultLiteral extends NumberLiteral ?
+		number extends inferDefaultLiteral<defaultLiteral> ?
+			ErrorMessage<
+				writeMalformedNumericLiteralMessage<defaultLiteral, "number">
+			>
+		:	validateDefaultValue<baseAst, defaultLiteral, $, args>
+	: defaultLiteral extends BigintLiteral ?
+		bigint extends inferDefaultLiteral<defaultLiteral> ?
+			ErrorMessage<
+				writeMalformedNumericLiteralMessage<defaultLiteral, "bigint">
+			>
+		:	validateDefaultValue<baseAst, defaultLiteral, $, args>
+	:	validateDefaultValue<baseAst, defaultLiteral, $, args>
+
+type validateDefaultValue<
+	baseAst,
+	defaultLiteral extends DefaultLiteral,
+	$,
+	args
+> =
+	// check against the output of the type since morphs will not occur
 	//  ambient infer is safe since the default value is always a literal
 	inferDefaultLiteral<defaultLiteral> extends inferAstIn<baseAst, $, args> ?
 		undefined
