@@ -542,6 +542,18 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 		)
 	})
 
+	it("to a string that can't be scanned throws what parsing it throws", () => {
+		attest(
+			printed(`try {
+	type("string.trim").to("string & /(/")
+} catch (e) {
+	console.log(e.constructor.name, e.message)
+}`)
+		)
+			.snap(`ParseError SyntaxError: Invalid regular expression: /(/: Unterminated group
+`)
+	})
+
 	it("pipe.try is on a Type that's unread", () => {
 		const t = type("'tried'").pipe.try(s => JSON.parse(s))
 		attest(t("tried").toString()).snap(

@@ -1091,7 +1091,7 @@ const deferredMethods: Dict<
 	},
 	to: ({ facts }, [r]) => {
 		const to =
-			typeof r === "string" ? scanAnd(r)
+			typeof r === "string" ? scanLeaf(r)
 			: r instanceof RegExp ? regexFacts(r)
 			: deferred.get(r)?.facts
 		return facts.key === "string.trim" && refinesString(to) ?
