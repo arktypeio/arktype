@@ -32,8 +32,15 @@ type stringifiableToString<
 > =
 	// if it's the base wideneded domain, use that name
 	inferDomain<domainOf<t>> extends t ? describeDomainOf<t, opts>
-	:	// otherwise if it's a literal, use that
-		`${t}`
+	: // otherwise if it's a literal, write it as a unit's expression does, or
+	// as its description does where that has articles
+	t extends "" ?
+		[opts["includeArticles"]] extends [true] ?
+			"empty"
+		:	'""'
+	: t extends string ? `"${t}"`
+	: t extends bigint ? `${t}n`
+	: `${t}`
 
 export type describe<t> = typeToString<
 	t,

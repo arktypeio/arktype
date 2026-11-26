@@ -1855,4 +1855,4 @@ export const writeDuplicateKeyMessage = <key extends Key>(
 ): writeDuplicateKeyMessage<key> => `Duplicate key ${printable(key) as never}`
 
 export type writeDuplicateKeyMessage<key extends Key> =
-	`Duplicate key '${describe<key>}'`
+	`Duplicate key ${describe<key>}`

@@ -99,6 +99,22 @@ contextualize(() => {
 			)
 		})
 
+		it("indivisible literal", () => {
+			// @ts-expect-error
+			attest(() => type("'a' % 2"))
+				.throws('Divisor operand must be a number (was "a")')
+				// TypeScript escapes the quotes of a string literal type it prints
+				.type.errors('Divisor operand must be a number (was \\"a\\")')
+			// @ts-expect-error
+			attest(() => type("5n % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was 5n)"
+			)
+			// @ts-expect-error
+			attest(() => type("'' % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was empty)"
+			)
+		})
+
 		it("morph", () => {
 			// @ts-expect-error
 			attest(() => type("string.numeric.parse > 2"))
