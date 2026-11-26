@@ -108,6 +108,44 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 		})
 	})
 
+	it("closed tuples that meet at more than one length keep their elements", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Leading = $.type(["0", "...", "number[]"]).onUndeclaredKey("reject")
+			// a 0 that's both first and last, or one of each
+			const T = Leading.and(["...", "number[]", "0"])
+			attest(T.expression).equals("[0, ...number[], 0] | [0]")
+			attest(Leading.overlaps(["...", "number[]", "0"])).equals(true)
+			// the first data is checked uncompiled
+			attest(T([0])).equals([0] as never)
+			attest(T([0])).equals([0] as never)
+			attest(T([0, 1, 0])).equals([0, 1, 0])
+			attest(T([0, 1]).toString()).equals(
+				"[1] must be 0 or must be exactly length 1"
+			)
+			// each length still rejects a key that isn't an element's
+			attest(T(Object.assign([0], { extra: 1 })).toString()).equals(
+				"must be at least length 2 or extra must be removed"
+			)
+			// and holds a prop both declare
+			const WithProp = $.type({ a: "string" })
+				.and(["0", "...", "number[]"])
+				.onUndeclaredKey("reject")
+				.and({ a: "'a'" })
+				.and(["...", "number[]", "0"])
+			attest(WithProp.expression).equals(
+				'{ a: "a", + (undeclared): reject } & [0, ...number[], 0] | { a: "a", + (undeclared): reject } & [0]'
+			)
+			attest(WithProp.allows(Object.assign([0], { a: "a" }))).equals(true)
+			attest(WithProp.allows(Object.assign([0], { a: "b" }))).equals(false)
+
+			// arrays that meet only empty hold no element to declare
+			attest(
+				$.type("string[]").onUndeclaredKey("reject").and("number[]").json
+			).equals({ undeclared: "reject", proto: "Array", exactLength: 0 })
+		}
+	})
+
 	it("an open object isn't a subtype of a closed one", () => {
 		const Closed = type({ "+": "reject" })
 		attest(type({}).extends(Closed)).equals(false)
