@@ -178,8 +178,16 @@ const callableOf = (cache: NodeCache) =>
 		pipedFromCtx?: Traversal | undefined,
 		onFail?: ArkErrors.Handler | null
 	) => {
-		if (pipedFromCtx)
-			return pipe(siteTraversalOf(pipedFromCtx), cache.self, data)
+		if (pipedFromCtx) {
+			const ctx = siteTraversalOf(pipedFromCtx)
+			// a label names the value of the callback calling this, not the
+			// values this checks: what it raises is its own, as a validator's is
+			const lbl = ctx.lbl
+			if (lbl !== undefined) ctx.lbl = undefined
+			const out = pipe(ctx, cache.self, data)
+			if (lbl !== undefined) ctx.lbl = lbl
+			return out
+		}
 
 		const rootApply = cache.rootApply
 		return rootApply === undefined ?

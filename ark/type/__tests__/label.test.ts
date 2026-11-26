@@ -148,6 +148,31 @@ contextualize(() => {
 				"a must be between 0 and 100"
 			)
 		})
+
+		it("names no value of a Type it calls with its ctx", () => {
+			const Limits = type({
+				max: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+			})
+			const T = type("object")
+				.narrow((o, ctx) => !(Limits.internal(o, ctx) instanceof type.errors))
+				.label("Config")
+			attest(T({ max: 0 }).toString()).snap("max must be positive")
+			// a Type compiles at its second call
+			attest(T({ max: 0 }).toString()).snap("max must be positive")
+			attest(T(0).toString()).snap("Config must be an object")
+		})
+
+		it("names its value in what it raises after calling a Type with its ctx", () => {
+			const T = type("object")
+				.narrow(
+					(o, ctx) =>
+						!(
+							type({ max: "number" }).internal(o, ctx) instanceof type.errors
+						) && ctx.mustBe("sorted")
+				)
+				.label("Config")
+			attest(T({ max: 0 }).toString()).snap("Config must be sorted")
+		})
 	})
 
 	describe("an explicit message", () => {
@@ -455,6 +480,17 @@ Count must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE
 				.pipe((s, ctx) => ctx.error("a product we sell"))
 			attest(T("kiwi").toString()).snap("must be a product we sell")
 			attest(T(5).toString()).snap("Product must be a string")
+		})
+
+		it("names no value of a Type it calls with its ctx", () => {
+			const Limits = type({
+				max: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+			})
+			const T = type("string")
+				.pipe((s, ctx) => Limits.internal(JSON.parse(s), ctx))
+				.label("Config")
+			attest(String(T('{"max":0}'))).snap("max must be positive")
+			attest(String(T('{"max":0}'))).snap("max must be positive")
 		})
 	})
 

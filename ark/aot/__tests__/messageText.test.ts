@@ -191,6 +191,11 @@ const labeled: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ message: "Pct is out of range" })).label("Pct") }), { k: "200" })
 		show(type({ k: type({ a: "string" }).narrow((o, ctx) => pct(o.a) || ctx.reject({ expected: "between 0 and 100", relativePath: ["a"] })).label("Pct") }), { k: { a: "200" } })
 	`,
+	"leaves what a Type a labeled narrow calls with its ctx raises as that Type names it": `
+		const Limits = type({ max: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")) })
+		show(type("object").narrow((o, ctx) => !(Limits(o, ctx) instanceof type.errors)).label("Config"), { max: 0 }, 0)
+		show(type({ k: type("object").narrow((o, ctx) => !(Limits(o, ctx) instanceof type.errors) && ctx.mustBe("sorted")).label("Config") }), { k: { max: 1 } })
+	`,
 	"names a value by its label in what a morph raises it must be": `
 		show(type({ k: type("string").pipe((s, ctx) => ctx.error("a product")).label("K") }), { k: "x" }, { k: 1 })
 		show(type({ k: type("string").pipe((s, ctx) => ctx.error({ message: "No such product" })).label("K") }), { k: "x" })
@@ -200,6 +205,8 @@ const labeled: Record<string, string> = {
 		show(type({ k: type("string.json.parse").label("K") }), { k: "{" })
 		show(type({ ks: type("string.date.parse").label("K").array() }), { ks: ["!!", "2020-01-01"] })
 		show(type({ k: type("string.json.parse").label("K").or("number") }), { k: "{" }, { k: true })
+		const Limits = type({ max: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")) })
+		show(type("string").pipe((s, ctx) => Limits(JSON.parse(s), ctx)).label("Config"), '{"max":0}')
 		standard(type({ k: type("string.date.parse").label("K") }), { k: "!!" })
 	`
 }
