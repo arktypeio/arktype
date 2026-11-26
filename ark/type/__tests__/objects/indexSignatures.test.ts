@@ -6,6 +6,10 @@ import {
 } from "@ark/schema"
 import { scope, type } from "arktype"
 import { writeOptionalIndexKeyMessage } from "arktype/internal/parser/objectLiteral.ts"
+import {
+	writeExpressionExpectedMessage,
+	writeMissingRightOperandMessage
+} from "arktype/internal/parser/shift/operand/unenclosed.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -375,6 +379,21 @@ other must be a string`)
 		attest(type({ "['a' | 'b']": "string" }).expression).snap(
 			"{ a: string, b: string }"
 		)
+	})
+
+	it("incomplete index definition", () => {
+		// @ts-expect-error
+		attest(() => type({ "[]": "number" }))
+			.throws(writeExpressionExpectedMessage(""))
+			.type.errors("ErrorType<")
+		// @ts-expect-error
+		attest(() => type({ "[string|]": "number" }))
+			.throws(writeMissingRightOperandMessage("|"))
+			.type.errors('ErrorType<"string|Array"')
+		// @ts-expect-error
+		attest(() => type({ "[strin]": "number" }))
+			.throws("'strin' is unresolvable")
+			.type.errors('ErrorType<"string">')
 	})
 
 	it("does not allow invalid key type error as value", () => {

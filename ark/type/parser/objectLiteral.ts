@@ -301,16 +301,20 @@ export type validateObjectLiteral<def, $, args> = {
 type validatePreparsedEntry<k, v, $, args> =
 	preparseKey<k> extends infer parsedKey extends PreparsedKey ?
 		parsedKey extends PreparsedEntryKey<"index"> ?
-			validateString<parsedKey["normalized"], $, args> extends (
-				ErrorMessage<infer message>
-			) ?
-				// add a nominal type here to avoid allowing the error message as input
-				ErrorType<message>
-			: inferDefinition<parsedKey["normalized"], $, args> extends Key ?
-				// if the index def is syntactically and semantically valid,
-				// move on to the validating the value definition
-				validateProperty<v, parsedKey["kind"], $, args>
-			:	ErrorMessage<writeInvalidPropertyKeyMessage<parsedKey["normalized"]>>
+			validateString<parsedKey["normalized"], $, args> extends infer result ?
+				[result] extends [ErrorMessage<infer message>] ?
+					// add a nominal type here to avoid allowing the error message as input
+					ErrorType<message>
+				: [result] extends [parsedKey["normalized"]] ?
+					inferDefinition<parsedKey["normalized"], $, args> extends Key ?
+						// if the index def is syntactically and semantically valid,
+						// move on to the validating the value definition
+						validateProperty<v, parsedKey["kind"], $, args>
+					:	ErrorMessage<writeInvalidPropertyKeyMessage<parsedKey["normalized"]>>
+				:	// an incomplete def, like "string|", whose completions a key can't
+					// offer as a value can, but which still fails to parse
+					ErrorType<result & string>
+			:	never
 		:	validateProperty<v, parsedKey["kind"], $, args>
 	:	never
 
