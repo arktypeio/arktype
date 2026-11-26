@@ -708,13 +708,95 @@ tag\`\${User}\`.assert({})`)
 			).snap(
 				"the validator at types.ts:3:21 is lost where main.ts:4:7 passes it to a template tag"
 			)
+			attest(await droppedReading(`console.log(String.raw\`\${User}\`)`)).snap([
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
+		})
+
+		it("joining an array holding it", async () => {
+			attest(await droppedReading(`console.log([User].join())`)).snap([
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
+			attest(await droppedReading(`console.log([User].join(", "))`)).snap([
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
 		})
 
 		it("a mapper Array.from passes it", async () => {
 			attest(
 				await droppedReading(`Array.from([User], t => t.assert({}))`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(`Array.from([User], t => t)[0].assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(`Array.from([1], () => User)[0].assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`Array.from({ length: 1, 0: User }).map(t => t.assert({}))`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`Array.from({ length: 1, 0: User }, undefined).map(t => t.assert({}))`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`console.log(Array.from({ length: 1, 0: User }).join())`
+				)
+			).snap(["assert", "meta", "~standard", "withContext"])
+			attest(
+				await droppedReading(
+					`declare const fn: (t: typeof User) => unknown\nArray.from([User], fn)`
+				)
 			).snap(
-				"the validator at types.ts:3:21 is lost where main.ts:3:1 maps it with a function the build can't follow"
+				"the validator at types.ts:3:21 is lost where main.ts:4:20 passes it to a callback the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`Array.from([1], function (this: any) { return this.assert({}) }, User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:66 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const args: any = [[1], function (this: any) { return this.assert({}) }, User]\n;(Array.from as any)(...args)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:22 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const rest: any = [function (this: any) { return this.assert({}) }, User]\n;(Array.from as any)([1], ...rest)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:27 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const head: any = [[1], function (this: any) { return this.assert({}) }]\n;(Array.from as any)(...head, User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:31 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const head: any = [[1], function (this: any) { return this().assert({}) }]\n;(Array.from as any)(...head, () => User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:31 returns it from a function whose calls the build can't follow"
 			)
 		})
 
@@ -1032,6 +1114,55 @@ o.m()`
 ;(f as any).call = (t: unknown) => t
 const o = { s: User, self() { return f.call(this) } }
 o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const f = function (): any { return 0 }
+const g: any = f
+g.call = (t: unknown) => t
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const patch = (fn: any) => { fn.call = (t: unknown) => t }
+const f = function (): any { return 0 }
+patch(f)
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const g = function f(): any {
+	;(f as any).call = (t: unknown) => t
+	return 0
+}
+g()
+const o = { s: User, self() { return g.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const g = function f(): any {
+	const o = { s: User, self() { return f.call(this) } }
+	return o.self()
+}
+;(g as any).call = (t: unknown) => t
+g().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import f from "./helper.ts"
+import f2 from "./helper.ts"
+;(f2 as any).call = (t: unknown) => t
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`,
+					{ "/helper.ts": `export default (): any => 0` }
 				)
 			).snap(["meta", "~standard", "methods", "withContext"])
 			attest(
@@ -2300,6 +2431,66 @@ console.log(READ, String(User({ name: 5 })))
 				const pruned = await bundle({ preset })
 				attest(run(pruned)).equals(run(whole))
 				attest(pruned.includes("~standard")).equals(false)
+			}
+		})
+
+		it("prints a Type's expression when an array holding it is joined", async () => {
+			const joinedRoot = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"\nconsole.log([type({ t1: "string" })].join())\n`
+				},
+				tempPath("joined")
+			)
+			const options: BuildOptions = {
+				entryPoints: [join(joinedRoot, "main.ts")],
+				absWorkingDir: joinedRoot
+			}
+			for (const preset of ["smallest", undefined] as const) {
+				const pruned = await bundle({ cwd: joinedRoot, preset }, options)
+				attest(run(pruned)).equals("Type<{ t1: string }>\n")
+				attest(pruned.includes("~standard")).equals(false)
+			}
+		})
+
+		it("prunes when bundling a Node builtin package like events", async () => {
+			const eventsRoot = writeFixture(
+				{
+					"node_modules/events/package.json": JSON.stringify({
+						name: "events",
+						main: "./events.js"
+					}),
+					"node_modules/events/events.js": `function EventEmitter() {}
+EventEmitter.prototype.listeners = function () { return [] }
+module.exports = EventEmitter
+module.exports.EventEmitter = EventEmitter
+`,
+					"main.ts": `import { EventEmitter } from "events"
+import { type } from "arktype"
+
+const User = type({ name: "string" })
+console.log(new EventEmitter().listeners("x").length, User.allows({ name: "Ada" }))
+`
+				},
+				tempPath("events")
+			)
+			for (const platform of ["browser", "node"] as const) {
+				const buildOptions: BuildOptions = {
+					entryPoints: [join(eventsRoot, "main.ts")],
+					absWorkingDir: eventsRoot,
+					platform
+				}
+				attest(
+					await warningsOf(
+						{ cwd: eventsRoot, preset: undefined, prune: true },
+						buildOptions
+					)
+				).equals([])
+				const pruned = await bundle(
+					{ cwd: eventsRoot, preset: undefined, prune: true },
+					buildOptions
+				)
+				attest(pruned.includes("~standard")).equals(false)
+				attest(run(pruned)).equals("0 true\n")
 			}
 		})
 

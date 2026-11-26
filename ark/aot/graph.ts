@@ -1265,7 +1265,7 @@ export class ModuleGraph {
 					!name || !this.importsArktype(id) || this.readsOnlyRuntime(id) ?
 						`\`${specifier}\` is a package the build does not read`
 					: this.leavesDependencies ?
-						`\`${specifier}\` is a package --emit leaves to Node, though ${specifier === name ? "it" : name} imports arktype`
+						`\`${specifier}\` is a package ark emit leaves to Node, though ${specifier === name ? "it" : name} imports arktype`
 					:	`\`${specifier}\` is a package the build does not read, though ${specifier === name ? "it" : name} imports arktype`
 			}
 		}

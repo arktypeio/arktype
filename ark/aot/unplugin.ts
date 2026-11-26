@@ -2929,7 +2929,7 @@ const esbuildScanOf = async (
 				: undefined
 			)
 		},
-		readFile: path => readFileSync(path, "utf8"),
+		readFile,
 		isTransformed,
 		idOf: fileOf,
 		cwd

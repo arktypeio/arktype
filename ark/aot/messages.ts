@@ -457,7 +457,7 @@ const textHints: [
 			`Precompile ${name} with the program: in ark.json (or package.json's "ark" key), set "precompile": { "dependencies": { "${name}": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.`
 	],
 	[
-		/^`(.+)` is a package --emit leaves to Node, though (?:it|(.+)) imports arktype$/,
+		/^`(.+)` is a package ark emit leaves to Node, though (?:it|(.+)) imports arktype$/,
 		(specifier, name = specifier) =>
 			`Bundle the program with arktype's plugin, which precompiles ${name} with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.`
 	],
