@@ -29,7 +29,12 @@ import {
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
-import { $ark, nodesById, type NodeId } from "../shared/registry.ts"
+import {
+	$ark,
+	authoredTopAliasBranches,
+	nodesById,
+	type NodeId
+} from "../shared/registry.ts"
 import {
 	assertUnchecked,
 	hasArkKind,
@@ -336,9 +341,10 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	if (!node.topAlias) return node
 	if (node.is("alias")) return node.resolution
 	if (node.is("union")) {
+		const branches = authoredTopAliasBranches.get(node.inner) ?? node.branches
 		return node.$.node("union", {
 			...node.inner,
-			branches: node.branches.map(resolveShallowAliases),
+			branches: branches.map(resolveShallowAliases),
 			meta: node.meta
 		} as never)
 	}

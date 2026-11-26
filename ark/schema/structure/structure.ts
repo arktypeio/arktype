@@ -1011,8 +1011,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
+	/** cache key of its default morphs, empty if none */
+	readonly defaultsKey: string = constructDefaultsCacheKey(this)
+
 	/** the morph it applies to data as a whole, like deleting undeclared keys */
-	readonly structMorph: Morph | undefined = getPossibleMorph(this)
+	readonly structMorph: Morph | undefined = getPossibleMorph(
+		this,
+		this.defaultsKey
+	)
 
 	compile(js: NodeCompiler): unknown {
 		if (js.trav === "Transform") return this.jsTf(js)
@@ -1586,7 +1592,7 @@ const defaultableMorphsCache = new WeakCache<Morph>()
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
 	Pick<Structure.Node, "defaultable" | "declaresKey" | "inOrder">
 
-const constructStructuralMorphCacheKey = (
+const constructDefaultsCacheKey = (
 	node: PartiallyInitializedStructure
 ): string => {
 	let cacheKey = ""
@@ -1597,6 +1603,15 @@ const constructStructuralMorphCacheKey = (
 
 	if (node.sequence?.defMorphs.length)
 		cacheKey += `${nameOf(node.sequence.defMorphs)} `
+
+	return cacheKey
+}
+
+const constructStructuralMorphCacheKey = (
+	node: PartiallyInitializedStructure,
+	defaultsKey: string
+): string => {
+	let cacheKey = defaultsKey
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
@@ -1619,9 +1634,10 @@ const constructStructuralMorphCacheKey = (
 }
 
 const getPossibleMorph = (
-	node: PartiallyInitializedStructure
+	node: PartiallyInitializedStructure,
+	defaultsKey: string
 ): Morph | undefined => {
-	const cacheKey = constructStructuralMorphCacheKey(node)
+	const cacheKey = constructStructuralMorphCacheKey(node, defaultsKey)
 	if (!cacheKey) return undefined
 
 	const cached = defaultableMorphsCache.get(cacheKey)

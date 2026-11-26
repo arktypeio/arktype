@@ -1108,7 +1108,7 @@ extra must be a string or null (was missing)`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1274
-	it("fail on non-discriminable union of objects with onUndeclaredKey: delete", () => {
+	it("orders non-discriminable union of objects with onUndeclaredKey: delete", () => {
 		const Point2d = type({
 			x: "number",
 			y: "number",
@@ -1122,11 +1122,16 @@ extra must be a string or null (was missing)`)
 			"+": "delete"
 		})
 
-		attest(() => Point2d.or(Point3d)).throws
-			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { x: number, y: number, z: number, + (undeclared): delete }
-Right: { x: number, y: number, + (undeclared): delete }
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+		const ThreeOrTwo = Point3d.or(Point2d)
+		attest(ThreeOrTwo({ x: 1, y: 2, z: 3, extra: 4 })).snap({
+			x: 1,
+			y: 2,
+			z: 3
+		})
+		attest(ThreeOrTwo({ x: 1, y: 2, extra: 4 })).snap({ x: 1, y: 2 })
+
+		const TwoOrThree = Point2d.or(Point3d)
+		attest(TwoOrThree({ x: 1, y: 2, z: 3, extra: 4 })).snap({ x: 1, y: 2 })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1266

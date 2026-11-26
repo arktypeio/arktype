@@ -1056,12 +1056,12 @@ s must be at least length 5`)
 				{ "kind?": "'b'" },
 				{ a: "number", kind: "1" },
 				{ kind: "'b'" },
-				{ kind: "number", "+": "delete" }
+				type({ kind: "number" }).pipe(o => o)
 			)
 		).throws(
 			writeIndiscriminableMorphMessage(
 				"{ a: number, kind: 1 }",
-				"{ kind: number, + (undeclared): delete }"
+				"(In: { kind: number }) => Out<unknown>"
 			)
 		)
 	})
@@ -1160,7 +1160,7 @@ s must be at least length 5`)
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: (In: unknown) => To<number % 1>
 Right: null
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
 
 		const Narrowed = type("string.integer.parse | number.integer | null")
 		attest<number | null>(Narrowed.infer)
@@ -1168,6 +1168,45 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 
 		const Piped = type("unknown").pipe(v => (v === null ? v : Number(v)))
 		attest(Piped(null)).equals(null)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1613
+	it("indeterminate union error identifies conflicting morph paths and names", () => {
+		const AnonA = type("string").pipe(val => val)
+		const AnonB = type("string").pipe(val => val)
+		attest(() => AnonA.array().or(AnonB.array())).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: (In: string) => Out<unknown>[]
+Right: (In: string) => Out<unknown>[]
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at [number] (distinct morphs with identical expressions)`)
+
+		const toPlayerId = (val: string) => val
+		const toLocationId = (val: string) => val
+		const PlayerSchema = type("string").pipe(toPlayerId)
+		const LocationSchema = type("string").pipe(toLocationId)
+		attest(() => PlayerSchema.array().or(LocationSchema.array())).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: (In: string) => Out<unknown>[]
+Right: (In: string) => Out<unknown>[]
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at [number]: toLocationId vs toPlayerId`)
+
+		attest(() => type({ a: "string", x: "string = 'foo'" }).or({ b: "string" }))
+			.throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: string, x: string = "foo" }
+Right: { b: string }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at x`)
+
+		attest(() => type(["string", "number = 1"]).or(["string", "number = 2"]))
+			.throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: [string, number = 1]
+Right: [string, number = 2]
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at [1]`)
 	})
 
 	it("allows undiscriminated union if morphs are equal", () => {
@@ -1231,7 +1270,8 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string.date) => Out<Date> | false | true }
 Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } & isPlainObjectOrArray | false | null | true> | false | true }
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at foo: parseDate vs parseJson`)
 	})
 
 	it("multiple chained pipes", () => {

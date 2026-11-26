@@ -207,7 +207,7 @@ try {
 	it("an optional prop holding an alias throws at its call where undefined composes it", () => {
 		attest(
 			printed(`configure({ exactOptionalPropertyTypes: false })
-const X = type.or({ b: "true" }, ["this", "[]"]).onUndeclaredKey("delete")
+const X = type.or("undefined", ["this", "[]"]).pipe(v => v)
 for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 	try {
 		type(def)

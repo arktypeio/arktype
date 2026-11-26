@@ -127,7 +127,10 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 		ownErr: true,
 		bareKey: "branches",
 		keys: {
-			ordered: {},
+			ordered: {
+				// input and output sets don't transform, so branch order is redundant
+				reduceIo: () => {}
+			},
 			branches: {
 				child: true
 			}
