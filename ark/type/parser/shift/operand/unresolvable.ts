@@ -117,7 +117,8 @@ const writeDidYouMean = (names: readonly string[]): string => {
 /** each alias and each submodule's, qualified by the submodule it's read from */
 const namesIn = (aliases: Dict): string[] =>
 	Object.keys(aliases).flatMap(k => {
-		if (k === "root") return []
+		// a private key of a module is no more a name than its root
+		if (k === "root" || k[0] === "#") return []
 		const v = aliases[k]
 		if (!hasArkKind(v, "module")) return [k]
 		const nested = namesIn(v as Dict).map(name => `${k}.${name}`)

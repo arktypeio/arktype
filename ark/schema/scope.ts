@@ -729,7 +729,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const isScopeAlias = hasOwn(this.aliases, name)
 		let def: unknown =
 			isScopeAlias ? this.aliases[name]
-			: hasOwn(this.ambient, name) ? this.ambient[name]
+			: !isPrivateKey(name) && hasOwn(this.ambient, name) ? this.ambient[name]
 			: undefined
 
 		if (!def) return this.maybeResolveSubalias(name)
@@ -1197,6 +1197,10 @@ export const resolveAmbient = (name: string): BaseRoot | undefined => {
 
 ambientResolver.resolve = resolveAmbient
 
+// a module from import() holds each alias under one, to be spread into a
+// scope rather than read through
+const isPrivateKey = (key: string): boolean => key[0] === "#"
+
 const maybeResolveSubalias = (
 	base: Dict,
 	name: string
@@ -1207,14 +1211,16 @@ const maybeResolveSubalias = (
 	const dotPrefix = name.slice(0, dotIndex)
 	// if the name includes ".", but the prefix is not an alias, it
 	// might be something like a decimal literal, so just fall through to return
-	if (!hasOwn(base, dotPrefix)) return
+	if (isPrivateKey(dotPrefix) || !hasOwn(base, dotPrefix)) return
 	const prefixSchema = base[dotPrefix]
 	if (!hasArkKind(prefixSchema, "module"))
 		return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
 
 	const subalias = name.slice(dotIndex + 1)
 	const resolution =
-		hasOwn(prefixSchema, subalias) ? prefixSchema[subalias] : undefined
+		!isPrivateKey(subalias) && hasOwn(prefixSchema, subalias) ?
+			prefixSchema[subalias]
+		:	undefined
 
 	if (resolution === undefined)
 		return maybeResolveSubalias(prefixSchema, subalias)

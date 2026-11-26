@@ -10,6 +10,7 @@ import {
 	type Module,
 	type TypeParser
 } from "arktype"
+import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/ast/validate.ts"
 import { Scope } from "arktype/internal/scope.ts"
 
 contextualize(() => {
@@ -314,6 +315,21 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => $.type("f")).type.errors(writeUnresolvableMessage("f"))
 
+			// nor is one read by the key itself
+			// @ts-expect-error
+			attest(() => $.type("#foo")).throwsAndHasTypeError(
+				writePrefixedPrivateReferenceMessage("foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("#foo[]")).throwsAndHasTypeError(
+				writePrefixedPrivateReferenceMessage("foo")
+			)
+			const imported = scope({}, { ambient: base.import() })
+			// @ts-expect-error
+			attest(() => imported.type("#Foo")).throwsAndHasTypeError(
+				writePrefixedPrivateReferenceMessage("Foo")
+			)
+
 			// the same aliases exported are what an ambient resolves
 			const exported = scope({ a: "Foo" }, { ambient: base.export() })
 			attest<"a">(exported.export().a.infer)
@@ -350,6 +366,14 @@ contextualize(() => {
 			)
 			// @ts-expect-error
 			attest(() => $.type("outer.sub.")).throwsAndHasTypeError(
+				writeUnresolvableMessage("outer.sub.")
+			)
+			// nor is one read by the key itself, which ends at the dot once scanned
+			attest(() => $.type("sub.#Foo")).throws(writeUnresolvableMessage("sub."))
+			attest(() => $.type("sub.#Foo[]")).throws(
+				writeUnresolvableMessage("sub.")
+			)
+			attest(() => $.type("outer.sub.#Foo")).throws(
 				writeUnresolvableMessage("outer.sub.")
 			)
 

@@ -203,6 +203,20 @@ contextualize.each(
 			attest(() => $.type("imported.")).throwsAndHasTypeError(
 				writeUnresolvableMessage("imported.")
 			)
+			// nor is one read by the key itself, which ends at the dot once scanned
+			// @ts-expect-error
+			attest(() => $.type("imported.#id")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.#id[]")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.")
+			)
+			// so the name of one isn't told to use it
+			// @ts-expect-error
+			attest(() => $.type("imported.box")).throws.snap(
+				"ParseError: 'imported.box' is unresolvable. 'imported' has #id, #box."
+			)
 
 			const exported = scope({ exported: utilities.export() })
 			attest<"id">(exported.type("exported.id").infer)
