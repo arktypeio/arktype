@@ -15,6 +15,7 @@ import {
 	defineLazily,
 	Hkt,
 	type Constructor,
+	type anyOrNever,
 	type array,
 	type conform
 } from "@ark/util"
@@ -191,7 +192,10 @@ export interface BaseTypeParser<$ = {}> {
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
 	keywords: [$] extends [{ readonly [k in AmbientKey]: infer a }] ?
-		bindExportsToScope<a, $>
+		// any and never extend it too, without being a scope with its own ambient
+		[$] extends [anyOrNever] ?
+			typeof keywords
+		:	bindExportsToScope<a, $>
 	:	typeof keywords
 	/**
 	 * The {@link Scope} in which definitions passed to this function will be parsed.
@@ -286,7 +290,11 @@ export interface BaseTypeParser<$ = {}> {
 }
 
 export type TypeParser<$ = {}> =
-	[$] extends [{ readonly [k in AmbientKey]: unknown }] ? BaseTypeParser<$>
+	[$] extends [{ readonly [k in AmbientKey]: unknown }] ?
+		// e.g. Scope<any>, whose attachments are the default scope's
+		[$] extends [anyOrNever] ?
+			BaseTypeParser<$> & Ark.boundTypeAttachments<$>
+		:	BaseTypeParser<$>
 	:	BaseTypeParser<$> & Ark.boundTypeAttachments<$>
 
 export class InternalTypeParser extends Callable<

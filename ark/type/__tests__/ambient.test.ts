@@ -7,7 +7,8 @@ import {
 	keywords,
 	scope,
 	type,
-	type Module
+	type Module,
+	type TypeParser
 } from "arktype"
 import { Scope } from "arktype/internal/scope.ts"
 
@@ -649,6 +650,19 @@ contextualize(() => {
 			attest(a.type.string("ok")).equals("ok")
 			attest(b.type.string("ok")).equals("ok")
 			attest(c.type.string("ok")).equals("ok")
+		})
+
+		it("keeps default attachments and keywords on a scope typed as any", () => {
+			const $: Scope<any> = scope({ a: "string" })
+
+			attest($.type.string).type.toString.snap("Type<string, any>")
+			attest($.type.string("ok")).equals("ok")
+			attest<typeof keywords>($.type.keywords)
+			attest($.type.keywords.string.email("a@b.com")).equals("a@b.com")
+
+			const parser: TypeParser<any> = $.type
+			attest(parser.number).type.toString.snap("Type<number, any>")
+			attest(parser.number("1").toString()).snap("must be a number")
 		})
 
 		it("rejects ambient in global configure()", () => {
