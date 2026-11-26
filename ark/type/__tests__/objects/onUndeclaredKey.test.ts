@@ -405,6 +405,66 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 				attest(T.out.allows(T({ x: 1, y: 2, z: 3 }))).equals(true)
 			})
 
+			it("defines a key over one its copy inherits", () => {
+				let assigned = 0
+				const prototypes = [
+					{
+						get b() {
+							return 0
+						}
+					},
+					{
+						get b() {
+							return 0
+						},
+						set b(_: number) {
+							assigned++
+						}
+					},
+					Object.freeze({ b: 0 })
+				]
+				for (const jitless of [false, true]) {
+					const T = scope({}, { jitless })
+						.type({ "+": "delete", a: "number" })
+						.or({ "+": "delete", b: "number" })
+					for (const prototype of prototypes) {
+						const held = () =>
+							Object.create(
+								prototype,
+								Object.getOwnPropertyDescriptors({ a: 1, b: 2, z: 3 })
+							)
+						for (const data of [held(), held()]) {
+							const out = T(data) as object
+							attest(Object.getPrototypeOf(out) === prototype).equals(true)
+							attest(Object.getOwnPropertyDescriptors(out)).equals(
+								Object.getOwnPropertyDescriptors({ a: 1, b: 2 })
+							)
+						}
+					}
+				}
+				attest(assigned).equals(0)
+			})
+
+			it("assigns nothing to what a getter returns each branch anew", () => {
+				for (const jitless of [false, true]) {
+					const T = scope({}, { jitless })
+						.type({ "+": "delete", "a?": "number", held: "object" })
+						.or({ "+": "delete", "b?": "number", held: "object" })
+					const data = () =>
+						Object.defineProperty({ a: 1, b: 2, z: 3 }, "held", {
+							enumerable: true,
+							get: () => Object.freeze({ range: [0, 1] })
+						})
+					for (const input of [data(), data()]) {
+						attest(T(input) as object).equals({
+							a: 1,
+							held: { range: [0, 1] },
+							b: 2
+						})
+					}
+				}
+			})
+
 			it("leaves an object it can't copy as it was", () => {
 				for (const jitless of [false, true]) {
 					const $ = scope({}, { jitless })

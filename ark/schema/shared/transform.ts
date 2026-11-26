@@ -146,9 +146,21 @@ const joinKept = (data: any, l: any, r: any): unknown => {
 	// a value neither copied, which a getter returned each its own of
 	if (!hasDomain(l, "object") || !hasDomain(r, "object")) return l
 	for (const k of [...Object.keys(r), ...Object.getOwnPropertySymbols(r)]) {
-		if (!hasOwn(l, k)) setOwnValue(l, k, r[k])
-		else if (!Object.is(l[k], r[k]))
-			setOwnValue(l, k, joinKept(data[k], l[k], r[k]))
+		const kept = r[k]
+		if (!hasOwn(l, k)) {
+			// a key l's copy inherits, as from an accessor of its class, is
+			// defined: assigning it would call a setter, or throw without one
+			if (k in l) defineValue(l, k, kept)
+			else l[k] = kept
+			continue
+		}
+		const held = l[k]
+		if (Object.is(held, kept)) continue
+		const joined = joinKept(data[k], held, kept)
+		// joined where it's held, unless r kept all data holds there. Nothing
+		// is assigned otherwise, as what a getter returned each branch anew
+		// is neither's copy to write
+		if (joined !== held) setOwnValue(l, k, joined)
 	}
 	return l
 }
