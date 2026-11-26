@@ -2,7 +2,7 @@ import type { KeySet } from "arktype/util"
 import { flatMorph, throwError } from "./util.ts"
 import { realpathSync } from "node:fs"
 import { createRequire } from "node:module"
-import { join, resolve } from "node:path"
+import { basename, dirname as nodeDirname, join, resolve } from "node:path"
 import { dirname, relative } from "node:path/posix"
 import type * as ts from "typescript"
 import { installedNativeChecker, openNative } from "./declareNative.ts"
@@ -99,18 +99,72 @@ const maxSettlePasses = 32
 const maxShapeSettlePasses = 256
 const maxSolutionProjects = 256
 
-const canonicalConfigPath = (path: string): string => {
-	const resolved = resolve(path)
-	let canonical = resolved
+const realpathLongestAncestor = (path: string, cwd?: string): string => {
+	const resolved = cwd ? resolve(cwd, path) : resolve(path)
 	try {
-		canonical = realpathSync(resolved)
+		return realpathSync(resolved)
 	} catch {
-		// path may not exist on disk yet (e.g. emitted declaration output path)
+		// walk up to the longest existing ancestor so virtual outputs under a
+		// symlinked workspace package (e.g. node_modules/@pkg/shared/dist/index.d.ts)
+		// resolve to the same canonical path as packages/shared/dist/index.d.ts
 	}
-	const normalized = tsPath(canonical)
+	const tail: string[] = []
+	let current = resolved
+	for (;;) {
+		const parent = nodeDirname(current)
+		if (parent === current) return resolved
+		tail.push(basename(current))
+		current = parent
+		try {
+			return join(realpathSync(current), ...tail.reverse())
+		} catch {
+			// ancestor doesn't exist yet either; keep walking up
+		}
+	}
+}
+
+const canonicalConfigPath = (path: string, cwd?: string): string => {
+	const normalized = tsPath(realpathLongestAncestor(path, cwd))
 	return process.platform === "win32" || process.platform === "darwin" ?
 			normalized.toLowerCase()
 		:	normalized
+}
+
+// in-memory .d.ts overlay populated as upstream solution references emit, so
+// downstream tsjs programs resolve them without requiring a prior `tsc -b`
+class VirtualDeclarations {
+	readonly cwd: string
+	readonly files = new Map<string, string>()
+	readonly dirs = new Set<string>()
+
+	constructor(cwd: string) {
+		this.cwd = cwd
+	}
+
+	addFile(fileName: string, content: string): void {
+		const key = canonicalConfigPath(fileName, this.cwd)
+		this.files.set(key, content)
+		let dir = dirname(key)
+		while (dir && !this.dirs.has(dir)) {
+			this.dirs.add(dir)
+			const parent = dirname(dir)
+			if (parent === dir) break
+			dir = parent
+		}
+	}
+
+	add(emittedFiles: Record<string, string>): void {
+		for (const fileName in emittedFiles)
+			this.addFile(fileName, emittedFiles[fileName])
+	}
+
+	get(fileName: string): string | undefined {
+		return this.files.get(canonicalConfigPath(fileName, this.cwd))
+	}
+
+	hasDir(dirName: string): boolean {
+		return this.dirs.has(canonicalConfigPath(dirName, this.cwd))
+	}
 }
 
 export const commonDirOf = (
@@ -131,53 +185,12 @@ export const commonDirOf = (
 	return /^[A-Za-z]:$/.test(joined) ? `${joined}/` : joined || "/"
 }
 
-export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
-	const cwd = resolve(opts?.cwd ?? ".")
-	const checker = opts?.checker ?? defaultCheckerOf(cwd)
-	const open = (tsconfig: string | undefined): OpenedDeclarationProject =>
-		checker === "tsjs" ?
-			openJs(cwd, tsconfig)
-		:	openNative(cwd, checker, tsconfig)
-	const queue: (string | undefined)[] = [opts?.tsconfig]
-	const enqueued = new Set<string>(
-		opts?.tsconfig ? [canonicalConfigPath(resolve(cwd, opts.tsconfig))] : []
-	)
-	const visited = new Set<string>()
-	const results: Declarations[] = []
-	const diagnostics: string[] = []
-	let errors = 0
-	for (let processed = 0; queue.length; processed++) {
-		if (processed >= maxSolutionProjects) {
-			throwError(
-				`Exceeded ${maxSolutionProjects} referenced projects while traversing project references. Run \`ark declare --tsconfig <path>\` for a single project.`
-			)
-		}
-		const opened = open(queue.shift())
-		const key = canonicalConfigPath(opened.configPath)
-		if (visited.has(key)) {
-			if (!("references" in opened)) opened.dispose?.()
-			continue
-		}
-		visited.add(key)
-		enqueued.add(key)
-		if ("references" in opened) {
-			if (opened.diagnostics) diagnostics.push(opened.diagnostics)
-			errors += opened.errors
-			for (const ref of opened.references) {
-				const refKey = canonicalConfigPath(ref)
-				if (!visited.has(refKey) && !enqueued.has(refKey)) {
-					enqueued.add(refKey)
-					queue.push(ref)
-				}
-			}
-			continue
-		}
-		try {
-			results.push(declareWith(opened, cwd))
-		} finally {
-			opened.dispose?.()
-		}
-	}
+const mergeDeclarationResults = (
+	results: Declarations[],
+	diagnostics: string[],
+	errors: number,
+	cwd: string
+): Declarations => {
 	if (!results.length) {
 		return {
 			files: {},
@@ -203,7 +216,7 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 		errors += result.errors
 		if (result.diagnostics) diagnostics.push(result.diagnostics)
 		for (const path in result.files) {
-			const canonical = canonicalConfigPath(path)
+			const canonical = canonicalConfigPath(path, cwd)
 			if (emittedCanonical.has(canonical)) {
 				throwError(
 					`${path} is emitted by more than one referenced project. Set a distinct outDir or declarationDir for each referenced tsconfig, or run \`ark declare --tsconfig <path>\` for one project at a time.`
@@ -223,6 +236,153 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 		diagnostics: diagnostics.join(""),
 		errors
 	}
+}
+
+const referencePathsOf = (
+	ts: TypeScript,
+	parsed: ts.ParsedCommandLine
+): string[] =>
+	(parsed.projectReferences ?? []).map(reference =>
+		/\.json$/i.test(reference.path) ?
+			reference.path
+		:	ts.resolveProjectReferencePath(reference)
+	)
+
+const emitDeclarationsJs = (
+	cwd: string,
+	tsconfig: string | undefined
+): Declarations => {
+	const ts = loadTypeScript(cwd)
+	const entryDiagnostics: ts.Diagnostic[] = []
+	const entry = parseConfig(ts, cwd, tsconfig, entryDiagnostics)
+	if (entry.fileNames.length || !entry.projectReferences?.length) {
+		const frontend = openParsedJs(ts, cwd, entry, entryDiagnostics)
+		return declareWith(frontend, cwd)
+	}
+	// solution-style tsconfig: discover referenced projects in dependency-first
+	// topological order (post-order DFS), keeping cycle, diamond and max-project guards
+	const ordered: {
+		parsed: ts.ParsedCommandLine
+		diagnostics: ts.Diagnostic[]
+	}[] = []
+	const visiting = new Set<string>()
+	const visited = new Set<string>()
+	const diagnostics: string[] = []
+	let errors = 0
+	let discovered = 0
+	const visit = (
+		configPath: string,
+		preparsed?: ts.ParsedCommandLine,
+		preparsedDiagnostics?: ts.Diagnostic[]
+	): void => {
+		const key = canonicalConfigPath(configPath, cwd)
+		if (visited.has(key) || visiting.has(key)) return
+		if (discovered >= maxSolutionProjects) {
+			throwError(
+				`Exceeded ${maxSolutionProjects} referenced projects while traversing project references. Run \`ark declare --tsconfig <path>\` for a single project.`
+			)
+		}
+		discovered++
+		const localDiagnostics = preparsedDiagnostics ?? []
+		const parsed =
+			preparsed ?? parseConfig(ts, cwd, configPath, localDiagnostics)
+		const resolvedKey = canonicalConfigPath(
+			parsed.options.configFilePath as string,
+			cwd
+		)
+		if (visited.has(resolvedKey) || visiting.has(resolvedKey)) return
+		visiting.add(key)
+		visiting.add(resolvedKey)
+		for (const ref of referencePathsOf(ts, parsed)) visit(ref)
+		visiting.delete(key)
+		visiting.delete(resolvedKey)
+		visited.add(key)
+		visited.add(resolvedKey)
+		if (parsed.fileNames.length)
+			ordered.push({ parsed, diagnostics: localDiagnostics })
+		else if (localDiagnostics.length) {
+			diagnostics.push(formatDiagnostics(ts, localDiagnostics, cwd))
+			errors += localDiagnostics.filter(
+				d => d.category === ts.DiagnosticCategory.Error
+			).length
+		}
+	}
+	visit(entry.options.configFilePath as string, entry, entryDiagnostics)
+	const overlay = new VirtualDeclarations(cwd)
+	const results: Declarations[] = []
+	for (const { parsed, diagnostics: localDiagnostics } of ordered) {
+		const frontend = openParsedJs(ts, cwd, parsed, localDiagnostics, overlay)
+		const result = declareWith(frontend, cwd)
+		overlay.add(result.files)
+		// when a downstream composite project imports a referenced project's source
+		// file, TypeScript redirects it to the output .d.ts but resolves relative
+		// imports inside that .d.ts (like `./~arktype.js`) from the upstream source
+		// rootDir; expose the virtual ~arktype.d.ts there too so it resolves cleanly
+		const sharedText = result.files[frontend.sharedPath]
+		if (sharedText !== undefined) {
+			const sourceRoot =
+				parsed.options.rootDir ??
+				commonDirOf(
+					frontend.emitted.map(file => dirname(tsPath(file.fileName))),
+					dirname(tsPath(frontend.configPath))
+				)
+			const sourceSharedPath = `${tsPath(sourceRoot)}/${sharedDeclarationFile}`
+			if (
+				canonicalConfigPath(sourceSharedPath, cwd) !==
+				canonicalConfigPath(frontend.sharedPath, cwd)
+			)
+				overlay.addFile(sourceSharedPath, sharedText)
+		}
+		results.push(result)
+	}
+	return mergeDeclarationResults(results, diagnostics, errors, cwd)
+}
+
+export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
+	const cwd = resolve(opts?.cwd ?? ".")
+	const checker = opts?.checker ?? defaultCheckerOf(cwd)
+	if (checker === "tsjs") return emitDeclarationsJs(cwd, opts?.tsconfig)
+	const queue: (string | undefined)[] = [opts?.tsconfig]
+	const enqueued = new Set<string>(
+		opts?.tsconfig ? [canonicalConfigPath(opts.tsconfig, cwd)] : []
+	)
+	const visited = new Set<string>()
+	const results: Declarations[] = []
+	const diagnostics: string[] = []
+	let errors = 0
+	for (let processed = 0; queue.length; processed++) {
+		if (processed >= maxSolutionProjects) {
+			throwError(
+				`Exceeded ${maxSolutionProjects} referenced projects while traversing project references. Run \`ark declare --tsconfig <path>\` for a single project.`
+			)
+		}
+		const opened = openNative(cwd, checker, queue.shift())
+		const key = canonicalConfigPath(opened.configPath, cwd)
+		if (visited.has(key)) {
+			if (!("references" in opened)) opened.dispose?.()
+			continue
+		}
+		visited.add(key)
+		enqueued.add(key)
+		if ("references" in opened) {
+			if (opened.diagnostics) diagnostics.push(opened.diagnostics)
+			errors += opened.errors
+			for (const ref of opened.references) {
+				const refKey = canonicalConfigPath(ref, cwd)
+				if (!visited.has(refKey) && !enqueued.has(refKey)) {
+					enqueued.add(refKey)
+					queue.push(ref)
+				}
+			}
+			continue
+		}
+		try {
+			results.push(declareWith(opened, cwd))
+		} finally {
+			opened.dispose?.()
+		}
+	}
+	return mergeDeclarationResults(results, diagnostics, errors, cwd)
 }
 
 // TypeScript 5.5 to 6 where it's installed as `typescript`, TypeScript 7's
@@ -350,28 +510,79 @@ const retypeOf = ({
 	return { printed, byNode, unnamedCycles: references.unnamedCycles }
 }
 
-const openJs = (
-	cwd: string,
-	tsconfig: string | undefined
-): OpenedDeclarationProject => {
-	const ts = loadTypeScript(cwd)
-	const diagnostics: ts.Diagnostic[] = []
-	const parsed = parseConfig(ts, cwd, tsconfig, diagnostics)
-	const configPath = parsed.options.configFilePath as string
-	if (!parsed.fileNames.length && parsed.projectReferences?.length) {
-		return {
-			configPath,
-			references: parsed.projectReferences.map(reference =>
-				/\.json$/i.test(reference.path) ?
-					reference.path
-				:	ts.resolveProjectReferencePath(reference)
-			),
-			diagnostics: formatDiagnostics(ts, diagnostics, cwd),
-			errors: diagnostics.filter(
-				d => d.category === ts.DiagnosticCategory.Error
-			).length
+const createOverlayHost = (
+	ts: TypeScript,
+	options: ts.CompilerOptions,
+	overlay: VirtualDeclarations
+): ts.CompilerHost => {
+	const host = ts.createCompilerHost(options)
+	if (!overlay.files.size) return host
+	const baseFileExists = host.fileExists.bind(host)
+	const baseReadFile = host.readFile.bind(host)
+	const baseGetSourceFile = host.getSourceFile.bind(host)
+	const baseGetSourceFileByPath = host.getSourceFileByPath?.bind(host)
+	const baseDirectoryExists = host.directoryExists?.bind(host)
+	const baseRealpath = host.realpath?.bind(host)
+	host.fileExists = fileName =>
+		overlay.get(fileName) !== undefined || baseFileExists(fileName)
+	host.readFile = fileName => overlay.get(fileName) ?? baseReadFile(fileName)
+	host.getSourceFile = (
+		fileName,
+		languageVersionOrOptions,
+		onError,
+		shouldCreateNewSourceFile
+	) => {
+		const content = overlay.get(fileName)
+		if (content !== undefined)
+			return ts.createSourceFile(fileName, content, languageVersionOrOptions)
+		return baseGetSourceFile(
+			fileName,
+			languageVersionOrOptions,
+			onError,
+			shouldCreateNewSourceFile
+		)
+	}
+	if (baseGetSourceFileByPath) {
+		host.getSourceFileByPath = (
+			fileName,
+			path,
+			languageVersionOrOptions,
+			onError,
+			shouldCreateNewSourceFile
+		) => {
+			const content = overlay.get(fileName) ?? overlay.get(path)
+			if (content !== undefined)
+				return ts.createSourceFile(fileName, content, languageVersionOrOptions)
+			return baseGetSourceFileByPath(
+				fileName,
+				path,
+				languageVersionOrOptions,
+				onError,
+				shouldCreateNewSourceFile
+			)
 		}
 	}
+	if (baseDirectoryExists) {
+		host.directoryExists = dirName =>
+			overlay.hasDir(dirName) || baseDirectoryExists(dirName)
+	}
+	if (baseRealpath) {
+		host.realpath = path =>
+			overlay.get(path) !== undefined || overlay.hasDir(path) ?
+				tsPath(realpathLongestAncestor(path, overlay.cwd))
+			:	baseRealpath(path)
+	}
+	return host
+}
+
+const openParsedJs = (
+	ts: TypeScript,
+	cwd: string,
+	parsed: ts.ParsedCommandLine,
+	diagnostics: ts.Diagnostic[],
+	overlay?: VirtualDeclarations
+): Frontend => {
+	const configPath = parsed.options.configFilePath as string
 	const config = {
 		...parsed,
 		options: {
@@ -384,25 +595,35 @@ const openJs = (
 	const program = ts.createProgram({
 		rootNames: config.fileNames,
 		options: config.options,
+		...(overlay?.files.size && {
+			host: createOverlayHost(ts, config.options, overlay)
+		}),
 		...(config.projectReferences && {
 			projectReferences: config.projectReferences
 		})
 	})
 	const emitted = emittedFilesOf(program)
+	const layout = layoutOf(ts, config, emitted)
 	let emitDiagnostics: ts.Diagnostic[] = []
 	return {
 		configPath,
 		ts,
 		program,
 		emitted,
-		...layoutOf(ts, config, emitted),
+		...layout,
 		emitModules: emit => {
 			emitDiagnostics = []
+			const redeclared = new Set<Inferred>()
+			const transformed = new Map<string, ts.SourceFile>()
 			return emitModules(
+				ts,
 				program,
 				emitted,
-				redeclarationOf(ts, emit),
-				emitDiagnostics
+				redeclarationOf(ts, emit, redeclared, transformed),
+				emitDiagnostics,
+				redeclared,
+				transformed,
+				layout.declarationPathByFile
 			)
 		},
 		finish: () => {
@@ -520,25 +741,73 @@ export const emittedFilesOf = (program: ts.Program): ts.SourceFile[] =>
 		)
 		.sort((l, r) => (l.fileName < r.fileName ? -1 : 1))
 
+// TS2742 / TS2883 report that tsc's own inferred type would reference a
+// non-portable module (such as an upstream package's ~arktype.d.ts);
+// declarations rewritten whole by redeclarationOf no longer hold that reference
+const isSupersededPortabilityDiagnostic = (
+	diagnostic: ts.Diagnostic,
+	redeclared: ReadonlySet<Inferred>
+): boolean => {
+	if (
+		(diagnostic.code !== 2742 && diagnostic.code !== 2883) ||
+		!diagnostic.file ||
+		diagnostic.start === undefined
+	)
+		return false
+	const fileName = diagnostic.file.fileName
+	const start = diagnostic.start
+	for (const inferred of redeclared) {
+		if (
+			inferred.fileName === fileName &&
+			inferred.namePos <= start &&
+			start < inferred.nameEnd
+		)
+			return true
+	}
+	return false
+}
+
 // emitting each module checks only what it reads, not every module
 const emitModules = (
+	ts: TypeScript,
 	program: ts.Program,
 	emitted: ts.SourceFile[],
 	redeclaration: ts.TransformerFactory<ts.SourceFile | ts.Bundle>,
-	diagnostics: ts.Diagnostic[]
+	diagnostics: ts.Diagnostic[],
+	redeclared: ReadonlySet<Inferred>,
+	transformed: ReadonlyMap<string, ts.SourceFile>,
+	declarationPathByFile: Record<string, string | undefined>
 ) => {
 	const files: Record<string, string> = {}
+	let printer: ts.Printer | undefined
 	for (const file of emitted) {
+		let wrote = false
 		const result = program.emit(
 			file,
 			(fileName, text) => {
-				if (/\.d\.[cm]?ts(?:\.map)?$/.test(fileName)) files[fileName] = text
+				if (/\.d\.[cm]?ts(?:\.map)?$/.test(fileName)) {
+					files[fileName] = text
+					wrote = true
+				}
 			},
 			undefined,
 			true,
 			{ afterDeclarations: [redeclaration] }
 		)
-		diagnostics.push(...result.diagnostics)
+		const remaining = result.diagnostics.filter(
+			diagnostic => !isSupersededPortabilityDiagnostic(diagnostic, redeclared)
+		)
+		diagnostics.push(...remaining)
+		// if tsc skipped writing the .d.ts solely because of a superseded TS2742/TS2883,
+		// print the rewritten declaration AST produced by redeclarationOf directly
+		if (!wrote && !remaining.length) {
+			const declarationPath = declarationPathByFile[file.fileName]
+			const redeclaredFile = transformed.get(file.fileName)
+			if (declarationPath && redeclaredFile) {
+				printer ??= ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
+				files[declarationPath] = printer.printFile(redeclaredFile)
+			}
+		}
 	}
 	return files
 }
@@ -595,6 +864,10 @@ export interface Inferred {
 	// where its source declares it
 	pos: number
 	end: number
+	// the declaration's own name span (excluding parameter/initializer spans),
+	// where TS2742/TS2883 reports portability errors on its inferred return/value type
+	namePos: number
+	nameEnd: number
 	// a shape is named for the const that defines it, not one that aliases it
 	// or a function returning it
 	isAliasing: boolean
@@ -611,9 +884,11 @@ const inferredOf = (
 	emitted: ts.SourceFile[]
 ) => {
 	const inferredByNode = new Map<ts.Node, Inferred>()
-	for (const { fileName, statements } of emitted) {
+	for (const source of emitted) {
+		const { fileName, statements } = source
 		const add = (
 			node: ts.Node,
+			nameNode: ts.Node,
 			key: string,
 			type: ts.Type,
 			isAliasing: boolean
@@ -624,6 +899,8 @@ const inferredOf = (
 				fileName,
 				pos: node.pos,
 				end: node.end,
+				namePos: nameNode.getStart(source),
+				nameEnd: nameNode.end,
 				isAliasing
 			})
 		// e.g. each of `const { user, group } = scope({ ... }).export()`
@@ -634,6 +911,7 @@ const inferredOf = (
 			if (ts.isIdentifier(node.name)) {
 				add(
 					node,
+					node.name,
 					node.name.text,
 					checker.getTypeOfSymbol(checker.getSymbolAtLocation(node.name)!),
 					isAliasing
@@ -664,6 +942,7 @@ const inferredOf = (
 				if (signature) {
 					add(
 						statement,
+						statement.name!,
 						statement.name!.text,
 						checker.getReturnTypeOfSignature(signature),
 						true
@@ -675,6 +954,7 @@ const inferredOf = (
 				!ts.isIdentifier(statement.expression)
 			) {
 				add(
+					statement,
 					statement,
 					"default",
 					checker.getTypeAtLocation(statement.expression),
@@ -728,7 +1008,9 @@ const arkDeclaration =
 
 const redeclarationOf = (
 	ts: TypeScript,
-	{ inferredByNode, retype, onElided }: DeclarationEmit
+	{ inferredByNode, retype, onElided }: DeclarationEmit,
+	redeclared?: Set<Inferred>,
+	transformed?: Map<string, ts.SourceFile>
 ): ts.TransformerFactory<ts.SourceFile | ts.Bundle> => {
 	// tsc declares a destructured name or `export default <expression>` as a
 	// const of its own, which only its name ties to its source
@@ -764,7 +1046,10 @@ const redeclarationOf = (
 				retyped.printed === undefined ?
 					undefined
 				:	ctx.factory.createTypeReferenceNode(retyped.printed)
-			if (!retyped.byNode) return printed
+			if (!retyped.byNode) {
+				if (printed) redeclared?.add(inferred)
+				return printed
+			}
 			const { byNode } = retyped
 			const visit = (node: ts.Node): ts.Node => {
 				const reference = byNode.get(node)
@@ -823,7 +1108,9 @@ const redeclarationOf = (
 			for (const name of elidedIn(ts, statement))
 				onElided(source.fileName, name)
 		}
-		return ctx.factory.updateSourceFile(node, statements)
+		const updated = ctx.factory.updateSourceFile(node, statements)
+		transformed?.set(source.fileName, updated)
+		return updated
 	}
 }
 

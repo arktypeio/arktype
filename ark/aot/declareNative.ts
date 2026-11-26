@@ -549,6 +549,36 @@ const applyEdits = (text: string, edits: Edit[]) =>
 // the code TypeScript 7 reports a declaration it writes as any with
 const cyclicCode = 5088
 
+const referencedFilesOf = (
+	api: tsgo.API,
+	references: readonly { path: string }[] | undefined,
+	canonical: (path: string) => string
+): Set<string> | undefined => {
+	if (!references?.length) return
+	const excluded = new Set<string>()
+	const visited = new Set<string>()
+	const visit = (refs: readonly { path: string }[] | undefined) => {
+		if (!refs?.length) return
+		for (const { path } of refs) {
+			const refConfig =
+				/\.json$/i.test(path) ? path : join(path, "tsconfig.json")
+			const key = canonical(refConfig)
+			if (visited.has(key)) continue
+			visited.add(key)
+			try {
+				const refParsed = api.parseConfigFile(refConfig)
+				for (const fileName of refParsed.fileNames)
+					excluded.add(canonical(fileName))
+				visit(refParsed.projectReferences)
+			} catch {
+				// unreadable reference is reported by the checker itself
+			}
+		}
+	}
+	visit(references)
+	return excluded
+}
+
 export const openNative = (
 	cwd: string,
 	checker: NativeChecker,
@@ -574,6 +604,40 @@ export const openNative = (
 	const checkerView = checkerOf(views)
 	const program = programOf(project, checkerView)
 	const raw = project.program
+	const canonical = (path: string) => {
+		const normalized = path.split("\\").join("/")
+		return isCaseSensitive ? normalized : normalized.toLowerCase()
+	}
+	const parsed = api.parseConfigFile(configPath)
+	if (!parsed.fileNames.length && parsed.projectReferences?.length) {
+		const configDiagnostics = raw.getConfigFileParsingDiagnostics()
+		const referencePaths = parsed.projectReferences.map(({ path }) =>
+			/\.json$/i.test(path) ? path : join(path, "tsconfig.json")
+		)
+		const result: SolutionReferences = {
+			configPath,
+			references: referencePaths,
+			diagnostics: sync.formatDiagnostics(configDiagnostics, {
+				getCanonicalFileName: path => path,
+				getCurrentDirectory: () => cwd,
+				getNewLine: () => "\n"
+			}),
+			errors: configDiagnostics.filter(
+				diagnostic => diagnostic.category === sync.DiagnosticCategory.Error
+			).length
+		}
+		api.close()
+		return result
+	}
+	// when a project has projectReferences, tsgo loads referenced projects' source
+	// files alongside its own; exclude referenced projects' files (while keeping
+	// transitively imported local files) so upstream projects are not re-emitted
+	// into their src/ directories or collided across diamond dependents
+	const referencedFiles = referencedFilesOf(
+		api,
+		parsed.projectReferences,
+		canonical
+	)
 	const emitted = raw
 		.getSourceFileNames()
 		.flatMap(fileName => {
@@ -582,35 +646,13 @@ export const openNative = (
 					file &&
 						!file.isDeclarationFile &&
 						!raw.isSourceFileFromExternalLibrary(file) &&
-						/\.[cm]?[jt]sx?$/.test(file.fileName)
+						/\.[cm]?[jt]sx?$/.test(file.fileName) &&
+						(!referencedFiles || !referencedFiles.has(canonical(file.fileName)))
 				) ?
 					[file]
 				:	[]
 		})
 		.sort((l, r) => (l.fileName < r.fileName ? -1 : 1))
-	if (!emitted.length) {
-		const parsed = api.parseConfigFile(configPath)
-		if (!parsed.fileNames.length && parsed.projectReferences?.length) {
-			const configDiagnostics = raw.getConfigFileParsingDiagnostics()
-			const referencePaths = parsed.projectReferences.map(({ path }) =>
-				/\.json$/i.test(path) ? path : join(path, "tsconfig.json")
-			)
-			const result: SolutionReferences = {
-				configPath,
-				references: referencePaths,
-				diagnostics: sync.formatDiagnostics(configDiagnostics, {
-					getCanonicalFileName: path => path,
-					getCurrentDirectory: () => cwd,
-					getNewLine: () => "\n"
-				}),
-				errors: configDiagnostics.filter(
-					diagnostic => diagnostic.category === sync.DiagnosticCategory.Error
-				).length
-			}
-			api.close()
-			return result
-		}
-	}
 	const emit = raw.getDeclarationEmit(emitted.map(file => file.fileName))
 	const outputsBySource = new Map<string, [path: string, text: string]>()
 	const declarationPathByFile: Record<string, string | undefined> = {}
@@ -621,8 +663,6 @@ export const openNative = (
 		options.rootDir ??
 		dirname(configPath)
 	const sharedPath = `${root}/${sharedDeclarationFile}`
-	const canonical = (path: string) =>
-		isCaseSensitive ? path : path.toLowerCase()
 	for (const [path, output] of emit.outputFiles as unknown as [
 		string,
 		{ text: string; sourceFileName: string }
