@@ -132,13 +132,31 @@ contextualize(() => {
 		attest(rejected.includes("narrowed")).equals(true)
 		const defs = [
 			type("'keptA' | null").describe("described"),
-			type({ held: "string" }).or("'keptB'").describe("described")
+			type({ held: "string" }).or("'keptB'").describe("described"),
+			type.or("5 <= number <= 5", "string")
 		]
 		for (const t of defs) {
 			rejected.length = 0
 			messageOf(() => (t as any).narrow(rejects))
 			attest(rejected.length > 0).equals(true)
 		}
+	})
+
+	it("a number bounded to one value is the unit a narrow checks", () => {
+		attest(
+			printed(`const seen = []
+const sees = n => (seen.push(n), true)
+const range = type("5 <= number <= 5")
+const bounded = type("number.integer >= 1")
+const narrowed = type("number >= 2").narrow(sees)
+const length = type("3 <= string <= 3").narrow(sees)
+range.narrow(sees)
+bounded.atMost(1).narrow(sees)
+narrowed.atMost(2)
+console.log(seen.join(), Object.hasOwn(length, "kind"))
+const t = type({ limit: "0 <= number <= 0 = 0" })
+console.log(Object.hasOwn(t, "kind"), t({}).limit)`)
+		).snap("5,1,2 false\nfalse 0\n")
 	})
 
 	it("a union with a unit calls what it narrows at its call", () => {

@@ -192,6 +192,11 @@ const rangeFacts = (
 ): Facts => {
 	// a length is at least 0 without saying so
 	if (!min && (d.base === "string" || d.base === "array")) min = undefined
+	// a number that can only be one value is that unit
+	const unit =
+		min !== undefined &&
+		min === max &&
+		(d.base === "number" || d.base === "integer")
 	return {
 		key: `${d.of}${min === undefined ? "" : `>=${min}`}${max === undefined ? "" : `<=${max}`}`,
 		domains:
@@ -203,7 +208,9 @@ const rangeFacts = (
 		base: d.base,
 		of: d.of,
 		min,
-		max
+		max,
+		values: unit ? [min] : undefined,
+		units: unit
 	}
 }
 
@@ -810,6 +817,8 @@ const boundMethod =
 		const lo = isMin && !(min! > n) ? n : min
 		const hi = !isMin && !(max! < n) ? n : max
 		if ((lo ?? -Infinity) > (hi ?? Infinity)) return
+		// a narrowed number bounded to one value is a unit its predicate checks
+		if (!of && lo === hi && (over === "number" || over === "integer")) return
 		return of ?
 				rangeFacts(d.facts, lo, hi)
 			:	{
