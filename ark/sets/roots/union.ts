@@ -735,9 +735,12 @@ export const discriminantCaseToNode = (
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
 		const value = node
+		// the case is of any data holding the value there, so its keys are
+		// open whatever $ configures for undeclared ones
 		const structure =
 			typeof key === "number" ?
 				$.node("structure", {
+					undeclared: "ignore",
 					sequence: $.node("sequence", {
 						// create unknown for preceding elements (could be optimized with safe imports)
 						prefix: [...range(key).map(_ => $.node("intersection", {})), value],
@@ -745,6 +748,7 @@ export const discriminantCaseToNode = (
 					})
 				})
 			:	$.node("structure", {
+					undeclared: "ignore",
 					required: [$.node("required", { key, value })]
 				})
 		node = $.node(
@@ -763,6 +767,7 @@ export const discriminantCaseToNode = (
 							$.node("intersection", {
 								domain: $.node("domain", { domain: "object" }),
 								structure: $.node("structure", {
+									undeclared: "ignore",
 									required: [$.node("required", { key: `${key}`, value })]
 								})
 							})

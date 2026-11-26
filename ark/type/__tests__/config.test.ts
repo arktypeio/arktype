@@ -964,6 +964,65 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			const out: unknown = I.partial()({ a: "x", z: 1 } as never)
 			attest(out).snap({ a: "x", z: 1 })
 		})
+
+		it("delete keeps a branch of a union at a case of a key it doesn't declare", () => {
+			for (const jitless of [false, true]) {
+				const Event = withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}, { jitless })
+						.type({ kind: "'a'", a: "string" })
+						.or({ kind: "'b'", b: "number" })
+						.or({ id: "string" })
+				)
+				// only the last branch allows it, deleting the `kind` the others read.
+				// The first data is checked uncompiled
+				attest(Event({ kind: "a", a: 1, id: "x" })).equals({ id: "x" })
+				attest(Event({ kind: "a", a: 1, id: "x" })).equals({ id: "x" })
+				attest(Event({ kind: "a", id: "x" })).equals({ id: "x" })
+				// each branch allowing the data keeps the keys it declares
+				attest(Event({ kind: "a", a: "s", id: "x", z: 1 })).equals({
+					kind: "a",
+					a: "s",
+					id: "x"
+				})
+				attest(Event({ kind: "b", b: 1, a: "s" })).equals({ kind: "b", b: 1 })
+				attest(Event({ kind: "a", a: 1 }).toString()).equals(
+					"a must be a string or id must be a string"
+				)
+
+				// as it does one nested under a key
+				const Nested = withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}, { jitless })
+						.type({ o: { kind: "'a'", a: "string" } })
+						.or({ o: { kind: "'b'" } })
+						.or({ o: { id: "string" } })
+				)
+				attest(Nested({ o: { kind: "a", id: "x" } })).equals({ o: { id: "x" } })
+			}
+		})
+
+		it("a branch with its own rule for undeclared keys stays at a case of a key it doesn't declare", () => {
+			for (const jitless of [false, true]) {
+				for (const onUndeclaredKey of ["delete", "reject"] as const) {
+					const [Ignoring, Deleting] = withConfig({ onUndeclaredKey }, () => {
+						const $ = scope({}, { jitless })
+						const Kinds = $.type({ kind: "'a'", a: "string" }).or({
+							kind: "'b'",
+							b: "number"
+						})
+						return [
+							Kinds.or({ "+": "ignore", id: "string" }),
+							Kinds.or({ "+": "delete", id: "string" })
+						]
+					})
+					// no branch reading `kind` allows an `a` of 1
+					const data = () => ({ kind: "a", a: 1, id: "x" })
+					attest(Ignoring(data())).equals(data())
+					attest(Ignoring(data())).equals(data())
+					attest(Deleting(data())).equals({ id: "x" })
+					attest(Deleting(data())).equals({ id: "x" })
+				}
+			}
+		})
 	})
 
 	it("prereducedAliases", () => {
