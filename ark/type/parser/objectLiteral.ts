@@ -231,7 +231,9 @@ export type inferObjectLiteral<def extends object, $, args> =
 		>
 	: [keyof def & PreparsedKeyPattern] extends [never] ?
 		inferUnparsedKeys<def, optionalKeyOf<def>, $, args>
-	:	show<inferKeyedObjectLiteral<def, $, args>>
+	: // keyed only by "+" or "@", it's an object with no props, which {} isn't
+	[Exclude<keyof def, MetaKey>] extends [never] ? object
+	: show<inferKeyedObjectLiteral<def, $, args>>
 
 // keys whose kind or name only preparseKey can determine
 type PreparsedKeyPattern =
