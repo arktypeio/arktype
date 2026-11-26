@@ -68,6 +68,12 @@ const told: Record<string, string> = {
 		show(type({ k: Foo.describe("a thing") }), { k: "x" })
 		show(type({ k: type("string").pipe((s, ctx) => ctx.error("a product")).describe("a thing") }), { k: "x" })
 	`,
+	"says what a configured actual says the value was where a narrow or a keyword's check fails": `
+		const short = (s: string) => s.length < 3
+		show(type({ k: type("string").narrow(short).configure({ actual: "long" }) }), { k: "abc" }, { k: 1 })
+		show(type({ k: type("string.date").configure({ actual: "wrong" }).label("When") }), { k: "!!" })
+		show(type("string.normalize.NFC.preformatted").configure({ actual: "wrong" }), "e\\u0301")
+	`,
 	"lists a union's errors whose messages begin as arktype's own, and says a sentence they share": `
 		const AsDefault = type("string").configure({ message: "must be a string" })
 		const Enter = type("string").configure({ message: "Enter text" })

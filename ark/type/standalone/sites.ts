@@ -534,7 +534,8 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 	}
 	// what a configured actual says the value was is written after what's
 	// expected, as arktype's message is, and after its path as any is. A
-	// unit's own writer writes that too, unless it was what's expected
+	// unit's own writer writes that too, unless it was what's expected, and
+	// a predicate's does of a site, where no morph threw and no keyword raised
 	else if (
 		typeof custom.actual === "string" &&
 		custom.actual &&
@@ -543,6 +544,8 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 			(code === "union" &&
 				saysActual &&
 				configured.message === errorWritersByCode.union.message) ||
+			(code === "predicate" &&
+				configured.message === errorWritersByCode.predicate.message) ||
 			(configured.message === errorWritersByCode.unit.message &&
 				custom.actual !== issueContext.description))
 	) {
