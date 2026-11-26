@@ -1122,6 +1122,34 @@ export const Bad = (extra: any) => {
 				"/main.tsx:38:20  item.label reads label, which a standalone validator lacks\n  the build can't tell where `item` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
+
+		it("memoizes recursive generic types and bounds type-argument recursion", () => {
+			attest(
+				unhinted(`import { type, type Type } from "arktype"
+export const User = type({ name: "string" })
+type Box<T> = { value: T }
+type Branch<A, B> = A extends string ? Box<A> | Box<B> : Box<B> & { label: string }
+type Deep = Branch<Branch<Branch<Branch<string, number>, boolean>, string>, number>
+interface Tree<T> extends Box<T> {
+	children: Tree<T>[]
+	label: string
+}
+type SelfRec<T> = SelfRec<Box<T>>
+type MutualA<T> = MutualB<Box<T>>
+type MutualB<T> = MutualA<Box<T>>
+type DeepWrap = Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Box<Type>>>>>>>>>>>>>>>>>>>>>>>>>
+export const ok = (d: Deep, t: Tree<string>, s: SelfRec<string>, m: MutualA<string>) => {
+	let out = [d.label, t.label, s, m]
+	return out
+}
+export const bad = (w: DeepWrap) => {
+	let out = w.label
+	return out
+}`)
+			).snap([
+				"/main.ts:19:12  w.label reads label, which a standalone validator lacks\n  `w` is a parameter of bad, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
 	})
 
 	describe("helpers", () => {

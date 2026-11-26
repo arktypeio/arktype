@@ -1129,6 +1129,14 @@ export class ModuleGraph {
 		SourceModule,
 		Record<string, LocalType | null>
 	>()
+	private exportedTypesByModule = new WeakMap<
+		SourceModule,
+		Map<string, ExportedType>
+	>()
+	private declaredTypeKinds = new Map<
+		LocalType,
+		Map<string, KindBits | undefined>
+	>()
 	// a helper's parameters as one call passes them
 	// the .d.ts beside each JS module, or null where its build wrote none
 	private declarationsById: Record<string, SourceModule | null> =
@@ -1219,6 +1227,8 @@ export class ModuleGraph {
 				)
 			}
 		}
+		this.exportedTypesByModule = new WeakMap()
+		this.declaredTypeKinds.clear()
 		return forgotten
 	}
 
@@ -2039,12 +2049,26 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth = 0,
-		typeArgs?: TypeArgs
+		typeArgs?: TypeArgs,
+		state: TypeEvalState = newTypeEvalState()
 	): KindBits | undefined {
+		if (state.aborted || ++state.steps > maxTypeSteps) {
+			state.aborted = true
+			return
+		}
 		const union = (
 			types: (TSType | TSTypeAnnotation | null)[],
 			depth: number
-		) => this.unionKindOf(types, context, module, kindOfKey, depth, typeArgs)
+		) =>
+			this.unionKindOf(
+				types,
+				context,
+				module,
+				kindOfKey,
+				depth,
+				typeArgs,
+				state
+			)
 		switch (type.type) {
 			case "TSTypeAnnotation":
 			case "TSParenthesizedType":
@@ -2054,7 +2078,8 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth,
-					typeArgs
+					typeArgs,
+					state
 				)
 			case "TSAnyKeyword":
 				return
@@ -2075,7 +2100,8 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth,
-					typeArgs
+					typeArgs,
+					state
 				)
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
@@ -2088,7 +2114,8 @@ export class ModuleGraph {
 							module,
 							kindOfKey,
 							depth,
-							typeArgs
+							typeArgs,
+							state
 						)
 					:	kinds.data
 			// e.g. data for `(typeof names)[number]`, but not `Parameters<typeof f>[0]`
@@ -2109,7 +2136,8 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth,
-					typeArgs
+					typeArgs,
+					state
 				)
 				return kind === undefined || isArk(kind) ?
 						undefined
@@ -2122,9 +2150,11 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth,
-					typeArgs
+					typeArgs,
+					state
 				)
 			case "TSTypeQuery":
+				state.queried = true
 				return this.queryKindOf(type, context, module, kindOfKey)
 			case "TSTupleType":
 				return union(type.elementTypes.map(tupleElementTypeOf), depth + 1)
@@ -2144,7 +2174,8 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth + 1,
-					typeArgs
+					typeArgs,
+					state
 				)
 				if (returned === undefined) return
 				const fn = functionKindOf(returned)
@@ -2161,7 +2192,8 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth,
-					typeArgs
+					typeArgs,
+					state
 				)
 			case "TSLiteralType":
 			case "TSTemplateLiteralType":
@@ -2177,17 +2209,25 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		typeArgs?: TypeArgs
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
-		return types.reduce<KindBits | undefined>((result, t) => {
-			const kind =
-				t ?
-					this.typeKindOf(t, context, module, kindOfKey, depth, typeArgs)
-				:	kinds.data
-			return result === undefined || kind === undefined ?
-					undefined
-				:	result | kind
-		}, kinds.data)
+		let result: KindBits = kinds.data
+		for (const t of types) {
+			if (!t) continue
+			const kind = this.typeKindOf(
+				t,
+				context,
+				module,
+				kindOfKey,
+				depth,
+				typeArgs,
+				state
+			)
+			if (kind === undefined) return
+			result |= kind
+		}
+		return result
 	}
 
 	// e.g. `typeof def & { in: unknown }`, a Type only if some part says so
@@ -2197,23 +2237,33 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		typeArgs?: TypeArgs
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
-		const parts = type.types.map(t =>
-			this.typeKindOf(t, context, module, kindOfKey, depth, typeArgs)
-		)
+		const parts: (KindBits | undefined)[] = []
+		for (const t of type.types) {
+			parts.push(
+				this.typeKindOf(t, context, module, kindOfKey, depth, typeArgs, state)
+			)
+			if (state.aborted) return
+		}
 		const declared = parts.filter(
 			kind =>
 				kind !== undefined && !(kind & (kinds.unknown | kinds.opaque | arkBits))
 		)
-		return (
-				declared.length &&
-					parts.every(
-						kind => kind === undefined || !(kind & (kinds.unknown | arkBits))
-					)
-			) ?
-				declared.reduce<KindBits>((result, kind) => result | kind!, 0)
-			:	this.unionKindOf(type.types, context, module, kindOfKey, depth, typeArgs)
+		if (
+			declared.length &&
+			parts.every(
+				kind => kind === undefined || !(kind & (kinds.unknown | arkBits))
+			)
+		)
+			return declared.reduce<KindBits>((result, kind) => result | kind!, 0)
+		let result: KindBits = kinds.data
+		for (const kind of parts) {
+			if (kind === undefined) return
+			result |= kind
+		}
+		return result
 	}
 
 	// e.g. `typeof names`, or `typeof User.infer`, data whatever `User` is
@@ -2262,7 +2312,8 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		typeArgs?: TypeArgs
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
 		const name = type.typeName
 		let root = name
@@ -2278,7 +2329,8 @@ export class ModuleGraph {
 			module,
 			kindOfKey,
 			depth,
-			typeArgs
+			typeArgs,
+			state
 		)
 	}
 
@@ -2291,7 +2343,8 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		typeArgs?: TypeArgs
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
 		// e.g. `T` in `<T extends Type>(t: T) => ...`
 		if (qualified === undefined) {
@@ -2305,7 +2358,8 @@ export class ModuleGraph {
 							module,
 							kindOfKey,
 							depth,
-							typeArgs
+							typeArgs,
+							state
 						)
 					:	undefined
 			}
@@ -2320,18 +2374,18 @@ export class ModuleGraph {
 					: typeof qualified === "string" && importedName === "*" ? qualified
 					: undefined
 				return exportName === undefined ? undefined : (
-						(this.exportedTypeKindOf(
+						this.exportedTypeKindOf(
 							specifier,
 							exportName,
 							context,
 							module,
 							kindOfKey,
 							depth,
-							new Set(),
 							argNodes,
 							module,
-							typeArgs
-						) ?? undefined)
+							typeArgs,
+							state
+						)
 					)
 			}
 			const isArkTypeName =
@@ -2358,7 +2412,8 @@ export class ModuleGraph {
 					depth,
 					argNodes,
 					module,
-					typeArgs
+					typeArgs,
+					state
 				)
 			}
 		}
@@ -2371,7 +2426,8 @@ export class ModuleGraph {
 				module,
 				kindOfKey,
 				depth + 1,
-				typeArgs
+				typeArgs,
+				state
 			)
 		}
 		// e.g. `Record<string, unknown>`, holding what its arguments say,
@@ -2379,8 +2435,16 @@ export class ModuleGraph {
 		let held: KindBits = kinds.data
 		for (const arg of args) {
 			held |=
-				this.typeKindOf(arg, context, module, kindOfKey, depth + 1, typeArgs) ??
-				kinds.opaqueHolder
+				this.typeKindOf(
+					arg,
+					context,
+					module,
+					kindOfKey,
+					depth + 1,
+					typeArgs,
+					state
+				) ?? kinds.opaqueHolder
+			if (state.aborted) return
 		}
 		return held
 	}
@@ -2391,7 +2455,8 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		typeArgs?: TypeArgs
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
 		const expr = heritage.expression
 		if (expr.type === "Identifier") {
@@ -2403,7 +2468,8 @@ export class ModuleGraph {
 				module,
 				kindOfKey,
 				depth,
-				typeArgs
+				typeArgs,
+				state
 			)
 		}
 		if (expr.type === "MemberExpression" && !expr.computed) {
@@ -2418,7 +2484,8 @@ export class ModuleGraph {
 					module,
 					kindOfKey,
 					depth,
-					typeArgs
+					typeArgs,
+					state
 				)
 			}
 		}
@@ -2433,11 +2500,14 @@ export class ModuleGraph {
 		declModule: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		callerTypeArgs: TypeArgs | undefined
+		callerTypeArgs: TypeArgs | undefined,
+		topLevel: boolean,
+		state: TypeEvalState
 	): TypeArgs | undefined {
-		if (!params?.length) return callerTypeArgs
+		if (!params?.length) return topLevel ? undefined : callerTypeArgs
 		let bound: Map<TSTypeParameter, KindBits | undefined> | undefined
-		const ensureBound = () => (bound ??= new Map(callerTypeArgs))
+		const ensureBound = () =>
+			(bound ??= new Map(topLevel ? undefined : callerTypeArgs))
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (argNodes?.[i]) {
@@ -2449,7 +2519,8 @@ export class ModuleGraph {
 						argModule,
 						kindOfKey,
 						depth,
-						callerTypeArgs
+						callerTypeArgs,
+						state
 					)
 				)
 			} else if (param.default) {
@@ -2461,12 +2532,14 @@ export class ModuleGraph {
 						declModule,
 						kindOfKey,
 						depth,
-						bound ?? callerTypeArgs
+						bound ?? (topLevel ? undefined : callerTypeArgs),
+						state
 					)
 				)
 			}
+			if (state.aborted) return
 		}
-		return bound ?? callerTypeArgs
+		return bound ?? (topLevel ? undefined : callerTypeArgs)
 	}
 
 	// what a `typeof` names, with its value where a const or an export
@@ -2566,10 +2639,12 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		typeArgs?: TypeArgs
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits {
 		let result: KindBits = kinds.data
 		for (const signature of signatures) {
+			if (state.aborted) return result
 			if (
 				signature.type === "TSMethodSignature" ||
 				signature.type === "TSCallSignatureDeclaration" ||
@@ -2587,7 +2662,8 @@ export class ModuleGraph {
 							module,
 							kindOfKey,
 							depth + 2,
-							typeArgs
+							typeArgs,
+							state
 						)
 					:	undefined
 				if (returned === undefined) result |= kinds.opaqueHolder
@@ -2610,7 +2686,8 @@ export class ModuleGraph {
 						module,
 						kindOfKey,
 						depth + 1,
-						typeArgs
+						typeArgs,
+						state
 					)) ??
 				kinds.opaqueHolder
 		}
@@ -2623,60 +2700,121 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		argNodes?: readonly TSType[],
-		argModule?: SourceModule,
-		callerTypeArgs?: TypeArgs
+		argNodes: readonly TSType[] | undefined,
+		argModule: SourceModule | undefined,
+		callerTypeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
-		if (this.resolving.has(declaration)) return kinds.data
-		const boundArgs = this.bindTypeArgs(
-			declaration.typeParameters?.params,
-			argNodes,
-			context,
-			argModule ?? module,
-			declaration,
-			module,
-			kindOfKey,
-			depth,
-			callerTypeArgs
-		)
-		this.resolving.add(declaration)
+		if (this.resolving.has(declaration)) {
+			const activeDepth = state.active.get(declaration)
+			state.minCycle = Math.min(
+				state.minCycle,
+				activeDepth === undefined ? -1 : activeDepth
+			)
+			return kinds.data
+		}
+		if (state.recursion >= maxTypeRecursion) {
+			state.aborted = true
+			return
+		}
+		state.recursion++
+		const topLevel = isTopLevelType(declaration)
 		try {
-			if (declaration.type === "TSInterfaceDeclaration") {
-				let result = this.signaturesKindOf(
-					declaration.body.body,
-					declaration,
-					module,
-					kindOfKey,
-					depth,
-					boundArgs
-				)
-				for (const heritage of declaration.extends ?? []) {
-					result |=
-						this.heritageKindOf(
-							heritage,
-							declaration,
-							module,
-							kindOfKey,
-							depth,
-							boundArgs
-						) ?? kinds.opaqueHolder
-				}
-				return result
-			}
-			return this.typeKindOf(
-				declaration.typeAnnotation,
+			const params = declaration.typeParameters?.params
+			const boundArgs = this.bindTypeArgs(
+				params,
+				argNodes,
+				context,
+				argModule ?? module,
 				declaration,
 				module,
 				kindOfKey,
 				depth,
-				boundArgs
+				callerTypeArgs,
+				topLevel,
+				state
 			)
+			if (state.aborted) return
+			let cacheKey: string | undefined
+			let byKey: Map<string, KindBits | undefined> | undefined
+			if (topLevel) {
+				cacheKey = typeCacheKeyOf(depth, params, boundArgs)
+				byKey = this.declaredTypeKinds.get(declaration)
+				if (byKey?.has(cacheKey)) return byKey.get(cacheKey)
+			}
+			const myDepth = state.active.size
+			const outerMinCycle = state.minCycle
+			const outerQueried = state.queried
+			state.minCycle = Infinity
+			state.queried = false
+			this.resolving.add(declaration)
+			state.active.set(declaration, myDepth)
+			let result: KindBits | undefined
+			try {
+				if (declaration.type === "TSInterfaceDeclaration") {
+					result = this.signaturesKindOf(
+						declaration.body.body,
+						declaration,
+						module,
+						kindOfKey,
+						depth,
+						boundArgs,
+						state
+					)
+					for (const heritage of declaration.extends ?? []) {
+						if (state.aborted) return
+						result |=
+							this.heritageKindOf(
+								heritage,
+								declaration,
+								module,
+								kindOfKey,
+								depth,
+								boundArgs,
+								state
+							) ?? kinds.opaqueHolder
+					}
+				} else {
+					result = this.typeKindOf(
+						declaration.typeAnnotation,
+						declaration,
+						module,
+						kindOfKey,
+						depth,
+						boundArgs,
+						state
+					)
+				}
+			} finally {
+				this.resolving.delete(declaration)
+				state.active.delete(declaration)
+			}
+			const selfContained = state.minCycle >= myDepth
+			const queried = state.queried
+			state.minCycle = Math.min(
+				outerMinCycle,
+				selfContained ? Infinity : state.minCycle
+			)
+			state.queried = outerQueried || queried
+			if (
+				topLevel &&
+				cacheKey !== undefined &&
+				selfContained &&
+				!state.aborted &&
+				(!queried || kindOfKey === this.finalKindOfKey)
+			) {
+				if (!byKey) {
+					byKey = new Map()
+					this.declaredTypeKinds.set(declaration, byKey)
+				}
+				byKey.set(cacheKey, result)
+			}
+			return state.aborted ? undefined : result
 		} finally {
-			this.resolving.delete(declaration)
+			state.recursion--
 		}
 	}
 
-	// null where the module exports no type by the name
 	private exportedTypeKindOf(
 		specifier: string,
 		name: string,
@@ -2684,16 +2822,86 @@ export class ModuleGraph {
 		importer: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		seen: Set<string> = new Set(),
-		argNodes?: readonly TSType[],
-		argModule?: SourceModule,
-		callerTypeArgs?: TypeArgs
-	): KindBits | undefined | null {
-		if (!localSpecifier.test(specifier)) {
-			return arkTypesSpecifier.test(specifier) && name in arkTypeNames ?
-					arkTypeKindOf(name)
-				:	kinds.data
+		argNodes: readonly TSType[] | undefined,
+		argModule: SourceModule | undefined,
+		callerTypeArgs: TypeArgs | undefined,
+		state: TypeEvalState
+	): KindBits | undefined {
+		const resolved = this.resolveExportedType(specifier, name, importer, true)
+		if (resolved.kind === "local") {
+			return this.declaredTypeKindOf(
+				resolved.declaration,
+				context,
+				resolved.module,
+				kindOfKey,
+				depth,
+				argNodes,
+				argModule,
+				callerTypeArgs,
+				state
+			)
 		}
+		return resolved.kind === "kind" ? resolved.value : undefined
+	}
+
+	private exportedLocalTypeOf(
+		specifier: string,
+		name: string,
+		importer: SourceModule
+	): [LocalType, SourceModule] | undefined {
+		const resolved = this.resolveExportedType(specifier, name, importer, false)
+		return resolved.kind === "local" ?
+				[resolved.declaration, resolved.module]
+			:	undefined
+	}
+
+	private resolveExportedType(
+		specifier: string,
+		name: string,
+		importer: SourceModule,
+		localOnly: boolean,
+		seen?: Set<string>
+	): ExportedType {
+		if (localOnly && !localSpecifier.test(specifier)) {
+			return {
+				kind: "kind",
+				value:
+					arkTypesSpecifier.test(specifier) && name in arkTypeNames ?
+						arkTypeKindOf(name)
+					:	kinds.data
+			}
+		}
+		if (!localOnly && arkTypesSpecifier.test(specifier))
+			return { kind: "opaque" }
+		const cacheKey = `${localOnly ? "1" : "0"}\0${specifier}\0${name}`
+		let bySpec = this.exportedTypesByModule.get(importer)
+		const cached = bySpec?.get(cacheKey)
+		if (cached) return cached
+		const isRoot = !seen
+		const result = this.findExportedType(
+			specifier,
+			name,
+			importer,
+			localOnly,
+			seen ?? new Set()
+		)
+		if (isRoot) {
+			if (!bySpec) {
+				bySpec = new Map()
+				this.exportedTypesByModule.set(importer, bySpec)
+			}
+			bySpec.set(cacheKey, result)
+		}
+		return result
+	}
+
+	private findExportedType(
+		specifier: string,
+		name: string,
+		importer: SourceModule,
+		localOnly: boolean,
+		seen: Set<string>
+	): ExportedType {
 		// a type carries no value, so a host asks no bundler to resolve it
 		const resolved = this.resolve(specifier, importer, () => false)
 		// a JS module's types are in the .d.ts beside it
@@ -2701,88 +2909,8 @@ export class ModuleGraph {
 			resolved instanceof SourceModule ?
 				(this.declarationsOf(resolved) ?? resolved)
 			:	resolved
-		if (!(target instanceof SourceModule)) return
-		if (seen.has(target.id)) return null
-		seen.add(target.id)
-		const fromTarget = (specifier: string, name: string) =>
-			this.exportedTypeKindOf(
-				specifier,
-				name,
-				context,
-				target,
-				kindOfKey,
-				depth,
-				seen,
-				argNodes,
-				argModule,
-				callerTypeArgs
-			)
-		for (const statement of target.program.body) {
-			if (statement.type === "ExportNamedDeclaration") {
-				const declaration = statement.declaration
-				if (
-					(declaration?.type === "TSInterfaceDeclaration" ||
-						declaration?.type === "TSTypeAliasDeclaration") &&
-					declaration.id.name === name
-				) {
-					return this.declaredTypeKindOf(
-						declaration,
-						context,
-						target,
-						kindOfKey,
-						depth,
-						argNodes,
-						argModule,
-						callerTypeArgs
-					)
-				}
-				for (const exported of statement.specifiers) {
-					if (exportNameOf(exported.exported) !== name) continue
-					const localName = exportNameOf(exported.local)
-					if (statement.source)
-						return fromTarget(statement.source.value, localName)
-					const local = this.localTypeOf(target, localName)
-					if (local) {
-						return this.declaredTypeKindOf(
-							local,
-							context,
-							target,
-							kindOfKey,
-							depth,
-							argNodes,
-							argModule,
-							callerTypeArgs
-						)
-					}
-					const imported = importedNameOf(target, localName)
-					return imported && imported[1] !== "*" ?
-							fromTarget(...imported)
-						:	undefined
-				}
-			} else if (
-				statement.type === "ExportAllDeclaration" &&
-				!statement.exported
-			) {
-				const kind = fromTarget(statement.source.value, name)
-				if (kind !== null) return kind
-			}
-		}
-		return null
-	}
-
-	private exportedLocalTypeOf(
-		specifier: string,
-		name: string,
-		importer: SourceModule,
-		seen: Set<string> = new Set()
-	): [LocalType, SourceModule] | undefined {
-		if (arkTypesSpecifier.test(specifier)) return
-		const resolved = this.resolve(specifier, importer, () => false)
-		const target =
-			resolved instanceof SourceModule ?
-				(this.declarationsOf(resolved) ?? resolved)
-			:	resolved
-		if (!(target instanceof SourceModule) || seen.has(target.id)) return
+		if (!(target instanceof SourceModule)) return { kind: "opaque" }
+		if (seen.has(target.id)) return { kind: "missing" }
 		seen.add(target.id)
 		for (const statement of target.program.body) {
 			if (statement.type === "ExportNamedDeclaration") {
@@ -2792,38 +2920,48 @@ export class ModuleGraph {
 						declaration?.type === "TSTypeAliasDeclaration") &&
 					declaration.id.name === name
 				)
-					return [declaration, target]
+					return { kind: "local", declaration, module: target }
 				for (const exported of statement.specifiers) {
 					if (exportNameOf(exported.exported) !== name) continue
 					const localName = exportNameOf(exported.local)
 					if (statement.source) {
-						return this.exportedLocalTypeOf(
+						return this.resolveExportedType(
 							statement.source.value,
 							localName,
 							target,
+							localOnly,
 							seen
 						)
 					}
 					const local = this.localTypeOf(target, localName)
-					if (local) return [local, target]
+					if (local)
+						return { kind: "local", declaration: local, module: target }
 					const imported = importedNameOf(target, localName)
 					return imported && imported[1] !== "*" ?
-							this.exportedLocalTypeOf(imported[0], imported[1], target, seen)
-						:	undefined
+							this.resolveExportedType(
+								imported[0],
+								imported[1],
+								target,
+								localOnly,
+								seen
+							)
+						:	{ kind: "opaque" }
 				}
 			} else if (
 				statement.type === "ExportAllDeclaration" &&
 				!statement.exported
 			) {
-				const found = this.exportedLocalTypeOf(
+				const found = this.resolveExportedType(
 					statement.source.value,
 					name,
 					target,
+					localOnly,
 					seen
 				)
-				if (found) return found
+				if (found.kind !== "missing") return found
 			}
 		}
+		return { kind: "missing" }
 	}
 
 	// e.g. `item` in `<SearchableSelect.Root items={opts} getSearchFields={item => [item.label]} />`
@@ -3243,7 +3381,9 @@ export class ModuleGraph {
 					declModule,
 					kindOfKey,
 					0,
-					typeArgs
+					typeArgs,
+					isTopLevelType(decl),
+					newTypeEvalState()
 				)
 				let nextAliasesMap: Map<TSTypeParameter, TSTypeParameter> | undefined
 				for (let i = 0; i < declParams.length; i++) {
@@ -6405,6 +6545,58 @@ const arkTypeKindOf = (name: string): KindBits =>
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
 
 type TypeArgs = ReadonlyMap<TSTypeParameter, KindBits | undefined>
+
+type ExportedType =
+	| { kind: "local"; declaration: LocalType; module: SourceModule }
+	| { kind: "kind"; value: KindBits }
+	| { kind: "opaque" }
+	| { kind: "missing" }
+
+type TypeEvalState = {
+	steps: number
+	recursion: number
+	active: Map<LocalType, number>
+	minCycle: number
+	queried: boolean
+	aborted: boolean
+}
+
+const maxTypeSteps = 1024
+const maxTypeRecursion = 24
+
+const newTypeEvalState = (): TypeEvalState => ({
+	steps: 0,
+	recursion: 0,
+	active: new Map(),
+	minCycle: Infinity,
+	queried: false,
+	aborted: false
+})
+
+const isTopLevelType = (declaration: LocalType): boolean =>
+	declaration.parent?.type === "Program" ||
+	(declaration.parent?.type === "ExportNamedDeclaration" &&
+		declaration.parent.parent?.type === "Program")
+
+const typeCacheKeyOf = (
+	depth: number,
+	params: readonly TSTypeParameter[] | undefined,
+	boundArgs: TypeArgs | undefined
+): string => {
+	const clamped = depth < 2 ? depth : 2
+	if (!params?.length) return String(clamped)
+	let key = `${clamped}|`
+	for (let i = 0; i < params.length; i++) {
+		if (i) key += ","
+		const param = params[i]
+		if (!boundArgs?.has(param)) key += "-"
+		else {
+			const val = boundArgs.get(param)
+			key += val === undefined ? "u" : val
+		}
+	}
+	return key
+}
 
 type PropTypeEntry = {
 	type: TSType | TSMethodSignature
