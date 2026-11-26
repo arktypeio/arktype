@@ -3,6 +3,7 @@ import {
 	Disjoint,
 	isIoFinal,
 	isNode,
+	isResolutionFinal,
 	rootKinds,
 	type BaseNode,
 	type BaseRoot,
@@ -18,6 +19,7 @@ import {
 } from "@ark/schema"
 import type { TypeGuard } from "@ark/util"
 import { setImplementationsByKind } from "./kinds.ts"
+import { isDeferredUnitIntersection } from "./roots/unit.ts"
 
 type IntersectionCache = WeakMap<
 	BaseScope,
@@ -64,7 +66,16 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		const cacheByL = cacheByOperator[ctx.pipe ? "|>" : "&"]
 		let cacheByR = cacheByL.get(l)
 		const cached = cacheByR?.get(r)
-		if (cached !== undefined) {
+		// a unit's intersection deferred while an alias could be unresolved stands
+		// for neither operand, so once they've resolved it's decided instead
+		if (
+			cached !== undefined &&
+			!(
+				isNode(cached) &&
+				isDeferredUnitIntersection(cached) &&
+				isResolutionFinal()
+			)
+		) {
 			$ark.reached?.cached(cacheByR!, r)
 			return cached as never
 		}

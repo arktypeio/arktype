@@ -1664,6 +1664,44 @@ swap.swap.order[1] must be "on"`)
 		attest(types.f.allows({ ...data, right: { kind: "or" } })).equals(false)
 	})
 
+	it("a Date literal's intersection with a cyclic branch is decided once its cycle resolves", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({ list: { v: "number", "next?": "list" } }, { jitless })
+			// reduced as list resolves, when whether it allows the Date can't be read
+			const T = $.type("d'2000-01-01' | list")
+			// and again with each branch added
+			const U = T.or("0")
+			attest(U.expression).equals(
+				"{ v: number, next?: $list } | d'2000-01-01T00:00:00.000Z' | 0"
+			)
+			attest(U.allows({ v: 0 })).equals(true)
+			attest(U({ v: 0, next: { v: 1 } })).equals({ v: 0, next: { v: 1 } })
+			attest(U({ v: 0, next: { v: "a" } }).toString()).equals(
+				"next.v must be a number or must be 2000-01-01"
+			)
+			attest(T.equals("d'2000-01-01'")).equals(false)
+
+			const List = T.exclude("Date")
+			attest(List.expression).equals("{ v: number, next?: $list }")
+			attest(List.overlaps("d'2000-01-01'")).equals(false)
+			attest(List.extends("d'2000-01-01'")).equals(false)
+			attest(() => List.and("d'2000-01-01'")).throws(
+				"Intersection of { v: number, next?: $list } and d'2000-01-01T00:00:00.000Z' results in an unsatisfiable type"
+			)
+		}
+	})
+
+	it("a Date literal a cyclic branch allows is reduced to that branch", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({ node: { "next?": "node" } }, { jitless })
+			const T = $.type("d'2000-01-01' | node").or("0")
+			attest(T.expression).equals("{ next?: $node } | 0")
+			attest(T.allows(new Date("2000-01-01"))).equals(true)
+			attest(T.allows({ next: 0 })).equals(false)
+			attest($.type("d'2000-01-01'").extends("node")).equals(true)
+		}
+	})
+
 	// an alias names the functions its compiled code declares and calls, so
 	// one that isn't an identifier must be written as one rather than as code
 	it("compiles an alias that isn't an identifier", () => {
