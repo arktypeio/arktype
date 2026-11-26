@@ -194,6 +194,8 @@ export const checkDefault = (
 	owner?: BaseNode
 ): unknown => {
 	if (!isResolutionFinal() && node.hasAlias) {
+		// cached once it's created, which is before this is known to pass
+		if (owner) owner.c.unchecked = (owner.c.unchecked ?? 0) + 1
 		queueUnchecked(() => {
 			try {
 				checkDefault(node, value, key, owner)
@@ -203,6 +205,7 @@ export const checkDefault = (
 				if (owner?.c.key) owner.$.nodesByKey.delete(owner.c.key)
 				throw e
 			}
+			if (owner) owner.c.unchecked!--
 		})
 		return value
 	}

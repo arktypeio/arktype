@@ -254,7 +254,9 @@ export const createNode = ({
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
-		if (cached) {
+		// one whose check was thrown, or discarded with its definition, before it
+		// passed is created again, which makes the check again
+		if (cached && !cached.c.unchecked) {
 			$ark.reached?.node(cached)
 			return cached
 		}

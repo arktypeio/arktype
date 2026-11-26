@@ -1301,4 +1301,50 @@ baz[0] must be a number`)
 		attest<number>(t.defaulted)
 		attest<number | undefined>(t.nested?.defaulted)
 	})
+
+	it("a default a cyclic value rejects is rejected each time it's defined", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		// checked once node resolves, which is after its prop is created
+		const define = () =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0]
+			})
+		attest(define).throws("Default for a must be an object")
+		attest(define).throws("Default for a must be an object")
+		// @ts-expect-error
+		attest(() => $.type({ a: "node = 0" })).throws(
+			"Default for a must be an object"
+		)
+
+		// @ts-expect-error
+		const defineElement = () => $.type([["node", "=", 0]])
+		attest(defineElement).throws("Default must be an object")
+		attest(defineElement).throws("Default must be an object")
+	})
+
+	it("a default is checked where the definition it was first in threw before it was", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		attest(() =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0],
+				b: ["null", "&", "string"]
+			})
+		).throws("Intersection of null and string results in an unsatisfiable type")
+		attest(() =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0]
+			})
+		).throws("Default for a must be an object")
+	})
+
+	it("a default a cyclic value allows is defined again as the same Type", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		const T = $.type({ a: ["node | number", "=", 0] })
+		attest(T.expression).snap("{ a: number | { next?: $node } = 0 }")
+		attest(T({})).equals({ a: 0 })
+		attest($.type({ a: ["node | number", "=", 0] }).equals(T)).equals(true)
+	})
 })

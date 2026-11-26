@@ -231,6 +231,8 @@ class NodeCache {
 	replacedRefs: boolean | undefined
 	/** whether it's what its scope's nodesByKey holds for its inner and meta */
 	key: string | undefined
+	/** how many checks made as it's created still wait for an alias to resolve */
+	unchecked: number | undefined
 	/** the node a Scope bound it from, whose id, inner and meta it keeps */
 	boundFrom: BaseNode | undefined
 	/** whether every alias it reaches has resolved */
