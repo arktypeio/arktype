@@ -120,6 +120,44 @@ contextualize(() => {
 			attest(types.b.expression).snap("1[]")
 		})
 
+		it("parameter named for a public generic", () => {
+			// as any public alias is, the generic is found first where its name is
+			// all of a definition or of an array's element, and is missing its args
+			attest(() =>
+				scope({
+					"t<x>": ["x"],
+					// @ts-expect-error
+					"box<t>": { whole: "t" }
+				}).export()
+			).throwsAndHasTypeError(
+				writeInvalidGenericArgCountMessage("t", ["x"], [])
+			)
+
+			attest(() =>
+				scope({
+					"t<x>": ["x"],
+					// @ts-expect-error
+					"box<t>": { array: "t[]" }
+				}).export()
+			).throws(writeInvalidGenericArgCountMessage("t", ["x"], []))
+
+			const $ = scope({ "t<x>": ["x"] })
+			// @ts-expect-error
+			attest(() => $.type("<t>", { whole: "t" })).throwsAndHasTypeError(
+				writeInvalidGenericArgCountMessage("t", ["x"], [])
+			)
+
+			// in an expression, it's the parameter
+			const types = scope({
+				"t<x>": ["x"],
+				"box<t>": { expression: "t | 2" },
+				a: "box<'q'>"
+			}).export()
+
+			attest<{ expression: "q" | 2 }>(types.a.t)
+			attest(types.a.expression).snap('{ expression: "q" | 2 }')
+		})
+
 		it("this not resolvable in generic def", () => {
 			attest(() =>
 				type("<t>", {
