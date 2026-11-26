@@ -612,6 +612,46 @@ console.log(S === L, S.allows(arr), L.allows(arr), S.allows(["x"]))`)
 		})
 	})
 
+	describe("intersection and morph cache isolation", () => {
+		it("a description of an intersection isn't one of its last operand", () => {
+			for (const wholeFirst of [true, false]) {
+				const out =
+					printed(`const makeWhole = () => type("string").and(/b/).describe("x")
+const makeOperand = () => type("string").describe("x").and(/b/)
+const first = ${wholeFirst ? "makeWhole()" : "makeOperand()"}
+const second = ${wholeFirst ? "makeOperand()" : "makeWhole()"}
+const [Whole, Operand] = ${wholeFirst ? "[first, second]" : "[second, first]"}
+console.log(Whole === Operand, Whole.description, Operand.description)`)
+				attest(out).equals("false x matched by b\n")
+			}
+		})
+
+		it("a description of a morph isn't one of what it pipes to", () => {
+			for (const wholeFirst of [true, false]) {
+				const out =
+					printed(`const makeWhole = () => type("string.trim").to("string").describe("x")
+const makeOutput = () => type("string.trim").to(type("string").describe("x"))
+const first = ${wholeFirst ? "makeWhole()" : "makeOutput()"}
+const second = ${wholeFirst ? "makeOutput()" : "makeWhole()"}
+const [Whole, Output] = ${wholeFirst ? "[first, second]" : "[second, first]"}
+console.log(Whole === Output, String(Whole(5)), String(Output(5)))`)
+				attest(out).equals("false must be x must be a string\n")
+			}
+		})
+
+		it("an intersection of a union isn't a union with an intersection", () => {
+			for (const andFirst of [true, false]) {
+				const out = printed(`const makeAnd = () => type(/a/).or(/b/).and(/c/)
+const makeOr = () => type(/b/).and(/c/).or(/a/)
+const first = ${andFirst ? "makeAnd()" : "makeOr()"}
+const second = ${andFirst ? "makeOr()" : "makeAnd()"}
+const [And, Or] = ${andFirst ? "[first, second]" : "[second, first]"}
+console.log(And === Or, And.allows("a"), Or.allows("a"), And.allows("ac"), Or.allows("bc"))`)
+				attest(out).equals("false false true true true\n")
+			}
+		})
+	})
+
 	describe("unit and enumerated syntax escaping", () => {
 		it("does not interpret single quotes or backslashes as syntax when deferred", () => {
 			attest(

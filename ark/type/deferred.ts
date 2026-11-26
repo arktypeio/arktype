@@ -396,8 +396,10 @@ const andFacts = (l: Facts, r: Facts): Facts | undefined => {
 		(r.min !== undefined || r.max !== undefined)
 	)
 		return
+	const [first, last] = l.key < r.key ? [l, r] : [r, l]
 	return {
-		key: l.key < r.key ? `${l.key}&${r.key}` : `${r.key}&${l.key}`,
+		// enclosed, so what's written after it isn't its last operand's
+		key: `(${wrap(first)}&${wrap(last)})`,
 		domains: stringBits,
 		pure: true,
 		min: l.min ?? r.min,
@@ -940,7 +942,7 @@ const deferredMethods: Dict<
 			: r instanceof RegExp ? regexFacts(r)
 			: deferred.get(r)?.facts
 		return facts.key === "string.trim" && refinesString(to) ?
-				{ key: `string.trim>${to.key}`, domains: stringBits, pure: false }
+				{ key: `(string.trim>${to.key})`, domains: stringBits, pure: false }
 			:	undefined
 	},
 	onUndeclaredKey: ({ facts }, [rule]) =>
