@@ -175,8 +175,13 @@ type isInferredDefault<v> =
 
 type distillArray<t extends array, side extends DistillSide> =
 	// fast path for non-tuple arrays with no extra props
-	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ? alignReadonly<_distill<t[number], side>[], t>
+	// this also allows TS to infer certain recursive arrays like JSON. a
+	// readonly one is written out rather than mapped with Readonly, which
+	// resolves its element at once where an array waits to
+	t[number][] extends t ?
+		t extends unknown[] ?
+			_distill<t[number], side>[]
+		:	readonly _distill<t[number], side>[]
 	:	distillNonArraykeys<
 			t,
 			alignReadonly<distillArrayFromPrefix<[...t], side, []>, t>,

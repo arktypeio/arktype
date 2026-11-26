@@ -4,7 +4,7 @@ import {
 	type ArkErrors,
 	type StandardSchemaV1
 } from "@ark/schema"
-import { scope, type, type Module, type Type } from "arktype"
+import { scope, type, type Brand, type Module, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 import { AssertionError } from "node:assert"
 
@@ -1105,6 +1105,41 @@ extra must be a string or null (was missing)`)
 }`)
 		attest(T.infer).type.toString.snap("{ any: any; never: never }")
 		attest(T.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1787
+	it("recursive readonly array", () => {
+		type Value = number | readonly Value[]
+		const T = type("unknown").as<Value>()
+
+		attest<Value>(T.infer)
+		attest<Value>(T.inferIn)
+		attest(T([1, [2]])).equals([1, [2]])
+	})
+
+	it("recursive readonly array distilled by element", () => {
+		type Value = number | Brand<string, "id"> | readonly Value[]
+		type In = number | string | readonly In[]
+		const T = type("unknown").as<Value>()
+
+		attest<Value>(T.infer)
+		attest<In>(T.inferIn)
+	})
+
+	it("recursive mutable array distilled by element", () => {
+		type Value = number | Brand<string, "id"> | Value[]
+		type In = number | string | In[]
+		const T = type("unknown").as<Value>()
+
+		attest<Value>(T.infer)
+		attest<In>(T.inferIn)
+	})
+
+	it("readonly array distilled by element", () => {
+		const T = type("string.numeric.parse[]").readonly()
+
+		attest<readonly string[]>(T.inferIn)
+		attest<readonly number[]>(T.infer)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1274
