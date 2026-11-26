@@ -122,6 +122,10 @@ import type { UnboundTraversals } from "./units.ts"
 
 const noReferences: readonly BaseNode[] = []
 
+// json writes an alias as the id it references, which parses back while that
+// id is registered: so what holds the json holds its node, and that the alias
+const nodesByJson = new WeakMap<object, BaseNode>()
+
 interface Selections {
 	// null where a node's selection is read from its refsById
 	byNode: WeakMap<BaseNode, readonly BaseNode[] | null>
@@ -1108,7 +1112,8 @@ export abstract class BaseNode<
 	}
 
 	get json(): JsonStructure {
-		return (this.c.json ??=
+		if (this.c.json) return this.c.json
+		const json =
 			isEmptyObject(this.meta) ?
 				this.innerJson
 			:	possiblyCollapse(
@@ -1122,7 +1127,9 @@ export abstract class BaseNode<
 					},
 					this.impl.bareKey,
 					false
-				))
+				)
+		if (this.hasAlias) nodesByJson.set(json, this)
+		return (this.c.json = json)
 	}
 
 	/** its json, or the value of its `bareKey` alone where that's all it holds */

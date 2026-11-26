@@ -29,7 +29,12 @@ import {
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
-import { $ark, nodesById, type NodeId } from "../shared/registry.ts"
+import {
+	$ark,
+	nodesById,
+	registrationOf,
+	type NodeId
+} from "../shared/registry.ts"
 import {
 	assertUnchecked,
 	hasArkKind,
@@ -100,6 +105,8 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		}
 	}
 	readonly structure = undefined
+	// held so the node its reference is registered to outlives whatever else holds it
+	private readonly registration = registrationOf(this.reference)
 	// Allows bounds only aliases referencing their definition while it's parsed
 	closes = true
 	private _resolution: BaseRoot | undefined

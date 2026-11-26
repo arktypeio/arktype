@@ -21,6 +21,13 @@ const collectTarget = async (ref: WeakRef<object>) => {
 	for (let i = 0; i < 10 && ref.deref(); i++) await collect()
 }
 
+// what a Type captures is collected when the Type is
+const capture = (create: (captured: object) => unknown) => {
+	const captured = {}
+	create(captured)
+	return new WeakRef(captured)
+}
+
 contextualize(() => {
 	it("collects unreferenced types, scopes and schemas", async () => {
 		// created outside this async function, whose suspended frame can hold
@@ -51,11 +58,6 @@ contextualize(() => {
 
 	// https://github.com/arktypeio/arktype/issues/1676
 	it("values captured by functions", async () => {
-		const capture = (create: (captured: object) => unknown) => {
-			const captured = {}
-			create(captured)
-			return new WeakRef(captured)
-		}
 		const refs: Record<string, WeakRef<object>> = {
 			narrow: capture(captured => type("number").narrow(() => !!captured)(1)),
 			pipe: capture(captured => type("number").pipe(n => captured && n)(1)),
@@ -93,6 +95,41 @@ contextualize(() => {
 		attest(Inner({ inner: 5 }).toString()).snap("inner must be a string")
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1773
+	it("values captured by cyclic types", async () => {
+		const refs: Record<string, WeakRef<object>> = {
+			this: capture(captured =>
+				type({
+					value: ["object", "=", () => captured],
+					"children?": "this[]"
+				})({ children: [{}] })
+			),
+			thisUnion: capture(captured =>
+				type({
+					value: ["object", "=", () => captured],
+					"next?": "this | null"
+				})({ next: { next: null } })
+			),
+			scope: capture(captured =>
+				scope({
+					node: { value: ["object", "=", () => captured], "next?": "node" }
+				})
+					.export()
+					.node({ next: {} })
+			),
+			mutual: capture(captured =>
+				scope({
+					a: { value: ["object", "=", () => captured], "b?": "b" },
+					b: { "a?": "a | null" }
+				})
+					.export()
+					.a({ b: { a: null } })
+			)
+		}
+		for (const ref of Object.values(refs)) await collectTarget(ref)
+		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
+	})
+
 	it("referenced this-cyclic root", async () => {
 		let Root: type.Any | null = type({ name: "string", "next?": "this" })
 		const Extended = Root.and({ "id?": "number" })
@@ -101,6 +138,36 @@ contextualize(() => {
 		attest(
 			Extended({ name: "a", next: { name: "b", next: { name: 1 } } }).toString()
 		).snap("next.next.name must be a string")
+	})
+
+	it("referenced this-cyclic root of a scope yet to export", async () => {
+		// its aliases resolve each time they're read
+		const $ = scope({})
+		let Root: type.Any | null = $.type({ name: "string", "next?": "this" })
+		const Extended = Root.and({ "id?": "number" })
+		Root = null
+		await collect()
+		attest(
+			Extended({ name: "a", next: { name: "b", next: { name: 1 } } }).toString()
+		).snap("next.next.name must be a string")
+	})
+
+	it("root whose own alias was dropped", async () => {
+		const Node = type({ "next?": "this" })
+		// never & an alias is never, so no alias holds the id it registered
+		const Root = type({ "self?": "this & never", "node?": Node })
+		attest(Root({ node: { next: {} } })).equals({ node: { next: {} } })
+		await collect()
+		attest(Root.internal.tfsById).equals(true)
+	})
+
+	it("json of a dropped cyclic type", async () => {
+		const create = () => type({ name: "string", "next?": "this" }).json
+		const json = create()
+		await collect()
+		attest(
+			String(type.schema(json as never)({ name: "a", next: { name: 1 } }))
+		).snap("next.name must be a string")
 	})
 
 	it("keeps cyclic scope types", async () => {
