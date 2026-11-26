@@ -522,12 +522,15 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		issueContext.c = c
 	}
 	// what a configured actual says the value was is written after what's
-	// expected, as arktype's message is, and after its path as any is
+	// expected, as arktype's message is, and after its path as any is. A
+	// unit's own writer writes that too, unless it was what's expected
 	else if (
 		typeof custom.actual === "string" &&
 		custom.actual &&
 		custom.message === undefined &&
-		configured.message === errorWriters.message
+		(configured.message === errorWriters.message ||
+			(configured.message === errorWritersByCode.unit.message &&
+				custom.actual !== issueContext.description))
 	) {
 		issueContext.message = errorWriters.message(
 			{ expected: issueContext.description, actual: custom.actual } as never,

@@ -25,6 +25,8 @@ const told: Record<string, string> = {
 		show(type({ k: Templated }), { k: 1 }, {})
 		show(type({ k: type("string").configure({ message: ctx => \`Enter \${ctx.expected}\` }) }), { k: 1 })
 		show(type({ k: type("number").configure({ actual: "wrong" }) }), { k: "a" })
+		show(type({ k: type("null").configure({ actual: "wrong" }) }), { k: "a" })
+		show(type({ k: type("1").configure({ actual: "wrong" }).label("K") }), { k: 2 })
 		show(type({ k: type("number").configure({ actual: data => typeof data }) }), { k: "a" })
 		show(type({ k: type("string").configure({ expected: "text" }) }), { k: 1 }, {})
 	`,
