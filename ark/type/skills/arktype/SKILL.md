@@ -336,7 +336,7 @@ const types = scope({
 const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 ```
 
-Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally, so an alias there is `unresolvable`. For a `.narrow()` or a `.pipe()` inside a scope, write a tuple: `["Tag[]", ":", (tags, ctx) => ...]` or `["string", "=>", s => s.trim()]`. For JSON data, use the built-in `"string | number | boolean | null | object.json"` rather than a recursive type of your own. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
+Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally, so an alias there is `unresolvable`. For a `.narrow()` or a `.pipe()` inside a scope, write a tuple: `["Tag[]", ":", (tags, ctx) => ...]` or `["string", "=>", s => s.trim()]`. For JSON data, use the built-in `"string | number | boolean | null | object.json"` rather than a recursive type of your own. Define recursive Types once, at module scope, since each stays in memory for the life of the process. To restrict a scope's ambient keywords or opt out of ArkType's defaults for a DSL, pass `{ ambient: {} }`, a `Module` like `ark.export("string", "number")`, or a record of `Type`s/`Generic`s/`Module`s as the second argument to `scope()` or `type.module()`.
 
 TypeScript can't write an inferred cycle in a `.d.ts`: `tsc` declares it as `any`, or fails with `TS5088`. In a package or project whose declarations are emitted, write them with `npx arktype declare` instead, which names each cycle for its alias and changes nothing at runtime. See https://arktype.io/docs/precompile/advanced.md.
 

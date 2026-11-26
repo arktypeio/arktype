@@ -6,6 +6,7 @@
 		"[error messages](/docs/configuration#error-messages)",
 		"[locale](/docs/configuration#locale)",
 		"[keywords](/docs/configuration#keywords)",
+		"[ambient](/docs/configuration#ambient)",
 		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
 		"[exactOptionalPropertyTypes](/docs/configuration#exactoptionalpropertytypes)",
 		"[numberAllowsNaN](/docs/configuration#numberallowsnan)",

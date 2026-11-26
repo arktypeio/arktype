@@ -86,6 +86,7 @@ User({ email: "david@arktype.io", password: "ez123" })
 | [`errors`](#errors)                                         | `"all"`                                            | global, scope        |
 | [`mutatesInput`](#mutatesinput)                             | `false`                                            | global, scope        |
 | [`keywords`](#keywords)                                     | `{}`                                               | global               |
+| [`ambient`](#ambient)                                       | ArkType's built-in keywords                        | scope                |
 | [`locale`](#locale)                                         | `en`                                               | global               |
 | [an error code](#by-code), like `divisor`                   | ArkType's messages                                 | global, scope        |
 | [`toJsonSchema`](#tojsonschema)                             | draft 2020-12, throwing for what it can't express  | global, scope        |
@@ -410,6 +411,18 @@ const User = type({
 //            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
+
+## ambient
+
+Scope-only. Overrides the ambient keywords a `scope` or `type.module` falls back to when resolving references. Pass `{}` to opt out of ArkType's built-in keywords entirely, a `Module` (such as `ark.export("string", "number")`), or a plain record of `Type`s, `Generic`s and `Module`s:
+
+```ts
+import { ark, scope } from "arktype"
+
+const dsl = scope({ Email: "string.email" }, { ambient: ark.export("string") })
+```
+
+See [Ambient](/docs/scopes#ambient) for shadowing, chaining and clean-slate DSL scopes.
 
 ## onUndeclaredKey
 
