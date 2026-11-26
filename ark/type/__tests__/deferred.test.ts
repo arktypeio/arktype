@@ -271,6 +271,30 @@ seen false
 		attest(seen).equals([])
 	})
 
+	it("holding a built union calls nothing discriminating it would", () => {
+		const seen: unknown[] = []
+		const sees = (data: unknown) => {
+			seen.push(data)
+			return false
+		}
+		// its string case asks what's narrowed of each unit once it's first used
+		const union = type.or(
+			type.enumerated("a", "b").pipe(s => s),
+			type("string").narrow(sees),
+			{}
+		)
+		attest(isUnread(union)).equals(false)
+		seen.length = 0
+		const holding = [
+			type({ held: union }),
+			type.or({ held: union }, "false"),
+			type.or(union.array(), "false"),
+			type.Record("string", union)
+		]
+		for (const t of holding) attest(isUnread(t)).equals(true)
+		attest(seen).equals([])
+	})
+
 	it("an optional prop that could be undefined calls what it narrows at its call", () => {
 		attest(
 			printed(`configure({ exactOptionalPropertyTypes: false })

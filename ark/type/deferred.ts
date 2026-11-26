@@ -600,6 +600,25 @@ const outputsUnit = (branch: BaseRoot) => {
 	}
 }
 
+const heldByNode = new WeakMap<BaseNode, number>()
+
+// asked of what a node is made of and pipes to: its references are a union's
+// cases too, which it has once it's discriminated, when it's first used
+const nodeHolds = (node: BaseNode): number => {
+	let bits = heldByNode.get(node)
+	if (bits === undefined) {
+		bits =
+			node.is("unit") ? holdsUnit
+			: isNarrow(node) ? holdsNarrow
+			: 0
+		for (const child of node.children) bits |= nodeHolds(child)
+		if (node.is("morph"))
+			for (const piped of node.otherRefs) bits |= nodeHolds(piped)
+		heldByNode.set(node, bits)
+	}
+	return bits
+}
+
 const nodeFacts = (node: BaseRoot): Facts | undefined => {
 	if (node.isNever() || node.topAlias) return
 	const key = `@${node.id}`
@@ -617,15 +636,16 @@ const nodeFacts = (node: BaseRoot): Facts | undefined => {
 			units ||= outputsUnit(branch)
 		}
 	}
+	const bits = nodeHolds(node)
 	// a node says nothing of where it holds a predicate or a unit
-	const narrowed = node.userCode && node.selectReferences(isNarrow).length !== 0
+	const narrowed = (bits & holdsNarrow) !== 0
 	return {
 		key,
 		domains,
 		pure: !node.alters,
 		values,
 		units,
-		unitsWithin: node.selectReferences(isUnit).length !== 0,
+		unitsWithin: (bits & holdsUnit) !== 0,
 		narrowed,
 		narrowedWithin: narrowed
 	}
