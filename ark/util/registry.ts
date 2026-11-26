@@ -46,8 +46,10 @@ export interface ArkRegistry extends InitialRegistryContents {
 export const registry: ArkRegistry = initialRegistryContents as never
 
 const namesByResolution = new Map<object | symbol, string>()
+// holds a symbol's name too where a symbol can be a WeakMap's key, so the name
+// is kept no longer than the symbol
 const namesByUnregisteredObject = new WeakMap<object, string>()
-// symbols can't be WeakMap keys before ES2023
+// a symbol can't be one before ES2023, nor one Symbol.for registered since
 const namesByUnregisteredSymbol = new Map<symbol, string>()
 const nameCounts: Record<string, number | undefined> = Object.create(null)
 
@@ -69,15 +71,17 @@ export const nameOf = (value: object | symbol): string => {
 	if (existingName) return existingName
 
 	const name = nextName(value)
-	if (typeof value === "symbol") namesByUnregisteredSymbol.set(value, name)
-	else namesByUnregisteredObject.set(value, name)
+	try {
+		namesByUnregisteredObject.set(value as object, name)
+	} catch {
+		namesByUnregisteredSymbol.set(value as symbol, name)
+	}
 	return name
 }
 
 const unregisteredNameOf = (value: object | symbol) =>
-	typeof value === "symbol" ?
-		namesByUnregisteredSymbol.get(value)
-	:	namesByUnregisteredObject.get(value)
+	namesByUnregisteredObject.get(value as object) ??
+	namesByUnregisteredSymbol.get(value as symbol)
 
 // "$" sorts first, so names order by base name
 const nextName = (value: object | symbol) => {

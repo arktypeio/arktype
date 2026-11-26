@@ -80,6 +80,23 @@ contextualize(() => {
 		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
 	})
 
+	it("symbols a type's meta is keyed by or holds", async () => {
+		const create = (): Record<string, WeakRef<object>> => {
+			const key = Symbol("gcMetaKey")
+			const held = Symbol("gcMetaValue")
+			type("string").configure({ [key]: true, held } as never)
+			return {
+				key: new WeakRef(key as never),
+				held: new WeakRef(held as never)
+			}
+		}
+		const refs = create()
+		// V8 holds the one symbol a read was keyed by until it's keyed by another
+		create()
+		for (const ref of Object.values(refs)) await collectTarget(ref)
+		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
+	})
+
 	it("values captured by a type compiled with one it references", async () => {
 		const Inner = type({ inner: "string" })
 		const capture = () => {
