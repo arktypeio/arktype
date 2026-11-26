@@ -366,10 +366,10 @@ A key that isn't `string` or a single regex, like `[string <= 3]`, needs `proper
 A union whose object branches each require a string at one key, no value of which two branches allow, is written as `oneOf`, since no data can match two of its branches. For `"openapi-3.0"` and `"openapi-3.1"`, or where the `discriminator` option is `true`, it names that key with OpenAPI's [`discriminator`](https://spec.openapis.org/oas/v3.0.3#discriminator-object), so a code generator models it as a tagged union:
 
 ```ts
-const Destination = type({ type: "'bankAccount'", routing: "string" }).or({
-	type: "'card'",
-	last4: "string"
-})
+const Destination = type.or(
+	{ type: "'bankAccount'", routing: "string" },
+	{ type: "'card'", last4: "string" }
+)
 
 const schema = Destination.toJsonSchema({ target: "openapi-3.0" })
 ```
@@ -412,11 +412,14 @@ const schema = Destination.toJsonSchema({ target: "openapi-3.0" })
 Configure `jsonSchema` meta to write a Type's schema yourself. It replaces the schema the Type's constraints imply, so a `narrow` it covers needs no fallback:
 
 ```ts
-const Even = type("number")
-	.narrow(n => n % 2 === 0)
-	.configure({ jsonSchema: { type: "integer", multipleOf: 2 } })
+const Tags = type("string[]")
+	.narrow(tags => new Set(tags).size === tags.length)
+	.configure({
+		jsonSchema: { type: "array", items: { type: "string" }, uniqueItems: true }
+	})
 
-Even.toJsonSchema() // { $schema: "...", type: "integer", multipleOf: 2 }
+// { $schema: "...", type: "array", items: { type: "string" }, uniqueItems: true }
+Tags.toJsonSchema()
 ```
 
 The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references, since it describes the whole Type.
@@ -537,7 +540,7 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `morph` | a morph | `type("string.trim")` | `out`, the output schema or `null` |
 | `patternFlags` | a regex flag other than `d`, `g` or, for 2020-12 and 3.1, `u`, or a flagless regex incompatible with `u` | `type(/^a/i)` | `pattern`, `flags` |
 | `patternIntersection` | a second regex on the same string | `type(/^a/).and(/b$/)` | `pattern` |
-| `predicate` | a `narrow` | `type("number").narrow(n => n > 0)` | `predicate` |
+| `predicate` | a `narrow` | `type("number").narrow(isPrime)` | `predicate` |
 | `proto` | an `instanceof` other than `Array` or `Date` | `type("Map")` | `proto` |
 | `symbolKey` | a symbol key or index signature | `type({ "[symbol]": "string" })` | `key` (`null` for an index), `value`, `optional` |
 | `unit` | a literal that isn't JSON | `type("undefined")` | `unit` |
@@ -675,16 +678,16 @@ type User = typeof User.infer
 
 The inferred type never rejects a value the schema accepts, but it can be wider: constraints like `minimum` and `pattern` don't narrow it, and a `$ref` that isn't a JSON Pointer, like one to an anchor, infers `unknown`. Inference follows `$ref`s into `$defs`, `definitions` and OpenAPI `components.schemas`, including recursive ones, and composition, `if`/`then`/`else` and `not`.
 
-A Standard Schema infers its input, as `StandardSchemaV1.InferInput` does. A JSON Schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, annotate the result:
+A Standard Schema infers its input, as `StandardSchemaV1.InferInput` does. A JSON Schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, give it with `.as<t>()`:
 
 ```ts
-const User: Type<{ name: string }> = fromJsonSchema(userJson) as never
+const User = fromJsonSchema(userJson).as<{ name: string }>()
 
 // { name: string }
 const user = User.assert({ name: "Ada" })
 ```
 
-The annotation isn't checked against the schema, so keep the two in sync yourself.
+The type isn't checked against the schema, so keep the two in sync yourself.
 
 ## How it reads JSON Schema
 
@@ -822,9 +825,7 @@ Use it to check in CI that a new version of an API schema still accepts what the
 import { fromJsonSchema } from "arktype"
 import { z } from "zod"
 
-fromJsonSchema({ type: "integer", minimum: 0 }).equals(
-	type("number.integer >= 0")
-) // true
+fromJsonSchema({ type: "integer", minimum: 0 }).equals("number.integer >= 0") // true
 
 fromJsonSchema({ enum: ["a", "b"] }).extends(
 	fromJsonSchema({ type: "string", maxLength: 1 })
