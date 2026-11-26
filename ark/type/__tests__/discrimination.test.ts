@@ -862,6 +862,27 @@ contextualize(() => {
 		attest(U.allows({ a: ["c"] })).equals(false)
 	})
 
+	it("keeps a branch reachable through an index of an object that isn't an array", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type(["0", "string"])
+				.or(["1", "number"])
+				.or("TypedArray.Uint8")
+			const bytes = new Uint8Array([0, 5])
+			// uncompiled, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				attest(T.allows(bytes)).equals(true)
+				attest(T(bytes)).unknown.equals(bytes)
+				attest(T.allows([0, "a"])).equals(true)
+				attest(T.allows([0, 5])).equals(false)
+			}
+		}
+
+		// an array whose element can't be the case's is still excluded from it
+		const Arrays = type(["0", "string"]).or(["1", "number"]).or("boolean[]")
+		attest(Arrays([0, 5]).toString()).snap("[1] must be a string")
+	})
+
 	it("doesn't discriminate undefined at a path", () => {
 		const $ = scope({})
 		const T = $.type({ kind: "'c'", v: "undefined" }).or({

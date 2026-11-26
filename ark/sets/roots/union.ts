@@ -427,7 +427,7 @@ const resolveCase = (
 		ctx.location.path,
 		ctx.node.$
 	)
-	let primitiveDiscriminantNode: BaseRoot | undefined
+	let anyValueDiscriminantNode: BaseRoot | undefined
 
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
@@ -462,16 +462,17 @@ const resolveCase = (
 				!(intersection instanceof Disjoint) ||
 				leavesKeyOverlap ||
 				// a branch disjoint above the case may reach it through a primitive's
-				// keys, e.g. a string's characters
+				// keys, e.g. a string's characters, or through an index of an object
+				// that isn't an array, e.g. a typed array's
 				(intersection.some(
 					disjointEntry => disjointEntry.path.length < ctx.location.path.length
 				) &&
 					entry.branch._in.overlaps(
-						(primitiveDiscriminantNode ??= discriminantCaseToNode(
+						(anyValueDiscriminantNode ??= discriminantCaseToNode(
 							caseCtx.condition,
 							ctx.location.path,
 							ctx.node.$,
-							{ includesPrimitives: true }
+							{ fromAnyValue: true }
 						))
 					))
 			) {
@@ -550,7 +551,7 @@ export const discriminantCaseToNode = (
 	caseDiscriminant: CaseDiscriminant,
 	path: PropertyKey[],
 	$: BaseScope,
-	{ includesPrimitives }: { includesPrimitives?: boolean } = {}
+	{ fromAnyValue }: { fromAnyValue?: boolean } = {}
 ): BaseRoot => {
 	let node: BaseRoot =
 		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
@@ -561,17 +562,18 @@ export const discriminantCaseToNode = (
 		:	caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
+		const value = node
 		const structure =
 			typeof key === "number" ?
 				$.node("structure", {
 					sequence: $.node("sequence", {
 						// create unknown for preceding elements (could be optimized with safe imports)
-						prefix: [...range(key).map(_ => $.node("intersection", {})), node],
+						prefix: [...range(key).map(_ => $.node("intersection", {})), value],
 						variadic: $.node("intersection", {})
 					})
 				})
 			:	$.node("structure", {
-					required: [$.node("required", { key, value: node })]
+					required: [$.node("required", { key, value })]
 				})
 		node = $.node(
 			"intersection",
@@ -579,10 +581,21 @@ export const discriminantCaseToNode = (
 				{ proto: $.node("proto", { proto: Array }), structure }
 			:	{ domain: $.node("domain", { domain: "object" }), structure }
 		)
-		if (includesPrimitives && isReadableOnPrimitive(key)) {
+		if (fromAnyValue && isReadableOnPrimitive(key)) {
 			node = $.node("union", {
 				branches: [
 					node,
+					// an index is a key of any object, not only an array's element
+					...(typeof key === "number" ?
+						[
+							$.node("intersection", {
+								domain: $.node("domain", { domain: "object" }),
+								structure: $.node("structure", {
+									required: [$.node("required", { key: `${key}`, value })]
+								})
+							})
+						]
+					:	[]),
 					$.node("domain", { domain: "string" }),
 					$.node("domain", typeofNumber),
 					$.node("domain", { domain: "bigint" }),
