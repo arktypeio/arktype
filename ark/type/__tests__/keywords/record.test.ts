@@ -43,6 +43,18 @@ contextualize(() => {
 		attest(T([true])).equals([true])
 	})
 
+	it("literal keys", () => {
+		const T = type("Record<'a' | 'b', number>")
+		const Expected = type({ a: "number", b: "number" })
+		attest<typeof Expected.t>(T.t)
+		attest(T.json).equals(Expected.json)
+		attest(T({ a: 1 }).toString()).snap("b must be a number (was missing)")
+		// alongside a non-literal key, it's still a prop
+		attest(type.Record("'a' | /^x/", "number").expression).snap(
+			"{ [/^x/]: number, a: number }"
+		)
+	})
+
 	it("invoked validation error", () => {
 		// @ts-expect-error
 		attest(() => keywords.Record("string", "string % 2")).throwsAndHasTypeError(

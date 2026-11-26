@@ -3,6 +3,8 @@ import {
 	intrinsic,
 	isResolvable,
 	node,
+	normalizeIndex,
+	rootSchemaScope,
 	type BaseRoot
 } from "@ark/schema"
 import {
@@ -151,12 +153,11 @@ export class RecordHkt extends Hkt<[Key, unknown]> {
 
 const Record = cached(() =>
 	genericNode(["K", intrinsic.key], "V")(
+		// as TypeScript's Record and an object literal's index key, a literal
+		// key is a required prop rather than an index signature
 		args => ({
 			domain: "object",
-			index: {
-				signature: args.K,
-				value: args.V
-			}
+			...normalizeIndex(args.K as never, args.V, rootSchemaScope)
 		}),
 		RecordHkt
 	)

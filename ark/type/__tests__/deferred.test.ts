@@ -662,9 +662,10 @@ console.log(type.Record.params.length)`)
 		attest(messageOf(() => anyType.Record("number", "number"))).snap(
 			"K must be assignable to string | symbol (was number)"
 		)
-		attest(messageOf(() => anyType.Record("'a'", "number"))).snap(
-			'Index keys "a" should be specified as named props.'
-		)
+		// a literal key is a prop, which isn't deferred
+		const literal = type.Record("'a'", "number")
+		attest(isUnread(literal)).equals(false)
+		attest(literal.expression).snap("{ a: number }")
 	})
 
 	it("this is its own in each definition", () => {
