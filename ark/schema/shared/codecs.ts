@@ -13,6 +13,7 @@ import { withoutUndefined, type Optional } from "../structure/optional.ts"
 import type { Sequence } from "../structure/sequence.ts"
 import type { Structure } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"
+import type { TypeMeta } from "./declare.ts"
 import {
 	assertUnchecked,
 	defining,
@@ -157,7 +158,7 @@ const sortByTfs = (
 		.map(([branch]) => branch)
 
 const invert = (
-	inner: Morph.Inner,
+	inner: Morph.Inner & { meta?: TypeMeta },
 	headTransforms: boolean,
 	$: BaseScope,
 	mapper: DeepNodeTransformation,
@@ -206,7 +207,8 @@ const invert = (
 		inverse = undefined
 	}
 	const decodedIn = inner.declaredIn ?? head
-	return decodedIn ?
+	const result =
+		decodedIn ?
 			pipeEncoder(
 				encoder,
 				decodedIn,
@@ -215,6 +217,18 @@ const invert = (
 				$
 			)
 		:	encoder
+	const label = inner.meta?.label
+	return label !== undefined ?
+			(result.transform(
+				(_kind, nodeInner) => ({
+					...nodeInner,
+					meta: { ...nodeInner.meta, label }
+				}),
+				{
+					shouldTf: n => n.kind !== "structure" && n.kind !== "alias"
+				}
+			) as BaseRoot)
+		:	result
 }
 
 const pipeEncoder = (

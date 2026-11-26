@@ -9,6 +9,7 @@ import {
 	type
 } from "arktype"
 import "arktype/i18n"
+import { codec } from "arktype/codecs"
 import { de } from "arktype/locales/de"
 
 const UnitPrice = type("number > 0").label("Unit price")
@@ -377,6 +378,90 @@ Port must be a string (was missing)`
 Port must be at most 65535`)
 			attest(formErr.summaryIn(de)).snap(`Full name darf nicht leer sein
 Port muss höchstens 65535 sein`)
+		})
+
+		it("preserves labels across .encode in JIT, jitless, and other locales", () => {
+			const PortObj = type({
+				port: type("string.integer.parse").label("Port")
+			})
+			// call twice to exercise both uncompiled and JIT-compiled paths
+			for (let i = 0; i < 2; i++) {
+				const bad = PortObj.encode({ port: "bad" }) as type.errors
+				attest(bad.summary).snap("Port must be a number")
+				attest(bad.summaryIn(de)).snap("Port muss eine Zahl sein")
+				attest((PortObj.encode({ port: 1.5 }) as type.errors).summary).snap(
+					"Port must be an integer"
+				)
+				attest((PortObj.encode({}) as type.errors).summary).snap(
+					"Port must be a number (was missing)"
+				)
+			}
+			// round-tripped encoder keeps the label too
+			attest(
+				(PortObj.encode.encode({ port: "abc" }) as type.errors).summary
+			).snap("Port must be a well-formed integer string")
+
+			// decode-only description is not copied onto encode's input domain
+			const Described = type({
+				port: type("string.integer.parse")
+					.describe("an integer string")
+					.label("Port")
+			})
+			attest((Described.encode({ port: "bad" }) as type.errors).summary).snap(
+				"Port must be a number"
+			)
+
+			// piped codecs preserve label on both input constraints and output format checks
+			const Form = type({
+				name: type("string.trim").to("string > 0").label("Full name"),
+				port: type("string.integer.parse")
+					.to("1 <= number <= 65535")
+					.label("Port")
+			})
+			attest((Form.encode({ name: "   ", port: 99999 }) as type.errors).summary)
+				.snap(`Full name must be trimmed
+Port must be at most 65535`)
+			attest((Form.encode({ name: "", port: 1.5 }) as type.errors).summary)
+				.snap(`Full name must be non-empty
+Port must be an integer`)
+
+			// custom codec encode ctx.error uses the label
+			const Natural = codec("string.integer", "bigint", {
+				decode: s => BigInt(s),
+				encode: (n, ctx) => (n < 0n ? ctx.error("non-negative") : `${n}`)
+			}).label("Natural")
+			const NaturalObj = type({ n: Natural })
+			attest((NaturalObj.encode({ n: -1n }) as type.errors).summary).snap(
+				"Natural must be non-negative"
+			)
+			attest((NaturalObj.encode({ n: "bad" }) as type.errors).summary).snap(
+				"Natural must be a bigint"
+			)
+
+			// shallow on piped object output and preserves label on circular stringify error
+			const Payload = type("string.json.parse")
+				.to({ name: "string" })
+				.label("Payload")
+			attest((Payload.encode(123) as type.errors).summary).snap(
+				"Payload must be an object"
+			)
+			attest((Payload.encode({}) as type.errors).summary).snap(
+				"name must be a string (was missing)"
+			)
+			const circ: Record<string, unknown> = { name: "x" }
+			circ.self = circ
+			attest((Payload.encode(circ) as type.errors).summary).snap(
+				"Payload must be a JSON-serializable value"
+			)
+
+			// jitless mode and German locale
+			const $ = scope({}, { jitless: true })
+			const JitlessPort = $.type({
+				port: $.type("string.integer.parse").label("Port")
+			})
+			const jitlessErr = JitlessPort.encode({ port: "bad" }) as type.errors
+			attest(jitlessErr.summary).snap("Port must be a number")
+			attest(jitlessErr.summaryIn(de)).snap("Port muss eine Zahl sein")
 		})
 	})
 
