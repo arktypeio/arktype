@@ -3839,4 +3839,34 @@ export default shared`).js
 		const { modules } = bundle(precompileStandalone({ User }).code)
 		attest(modules.some(path => path.startsWith("sets/"))).equals(false)
 	})
+
+	it("precompiles string.boolean, string.boolean.parse, and string.date.iso.date", async () => {
+		await import("arktype/codecs")
+		const BoolStr = type("string.boolean")
+		const ParseBool = type("string.boolean.parse")
+		const EncodeBool = ParseBool.encode
+		const IsoDate = type("string.date.iso.date")
+		for (const optimize of ["speed", "size"] as const) {
+			const loaded = await load(
+				{ BoolStr, ParseBool, EncodeBool, IsoDate },
+				{ optimize }
+			)
+			attest(loaded.BoolStr("true")).equals("true")
+			attest(loaded.BoolStr("false")).equals("false")
+			attest(loaded.BoolStr("yes").summary).snap('must be "false" or "true"')
+			attest(loaded.ParseBool("true")).equals(true)
+			attest(loaded.ParseBool("false")).equals(false)
+			attest(loaded.ParseBool("yes").summary).snap('must be "false" or "true"')
+			attest(loaded.EncodeBool(true)).equals("true")
+			attest(loaded.EncodeBool(false)).equals("false")
+			attest(loaded.EncodeBool("true").summary).snap("must be boolean")
+			attest(loaded.IsoDate("2024-02-29")).equals("2024-02-29")
+			attest(loaded.IsoDate("2025-02-29").summary).snap(
+				"must be an ISO 8601 date"
+			)
+			attest(loaded.IsoDate("2025-01-01T00:00:00Z").summary).snap(
+				"must be an ISO 8601 date"
+			)
+		}
+	})
 })

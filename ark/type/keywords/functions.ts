@@ -34,6 +34,8 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 	return Number.isSafeInteger(parsed) ? parsed : ctx.error(integerParseError)
 }
 
+export const parseBoolean = (s: "true" | "false"): boolean => s === "true"
+
 export const parseNumeric = (s: string): number => Number(s)
 
 // Infinity takes at least five characters ("1e309"), so a shorter numeric string is finite

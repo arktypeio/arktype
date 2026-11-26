@@ -137,11 +137,14 @@ contextualize(() => {
 			assertProperty(arbitrary, T)
 		})
 		// their patterns have no lookahead, which fast-check can't generate from
-		it("numeric and ISO date keywords", () => {
+		it("numeric, boolean, and ISO date keywords", () => {
 			for (const T of [
 				type("string.numeric"),
 				type("string.integer"),
-				type("string.date.iso")
+				type("string.boolean"),
+				type("string.boolean.parse"),
+				type("string.date.iso"),
+				type("string.date.iso.date")
 			])
 				assertProperty(arkToArbitrary(T), T)
 		})

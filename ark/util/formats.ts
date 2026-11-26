@@ -138,3 +138,45 @@ export const isIso8601 = (s: string): boolean => {
 		(commonIso8601.test(s) || iso8601Matcher.test(s))
 	)
 }
+
+// ISO 8601 / RFC 3339 calendar-valid YYYY-MM-DD date (years 0000-9999), without
+// lookaheads or backreferences so JSON Schema (RE2) and fast-check read it
+export const iso8601DateMatcher: RegExp =
+	/^(?:\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|02-(?:0[1-9]|1\d|2[0-8]))|(?:\d\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00)-02-29)$/
+
+export const isIso8601Date = (s: string): boolean => {
+	if (s.length !== 10 || s.charCodeAt(4) !== 45 || s.charCodeAt(7) !== 45)
+		return false
+	const y0 = s.charCodeAt(0) - 48
+	const y1 = s.charCodeAt(1) - 48
+	const y2 = s.charCodeAt(2) - 48
+	const y3 = s.charCodeAt(3) - 48
+	const m0 = s.charCodeAt(5) - 48
+	const m1 = s.charCodeAt(6) - 48
+	const d0 = s.charCodeAt(8) - 48
+	const d1 = s.charCodeAt(9) - 48
+	if (
+		(y0 | y1 | y2 | y3 | m0 | m1 | d0 | d1) < 0 ||
+		y0 > 9 ||
+		y1 > 9 ||
+		y2 > 9 ||
+		y3 > 9 ||
+		m0 > 9 ||
+		m1 > 9 ||
+		d0 > 9 ||
+		d1 > 9
+	)
+		return false
+	const month = m0 * 10 + m1
+	const day = d0 * 10 + d1
+	if (month < 1 || month > 12 || day < 1) return false
+	if (day <= 28) return true
+	if (month === 2) {
+		if (day > 29) return false
+		const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3
+		return (year & 3) === 0 && (year % 100 !== 0 || year % 400 === 0)
+	}
+	return (
+		day <= (month === 4 || month === 6 || month === 9 || month === 11 ? 30 : 31)
+	)
+}

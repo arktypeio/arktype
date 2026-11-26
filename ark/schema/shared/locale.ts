@@ -43,6 +43,7 @@ export type KeywordPhraseAlias =
 	| "string.date"
 	| "string.date.epoch"
 	| "string.date.iso"
+	| "string.date.iso.date"
 	| "string.date.parse"
 	| "string.digits"
 	| "string.email"

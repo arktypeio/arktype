@@ -172,6 +172,7 @@ export {
 	isIpv4,
 	isIpv6,
 	isIso8601,
+	isIso8601Date,
 	isNonArray,
 	isNumericString,
 	isPlainObjectOrArray,

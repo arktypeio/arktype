@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { keywords, type } from "arktype"
+import { fromJsonSchema, keywords, type } from "arktype"
 
 contextualize(() => {
 	it("alpha", () => {
@@ -54,6 +54,49 @@ contextualize(() => {
 		attest(B64url("V29yZA%3D%3D")).snap("V29yZA%3D%3D")
 		attest(B64url("V29.yZA").toString()).equals("must be base64url-encoded")
 		attest(B64url("fn5+").toString()).equals("must be base64url-encoded")
+	})
+
+	it("boolean", () => {
+		const BoolStr = type("string.boolean")
+		attest<"true" | "false">(BoolStr.infer)
+		attest<"true" | "false">(BoolStr.inferIn)
+		attest(BoolStr.equals("'true' | 'false'")).equals(true)
+		attest(BoolStr.extends("string")).equals(true)
+		attest(BoolStr("true")).equals("true")
+		attest(BoolStr("false")).equals("false")
+		attest(keywords.string.boolean.root("true")).equals("true")
+		attest(BoolStr("TRUE").toString()).snap('must be "false" or "true"')
+		attest(BoolStr("1").toString()).snap('must be "false" or "true"')
+		attest(BoolStr("").toString()).snap('must be "false" or "true"')
+		attest(BoolStr(true).toString()).snap('must be "false" or "true"')
+		attest(BoolStr.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "string",
+			enum: ["false", "true"]
+		})
+		attest(fromJsonSchema(BoolStr.toJsonSchema()).equals(BoolStr)).equals(true)
+	})
+
+	it("boolean.parse", () => {
+		const ParseBool = type("string.boolean.parse")
+		attest<boolean>(ParseBool.infer)
+		attest<"true" | "false">(ParseBool.inferIn)
+		attest(ParseBool.in.equals(type("string.boolean"))).equals(true)
+		attest(ParseBool.out.equals(type("boolean"))).equals(true)
+		attest(ParseBool("true")).equals(true)
+		attest(ParseBool("false")).equals(false)
+		attest(keywords.string.boolean.parse("false")).equals(false)
+		attest(ParseBool("yes").toString()).snap('must be "false" or "true"')
+		attest(ParseBool("True").toString()).snap('must be "false" or "true"')
+		attest(ParseBool(false).toString()).snap('must be "false" or "true"')
+		const Env = type({ DEBUG: "string.boolean.parse" })
+		attest<{ DEBUG: boolean }>(Env.infer)
+		attest<{ DEBUG: "true" | "false" }>(Env.inferIn)
+		attest(Env({ DEBUG: "true" })).equals({ DEBUG: true })
+		attest(Env({ DEBUG: "false" })).equals({ DEBUG: false })
+		attest(Env({ DEBUG: "0" }).toString()).snap(
+			'DEBUG must be "false" or "true"'
+		)
 	})
 
 	it("digits", () => {

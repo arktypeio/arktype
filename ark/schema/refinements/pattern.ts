@@ -4,7 +4,9 @@ import {
 	isIpv4,
 	isIpv6,
 	isIso8601,
+	isIso8601Date,
 	isNumericString,
+	iso8601DateMatcher,
 	iso8601Matcher,
 	isUuid,
 	isWellFormedInteger,
@@ -78,7 +80,8 @@ const testsByExpression: { [expression: string]: (s: string) => boolean } = {
 	[`${uuidMatcher}`]: isUuid,
 	[`${ipv4Matcher}`]: isIpv4,
 	[`${ipv6Matcher}`]: isIpv6,
-	[`${iso8601Matcher}`]: isIso8601
+	[`${iso8601Matcher}`]: isIso8601,
+	[`${iso8601DateMatcher}`]: isIso8601Date
 }
 
 // a whole string of one atom repeated without bound, e.g. /^[ab]+$/

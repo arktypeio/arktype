@@ -295,6 +295,7 @@ pair[1] must be a Date`)
 
 	it("parse keywords encode", () => {
 		const T = type({
+			boolean: "string.boolean.parse",
 			date: "string.date.parse",
 			iso: "string.date.iso.parse",
 			epoch: "string.date.epoch.parse",
@@ -304,6 +305,7 @@ pair[1] must be a Date`)
 			url: "string.url.parse"
 		})
 		const decoded = {
+			boolean: true,
 			date: new Date(1),
 			iso: new Date(1),
 			epoch: new Date(1),
@@ -314,6 +316,7 @@ pair[1] must be a Date`)
 		}
 		const encoded = T.encode(decoded)
 		attest(encoded).snap({
+			boolean: "true",
 			date: "1970-01-01T00:00:00.001Z",
 			iso: "1970-01-01T00:00:00.001Z",
 			epoch: "1",
@@ -323,6 +326,17 @@ pair[1] must be a Date`)
 			url: "https://arktype.io/"
 		})
 		attest(T(encoded)).equals(decoded)
+	})
+
+	it("string.boolean.parse encodes booleans to boolean strings", () => {
+		const T = type("string.boolean.parse")
+		attest<Type<(In: boolean) => To<"true" | "false">>>(T.encode)
+		attest(T.encode.expression).snap('(In: boolean) => To<"false" | "true">')
+		attest(T.encode(true)).equals("true")
+		attest(T.encode(false)).equals("false")
+		attest(T(T.encode(true))).equals(true)
+		attest(T(T.encode(false))).equals(false)
+		attest(T.encode("true").toString()).snap("must be boolean")
 	})
 
 	it("string.numeric.parse encodes a number String writes with an exponent", () => {

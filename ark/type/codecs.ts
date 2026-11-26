@@ -9,6 +9,7 @@ import {
 	keepFormatted,
 	lowercaseString,
 	normalizationsByForm,
+	parseBoolean,
 	parseDate,
 	parseEpoch,
 	parseInteger,
@@ -77,6 +78,7 @@ export const codec: CodecParser = (i, o, { decode, encode }) => {
 }
 
 // keyed by the keywords' morphs, so reading them creates no Type
+inverses.set(parseBoolean, String)
 inverses.set(parseDate, writeIsoDate)
 inverses.set(parseIsoDate, writeIsoDate)
 inverses.set(parseEpoch, writeEpoch)

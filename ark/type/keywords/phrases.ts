@@ -29,6 +29,7 @@ export const keywordPhrases = {
 	"string.date": "a parsable date",
 	"string.date.epoch": "an integer string representing a safe Unix timestamp",
 	"string.date.iso": "an ISO 8601 date or date-time",
+	"string.date.iso.date": "an ISO 8601 date",
 	"string.date.parse": "a parsable date",
 	"string.digits": "only digits 0-9",
 	"string.email": "an email address",

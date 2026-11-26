@@ -254,6 +254,7 @@ contextualize(() => {
 			'string.date ← "x"': "muss ein parsbares Datum sein",
 			'string.date.iso ← "x"':
 				"muss ein Datum oder Zeitpunkt nach ISO 8601 sein",
+			'string.date.iso.date ← "x"': "muss ein Datum nach ISO 8601 sein",
 			'string.date.parse ← "x"': "muss ein parsbares Datum sein",
 			'string.digits ← "x"': "muss eine Ziffernfolge (0-9) sein",
 			'string.email ← "x"': "muss eine E-Mail-Adresse sein",

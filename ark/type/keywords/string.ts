@@ -13,6 +13,7 @@ import {
 	flatMorph,
 	ipv4Matcher,
 	ipv6Matcher,
+	iso8601DateMatcher,
 	iso8601Matcher,
 	numericStringMatcher,
 	uuidMatcher,
@@ -32,6 +33,7 @@ import {
 	isRegexPattern,
 	lowercaseString,
 	normalizationsByForm,
+	parseBoolean,
 	parseDate,
 	parseEpoch,
 	parseInteger,
@@ -160,6 +162,39 @@ declare namespace base64 {
 	}
 }
 
+const stringBooleanRoot = cached(() =>
+	node("union", {
+		branches: [node("unit", { unit: "false" }), node("unit", { unit: "true" })]
+	})
+)
+
+export const stringBoolean: stringBoolean.module = keywordModule(
+	{
+		root: stringBooleanRoot,
+		parse: () =>
+			node("morph", {
+				morphs: [stringBooleanRoot(), parseBoolean],
+				declaredOut: intrinsic.boolean
+			})
+	},
+	{
+		name: "string.boolean"
+	}
+) as never
+
+type stringBoolean$ = {
+	root: "true" | "false"
+	parse: (In: "true" | "false") => To<boolean>
+}
+
+export declare namespace stringBoolean {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<stringBoolean$>
+
+	export type $ = stringBoolean$
+}
+
 const preformattedCapitalize = cached(() =>
 	regexStringNode(/^(?:[^a-z][\S\s]*)?$/, "string.capitalize.preformatted")
 )
@@ -252,7 +287,7 @@ export type DateOptions = {
 	format?: DateFormat
 }
 
-export { iso8601Matcher }
+export { iso8601DateMatcher, iso8601Matcher }
 
 type ParsedDayParts = {
 	y?: string
@@ -339,9 +374,16 @@ const isoRoot = cached(() =>
 	}).internal.assertIs("intersection")
 )
 
+const isoDate = cached(() =>
+	regexStringNode(iso8601DateMatcher, "string.date.iso.date", {
+		format: "date"
+	})
+)
+
 const iso: Module<stringDate.iso.$> = keywordModule(
 	{
 		root: isoRoot,
+		date: isoDate,
 		parse: () =>
 			node("morph", {
 				morphs: [isoRoot(), parseIsoDate],
@@ -372,6 +414,7 @@ export const stringDate: stringDate.module = keywordModule(
 
 type stringDateIso$ = {
 	root: string
+	date: string
 	parse: (In: string) => To<Date>
 }
 
@@ -888,6 +931,7 @@ export const string: string.module = keywordModule(
 		hex,
 		base58: () => regexStringNode(/^[1-9A-HJ-NP-Za-km-z]+$/, "string.base58"),
 		base64,
+		boolean: stringBoolean,
 		capitalize,
 		creditCard,
 		date: stringDate,
@@ -920,6 +964,7 @@ type string$ = {
 	hex: string
 	base58: string
 	base64: base64.submodule
+	boolean: Submodule<stringBoolean$>
 	capitalize: Submodule<capitalize$>
 	creditCard: string
 	date: Submodule<stringDate$>

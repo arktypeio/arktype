@@ -268,6 +268,7 @@ const keywordPhrases = {
 	"string.date.epoch":
 		"ein gültiger Unix-Zeitstempel als ganzzahlige Zeichenkette",
 	"string.date.iso": "ein Datum oder Zeitpunkt nach ISO 8601",
+	"string.date.iso.date": "ein Datum nach ISO 8601",
 	"string.date.parse": "ein parsbares Datum",
 	"string.digits": "eine Ziffernfolge (0-9)",
 	"string.email": "eine E-Mail-Adresse",

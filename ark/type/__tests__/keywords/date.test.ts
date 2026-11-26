@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { iso8601Matcher } from "@ark/util"
-import { type } from "arktype"
+import { isIso8601Date, iso8601DateMatcher, iso8601Matcher } from "@ark/util"
+import { fromJsonSchema, keywords, type } from "arktype"
 
 contextualize(() => {
 	it("string.date", () => {
@@ -129,6 +129,103 @@ contextualize(() => {
 			pattern: iso8601Matcher.source,
 			format: "date-time"
 		})
+	})
+
+	it("string.date.iso.date", () => {
+		const IsoDateOnly = type("string.date.iso.date")
+		attest<string>(IsoDateOnly.infer)
+		attest(IsoDateOnly("2025-01-01")).equals("2025-01-01")
+		attest(keywords.string.date.iso.date("2024-02-29")).equals("2024-02-29")
+		attest(IsoDateOnly("2025-02-30").toString()).snap(
+			"must be an ISO 8601 date"
+		)
+		attest(IsoDateOnly(20250101).toString()).snap("must be a string")
+
+		for (const valid of [
+			"0000-01-01",
+			"0000-02-29",
+			"1600-02-29",
+			"2000-02-29",
+			"2024-02-29",
+			"2400-02-29",
+			"2025-02-28",
+			"2025-01-31",
+			"2025-03-31",
+			"2025-04-30",
+			"2025-05-31",
+			"2025-06-30",
+			"2025-07-31",
+			"2025-08-31",
+			"2025-09-30",
+			"2025-10-31",
+			"2025-11-30",
+			"2025-12-31",
+			"9999-12-31"
+		]) {
+			attest(IsoDateOnly.allows(valid)).equals(true)
+			attest(iso8601DateMatcher.test(valid)).equals(true)
+			attest(isIso8601Date(valid)).equals(true)
+		}
+
+		for (const invalid of [
+			"",
+			"2025",
+			"2025-01",
+			"20250101",
+			"2025-1-01",
+			"2025-01-1",
+			"2025-00-01",
+			"2025-13-01",
+			"2025-01-00",
+			"2025-01-32",
+			"2025-02-29",
+			"2025-02-30",
+			"2024-02-30",
+			"1900-02-29",
+			"2100-02-29",
+			"2025-04-31",
+			"2025-06-31",
+			"2025-09-31",
+			"2025-11-31",
+			"2025-01-01T00:00:00Z",
+			"+2025-01-01",
+			"-2025-01-01",
+			"2025/01/01",
+			" 2025-01-01",
+			"2025-01-01 ",
+			"2025-W01-1",
+			"2025-001",
+			"abcd-01-01"
+		]) {
+			attest(IsoDateOnly.allows(invalid)).equals(false)
+			attest(iso8601DateMatcher.test(invalid)).equals(false)
+			attest(isIso8601Date(invalid)).equals(false)
+		}
+
+		// verify fast-path isIso8601Date matches iso8601DateMatcher across every year's Feb 29
+		for (let year = 0; year <= 9999; year++) {
+			const s = `${String(year).padStart(4, "0")}-02-29`
+			const expected = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+			if (
+				isIso8601Date(s) !== expected ||
+				iso8601DateMatcher.test(s) !== expected
+			)
+				throw new Error(`leap-year mismatch for ${s}`)
+		}
+
+		const jsonSchema = IsoDateOnly.toJsonSchema()
+		attest(jsonSchema).equals({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "string",
+			pattern: iso8601DateMatcher.source,
+			format: "date"
+		})
+		const roundTripped = fromJsonSchema(jsonSchema)
+		attest(roundTripped.expression).equals(IsoDateOnly.expression)
+		attest(roundTripped.meta.format).equals("date")
+		attest(roundTripped.allows("2024-02-29")).equals(true)
+		attest(roundTripped.allows("2025-02-29")).equals(false)
+		attest(roundTripped.allows("2025-01-01T00:00:00Z")).equals(false)
 	})
 
 	it("string.date.epoch.parse", () => {
