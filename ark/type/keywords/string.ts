@@ -93,7 +93,7 @@ const stringIntegerRoot = cached(() =>
 	regexStringNode(wellFormedIntegerMatcher, "string.integer")
 )
 
-const safeInteger = cached(() =>
+export const safeInteger = cached(() =>
 	node("intersection", {
 		domain: node("domain", { domain: "number" }),
 		divisor: node("divisor", { rule: 1 }),
@@ -197,7 +197,7 @@ export declare namespace stringBoolean {
 	export type $ = stringBoolean$
 }
 
-const preformattedCapitalize = cached(() =>
+export const preformattedCapitalize = cached(() =>
 	regexStringNode(/^(?:[^a-z][\S\s]*)?$/, "string.capitalize.preformatted")
 )
 
@@ -523,7 +523,7 @@ export declare namespace stringJson {
 	export type $ = stringJson$
 }
 
-const preformattedLower = cached(() =>
+export const preformattedLower = cached(() =>
 	regexStringNode(/^[^A-Z]*$/, "string.lower.preformatted")
 )
 
@@ -558,7 +558,7 @@ export const normalizedForms = ["NFC", "NFD", "NFKC", "NFKD"] as const
 
 export type NormalizedForm = (typeof normalizedForms)[number]
 
-const preformattedNodes = flatMorph(
+export const preformattedNodes = flatMorph(
 	normalizedForms,
 	(i, form) =>
 		[
@@ -747,7 +747,7 @@ const semverMatcher =
 
 const semver = () => regexStringNode(semverMatcher, "string.semver")
 
-const preformattedTrim = cached(() =>
+export const preformattedTrim = cached(() =>
 	regexStringNode(
 		// no leading or trailing whitespace
 		/^\S[\S\s]*\S$|^\S?$/,
@@ -782,7 +782,7 @@ export declare namespace trim {
 	export type $ = trim$
 }
 
-const preformattedUpper = cached(() =>
+export const preformattedUpper = cached(() =>
 	regexStringNode(/^[^a-z]*$/, "string.upper.preformatted")
 )
 
@@ -843,6 +843,8 @@ const httpUrl = cached(() =>
 	})
 )
 
+export const urlProto = cached(() => node("proto", { proto: URL }))
+
 export const url: url.module = keywordModule(
 	{
 		root: urlRoot,
@@ -851,7 +853,7 @@ export const url: url.module = keywordModule(
 			node("morph", {
 				declaredIn: urlRoot(),
 				morphs: [intrinsic.string, parseUrl],
-				declaredOut: node("proto", { proto: URL })
+				declaredOut: urlProto()
 			})
 	},
 	{

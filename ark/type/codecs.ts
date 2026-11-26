@@ -1,8 +1,14 @@
-import type { ArkError, ArkErrors, Morph } from "@ark/schema"
-import type { noInfer } from "@ark/util"
+import {
+	intrinsic,
+	type ArkError,
+	type ArkErrors,
+	type BaseRoot,
+	type Morph
+} from "@ark/schema"
+import type { noInfer, Thunk } from "@ark/util"
 // installs encoding, which .encode requires
 
-import { inverses } from "@ark/schema/codecs"
+import { inverseIns, inverses } from "@ark/schema/codecs"
 import type { distill, inferPipe, Out } from "./attributes.ts"
 import {
 	capitalizeString,
@@ -25,6 +31,16 @@ import {
 	writeUrl
 } from "./keywords/functions.ts"
 import { type } from "./keywords/keywords.ts"
+import {
+	normalizedForms,
+	preformattedCapitalize,
+	preformattedLower,
+	preformattedNodes,
+	preformattedTrim,
+	preformattedUpper,
+	safeInteger,
+	urlProto
+} from "./keywords/string.ts"
 import type { inferDefinition } from "./parser/definition.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
 
@@ -77,19 +93,33 @@ export const codec: CodecParser = (i, o, { decode, encode }) => {
 	) as never
 }
 
+const registerInverse = (
+	morph: Morph,
+	inverse: Morph,
+	inverseIn: Thunk<BaseRoot>
+): void => {
+	inverses.set(morph, inverse)
+	inverseIns.set(morph, inverseIn)
+}
+
 // keyed by the keywords' morphs, so reading them creates no Type
-inverses.set(parseBoolean, String)
-inverses.set(parseDate, writeIsoDate)
-inverses.set(parseIsoDate, writeIsoDate)
-inverses.set(parseEpoch, writeEpoch)
-inverses.set(parseInteger, String)
-inverses.set(parseNumeric, String)
-inverses.set(parseJson, stringifyJson)
-inverses.set(stringifyJson, parseJson)
-inverses.set(parseUrl, writeUrl)
-inverses.set(trimString, keepFormatted)
-inverses.set(lowercaseString, keepFormatted)
-inverses.set(uppercaseString, keepFormatted)
-inverses.set(capitalizeString, keepFormatted)
-for (const { morphs } of Object.values(normalizationsByForm))
-	inverses.set(morphs, keepFormatted)
+registerInverse(parseBoolean, String, () => intrinsic.boolean)
+registerInverse(parseDate, writeIsoDate, () => intrinsic.Date)
+registerInverse(parseIsoDate, writeIsoDate, () => intrinsic.Date)
+registerInverse(parseEpoch, writeEpoch, () => intrinsic.Date)
+registerInverse(parseInteger, String, safeInteger)
+registerInverse(parseNumeric, String, () => intrinsic.number)
+registerInverse(parseJson, stringifyJson, () => intrinsic.jsonData)
+registerInverse(stringifyJson, parseJson, () => intrinsic.string)
+registerInverse(parseUrl, writeUrl, urlProto)
+registerInverse(trimString, keepFormatted, preformattedTrim)
+registerInverse(lowercaseString, keepFormatted, preformattedLower)
+registerInverse(uppercaseString, keepFormatted, preformattedUpper)
+registerInverse(capitalizeString, keepFormatted, preformattedCapitalize)
+for (const form of normalizedForms) {
+	registerInverse(
+		normalizationsByForm[form].morphs,
+		keepFormatted,
+		preformattedNodes[form]
+	)
+}

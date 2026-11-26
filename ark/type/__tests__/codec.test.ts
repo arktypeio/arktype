@@ -591,4 +591,107 @@ pair[1] must be a Date`)
 		attest(U({ k: 42, tag: 1 })).equals({ k: 42, tag: 1 })
 		attest(U.allows({ k: "bad", tag: 1 })).equals(false)
 	})
+
+	it("preserves built-in codec output domains when piped via .to()", () => {
+		const JsonUnknownProp = type("string.json.parse").to({ a: "unknown" })
+		attest(JsonUnknownProp.encode({ a: 1n }).toString()).snap(
+			"a must be a number, a string, an object, boolean or null"
+		)
+		attest(JsonUnknownProp.encode({ a: undefined }).toString()).snap(
+			"a must be a number, a string, an object, boolean or null"
+		)
+		attest(JsonUnknownProp.encode({ a: 1 })).equals('{"a":1}')
+		attest(JsonUnknownProp(JsonUnknownProp.encode({ a: 1 }))).equals({ a: 1 })
+
+		const JsonObj = type("string.json.parse").to("object")
+		attest(JsonObj.encode(new Date(0)).toString()).snap(
+			"must be a plain object or array"
+		)
+		attest(JsonObj.encode({ a: 1 })).equals('{"a":1}')
+
+		const TrimmedNonEmpty = type("string.trim").to("string > 0")
+		attest(TrimmedNonEmpty.encode("   ").toString()).snap("must be trimmed")
+		attest(TrimmedNonEmpty.encode("").toString()).snap("must be non-empty")
+		attest(TrimmedNonEmpty.encode("abc")).equals("abc")
+
+		const LowerNonEmpty = type("string.lower").to("string > 0")
+		attest(LowerNonEmpty.encode("ABC").toString()).snap("must be lowercase")
+		attest(LowerNonEmpty.encode("abc")).equals("abc")
+
+		const UpperNonEmpty = type("string.upper").to("string > 0")
+		attest(UpperNonEmpty.encode("abc").toString()).snap("must be uppercase")
+		attest(UpperNonEmpty.encode("ABC")).equals("ABC")
+
+		const CapNonEmpty = type("string.capitalize").to("string > 0")
+		attest(CapNonEmpty.encode("abc").toString()).snap("must be capitalized")
+		attest(CapNonEmpty.encode("Abc")).equals("Abc")
+
+		const NfcNonEmpty = type("string.normalize.NFC").to("string > 0")
+		attest(NfcNonEmpty.encode("e\u0301").toString()).snap(
+			"must be NFC-normalized unicode"
+		)
+		attest(NfcNonEmpty.encode("\u00e9")).equals("\u00e9")
+
+		const PosInt = type("string.integer.parse").to("number > 0")
+		attest(PosInt.encode.allows(1.5)).equals(false)
+		attest(PosInt.encode.allows(Number.MAX_SAFE_INTEGER + 1)).equals(false)
+		attest(PosInt.encode.allows(0)).equals(false)
+		attest(PosInt.encode.allows(42)).equals(true)
+		attest(PosInt.encode(42)).equals("42")
+
+		const DateAsObj = type("string.date.parse").to("object")
+		attest(DateAsObj.encode({}).toString()).snap("must be a Date")
+		attest(DateAsObj.encode(new Date(0))).equals("1970-01-01T00:00:00.000Z")
+
+		const UrlAsObj = type("string.url.parse").to("object")
+		attest(UrlAsObj.encode({}).toString()).snap("must be a URL instance")
+		attest(UrlAsObj.encode(new URL("https://arktype.io"))).equals(
+			"https://arktype.io/"
+		)
+
+		// piping JSON to a nested codec checks JSON validity after the inner encoder runs
+		const JsonWithDate = type("string.json.parse").to({
+			at: "string.date.iso.parse"
+		})
+		const encodedWithDate = JsonWithDate.encode({ at: new Date(0) })
+		attest(encodedWithDate).equals('{"at":"1970-01-01T00:00:00.000Z"}')
+		attest(JsonWithDate(encodedWithDate)).equals({ at: new Date(0) })
+		attest(
+			JsonWithDate.encode({ at: new Date(0), bad: 1n } as never).toString()
+		).snap("bad must be a number, a string, an object, boolean or null")
+
+		// chained format pipes enforce both output formats
+		const TrimLowerNonEmpty = type("string.trim")
+			.to("string.lower")
+			.to("string > 0")
+		attest(TrimLowerNonEmpty.encode("ABC").toString()).snap("must be lowercase")
+		attest(TrimLowerNonEmpty.encode(" abc ").toString()).snap("must be trimmed")
+		attest(TrimLowerNonEmpty.encode("abc")).equals("abc")
+
+		// recursive pipe whose target only transforms through an alias
+		const AliasOnlyCyc = scope({
+			Json: "string.json.parse |> Node",
+			Node: { v: "string", "child?": "Json" }
+		}).export()
+		const aliasVal = { v: "a", child: { v: "b" } }
+		const aliasEncoded = AliasOnlyCyc.Json.encode(aliasVal)
+		attest(typeof aliasEncoded).equals("string")
+		attest(AliasOnlyCyc.Json(aliasEncoded)).equals(aliasVal)
+		attest(AliasOnlyCyc.Json.encode.encode(aliasEncoded)).equals(aliasVal)
+		attest(
+			AliasOnlyCyc.Json.encode({ v: "a", extra: 1n } as never).toString()
+		).snap("extra must be a number, a string, an object, boolean or null")
+
+		// non-morphing recursive target intersected with jsonData
+		const PlainTree = scope({
+			Tree: { v: "unknown", "kids?": "Tree[]" },
+			Json: "string.json.parse |> Tree"
+		}).export()
+		attest(PlainTree.Json.encode({ v: 1, kids: [{ v: 2 }] })).equals(
+			'{"v":1,"kids":[{"v":2}]}'
+		)
+		attest(PlainTree.Json.encode({ v: 1n }).toString()).snap(
+			"v must be a number, a string, an object, boolean or null"
+		)
+	})
 })
