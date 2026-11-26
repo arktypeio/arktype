@@ -1113,7 +1113,7 @@ const tsc = fromHere(
 	"tsc"
 )
 
-// as `tsc && arktype-precompile --emit` builds it
+// as `tsc && ark emit` builds it
 const emitOutcome = (dir: string): Outcome => {
 	const emitted = spawnSync(
 		process.execPath,

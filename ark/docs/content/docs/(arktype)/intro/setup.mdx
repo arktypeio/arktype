@@ -180,7 +180,7 @@ register()
 node --import ./register.ts src/main.ts
 ```
 
-Node 22.15 or later. A program `tsc` compiles for production precompiles with [`arktype-precompile --emit`](/docs/precompile/setup#tsc).
+Node 22.15 or later. A program `tsc` compiles for production precompiles with [`ark emit`](/docs/precompile/setup#tsc).
 
 </Tab>
 </Tabs>
@@ -200,7 +200,7 @@ A precompiled error reads as arktype's does at runtime.
 To see what the build makes of each definition without bundling, run:
 
 ```sh
-npx @ark/aot --check
+npx arktype check
 ```
 
 ```

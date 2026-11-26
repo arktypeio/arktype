@@ -55,7 +55,7 @@ src/forms.ts:8:16  text(limit) cannot be precompiled
 
 To shorten the build-fix loop:
 
-- Run [`arktype-precompile --check`](/docs/precompile/setup#check-an-existing-project) to list every definition the build would refuse, without bundling.
+- Run [`ark check`](/docs/precompile/setup#check-an-existing-project) to list every definition the build would refuse, without bundling.
 - Add the [ESLint rule](/docs/precompile/setup#eslint) so the same errors show in the editor and in lint runs.
 - Run tests in [shadow mode](/docs/precompile/advanced#shadow-mode), which fails a test wherever a precompiled validator would behave otherwise than arktype.
 - Give your agent the [ArkType skill](/docs/agents) so it writes definitions the build accepts on the first try.

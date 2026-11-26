@@ -88,10 +88,10 @@ If your app is bundled, yes. A [precompiled](/docs/precompile) build ships each 
 
 ## How do I ship the types of my Types?
 
-If a package or a referenced project exports types derived from arktype, write its declarations with [`arktype-precompile --declare`](/docs/precompile/advanced#declarations) rather than `tsc`:
+If a package or a referenced project exports types derived from arktype, write its declarations with [`ark declare`](/docs/precompile/advanced#declarations) rather than `tsc`:
 
 ```sh
-npx @ark/aot --declare
+npx arktype declare
 ```
 
 It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.

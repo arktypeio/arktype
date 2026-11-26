@@ -6625,23 +6625,23 @@ console.log(String(User({ name: 5 })))
 			])
 		})
 
-		it("refuses it with arktype-precompile --emit", () => {
+		it("refuses it with ark emit", () => {
 			attest(refusals(emitPrecompiled)).equals([
-				writePruneHostMessage("arktype-precompile"),
-				writePruneHostMessage("arktype-precompile")
+				writePruneHostMessage("ark emit"),
+				writePruneHostMessage("ark emit")
 			])
 			for (const { stderr, status } of [
 				runCli(fromHere(), "--emit", "--prune"),
 				runCli(settled, "--emit")
 			]) {
 				attest(status).equals(2)
-				attest(
-					stderr.startsWith(writePruneHostMessage("arktype-precompile"))
-				).equals(true)
+				attest(stderr.startsWith(writePruneHostMessage("ark emit"))).equals(
+					true
+				)
 			}
 		})
 
-		it("lets arktype-precompile --check a build that prunes", () => {
+		it("lets ark check a build that prunes", () => {
 			for (const { stdout, status } of [
 				runCli(settled, "--check", "--prune"),
 				runCli(settled, "--check")

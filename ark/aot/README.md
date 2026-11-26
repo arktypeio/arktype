@@ -22,13 +22,13 @@ export default {
 A program `tsc` builds without a bundler precompiles what it emits:
 
 ```sh
-tsc && npx @ark/aot --emit
+tsc && ark emit
 ```
 
 List what the build can't precompile before you switch:
 
 ```sh
-npx @ark/aot --check "src/**/*.ts"
+ark check "src/**/*.ts"
 ```
 
 To have a coding agent set it up, add the skill, which has the setup for each bundler and the fix for each build error:

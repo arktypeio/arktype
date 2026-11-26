@@ -194,7 +194,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 
 [Troubleshooting](/docs/precompile/troubleshooting) quotes each message the build can report.
 
-Setup is the plugin, or [`arktype-precompile --emit`](/docs/precompile/setup#tsc) after `tsc` where there's no bundler:
+Setup is the plugin, or [`ark emit`](/docs/precompile/setup#tsc) after `tsc` where there's no bundler:
 
 ```ts title="vite.config.ts"
 import { precompile } from "@ark/aot/unplugin"
@@ -204,7 +204,7 @@ export default {
 }
 ```
 
-`npx @ark/aot --check "src/**/*.ts"` lists every definition the build would refuse before you switch.
+`npx arktype check "src/**/*.ts"` lists every definition the build would refuse before you switch.
 
 ### Dynamic, like always
 

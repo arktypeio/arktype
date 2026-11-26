@@ -297,7 +297,7 @@ export const writeSolutionTsconfigMessage = (
 ): string => {
 	const display = (path: string) => relative(tsPath(cwd), tsPath(path)) || path
 	const refs = referencePaths.map(display)
-	return `${display(configPath)} lists no source files of its own, only project references (${refs.join(", ")}). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. \`arktype-precompile --declare --tsconfig ${refs[0]}\`.`
+	return `${display(configPath)} lists no source files of its own, only project references (${refs.join(", ")}). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. \`ark declare --tsconfig ${refs[0]}\`.`
 }
 
 export const writeSharedCollisionMessage = (file: string): string =>
@@ -310,7 +310,7 @@ export const refuseDeclare = (opts: object | undefined, name: string): void => {
 }
 
 export const writeDeclareFrameworkMessage = (name: string): string =>
-	`declare: true needs a bundler that tells a plugin whether its build watches or serves, which ${name} doesn't, so run arktype-precompile --declare after building instead`
+	`declare: true needs a bundler that tells a plugin whether its build watches or serves, which ${name} doesn't, so run ark declare after building instead`
 
 export const writeDeclaredOutsideMessage = (
 	path: string,

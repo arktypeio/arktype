@@ -334,7 +334,7 @@ export const firstOf = (cards: Cards) => cards.filter(card => card.id)[0]
 		)
 		attest([status, stderr]).equals([
 			1,
-			"arktype-precompile needs Node 22.12 or later (this is 22.11.0)\n"
+			"@ark/aot needs Node 22.12 or later (this is 22.11.0)\n"
 		])
 	})
 

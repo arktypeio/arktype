@@ -157,8 +157,7 @@ Options:
 				type: "module",
 				exports: {
 					".": { default: "./out/index.js" }
-				},
-				bin: { "arktype-precompile": "out/cli.js" }
+				}
 			}),
 			"node_modules/@ark/aot/out/index.js": "export {}\n",
 			"node_modules/@ark/aot/out/cli.js":

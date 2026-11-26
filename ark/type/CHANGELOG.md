@@ -1,5 +1,11 @@
 # arktype
 
+## 3.0.0-rc.9
+
+### Standardize CLI commands under `ark`
+
+All CLI commands — `ark check`, `ark emit`, `ark declare`, `ark init`, `ark migrate` and `ark skill` — now run through `ark` (or `npx arktype ...`). `@ark/aot` no longer installs a separate `arktype-precompile` binary.
+
 ## 3.0.0-rc.8
 
 ### `string.nonblank` and `string.url.http`

@@ -7,9 +7,9 @@
 1. Add `arktype` to `dependencies` and `@ark/aot` (Node 22.12 or later) to `devDependencies` with the project's package manager, e.g. `npm i arktype` and `npm i -D @ark/aot`. Keep one copy of `arktype`: the build fails if the program resolves two.
 2. Add the plugin to the bundler, as below.
 3. In a monorepo, a workspace package, like a shared `schemas` package, that pnpm, npm, Yarn or Bun workspaces link into `node_modules` resolves to its own directory, so the build precompiles it with the program; nothing extra is needed. Pass each such package's directory to `--check` too, e.g. `src ../../packages/schemas/src`.
-4. If the project calls `configure()`, name its module as `config` in an `ark.json` beside `package.json`, as below, or under an `"ark"` key of the same shape in `package.json` (the build fails if both are set). Put build options there, not in the plugin call: the plugin, the test drivers, `arktype-precompile` and the ESLint rule all read `ark.json`, but a test driver doesn't see the plugin's options, so the tests would fail without them.
+4. If the project calls `configure()`, name its module as `config` in an `ark.json` beside `package.json`, as below, or under an `"ark"` key of the same shape in `package.json` (the build fails if both are set). Put build options there, not in the plugin call: the plugin, the test drivers, `ark` and the ESLint rule all read `ark.json`, but a test driver doesn't see the plugin's options, so the tests would fail without them.
 5. Make the tests run precompiled too, as below.
-6. Run `npx @ark/aot --check src` (or `pnpm exec arktype-precompile --check src`), which reads each JavaScript and TypeScript file in `src` and lists each definition the build would refuse, with the fix, until every site is accepted. Then run the build and the tests.
+6. Run `npx arktype check src` (or `pnpm exec ark check src`), which reads each JavaScript and TypeScript file in `src` and lists each definition the build would refuse, with the fix, until every site is accepted. Then run the build and the tests.
 
 The ESLint rule reports the same errors as code is written: add `configs.recommended` from `@ark/aot/eslint` to `eslint.config.js`.
 
@@ -98,11 +98,11 @@ On the pages router's server, Next otherwise leaves dependencies external, where
 
 ### Without a bundler
 
-A project that `tsc` compiles to run from its `outDir` precompiles what it emits: `"build": "tsc && arktype-precompile --emit"`. `--emit` writes each module reading arktype again from its source, so run anything that rewrites `tsc`'s output, like `tsc-alias`, after it: `"tsc && arktype-precompile --emit && tsc-alias"`.
+A project that `tsc` compiles to run from its `outDir` precompiles what it emits: `"build": "tsc && ark emit"`. `ark emit` writes each module reading arktype again from its source, so run anything that rewrites `tsc`'s output, like `tsc-alias`, after it: `"tsc && ark emit && tsc-alias"`.
 
-A library that others install doesn't precompile itself, with `--emit` or a bundler: an app's build fails for a dependency that imports `arktype/runtime`. Precompiling a library means publishing what `tsc` emits with `"ark": { "aot": true }` in its `package.json` and `arktype` in `peerDependencies`, so each app's build precompiles it, and running `npx @ark/aot --check src` until it accepts every definition.
+A library that others install doesn't precompile itself, with `ark emit` or a bundler: an app's build fails for a dependency that imports `arktype/runtime`. Precompiling a library means publishing what `tsc` emits with `"ark": { "aot": true }` in its `package.json` and `arktype` in `peerDependencies`, so each app's build precompiles it, and running `npx arktype check src` until it accepts every definition.
 
-A package whose types others read writes its declarations with `npx @ark/aot --declare` in place of `tsc`'s: each Type, Scope and Module is declared by its shape, in a `~arktype.d.ts` beside the others, and nothing changes at runtime. A cyclic scope's types ship no other way, since `tsc` declares an inferred cycle as `any` or fails with `TS5088`. It reads the program with the TypeScript installed: 5.5 to 6's compiler API, or TypeScript 7.1 or later's native API through tsgo, or tsrs where its binary is installed; `--checker tsjs|tsgo|tsrs` chooses one.
+A package whose types others read writes its declarations with `npx arktype declare` in place of `tsc`'s: each Type, Scope and Module is declared by its shape, in a `~arktype.d.ts` beside the others, and nothing changes at runtime. A cyclic scope's types ship no other way, since `tsc` declares an inferred cycle as `any` or fails with `TS5088`. It reads the program with the TypeScript installed: 5.5 to 6's compiler API, or TypeScript 7.1 or later's native API through tsgo, or tsrs where its binary is installed; `--checker tsjs|tsgo|tsrs` chooses one.
 
 ### Tests
 
@@ -155,7 +155,7 @@ Composing inside a definition is fine anywhere, even in a function body: `const 
 
 ## Errors and their fixes
 
-Each build error names the file, line and column, then why, then the fix on its last line. Apply that fix. A bundler stops at the first error, so run `npx @ark/aot --check src` to see them all. Don't set `allowUnsafe` to get past one, and don't switch to `runtime: "arktype"` unless the program really composes or introspects Types at runtime, as that ships arktype's parser again.
+Each build error names the file, line and column, then why, then the fix on its last line. Apply that fix. A bundler stops at the first error, so run `npx arktype check src` to see them all. Don't set `allowUnsafe` to get past one, and don't switch to `runtime: "arktype"` unless the program really composes or introspects Types at runtime, as that ships arktype's parser again.
 
 | The build says                                                                                | Fix                                                                                                                                     |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |

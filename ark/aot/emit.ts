@@ -39,7 +39,7 @@ export const emitPrecompiled = (
 ): EmittedModules => {
 	const cwd = resolve(opts?.cwd ?? ".")
 	const set = withSettingsFile({ ...opts, cwd })
-	refusePrune(set, "arktype-precompile")
+	refusePrune(set, "ark emit")
 	const resolved = resolvePrecompileOptions(set)
 	const variant = resolvedVariantOf(resolved)
 	if (variant) throwError(writeEmittedVariantMessage(variant))
@@ -361,10 +361,10 @@ const rewriterOf =
 	}
 
 export const writeEmittedVariantMessage = (variant: RuntimeVariant): string =>
-	`A build with ${writeVariantOption(variant)} loads a copy of arktype/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so arktype-precompile --emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`
+	`A build with ${writeVariantOption(variant)} loads a copy of arktype/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so ark emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`
 
 export const writeVersionMismatchMessage = (versionExport: string): string =>
-	`This module needs arktype/runtime to export ${versionExport}, which it doesn't, so it was precompiled for another version of arktype. Rebuild it with arktype-precompile --emit.`
+	`This module needs arktype/runtime to export ${versionExport}, which it doesn't, so it was precompiled for another version of arktype. Rebuild it with ark emit.`
 
 export const writeUnemittedMessage = (tsconfig: string): string =>
-	`${tsconfig} emits no JavaScript for arktype-precompile --emit to precompile. Name the tsconfig tsc builds with --tsconfig.`
+	`${tsconfig} emits no JavaScript for ark emit to precompile. Name the tsconfig tsc builds with --tsconfig.`

@@ -874,7 +874,7 @@ export type makeTree = {
 			"src/index.ts": "export const id = 1\n"
 		})
 		const expected =
-			"tsconfig.json lists no source files of its own, only project references (tsconfig.app.json, tsconfig.lib.json). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. `arktype-precompile --declare --tsconfig tsconfig.app.json`."
+			"tsconfig.json lists no source files of its own, only project references (tsconfig.app.json, tsconfig.lib.json). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. `ark declare --tsconfig tsconfig.app.json`."
 		for (const checker of ["tsjs", "tsgo"] as const)
 			attest(() => emitDeclarations({ cwd: dir, checker })).throws(expected)
 		const cli = runCli(dir, "--declare")
@@ -905,7 +905,7 @@ export type makeTree = {
 			help.stdout
 		])
 		attest(unknown).satisfies(/^Unknown option '--watch'/)
-		attest(help.stdout).satisfies(/^Usage: arktype-precompile --check /)
+		attest(help.stdout).satisfies(/^Usage: ark check /)
 	})
 
 	describe("cyclic scopes, as TypeScript declares them", () => {
