@@ -7,17 +7,30 @@ export {
 	firstIssue,
 	flatMessagesByPath,
 	messageIn,
+	ToJsonSchemaError,
 	Traversal,
 	TraversalError,
+	type ActualConfig,
 	type ArkEnv,
 	type ArkError,
 	type ArkErrorCode,
+	type ArkSchemaScopeConfig,
+	type ExpectedConfig,
 	type GenericAst,
 	type JsonSchema,
+	type KeywordPhraseAlias,
+	type Locale,
+	type MessageConfig,
+	type NodeKind,
+	type NodeSelector,
+	type PathedIssue,
+	type ReadableErrors,
+	type RootModule,
 	type StandardJSONSchemaV1,
 	type StandardSchemaV1,
 	type StandardTypedV1,
-	type ToJsonSchema
+	type ToJsonSchema,
+	type TypeMeta
 } from "@ark/schema"
 export {
 	Hkt,
@@ -27,14 +40,30 @@ export {
 	type Json,
 	type JsonStructure
 } from "@ark/util"
-export { regex, type Regex, type RegexExecArray } from "arkregex"
+export {
+	regex,
+	type Regex,
+	type RegexExecArray,
+	type RegexParser
+} from "arkregex"
 export type { Default, distill, Out, To } from "./attributes.ts"
-export { configure, type ArkConfig, type KeywordConfig } from "./config.ts"
-export type { TypedFn } from "./fn.ts"
-export { fromJsonSchema } from "./fromJsonSchema.ts"
-export { Generic } from "./generic.ts"
-export type { ParsedFormData } from "./keywords/FormData.ts"
-export type { Locale } from "./locale.ts"
+export {
+	configure,
+	type ArkAmbient,
+	type ArkConfig,
+	type KeywordConfig
+} from "./config.ts"
+export type { DeclarationParser } from "./declare.ts"
+export type { FnParser, TypedFn } from "./fn.ts"
+export {
+	fromJsonSchema,
+	type FromJsonSchema,
+	type inferFromJsonSchema,
+	type validateFromJsonSchema
+} from "./fromJsonSchema.ts"
+export { Generic, type GenericParser } from "./generic.ts"
+export type { NonNegativeIntegerString } from "./keywords/Array.ts"
+export type { FormDataValue, ParsedFormData } from "./keywords/FormData.ts"
 export {
 	ark,
 	declare,
@@ -52,8 +81,19 @@ export type {
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.ts"
-export { scope, type bindThis, type Scope } from "./scope.ts"
-export { Type, type BaseTypeParser, type TypeParser } from "./type.ts"
+export {
+	scope,
+	type ArkScopeConfig,
+	type bindThis,
+	type Scope,
+	type ScopeParser
+} from "./scope.ts"
+export {
+	Type,
+	type BaseTypeParser,
+	type DefinitionParser,
+	type TypeParser
+} from "./type.ts"
 // tsc names a consumer's Types by these (as it does TypedFn, Match,
 // MatchParser, TypeParser and ParsedFormData) when it emits their
 // declarations, so each is exported here rather than reached under

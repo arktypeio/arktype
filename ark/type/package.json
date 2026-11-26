@@ -37,7 +37,6 @@
 		"./errors.ts",
 		"./mutatesInput.ts",
 		"./i18n.ts",
-		"./keywords/phrases.ts",
 		"./locales/*.ts",
 		"./schema.ts",
 		"./schemaInternal.ts",
@@ -53,7 +52,6 @@
 		"./out/errors.js",
 		"./out/mutatesInput.js",
 		"./out/i18n.js",
-		"./out/keywords/phrases.js",
 		"./out/locales/*.js",
 		"./out/schema.js",
 		"./out/schemaInternal.js",
@@ -359,6 +357,9 @@
 		"out",
 		"skills"
 	],
+	"engines": {
+		"node": ">=22.12.0"
+	},
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",

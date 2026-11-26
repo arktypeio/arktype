@@ -27,6 +27,57 @@ export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 /** a domain, a builtin object kind, or the types unknown and never */
 export type NounId = Domain | BuiltinObjectKind | "unknown" | "never"
 
+/** the flat alias of every builtin keyword that carries a localized phrase */
+export type KeywordPhraseAlias =
+	| "FormData.parsed"
+	| "number.epoch"
+	| "object.json"
+	| "string.alpha"
+	| "string.alphanumeric"
+	| "string.base58"
+	| "string.base64"
+	| "string.base64.url"
+	| "string.capitalize.preformatted"
+	| "string.creditCard"
+	| "string.date"
+	| "string.date.epoch"
+	| "string.date.iso"
+	| "string.date.parse"
+	| "string.digits"
+	| "string.email"
+	| "string.hex"
+	| "string.integer"
+	| "string.integer.parse"
+	| "string.ip"
+	| "string.ip.v4"
+	| "string.ip.v6"
+	| "string.json"
+	| "string.json.parse"
+	| "string.lower.preformatted"
+	| "string.normalize.NFC.preformatted"
+	| "string.normalize.NFD.preformatted"
+	| "string.normalize.NFKC.preformatted"
+	| "string.normalize.NFKD.preformatted"
+	| "string.nonblank"
+	| "string.numeric"
+	| "string.numeric.parse"
+	| "string.regex"
+	| "string.semver"
+	| "string.trim.preformatted"
+	| "string.upper.preformatted"
+	| "string.url"
+	| "string.url.http"
+	| "string.url.parse"
+	| "string.uuid"
+	| "string.uuid.v1"
+	| "string.uuid.v2"
+	| "string.uuid.v3"
+	| "string.uuid.v4"
+	| "string.uuid.v5"
+	| "string.uuid.v6"
+	| "string.uuid.v7"
+	| "string.uuid.v8"
+
 /**
  * A locale you write: its tag and any part you replace, each part you leave
  * out written as en writes it. Every key but `tag` is optional, so a locale
@@ -34,7 +85,7 @@ export type NounId = Domain | BuiltinObjectKind | "unknown" | "never"
  * may add an error code, a noun or a keyword. Annotate with `Locale.Complete`
  * to find what's untranslated instead.
  */
-export type Locale<keywordAlias extends string = string> = {
+export type Locale<keywordAlias extends string = KeywordPhraseAlias> = {
 	/** BCP 47 tag */
 	readonly tag: string
 } & {
@@ -59,7 +110,8 @@ export declare namespace Locale {
 		readonly verbatim: (text: string) => string
 	}
 
-	export interface Data<keywordAlias extends string = string> extends Info {
+	export interface Data<keywordAlias extends string = KeywordPhraseAlias>
+		extends Info {
 		/** names expected text written without the locale, like a description */
 		readonly cite: (text: string) => string
 		/** names one alternative of a missing value */
@@ -88,7 +140,7 @@ export declare namespace Locale {
 	 * A locale as its writers receive it: every part, those its author left
 	 * out completed from en
 	 */
-	export type Resolved<keywordAlias extends string = string> =
+	export type Resolved<keywordAlias extends string = KeywordPhraseAlias> =
 		Data<keywordAlias> & Writers
 
 	export type CodeWriters<code extends ArkErrorCode = ArkErrorCode> = {
@@ -143,7 +195,7 @@ export declare namespace Locale {
 	 * it here, so annotate a locale with it to find what's untranslated,
 	 * not one you publish
 	 */
-	export type Complete<keywordAlias extends string = string> =
+	export type Complete<keywordAlias extends string = KeywordPhraseAlias> =
 		Resolved<keywordAlias> & {
 			readonly [code in ArkErrorCode]: {
 				readonly message: string | MessageWriter<code>
@@ -179,7 +231,12 @@ const keywordPhraseOf = (
 	// meta.keyword is any string, so it may name an Object.prototype key
 	return keyword === undefined || !hasOwn(locale.keywordPhrases, keyword) ?
 			undefined
-		:	locale.keywordPhrases[keyword]
+		:	(
+				locale.keywordPhrases as Record<
+					string,
+					Locale.KeywordPhrase | undefined
+				>
+			)[keyword]
 }
 
 /** the writer a locale has for an error's keyword in a slot other than expected */

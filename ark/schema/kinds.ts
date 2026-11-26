@@ -137,7 +137,7 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 
 registerDescriber(describeDiscriminant)
 
-export const en: Locale.Complete = {
+export const en: Locale.Complete<string> = {
 	...(flatMorph(nodeImplementationsByKind, (kind, { ownErr, defaults }) =>
 		ownErr ? [kind, enWritersOf(kind, defaults)] : []
 	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),

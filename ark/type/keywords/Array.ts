@@ -1,4 +1,9 @@
-import { genericNode, intrinsic, rootSchema } from "@ark/schema"
+import {
+	genericNode,
+	intrinsic,
+	rootSchema,
+	type GenericAst
+} from "@ark/schema"
 import { Hkt, liftArray, type Digit } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
@@ -35,17 +40,19 @@ export const arkArray: arkArray.module = keywordModule(
 	}
 ) as never
 
+type arkArray$ = {
+	root: unknown[]
+	readonly: readonly unknown[]
+	index: NonNegativeIntegerString
+	liftFrom: GenericAst<readonly [["element", unknown]], liftFromHkt, {}, {}>
+}
+
 export declare namespace arkArray {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<arkArray$>
 
-	export type $ = {
-		root: unknown[]
-		readonly: readonly unknown[]
-		index: NonNegativeIntegerString
-		liftFrom: ReturnType<typeof liftFrom>["t"]
-	}
+	export type $ = arkArray$
 }
 
 export type NonNegativeIntegerString =

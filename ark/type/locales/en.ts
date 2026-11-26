@@ -1,7 +1,9 @@
 import { en as schemaEn } from "@ark/schema"
 import "../i18n.ts"
-import "../keywords/phrases.ts"
+import { keywordPhrases } from "../keywords/phrases.ts"
 import type { Locale } from "../locale.ts"
 
-// phrases.ts adds keyword phrases; i18n.ts the renderer
+// i18n.ts adds the renderer; copying keywordPhrases keeps the phrases import
+// without listing unshipped internal modules in package.json sideEffects
+Object.assign(schemaEn.keywordPhrases, keywordPhrases)
 export const en = schemaEn as Locale.Complete

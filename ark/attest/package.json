@@ -32,6 +32,9 @@
 	"files": [
 		"out"
 	],
+	"engines": {
+		"node": ">=22.12.0"
+	},
 	"bin": {
 		"attest": "out/cli/cli.js"
 	},

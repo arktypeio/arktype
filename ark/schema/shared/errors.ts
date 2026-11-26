@@ -1546,7 +1546,9 @@ export {
 	byAncestorPath,
 	byPath,
 	flatByPath,
-	flatMessagesByPath
+	flatMessagesByPath,
+	type PathedIssue,
+	type ReadableErrors
 } from "./errorReaders.ts"
 
 export interface DerivableErrorContext<

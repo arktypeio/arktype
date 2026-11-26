@@ -1,15 +1,47 @@
 // a library built on arktype, exporting each shape of Type whose declaration
 // tsc writes out. testBuild.ts emits its declarations against the build.
 import {
+	annotatingFallback,
+	ark,
+	ArkErrors,
+	byAncestorPath,
+	byPath,
+	configure,
+	declare,
 	define,
+	firstIssue,
+	flatByPath,
+	flatMessagesByPath,
 	fn,
 	fromJsonSchema,
 	generic,
+	keywords,
 	match,
+	messageIn,
 	scope,
-	type
+	ToJsonSchemaError,
+	type,
+	type ArkError,
+	type ArkSchemaScopeConfig,
+	type FromJsonSchema as FromJsonSchemaFn,
+	type inferFromJsonSchema,
+	type Locale,
+	type ScopeParser,
+	type validateFromJsonSchema
 } from "arktype"
 import { codec } from "arktype/codecs"
+import {
+	describeCause,
+	describeMissing,
+	groupByPath,
+	isolate,
+	labelOf,
+	listPattern,
+	printedActualOf,
+	writeKeywordExpected
+} from "arktype/i18n"
+import { de } from "arktype/locales/de"
+import { en } from "arktype/locales/en"
 import { regex } from "arktype/regex"
 
 export const User = type({ name: "string", age: "number" })
@@ -92,3 +124,66 @@ export const FromJsonSchema = fromJsonSchema({
 })
 export const FromStandardSchema = fromJsonSchema(User)
 export const intersection = FromJsonSchema.and(User)
+
+// public values, methods, metadata, keywords, locales and helpers
+export const userMeta = User.meta
+export const userConfigure = User.configure
+export const userJsonSchema = User.toJsonSchema()
+export const toJsonSchemaMethod = User.toJsonSchema
+export const toJsonSchemaErrorCtor = ToJsonSchemaError
+export const fallback = annotatingFallback
+export const kw = keywords
+export const kwString = keywords.string
+export const kwStringBase64 = keywords.string.base64
+export const kwStringDate = keywords.string.date
+export const kwStringDateIso = keywords.string.date.iso
+export const kwStringNormalizeNfc = keywords.string.normalize.NFC
+export const kwNumber = keywords.number
+export const kwObject = keywords.object
+export const kwObjectJson = keywords.object.json
+export const kwUnknown = keywords.unknown
+export const kwArray = keywords.Array
+export const kwArrayIndex = type.arrayIndex
+export const kwTypedArray = keywords.TypedArray
+export const kwFormData = keywords.FormData
+export const arkScope = ark
+export const scopeFn = scope
+export const codecFn = codec
+export const typeFn = type
+export const matchFn = match
+export const fnFn = fn
+export const genericFn = generic
+export const defineFn = define
+export const declareFn = declare
+export const configureFn = configure
+export const fromJsonSchemaFn = fromJsonSchema
+export const regexFn = regex
+export const arkErrorsCtor = ArkErrors
+export const summaryInOf = (errors: ArkErrors) => errors.summaryIn
+export const messageInFn = messageIn
+export const formatErrorIn = (error: ArkError, locale: Locale) =>
+	messageIn(error, locale)
+export const byPathFn = byPath
+export const byAncestorPathFn = byAncestorPath
+export const flatByPathFn = flatByPath
+export const firstIssueFn = firstIssue
+export const flatMessagesByPathFn = flatMessagesByPath
+export const enLocale = en
+export const deLocale = de
+export const i18nHelpers = {
+	describeCause,
+	describeMissing,
+	groupByPath,
+	isolate,
+	labelOf,
+	listPattern,
+	printedActualOf,
+	writeKeywordExpected
+}
+export type ExportedHelpers = [
+	FromJsonSchemaFn,
+	validateFromJsonSchema<{ type: "string" }>,
+	inferFromJsonSchema<{ type: "string" }>,
+	ScopeParser,
+	ArkSchemaScopeConfig
+]

@@ -10,3 +10,4 @@ export {
 } from "./shared/locale.ts"
 // installs the renderer of locales other than en
 export { normalizeLocale } from "./shared/render.ts"
+export type { MissingBasis, MissingValue } from "./structure/required.ts"
