@@ -42,6 +42,122 @@ contextualize(() => {
 		)
 	})
 
+	it("preserves readable $defs, definitions, and components/schemas names in cyclic expressions", () => {
+		attest(
+			fromJsonSchema({
+				$defs: {
+					Node: {
+						type: "object",
+						properties: { next: { $ref: "#/$defs/Node" } }
+					}
+				},
+				$ref: "#/$defs/Node"
+			}).expression
+		).snap("{ next?: Node } & isNonArray")
+
+		attest(
+			fromJsonSchema({
+				definitions: {
+					Item: {
+						type: "object",
+						properties: { parent: { $ref: "#/definitions/Item" } }
+					}
+				},
+				$ref: "#/definitions/Item"
+			}).expression
+		).snap("{ parent?: Item } & isNonArray")
+
+		attest(
+			fromJsonSchema({
+				components: {
+					schemas: {
+						Category: {
+							type: "object",
+							properties: {
+								sub: { $ref: "#/components/schemas/Category" }
+							}
+						}
+					}
+				},
+				$ref: "#/components/schemas/Category"
+			} as never).expression
+		).snap("{ sub?: Category } & isNonArray")
+
+		// disambiguates distinct cyclic refs sharing the same segment name
+		const collided = fromJsonSchema({
+			type: "object",
+			properties: {
+				a: { $ref: "#/$defs/Node" },
+				b: { $ref: "#/definitions/Node" }
+			},
+			$defs: {
+				Node: {
+					type: "object",
+					properties: { next: { $ref: "#/$defs/Node" } }
+				}
+			},
+			definitions: {
+				Node: {
+					type: "object",
+					properties: { prev: { $ref: "#/definitions/Node" } }
+				}
+			}
+		})
+		attest(collided.expression).snap(
+			"{ a?: { next?: Node } & isNonArray, b?: { prev?: Node2 } & isNonArray } & isNonArray"
+		)
+		attest(collided.allows({ a: { next: {} }, b: { prev: {} } })).equals(true)
+
+		// falls back to synthetic for non-identifiers, reserved/ambient keywords, and root #
+		const syntheticNext = /^{ next\?: synthetic[\da-z]+ } & isNonArray$/
+		attest(
+			syntheticNext.test(
+				fromJsonSchema({
+					$defs: {
+						"my-node": {
+							type: "object",
+							properties: { next: { $ref: "#/$defs/my-node" } }
+						}
+					},
+					$ref: "#/$defs/my-node"
+				}).expression
+			)
+		).equals(true)
+
+		for (const reserved of [
+			"this",
+			"string",
+			"Date",
+			"Array",
+			"unknown",
+			"constructor",
+			"toString"
+		]) {
+			attest(
+				syntheticNext.test(
+					fromJsonSchema({
+						$defs: {
+							[reserved]: {
+								type: "object",
+								properties: { next: { $ref: `#/$defs/${reserved}` } }
+							}
+						},
+						$ref: `#/$defs/${reserved}`
+					} as never).expression
+				)
+			).equals(true)
+		}
+
+		const rootSelfExpr = fromJsonSchema({
+			type: "object",
+			properties: { self: { $ref: "#" } }
+		}).expression
+		attest(
+			rootSelfExpr.startsWith("{ self?: { self?: synthetic") &&
+				rootSelfExpr.endsWith(" } & isNonArray } & isNonArray")
+		).equals(true)
+	})
+
 	it("root and current resource", () => {
 		const T = fromJsonSchema({
 			type: "object",

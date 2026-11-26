@@ -375,7 +375,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S, {}, "{ value: number, children?: synthetic0[] }")
+			assertEmits(T, S, {}, "{ value: number, children?: tree[] }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ value: number; children?: cyclic[] }"
 			)
@@ -397,7 +397,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S, {}, "{ b?: { a?: synthetic0[] } }")
+			assertEmits(T, S, {}, "{ b?: { a?: a[] } }")
 			attest<typeof T.infer>(S).type.toString.snap("{ b?: { a?: cyclic[] } }")
 			attest<typeof T.infer | undefined>(S.b?.a?.[0])
 		})
@@ -417,7 +417,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S, {}, "{ next: synthetic0 | null, value: string }")
+			assertEmits(T, S, {}, "{ next: linked | null, value: string }")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ next: cyclic | null; value: string }"
 			)
@@ -435,7 +435,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S, {}, "(synthetic0 | number)[]")
+			assertEmits(T, S, {}, "(nested | number)[]")
 			attest<typeof T.infer | number>(S[0])
 			// tsrs predates microsoft/TypeScript#64556, so it prints recursive arrays deeper
 			if (getChecker() !== "tsrs") {
@@ -459,7 +459,7 @@ contextualize(() => {
 					}
 				}
 			})
-			assertEmits(T, S, {}, "[string?, synthetic0?] >= 1")
+			assertEmits(T, S, {}, "[string?, pair?] >= 1")
 			attest<[string, unknown?]>(S).type.toString.snap("[string, unknown?]")
 		})
 	})

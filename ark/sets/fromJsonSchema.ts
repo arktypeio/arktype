@@ -56,6 +56,7 @@ interface ReadContext {
 	depth: number
 	// a cyclic ref is named by its target, so it prints alike in any history
 	cyclesByRef: Record<string, BaseParseContext>
+	cycleNames: Set<string>
 }
 
 interface Resource {
@@ -121,7 +122,8 @@ export const readJsonSchema = (
 		inPredicate: 0,
 		reading: new Set(),
 		depth: 0,
-		cyclesByRef: {}
+		cyclesByRef: {},
+		cycleNames: new Set()
 	}
 	const id = idOf(document, ctx)
 	if (id !== undefined) documentResource.uri = resolveUri(id, documentUri, "#")
@@ -191,7 +193,7 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 		if (ctx.inPredicate > 0 && ctx.shallowRefs.has(key))
 			return throwParseError(writeShallowCycleMessage(ref, pointer))
 		ctx.cyclesByRef[key] ??= jsonSchemaScope().openSynthetic(
-			`synthetic${hashOf(`${key}\n${printable(target.schema)}`)}`
+			cycleNameOf(target, key, ref, pointer, ctx)
 		)
 		return jsonSchemaScope().lazilyResolve(
 			() => ctx.rootsByRef[key],
@@ -214,6 +216,78 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 		ctx.reading = prevReading
 		ctx.resource = enclosing
 	}
+}
+
+const validCycleIdentifier = /^[$A-Z_a-z][\w$]*$/
+
+const reservedCycleNames = new Set([
+	"this",
+	"any",
+	"void",
+	"keyof",
+	"typeof",
+	"instanceof",
+	"isNonArray",
+	"hasOwnKeys"
+])
+
+const isReservedCycleName = (name: string): boolean => {
+	if (reservedCycleNames.has(name) || name in Object.prototype) return true
+	const $ = jsonSchemaScope()
+	return (
+		hasOwn($.res, name) ||
+		hasOwn($.ambient, name) ||
+		($ark.kw !== undefined && hasOwn($ark.kw, name))
+	)
+}
+
+const cycleDefNameOf = (
+	fragment: string,
+	ref: string,
+	pointer: string
+): string | undefined => {
+	if (!fragment.startsWith("/")) return
+	const segments = fragment.split("/").slice(1)
+	const len = segments.length
+	const inDefs =
+		(len >= 2 &&
+			(segments[len - 2] === "$defs" || segments[len - 2] === "definitions")) ||
+		(len >= 3 &&
+			segments[len - 3] === "components" &&
+			segments[len - 2] === "schemas")
+	if (!inDefs) return
+	const decoded = decodePointerSegment(
+		segments[len - 1],
+		ref,
+		`${pointer}/$ref`
+	)
+	return validCycleIdentifier.test(decoded) && !isReservedCycleName(decoded) ?
+			decoded
+		:	undefined
+}
+
+const cycleNameOf = (
+	target: RefTarget,
+	key: string,
+	ref: string,
+	pointer: string,
+	ctx: ReadContext
+): string => {
+	const candidate = cycleDefNameOf(target.fragment, ref, pointer)
+	if (candidate) {
+		let name = candidate
+		for (
+			let suffix = 2;
+			ctx.cycleNames.has(name) || isReservedCycleName(name);
+			suffix++
+		)
+			name = `${candidate}${suffix}`
+		ctx.cycleNames.add(name)
+		return name
+	}
+	const fallback = `synthetic${hashOf(`${key}\n${printable(target.schema)}`)}`
+	ctx.cycleNames.add(fallback)
+	return fallback
 }
 
 const withShallowPredicate = <t>(ctx: ReadContext, read: () => t): t => {

@@ -73,8 +73,47 @@ contextualize(() => {
 				$ref: "#/$defs/node"
 			}).expression
 		const expression = read()
-		attest(expression).snap("{ child?: synthetic1bpl2ea1nl2i12 } & isNonArray")
+		attest(expression).snap("{ child?: node } & isNonArray")
 		attest(read()).equals(expression)
+
+		// non-identifier and reserved/root cyclic refs fall back to synthetic hashes
+		const syntheticChild = /^{ child\?: synthetic[\da-z]+ } & isNonArray$/
+		attest(
+			syntheticChild.test(
+				parse({
+					$defs: {
+						"my-node": {
+							type: "object",
+							properties: { child: { $ref: "#/$defs/my-node" } }
+						}
+					},
+					$ref: "#/$defs/my-node"
+				}).expression
+			)
+		).equals(true)
+
+		attest(
+			syntheticChild.test(
+				parse({
+					$defs: {
+						string: {
+							type: "object",
+							properties: { child: { $ref: "#/$defs/string" } }
+						}
+					},
+					$ref: "#/$defs/string"
+				}).expression
+			)
+		).equals(true)
+
+		const rootSelfExpr = parse({
+			type: "object",
+			properties: { self: { $ref: "#" } }
+		}).expression
+		attest(
+			rootSelfExpr.startsWith("{ self?: { self?: synthetic") &&
+				rootSelfExpr.endsWith(" } & isNonArray } & isNonArray")
+		).equals(true)
 	})
 
 	it("reads object and array consts as structures", () => {
