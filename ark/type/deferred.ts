@@ -9,6 +9,7 @@ import {
 	isNode,
 	lastCreated,
 	printSelfAsThis,
+	type BaseNode,
 	type DeferredShell,
 	type GenericRoot,
 	type IntersectionNode
@@ -40,6 +41,8 @@ interface Facts {
 	values?: unknown[] | undefined
 	/** whether it allows a unit, which what it's narrowed with checks as it's written */
 	units?: boolean | undefined
+	/** whether what it holds allows one, as an element or a prop's value does */
+	unitsWithin?: boolean | undefined
 	/** what it's a range over and that range */
 	base?: "string" | "array" | "number" | "integer" | undefined
 	/** the key of what a range is of, if another bound can join it */
@@ -48,6 +51,10 @@ interface Facts {
 	bounds?: Facts["base"]
 	/** whether it holds a predicate, which a union calls on a unit it could allow */
 	narrowed?: boolean | undefined
+	/** whether what it holds has one, which a union calls on a unit held in its place */
+	narrowedWithin?: boolean | undefined
+	/** which of those each prop of an object literal holds, if only its props hold them */
+	held?: Map<string, number> | undefined
 	min?: number | undefined
 	minExclusive?: boolean | undefined
 	max?: number | undefined
@@ -186,9 +193,28 @@ const fits = (value: unknown, facts: Facts): boolean => {
 	)
 }
 
+const holdsNarrow = 1
+const holdsUnit = 2
+
+/** what a Type holding it then holds: a predicate, or a unit one could be called on */
+const holds = (f: Facts) =>
+	(f.narrowed || f.narrowedWithin ? holdsNarrow : 0) |
+	(f.units || f.unitsWithin ? holdsUnit : 0)
+
+type Holding = Pick<Facts, "narrowedWithin" | "unitsWithin">
+
+const holding = (...held: Facts[]): Holding => {
+	let bits = 0
+	for (const f of held) bits |= holds(f)
+	return {
+		narrowedWithin: (bits & holdsNarrow) !== 0,
+		unitsWithin: (bits & holdsUnit) !== 0
+	}
+}
+
 /** what an inclusive range is, which any way of writing it is one Type */
 const rangeFacts = (
-	d: Pick<Facts, "pure" | "base" | "of" | "cyclic">,
+	d: Pick<Facts, "pure" | "base" | "of" | "cyclic"> & Holding,
 	min: number | undefined,
 	max: number | undefined
 ): Facts => {
@@ -212,7 +238,9 @@ const rangeFacts = (
 		min,
 		max,
 		values: unit ? [min] : undefined,
-		units: unit
+		units: unit,
+		narrowedWithin: d.narrowedWithin,
+		unitsWithin: d.unitsWithin
 	}
 }
 
@@ -248,7 +276,7 @@ const scanRange = (def: string): Facts | undefined => {
 	if (min === max && (op.length === 1 || leftOp === "<")) return
 	if (isLength && ((max ?? 0) < 0 || (min ?? 0) < 0)) return
 	if (isLength || (op.length === 2 && (!left || leftOp === "<=")))
-		return rangeFacts({ pure: true, base: of.base, of: of.of }, min, max)
+		return rangeFacts(of, min, max)
 
 	if (
 		of.base === "integer" &&
@@ -302,7 +330,8 @@ const arrayFacts = (element: Facts): Facts => {
 		pure: element.pure,
 		cyclic: element.cyclic,
 		base: "array",
-		of
+		of,
+		...holding(element)
 	}
 }
 
@@ -382,6 +411,7 @@ const scanUnion = (def: string): Facts | undefined => {
 	let open = 0
 	let values: unknown[] | undefined = []
 	let units: boolean | undefined
+	let unitsWithin: boolean | undefined
 	const terms: string[] = []
 	for (let i = 0; i < parts.length; i++) {
 		const term = scanTerm(parts[i])
@@ -391,9 +421,18 @@ const scanUnion = (def: string): Facts | undefined => {
 		if (!term.values) open |= term.domains
 		values = term.values && values?.concat(term.values)
 		units ||= term.units
+		unitsWithin ||= term.unitsWithin
 		if (!insertAll(terms, term)) return
 	}
-	return { key: terms.join("|"), terms, domains, pure: true, values, units }
+	return {
+		key: terms.join("|"),
+		terms,
+		domains,
+		pure: true,
+		values,
+		units,
+		unitsWithin
+	}
 }
 
 const refinesString = (f: Facts | undefined): f is Facts =>
@@ -413,7 +452,8 @@ const andFacts = (l: Facts, r: Facts): Facts | undefined => {
 		domains: stringBits,
 		pure: true,
 		min: l.min ?? r.min,
-		max: l.max ?? r.max
+		max: l.max ?? r.max,
+		narrowed: l.narrowed || r.narrowed
 	}
 }
 
@@ -484,7 +524,12 @@ const scanUncached = (def: string): Facts | undefined => {
 	if (record$) {
 		const value = scanUnion(record$[1])
 		return value ?
-				{ key: `Record<${value.key}>`, domains: objectBits, pure: true }
+				{
+					key: `Record<${value.key}>`,
+					domains: objectBits,
+					pure: true,
+					...holding(value)
+				}
 			:	undefined
 	}
 	return scanAnd(def)
@@ -517,6 +562,12 @@ const defaultKey = (of: Facts, value: unknown) =>
 		: `${typeof value}:${String(value)}`
 	}`
 
+const isUnit = (node: BaseNode) => node.is("unit")
+
+// one a keyword holds is arktype's own, which nothing can tell was called
+const isNarrow = (node: BaseNode) =>
+	node.is("predicate") && node.meta.keyword === undefined
+
 const nodeFacts = (node: BaseRoot): Facts | undefined => {
 	if (node.isNever() || node.topAlias) return
 	const key = `@${node.id}`
@@ -531,7 +582,18 @@ const nodeFacts = (node: BaseRoot): Facts | undefined => {
 			else values = undefined
 		} else values = undefined
 	}
-	return { key, domains, pure: !node.alters, values, units }
+	// a node says nothing of where it holds a predicate or a unit
+	const narrowed = node.userCode && node.selectReferences(isNarrow).length !== 0
+	return {
+		key,
+		domains,
+		pure: !node.alters,
+		values,
+		units,
+		unitsWithin: node.selectReferences(isUnit).length !== 0,
+		narrowed,
+		narrowedWithin: narrowed
+	}
 }
 
 // a prop's `this`, its own at each call, whose nodes each reference what's being defined
@@ -573,7 +635,16 @@ const valueFacts = (
 	const nested: Facts = { key: "", domains: objectBits, pure: true }
 	const held = walkLiteral(v as Dict, nested, into)
 	return (
-		held && [{ key: nested.key, domains: objectBits, pure: into.pure }, held]
+		held && [
+			{
+				key: nested.key,
+				domains: objectBits,
+				pure: into.pure,
+				narrowedWithin: nested.narrowedWithin,
+				unitsWithin: nested.unitsWithin
+			},
+			held
+		]
 	)
 }
 
@@ -589,6 +660,7 @@ const walkLiteral = (
 	const names: string[] = []
 	const entries: string[] = []
 	const props: [name: string, entry: string][] = []
+	const heldByName = new Map<string, number>()
 	let closed = true
 	let spreadThis: string | undefined
 	let spreadOf: Facts | undefined
@@ -625,6 +697,10 @@ const walkLiteral = (
 			)
 				return
 			if (d ? !d.facts.pure : (v as BaseRoot).alters) facts.pure = false
+			// it holds what the props it spreads do, whichever of them it keeps
+			const spread = d ? d.facts : nodeFacts(v as BaseRoot)
+			if (spread?.narrowedWithin) facts.narrowedWithin = true
+			if (spread?.unitsWithin) facts.unitsWithin = true
 			if (d?.facts.cyclic) {
 				facts.cyclic = d.facts.cyclic
 				spreadThis = d.facts.key
@@ -671,12 +747,21 @@ const walkLiteral = (
 		if (!of.pure) facts.pure = false
 		if (of.cyclic && facts.cyclic !== true) facts.cyclic = of.cyclic
 		const optional = isTuple || of.defaults || key.kind === "optional"
-		// an optional value's union with undefined could be indeterminate, and
-		// without exactOptionalPropertyTypes composes what an alias resolves to
+		// without exactOptionalPropertyTypes an optional value allows undefined
+		const bits = holds(of) | (optional ? holdsUnit : 0)
+		if (bits) {
+			heldByName.set(name, bits)
+			if (bits & holdsNarrow) facts.narrowedWithin = true
+			if (bits & holdsUnit) facts.unitsWithin = true
+		}
+		// an optional value's union with undefined could be indeterminate or call
+		// what it narrows, and without exactOptionalPropertyTypes composes what an
+		// alias resolves to
 		if (
 			optional &&
-			!of.pure &&
-			(of.domains & undefinedBits || of.cyclic === true)
+			(of.domains & undefinedBits ?
+				!of.pure || bits & holdsNarrow
+			:	!of.pure && of.cyclic === true)
 		)
 			return
 		if (!optional && of.values) (facts.tags ??= new Map()).set(name, of.values)
@@ -697,6 +782,8 @@ const walkLiteral = (
 		facts.entries = entries
 	}
 	facts.props = props
+	// what it spreads holds more than its own props say
+	if (!spreadOf && !spreadNode) facts.held = heldByName
 	if (spreadOf) {
 		// where it spreads a literal, only the props it doesn't replace are what
 		// it holds, and its undeclared keys are its own
@@ -720,10 +807,21 @@ const disjointByTag = (l: Facts, r: Facts) => {
 	return false
 }
 
+// a union intersects its branches' inputs, which calls a predicate of one on a
+// unit of another in its place: at any depth, unless both are literals whose
+// props say where
+const calls = (l: Facts, r: Facts) => {
+	if (l.narrowed && r.units) return true
+	if (!l.narrowedWithin || !r.unitsWithin) return false
+	if (!l.held || !r.held) return true
+	for (const [name, bits] of l.held)
+		if (bits & holdsNarrow && r.held.get(name)! & holdsUnit) return true
+	return false
+}
+
 const determinate = (l: Facts, r: Facts) =>
 	!(l.domains & r.domains) ||
-	(l.pure && r.pure && !(l.narrowed && r.units) && !(r.narrowed && l.units)) ||
-	disjointByTag(l, r)
+	(!calls(l, r) && !calls(r, l) && ((l.pure && r.pure) || disjointByTag(l, r)))
 
 export const deferUnion = (
 	branches: unknown[],
@@ -760,6 +858,9 @@ export const deferUnion = (
 	let units: boolean | undefined
 	let narrowed: boolean | undefined
 	let cyclic: Facts["cyclic"]
+	let narrowedWithin: boolean | undefined
+	let unitsWithin: boolean | undefined
+	let held: Facts["held"] = new Map()
 	for (let i = 0; i < all.length; i++) {
 		const f = all[i]
 		for (let j = i + 1; j < all.length; j++) if (!determinate(f, all[j])) return
@@ -769,6 +870,12 @@ export const deferUnion = (
 		units ||= f.units
 		narrowed ||= f.narrowed
 		cyclic ||= f.cyclic
+		narrowedWithin ||= f.narrowedWithin
+		unitsWithin ||= f.unitsWithin
+		// a branch that isn't a literal holds what no prop says
+		if (!f.held) held &&= f.narrowedWithin || f.unitsWithin ? undefined : held
+		else
+			for (const [name, bits] of f.held) held?.set(name, held.get(name)! | bits)
 	}
 	let tags: Map<string, unknown[]> | undefined
 	if (all[0].tags) {
@@ -792,7 +899,10 @@ export const deferUnion = (
 			values,
 			units,
 			narrowed,
-			cyclic
+			cyclic,
+			narrowedWithin,
+			unitsWithin,
+			held
 		},
 		$,
 		() => ($.or as any)(...defs)
@@ -886,7 +996,10 @@ const deferredMethods: Dict<
 				max: facts.max,
 				bounds: facts.of ? facts.base : facts.bounds,
 				branched: facts.branched,
-				narrowed: true
+				narrowed: true,
+				narrowedWithin: facts.narrowedWithin,
+				unitsWithin: facts.unitsWithin,
+				held: facts.held
 			}
 		:	undefined,
 	_pipe: ({ facts }, morphs) =>
@@ -897,7 +1010,8 @@ const deferredMethods: Dict<
 			{
 				key: `${wrap(facts)}|>${morphs.map(fnKey).join()}`,
 				domains: facts.domains,
-				pure: false
+				pure: false,
+				...holding(facts)
 			}
 		:	undefined,
 	and: (d, args) => {
@@ -932,7 +1046,10 @@ const deferredMethods: Dict<
 			cyclic: facts.cyclic || rf.cyclic,
 			names: [...facts.names, ...rf.names],
 			entries,
-			tags: new Map([...(facts.tags ?? []), ...(rf.tags ?? [])])
+			tags: new Map([...(facts.tags ?? []), ...(rf.tags ?? [])]),
+			narrowedWithin: facts.narrowedWithin || rf.narrowedWithin,
+			unitsWithin: facts.unitsWithin || rf.unitsWithin,
+			held: facts.held && rf.held && new Map([...facts.held, ...rf.held])
 		}
 	},
 	describe: (d, [description, selector]) =>
@@ -1176,7 +1293,8 @@ export const deferredRecord = (
 					{
 						key: `Record<${key.key === "string" ? "" : `${key.key},`}${value.key}>`,
 						domains: objectBits,
-						pure: value.pure
+						pure: value.pure,
+						...holding(key, value)
 					},
 					$,
 					() => (generic() as any)(keyEntry![1], valueEntry![1])

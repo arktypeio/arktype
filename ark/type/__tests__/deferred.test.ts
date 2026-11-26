@@ -170,6 +170,61 @@ console.log(Object.hasOwn(t, "kind"), t({}).limit)`)
 		attest(seen).equals(["seen"])
 	})
 
+	it("a union calls what a branch narrows on a unit another holds in its place, at its call", () => {
+		const seen: unknown[] = []
+		const sees = (data: unknown) => {
+			seen.push(data)
+			return true
+		}
+		const narrowed = () => type(/(?:)/).narrow(sees)
+		const unions: (() => unknown)[] = [
+			// a node says nothing of how it was written
+			() => type.or(type.raw("string").narrow(sees), "'node'"),
+			() => narrowed().and(/(?:)/).or("'and'"),
+			() =>
+				narrowed()
+					.array()
+					.or(type.unit(["element"])),
+			() =>
+				narrowed()
+					.array()
+					.atLeastLength(1)
+					.or(type.unit(["bounded"])),
+			() => type.Record("string", narrowed()).or(type.unit({ a: "record" })),
+			() => type({ a: narrowed() }).or({ a: "'prop'" }),
+			() => type({ a: { b: narrowed() } }).or({ a: { b: "'nested'" } }),
+			// a discriminant read after the prop doesn't spare the call
+			() => type({ a: narrowed(), z: "'l'" }).or({ a: "'tagged'", z: "'r'" }),
+			() => type({ a: type.raw("string").narrow(sees) }).or({ a: "'held'" })
+		]
+		for (const union of unions) {
+			seen.length = 0
+			attest(isUnread(union() as object)).equals(false)
+			attest(seen.length).equals(1)
+		}
+		seen.length = 0
+		// neither a predicate of a prop nor one of the whole is called on another prop's unit
+		const apart = [
+			type({ kind: "'l'", a: narrowed() }).or({ kind: "'r'", b: "'unit'" }),
+			type({ kind: "'l'", a: "string" })
+				.narrow(sees)
+				.or({ kind: "'r'", a: "'unit'" }),
+			type({ a: narrowed() }).or({ b: "number" }).or({ c: "'unit'" })
+		]
+		for (const t of apart) attest(isUnread(t)).equals(true)
+		attest(seen).equals([])
+	})
+
+	it("an optional prop that could be undefined calls what it narrows at its call", () => {
+		attest(
+			printed(`configure({ exactOptionalPropertyTypes: false })
+const seen = []
+const loose = type.raw("unknown").narrow(data => (seen.push(String(data)), true))
+type({ "a?": loose })
+console.log(seen.join())`)
+		).snap("undefined\n")
+	})
+
 	it("throws at a chained call", () => {
 		const longer = (s: string) => s.length > 3
 		const chains: (() => unknown)[] = [
