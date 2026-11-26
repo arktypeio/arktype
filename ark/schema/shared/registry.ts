@@ -1,4 +1,5 @@
 import {
+	WeakCache,
 	nameOf,
 	register,
 	registry,
@@ -22,10 +23,7 @@ export const $ark: ArkSchemaRegistry = registry as never
 
 export type NodeId = Brand<string, "NodeId">
 
-export const nodesById: Record<
-	NodeId,
-	BaseNode | BaseParseContext | undefined
-> = {}
+export const nodesById: WeakCache<BaseNode | BaseParseContext> = new WeakCache()
 
 $ark.nodesById = nodesById
 

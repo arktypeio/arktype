@@ -44,6 +44,13 @@ import {
 } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
+export const writeUnresolvableMessage = <token extends string>(
+	token: token
+): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
+
+export type writeUnresolvableMessage<token extends string> =
+	`'${token}' is unresolvable`
+
 export declare namespace Alias {
 	export interface Inner<alias extends string = string> {
 		readonly reference: alias
@@ -69,7 +76,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		keys: {
 			reference: {
 				serialize: s => {
-					const referenced = nodesById[s as NodeId]
+					const referenced = nodesById.get(s)
 					if (hasArkKind(referenced, "root")) return referenced.json
 					return s.startsWith("$") ? s : `$ark.${s}`
 				}
@@ -92,25 +99,34 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string
 
+	/** strong reference to the resolved root so cyclic graphs collect as one unit */
+	get target(): BaseRoot | undefined {
+		return this.c.aliasTarget
+	}
+
+	set target(node: BaseRoot | undefined) {
+		this.c.aliasTarget = node
+	}
+
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
 		// written now, so a later resolution stays a reference
 		this.c.fullJson = writeInnerJson(this)
 		this.expression = expressionOf(this)
-		const referenced = nodesById[this.reference as NodeId]
+		const referenced = nodesById.get(this.reference)
 		if (hasArkKind(referenced, "context")) {
 			referenced.isReferencedById = true
+			;(referenced.aliases ??= []).push(this)
 			if (!referenced.alias && !this.operator)
 				referenced.isReferencedAsThis = true
-		}
+		} else if (hasArkKind(referenced, "root")) this.target = referenced
 	}
 	readonly structure = undefined
 	// Allows bounds only aliases referencing their definition while it's parsed
 	closes = true
-	private _resolution: BaseRoot | undefined
 
 	get resolution(): BaseRoot {
-		if (this._resolution) return this._resolution
+		if (this.c.resolution) return this.c.resolution
 		if (resolvingAliases.includes(this)) {
 			const names = resolvingAliases.map(aliasNameOf)
 			const cycle = names.slice(names.lastIndexOf(aliasNameOf(this)))
@@ -121,7 +137,8 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		const isFinal = isResolutionFinal()
 		const readsIo =
 			isIoFinal() &&
-			(this.isIo || hasArkKind(nodesById[this.reference as NodeId], "root"))
+			(this.isIo ||
+				hasArkKind(nodesById.get(this.reference) ?? this.target, "root"))
 		resolvingAliases.push(this)
 		inProgress.resolutions++
 		if (readsIo) inProgress.ioReads++
@@ -131,7 +148,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			if (resolution.is("alias")) resolution = resolution.resolution
 			if (this.resolve) resolution.c.isAliasResolution = true
 			if (this.resolve ? isFinal : this.$.resolved)
-				this._resolution = resolution
+				this.c.resolution = resolution
 		} finally {
 			resolvingAliases.pop()
 			inProgress.resolutions--
@@ -143,12 +160,13 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 	protected _resolve(): BaseRoot {
 		if (this.resolve) return this.resolve()
+		if (this.c.aliasResolve) return this.c.aliasResolve()
 		if (this.reference[0] === "$")
 			return this.$.resolveRoot(this.reference.slice(1))
 
 		const id = this.reference as NodeId
 
-		let resolution = nodesById[id]
+		let resolution = nodesById.get(id) ?? this.target
 		if (hasArkKind(resolution, "context") && resolution.alias) {
 			return resolution.phase === "member" ?
 					resolution.resolution!
@@ -163,13 +181,16 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			}
 
 			seen.push(resolution.id)
-			resolution = nodesById[resolution.id]
+			resolution = nodesById.get(resolution.id)
 		}
+		if (resolution === undefined && !seen.length)
+			return throwParseError(writeUnresolvableMessage(this.reference))
 		if (!hasArkKind(resolution, "root")) {
 			return throwInternalError(`Unexpected resolution for reference ${this.reference}
 Seen: [${seen.join("->")}] 
 Resolution: ${printable(resolution)}`)
 		}
+		this.target = resolution
 		return resolveShallowAliases(resolution)
 	}
 
@@ -219,7 +240,7 @@ Resolution: ${printable(resolution)}`)
 	get nestedExpr(): string {
 		if (this.operator === "&" || this.operator === "=>")
 			return `(${this.expression})`
-		const referenced = nodesById[this.reference as NodeId]
+		const referenced = nodesById.get(this.reference) ?? this.target
 		return (
 				hasArkKind(referenced, "root") &&
 					referenced.expression === this.expression
@@ -305,7 +326,7 @@ const expressionOf = (node: AliasNode): string => {
 				operands.join(node.operator)
 			:	`${node.operator}<${operands.join(", ")}>`
 	}
-	const referenced = nodesById[node.reference as NodeId]
+	const referenced = nodesById.get(node.reference) ?? node.target
 	if (hasArkKind(referenced, "root")) return referenced.expression
 	if (!hasArkKind(referenced, "context")) return node.reference
 	return referenced.alias ? `$${referenced.alias}` : (referenced.name ?? "this")
@@ -319,7 +340,7 @@ const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
 		if (!reference.is("alias")) continue
 		if (reference.operands) operations.push(reference)
 		else {
-			const referenced = nodesById[reference.reference as NodeId]
+			const referenced = nodesById.get(reference.reference) ?? reference.target
 			if (hasArkKind(referenced, "root"))
 				operations.push(...operationsOf(referenced, seen))
 		}
@@ -374,7 +395,7 @@ export const isResolvable = (node: BaseRoot): boolean => {
 	if (node.isIo) return isResolvable(node.operands![0])
 	// a transform's alias resolves to what it transformed once the transform returns
 	if (node.resolve && !node.operator) return isResolutionFinal()
-	const referenced = nodesById[node.reference as NodeId]
+	const referenced = nodesById.get(node.reference) ?? node.target
 	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
 

@@ -268,6 +268,10 @@ const bindUnit = (
 		}
 		// if node has already been bound to another scope or anonymous type, don't rebind it
 		if (node.unitFn && (!owningScope || node.$ !== owningScope)) continue
+		if (!Object.isExtensible(node)) {
+			node.c.preJit = undefined
+			continue
+		}
 		const [tAllows, tApply, tTransform] = compiledTraversals[i]
 		if (node.c.preJit) {
 			node.allows = node.c.preJit

@@ -303,6 +303,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 		discriminant.kind !== "unit" ||
 		discriminant.path.length !== 1 ||
 		typeof discriminant.path[0] !== "string" ||
+		discriminant.ownEnumerableDefault ||
 		node.missLists
 	)
 		return

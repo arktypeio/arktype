@@ -73,6 +73,7 @@ import { parseSchema, type RootSchema } from "./parseSchema.ts"
 import {
 	isResolvable,
 	resolveShallowAliases,
+	writeUnresolvableMessage,
 	type Alias
 } from "./roots/alias.ts"
 import type { Morph } from "./roots/morph.ts"
@@ -290,7 +291,16 @@ export interface ResolvedScopeConfig
 $ark.ambient ??= {} as never
 
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
-	(nodesById[ctx.id] = ctx)
+	nodesById.pin(ctx.id, ctx) as ctx
+
+const publishNode = (ctx: BaseParseContext, node: BaseRoot): BaseRoot => {
+	nodesById.set(ctx.id, node)
+	if (ctx.aliases) {
+		for (const alias of ctx.aliases) alias.target = node
+		ctx.aliases = undefined
+	}
+	return node
+}
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
@@ -606,16 +616,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		node: BaseRoot
 	): BaseRoot {
 		if (ctx.isReferencedById) {
-			if (nodesById[node.id] !== node) node = withId(node, ctx.id)
-			nodesById[ctx.id] = node
-		} else delete nodesById[ctx.id]
+			if (nodesById.get(node.id) !== node) node = withId(node, ctx.id)
+			publishNode(ctx, node)
+		} else nodesById.delete(ctx.id)
 		return (this.res[name] = node)
 	}
 
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { reduced: true })
-		const ctx = nodesById[pending.id] as BaseParseContext
+		const ctx = nodesById.get(pending.id) as BaseParseContext
 		const mark = $ark.reached?.mark()
 		const resolution = resolving(() =>
 			this.resolveContext(name, ctx, resolveShallowAliases(pending))
@@ -665,6 +675,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		} catch (e) {
 			// reset so the next reference reparses it and throws the same error
 			ctx.phase = "unresolved"
+			nodesById.delete(ctx.id)
 			throw e
 		} finally {
 			openDefinitions.pop()
@@ -718,6 +729,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			for (const failed of component) {
 				failed.phase = "failed"
 				failed.error = e
+				nodesById.delete(failed.id)
 				failed.$.res[failed.alias!] = failed
 			}
 			throw e
@@ -750,6 +762,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 			ctx.phase = "resolving"
 			try {
 				def = defining(() => this.normValue(ctx.def))
+			} catch (e) {
+				if (ctx.aliases) {
+					const retry = () => this.resolveRoot(name)
+					for (const alias of ctx.aliases) alias.c.aliasResolve = retry
+				}
+				nodesById.delete(ctx.id)
+				throw e
 			} finally {
 				// registered while the call runs, so an alias parsed during it resolves by name
 				delete this.res[name]
@@ -759,10 +778,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 				ctx.phase = "unresolved"
 				this.res[name] = ctx
 				// parsing its definition discards checks still open, so they're made first
-				assertUnchecked()
+				try {
+					assertUnchecked()
+				} catch (e) {
+					if (ctx.aliases) {
+						const retry = () => this.resolveRoot(name)
+						for (const alias of ctx.aliases) alias.c.aliasResolve = retry
+					}
+					nodesById.delete(ctx.id)
+					throw e
+				}
 				return this.maybeResolve(name)
 			}
-			delete nodesById[ctx.id]
+			nodesById.delete(ctx.id)
 		} else def = this.normValue(def)
 
 		if (hasArkKind(def, "generic")) {
@@ -991,36 +1019,42 @@ export abstract class BaseScope<$ extends {} = {}> {
 	/** parses a definition in this scope to a node */
 	parseDef(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
 		if (hasArkKind(def, "root") && isInstanceOf(def, BaseRoot))
-			return this.bindRef(def)
+			return this.bindRef(def.internal)
 
 		const ctxInputOrNode = this.preparseOwn(def, opts)
 		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
 		const deferredStart = deferredOrderState.count
-		let node = this.parseOpenDef(def, ctx)
-		node = resolving(() => {
-			if (deferredOrderState.count > deferredStart) {
-				ctx.phase = "member"
-				ctx.resolution = node
-				deferredOrderState.rebuilding++
-				try {
-					node = rebuildDeferredUnions(node)
-				} finally {
-					deferredOrderState.rebuilding--
-					ctx.phase = "resolved"
-					delete ctx.resolution
+		let node: BaseRoot
+		try {
+			node = this.parseOpenDef(def, ctx)
+			node = resolving(() => {
+				if (deferredOrderState.count > deferredStart) {
+					ctx.phase = "member"
+					ctx.resolution = node
+					deferredOrderState.rebuilding++
+					try {
+						node = rebuildDeferredUnions(node)
+					} finally {
+						deferredOrderState.rebuilding--
+						ctx.phase = "resolved"
+						delete ctx.resolution
+					}
 				}
-			}
-			if (node.topAlias && !inProgress.definitions)
-				node = resolveShallowAliases(node)
+				if (node.topAlias && !inProgress.definitions)
+					node = resolveShallowAliases(node)
 
-			// if the node is recursive e.g. { box: "this" }, we need to make sure it
-			// has the original id from context so that its references compile correctly
-			if (ctx.isReferencedById) nodesById[ctx.id] = node = withId(node, ctx.id)
-			else delete nodesById[ctx.id]
-			return node
-		})
+				// if the node is recursive e.g. { box: "this" }, we need to make sure it
+				// has the original id from context so that its references compile correctly
+				if (ctx.isReferencedById) node = publishNode(ctx, withId(node, ctx.id))
+				else nodesById.delete(ctx.id)
+				return node
+			})
+		} catch (e) {
+			nodesById.delete(ctx.id)
+			throw e
+		}
 		if (!ctx.isReferencedAsThis || ctx.name) return node
 		// parsed again, since the nodes that reference it have printed `this`
 		return printSelfAsThis(
@@ -1088,7 +1122,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 		// compiling binds what it checked before, unless the host refused
 		if (node.c.preJit) {
-			node.allows = node.c.preJit
+			if (Object.isExtensible(node)) node.allows = node.c.preJit
 			node.c.preJit = undefined
 		}
 	}
@@ -1330,12 +1364,7 @@ const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 	return result
 }
 
-export const writeUnresolvableMessage = <token extends string>(
-	token: token
-): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
-
-export type writeUnresolvableMessage<token extends string> =
-	`'${token}' is unresolvable`
+export { writeUnresolvableMessage }
 
 export const writeNonSubmoduleDotMessage = <name extends string>(
 	name: name

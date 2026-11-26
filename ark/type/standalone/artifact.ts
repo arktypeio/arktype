@@ -4045,7 +4045,7 @@ export const uncountedJsonOf = (json: unknown): unknown => {
 	const uncounted = (json: unknown): unknown => {
 		if (typeof json === "string") {
 			const id = json.slice(registryName.length + 1)
-			if (!json.startsWith(`${registryName}.`) || !$ark.nodesById[id as NodeId])
+			if (!json.startsWith(`${registryName}.`) || !$ark.nodesById.get(id))
 				return json.replace(countedReference, "$1")
 			let written = renumbered.get(id)
 			if (!written) {

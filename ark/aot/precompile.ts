@@ -5,6 +5,7 @@ import {
 	holeNameMarker,
 	writeMissingImportMessage,
 	writePrecompiledUnits,
+	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
 	type ErrorDetail,
@@ -387,6 +388,9 @@ export * from "./messages.ts"
 export * from "./presets.ts"
 export * from "./settings.ts"
 export * from "./strategies.ts"
+
+const holdsDefaultsOrAlias = (node: BaseNode): boolean =>
+	holdsDefaults(node) || node.is("alias")
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -1445,9 +1449,7 @@ export class Precompiler {
 			const collectIn = (root: BaseRoot) => {
 				if (seen.has(root)) return
 				seen.add(root)
-				for (const node of root.selectReferences(
-					node => holdsDefaults(node) || node.is("alias")
-				)) {
+				for (const node of root.selectReferences(holdsDefaultsOrAlias)) {
 					if (node.is("alias")) collectIn(node.resolution)
 					else collectDefaults(node as never, collected)
 				}

@@ -127,7 +127,7 @@ export const readJsonSchema = (
 		return jsonSchemaScope().fin(defining(() => read(schema, "#", ctx)))
 	} finally {
 		for (const ref in ctx.cyclesByRef)
-			delete $ark.nodesById[ctx.cyclesByRef[ref].id]
+			$ark.nodesById.delete(ctx.cyclesByRef[ref].id)
 	}
 }
 

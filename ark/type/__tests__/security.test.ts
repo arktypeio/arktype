@@ -265,7 +265,7 @@ contextualize(() => {
 			).throws(`ParseError: ${writeInvalidRangeRuleMessage("min", spoofedObj)}`)
 			attest(() =>
 				type.schema({ domain: "number", min: spoofedObj as never })
-			).throws(`ParseError: ${writeInvalidRangeRuleMessage("min", undefined)}`)
+			).throws.snap("ParseError: Key valueOf is not valid on min schema")
 
 			attest(() =>
 				type.schema({

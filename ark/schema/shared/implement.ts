@@ -1,6 +1,7 @@
 import {
 	flatMorph,
 	hasDomain,
+	hasOwn,
 	printable,
 	serializePrimitive,
 	throwParseError,
@@ -196,7 +197,7 @@ export const precedenceByKind: PrecedenceByKind = flatMorph(
 )
 
 export const isNodeKind = (value: unknown): value is NodeKind =>
-	typeof value === "string" && value in precedenceByKind
+	typeof value === "string" && hasOwn(precedenceByKind, value)
 
 export function assertNodeKind<kind extends NodeKind>(
 	value: BaseNode,

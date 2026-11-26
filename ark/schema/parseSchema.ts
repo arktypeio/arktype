@@ -25,8 +25,7 @@ import {
 	compareInnerKeys,
 	nodesById,
 	writeInvalidSchemaMessage,
-	type BaseParseOptions,
-	type NodeId
+	type BaseParseOptions
 } from "./parse.ts"
 import type { Predicate } from "./predicate.ts"
 import { writeInvalidRangeRuleMessage } from "./refinements/range.ts"
@@ -204,8 +203,13 @@ export const parseNodeSchema = <kind extends NodeKind>(
 	opts?: BaseParseOptions
 ): nodeOfKind<reducibleKindOf<kind>> => {
 	// a sequence's schema may be its variadic element
-	if (isNode(schema) && !(kind === "sequence" && schema.isRoot()))
-		return $.node(kind, schema as never, opts) as never
+	if (isNode(schema) && !(kind === "sequence" && schema.isRoot())) {
+		return $.node(
+			kind,
+			(schema.isRoot() ? schema.internal : schema) as never,
+			opts
+		) as never
+	}
 	const input = readers[kind](schema, $, opts)
 	return isNode(input) ?
 			($.node(input.kind, input as never, opts) as never)
@@ -254,7 +258,10 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 
 	const schemaKeys = Object.keys(schema)
 
-	if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
+	if (
+		schemaKeys.length === 0 ||
+		schemaKeys.some(k => hasOwn(constraintKeys, k))
+	)
 		return "intersection"
 	if ("proto" in schema) return "proto"
 	if ("domain" in schema) return "domain"
@@ -308,7 +315,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 		if (opts?.reduced || !input.reference.startsWith("$")) return input
 		const registered =
 			input.reference.startsWith("$ark.") ?
-				nodesById[input.reference.slice(5) as NodeId]
+				nodesById.get(input.reference.slice(5))
 			:	undefined
 		return hasArkKind(registered, "root") ? registered : (
 				$.resolveRoot(input.reference.slice(1))
@@ -350,14 +357,14 @@ const readers: Record<NodeKind, SchemaReader> = {
 		const input: dict = {}
 		for (const k of keysInParseOrder(flattened)) {
 			const v = flattened[k]
-			if (k in structureKeys) {
+			if (hasOwn(structureKeys, k)) {
 				if (structure) {
 					throwParseError(
 						`Flattened structure key ${k} cannot be specified alongside a root 'structure' key.`
 					)
 				}
 				structureSchema[k] = v
-			} else if (k in constraintKeys) {
+			} else if (hasOwn(constraintKeys, k)) {
 				const constraint = parseConstraint(k as ConstraintKind, v, $)
 				if (constraint) input[k] = constraint
 			} else if (k === "domain" || k === "proto")
@@ -376,7 +383,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 		for (const k of keysInParseOrder(schema)) {
 			const v = schema[k]
 			if (k === "sequence") input[k] = parseNodeSchema(k, v, $)
-			else if (k in constraintKeys) {
+			else if (hasOwn(constraintKeys, k)) {
 				const constraint = parseConstraint(k as ConstraintKind, v, $)
 				if (constraint) input[k] = constraint
 			} else input[k] = v

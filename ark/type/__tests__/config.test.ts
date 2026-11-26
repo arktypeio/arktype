@@ -1722,6 +1722,28 @@ try {
 					})
 				).completions({ "": ["assertFilter", "assertFind", "filter", "find"] })
 			})
+
+			// https://github.com/arktypeio/arktype/issues/1778
+			it("does not leak symbol-keyed meta through the schema node cache", () => {
+				const sym = Symbol("metaTag")
+				const WithDescAndSym = type("string").configure({
+					description: "symTestDesc",
+					[sym]: "v"
+				} as any)
+				const WithDescOnly = type("string").configure({
+					description: "symTestDesc"
+				})
+				attest((WithDescAndSym.meta as any)[sym]).equals("v")
+				attest((WithDescOnly.meta as any)[sym]).equals(undefined)
+				attest(WithDescAndSym === WithDescOnly).equals(false)
+
+				// symbol-only meta (no string keys) also keeps its symbol and never pollutes plain string
+				const SymOnly = type("string").configure({ [sym]: "only" } as any)
+				const Plain = type("string")
+				attest((SymOnly.meta as any)[sym]).equals("only")
+				attest((Plain.meta as any)[sym]).equals(undefined)
+				attest(SymOnly === Plain).equals(false)
+			})
 		})
 	})
 })

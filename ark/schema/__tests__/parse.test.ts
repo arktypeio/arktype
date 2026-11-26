@@ -99,4 +99,23 @@ contextualize(() => {
 			"ParseError: Intersection of == 0 and >= 1 results in an unsatisfiable type"
 		)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1778
+	it("throws ParseError for prototype keys on schemas and unknown alias references", () => {
+		attest(() =>
+			rootSchema({ domain: "string", toString: 1 } as never)
+		).throws.snap("ParseError: Key toString is not valid on domain schema")
+		attest(() =>
+			rootSchema({ domain: "string", constructor: 1 } as never)
+		).throws.snap("ParseError: Key constructor is not valid on domain schema")
+		attest(() => rootSchema({ reference: "constructor" })).throws.snap(
+			"ParseError: 'constructor' is unresolvable"
+		)
+		attest(() => rootSchema({ reference: "__proto__" })).throws.snap(
+			"ParseError: '__proto__' is unresolvable"
+		)
+		attest(() => rootSchema({ reference: "nonexistentRef" })).throws.snap(
+			"ParseError: 'nonexistentRef' is unresolvable"
+		)
+	})
 })

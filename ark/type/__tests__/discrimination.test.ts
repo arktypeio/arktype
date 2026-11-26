@@ -1393,4 +1393,77 @@ nested.z must be removed`)
 			attest(T.allows({ k: 1, j: "a", x: 1, y: 2, z: 3 })).equals(true)
 		}
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1778
+	it("maintains JIT/jitless parity on +: reject and index signatures for inherited and non-enumerable keys", () => {
+		class WithSizeGetter {
+			get size() {
+				return 0
+			}
+		}
+		const nonEnumSize = Object.defineProperty({}, "size", {
+			value: 0,
+			enumerable: false
+		})
+		const protoSize = Object.create({ size: 0 })
+		const protoTag = Object.create({ tag: "a" })
+
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const U = $.type({ size: "0", x: "string" })
+				.or({ size: "1" })
+				.or({ "+": "reject" })
+			const inputs: [unknown, boolean][] = [
+				[new Map(), true],
+				[new Set(), true],
+				[new WithSizeGetter(), true],
+				[nonEnumSize, true],
+				[protoSize, true],
+				[{ size: 0, x: "ok" }, true],
+				[{ size: 1 }, true],
+				[{}, true],
+				[{ size: 0 }, false],
+				[{ size: 2 }, false]
+			]
+			// verify cold (call 1) and warm (post-JIT call 2+)
+			for (let pass = 0; pass < 3; pass++) {
+				for (const [input, expected] of inputs) {
+					attest(U.allows(input)).equals(expected)
+					attest(!(U(input) instanceof type.errors)).equals(expected)
+				}
+			}
+
+			// transforming branch + "+": "reject"
+			const Tf = $.type({ size: "0", x: "string.trim" })
+				.or({ size: "1" })
+				.or({ "+": "reject" })
+			for (let pass = 0; pass < 3; pass++) {
+				const m = new Map()
+				attest(Tf(m)).is(m)
+				attest(Tf({ size: 0, x: " hi " })).equals({ size: 0, x: "hi" })
+				attest(Tf({ size: 0 }) instanceof type.errors).equals(true)
+			}
+
+			// index signature branch with inherited discriminant key
+			const Idx = $.type({ tag: "'a'", x: "string" })
+				.or({ tag: "'b'" })
+				.or("Record<string, number>")
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Idx.allows(protoTag)).equals(true)
+				attest(!(Idx(protoTag) instanceof type.errors)).equals(true)
+				attest(Idx.allows({ tag: "a" })).equals(false)
+				attest(Idx.allows({ tag: "a", x: "ok" })).equals(true)
+			}
+
+			// nested path with "+": "reject"
+			const Nested = $.type({ a: { size: "0", x: "string" } })
+				.or({ a: { size: "1" } })
+				.or({ a: { "+": "reject" } })
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Nested.allows({ a: new Map() })).equals(true)
+				attest(Nested.allows({ a: { size: 0 } })).equals(false)
+				attest(Nested.allows({ a: { size: 0, x: "ok" } })).equals(true)
+			}
+		}
+	})
 })

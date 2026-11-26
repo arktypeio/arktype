@@ -1769,4 +1769,17 @@ Item[1].Meta must be an object (was missing)`)
 			type("string").pipe(...badTailRest)
 		).type.errors("Type 'number' is not assignable to type 'string'")
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1778
+	it("tracks aliases and otherRefs in middle piped nodes", () => {
+		const Cyclic = scope({ N: { a: "string", "b?": "N" } }).export().N
+		const m = type("string.json.parse").pipe(Cyclic, x => x)
+		attest(m.internal.hasAlias).equals(true)
+		attest(m.internal.otherRefs.includes(Cyclic.internal)).equals(true)
+		attest(m('{"a":"hi","b":{"a":"nested"}}')).equals({
+			a: "hi",
+			b: { a: "nested" }
+		})
+		attest(m('{"a":"hi","b":{"a":1}}').toString()).snap("b.a must be a string")
+	})
 })

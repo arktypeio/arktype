@@ -34,6 +34,7 @@ import {
 	type dict,
 	type listable,
 	type mutable,
+	type omit,
 	type requireKeys,
 	returnsReports
 } from "@ark/util"
@@ -44,13 +45,19 @@ import type {
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
-import type { BaseParseContext, BaseParseOptions, NodeId } from "./parse.ts"
+import type { BaseParseContext, BaseParseOptions } from "./parse.ts"
 import type { AliasNode } from "./roots/alias.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
+import type {
+	Discriminant,
+	DiscriminantCases,
+	DiscriminantErrorContext
+} from "./roots/union.ts"
 import type { BaseScope } from "./scope.ts"
+import type { StandardSchemaV1 } from "./shared/standardSchema.ts"
 import { canJit, tryJit, type NodeCompiler } from "./shared/compile.ts"
 import type {
 	ArkEnv,
@@ -234,6 +241,20 @@ class NodeCache {
 	/** the `allows` a Type has while it defers compiling until it's used */
 	preJit: BaseNode["allows"] | undefined
 	isReusableLeaf: boolean | undefined
+	unitBranches: (Unit.Node | Morph.Node)[] | undefined
+	disc: Discriminant | null | undefined
+	discCases: DiscriminantCases | undefined
+	missLists: boolean | undefined
+	discDesc: string | undefined
+	discMeta: ArkEnv.meta | undefined
+	missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
+	travMorphs: array<Morph | BaseRoot> | undefined
+	errorCtx: unknown
+	standard: StandardSchemaV1.ArkTypeProps | undefined
+	keyof: BaseRoot | undefined
+	resolution: BaseRoot | undefined
+	aliasTarget: BaseRoot | undefined
+	aliasResolve?: () => BaseRoot
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
 	declare applyInPlace?: TraverseApply
@@ -541,7 +562,7 @@ export abstract class BaseNode<
 		const entersAlias =
 			this.isCyclic &&
 			(this.c.isAliasResolution ||
-				isNode($ark.nodesById[this.id]) ||
+				isNode($ark.nodesById.get(this.id)) ||
 				(this.is("intersection") && !!this.structure?.props.length))
 		return isResolutionFinal() ?
 				(this.c.entersAlias = entersAlias)
@@ -552,7 +573,7 @@ export abstract class BaseNode<
 	get trackedId(): string {
 		if (this.c.trackedId) return this.c.trackedId
 		if (!isResolutionFinal()) return this.id
-		if (this.is("alias") || isNode($ark.nodesById[this.id]))
+		if (this.is("alias") || isNode($ark.nodesById.get(this.id)))
 			return (this.c.trackedId = this.id)
 		const alias = referencesThroughAliases(this.references).find(
 			reference =>
@@ -609,7 +630,8 @@ export abstract class BaseNode<
 						reached.set(operand.id, operand)
 					continue
 				}
-				const registered = $ark.nodesById[reference.reference as NodeId]
+				const registered =
+					$ark.nodesById.get(reference.reference) ?? reference.target
 				const resolution =
 					isNode(registered) ? registered
 					: !reference.isIo ? reference.resolution
@@ -626,7 +648,7 @@ export abstract class BaseNode<
 
 	// entered directly, it keys its output by id as an alias resolving to it does
 	get tfsById(): boolean {
-		return this.hasAlias && $ark.nodesById[this.id] !== undefined
+		return this.hasAlias && $ark.nodesById.get(this.id) !== undefined
 	}
 
 	/** whether transforming data needs `ctx`: a morph reading it, an alias, or a `ctx` narrow choosing a branch */
@@ -804,11 +826,11 @@ export abstract class BaseNode<
 	}
 
 	deferJit(): void {
-		if (this.c.preJit) return
+		if (this.c.preJit || !Object.isExtensible(this)) return
 		const allows = (this.c.preJit = this.allows)
 		// keeps what compiled, as a detached reference can call this after
 		let compiled: BaseNode["allows"] | undefined
-		this.allows = data => {
+		const wrapper: BaseNode["allows"] = data => {
 			if (compiled !== undefined) return compiled(data)
 			if (this.c.preJit) {
 				if (this.checksUncompiled) {
@@ -817,8 +839,10 @@ export abstract class BaseNode<
 				}
 				this.$.jit(this)
 			}
-			return (compiled = this.allows)(data)
+			// if the node was frozen before jit ran, this.allows wasn't overwritten
+			return (compiled = this.allows === wrapper ? allows : this.allows)(data)
 		}
+		this.allows = wrapper
 	}
 
 	initRootApply(): RootApply {
@@ -1288,7 +1312,7 @@ export abstract class BaseNode<
 			transformed = this._tf(mapper, ctx)
 		} finally {
 			inProgress.resolutions--
-			for (const id in ctx.synth) delete $ark.nodesById[ctx.synth[id].id]
+			for (const id in ctx.synth) $ark.nodesById.delete(ctx.synth[id].id)
 		}
 		if (!transformed || opts?.names) return transformed as never
 		// again, now that synthetics have printed their names

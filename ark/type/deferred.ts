@@ -75,6 +75,8 @@ interface Deferred extends DeferredShell {
 	$: InternalScope
 	/** what builds its nodes until it's read */
 	resolve: (() => BaseRoot) | undefined
+	/** materialized node when the shell was made non-extensible before first read */
+	target?: BaseRoot | undefined
 }
 
 const deferred = new WeakMap<object, Deferred>()
@@ -89,6 +91,7 @@ const symbolBits = unitBitsOf("symbol")
 let settling = 0
 
 const settle = (self: BaseRoot, d: Deferred): BaseRoot => {
+	if (d.target) return d.target
 	const prior = lastCreated
 	settling++
 	let node: BaseRoot
@@ -99,6 +102,17 @@ const settle = (self: BaseRoot, d: Deferred): BaseRoot => {
 	}
 	const created = lastCreated
 	d.resolve = undefined
+	if (!Object.isExtensible(self)) {
+		const materialized = node.$.fin(node)
+		d.target = materialized
+		const cache = d.c as { self: BaseRoot; rootApply?: Function }
+		cache.self = materialized
+		cache.rootApply = (data: unknown, onFail?: unknown) =>
+			(materialized as any)(data, undefined, onFail)
+		if (d.$.nodesByKey.get(d.facts.key) === self)
+			d.$.nodesByKey.set(d.facts.key, materialized)
+		return materialized
+	}
 	createNode({
 		id: node.id,
 		kind: node.kind,
@@ -116,15 +130,15 @@ const settle = (self: BaseRoot, d: Deferred): BaseRoot => {
 	// no other holds a node it just created, so what reaches its key next is this
 	if (key && node.id === created && created !== prior) {
 		node.$.nodesByKey.set(key, self)
-		if ($ark.nodesById[node.id] === node)
-			$ark.nodesById[node.id] = self as never
+		if ($ark.nodesById.get(node.id) === node) $ark.nodesById.set(node.id, self)
 	}
 	return node.$.fin(self)
 }
 
 const settled = (self: any): any => {
 	const d = deferred.get(self)
-	return d?.resolve ? settle(self, d) : self
+	if (!d) return self
+	return d.target ?? (d.resolve ? settle(self, d) : self)
 }
 
 // keywords changing no data, by what they check
@@ -549,7 +563,7 @@ const valueFacts = (
 	if (typeof v !== "object" && typeof v !== "function") return
 	if (!v) return
 	const d = deferred.get(v)
-	if (d) return [d.facts, v]
+	if (d) return [d.facts, d.target ?? v]
 	if (isNode(v)) {
 		const of = v.isRoot() && nodeFacts(v)
 		return of ? [of, v] : undefined
@@ -619,7 +633,7 @@ const walkLiteral = (
 			else spreadNode = v as IntersectionNode
 			// a node spreads only its structure, which nodes holding more share
 			entries.push(d ? "" : `...@${spreadNode!.structure!.id}`)
-			copy[k] = v
+			copy[k] = d?.target ?? v
 			continue
 		}
 		if (key.kind !== "required" && key.kind !== "optional") return
@@ -1040,11 +1054,24 @@ for (const k of [
 	}
 }
 
+const delegateGet = (target: BaseRoot, k: PropertyKey): unknown => {
+	const value = Reflect.get(target, k, target)
+	if (
+		typeof value === "function" &&
+		k !== "constructor" &&
+		k !== "pipe" &&
+		!isNode(value)
+	)
+		return value.bind(target)
+	return value
+}
+
 const shellProto = new Proxy(Object.create(proto), {
 	get: (target, k, receiver) => {
+		const d = deferred.get(receiver)
+		if (d?.target) return delegateGet(d.target, k)
 		// while it's becoming a node
-		if (!deferred.get(receiver)?.resolve)
-			return Reflect.get(target, k, receiver)
+		if (!d?.resolve) return Reflect.get(target, k, receiver)
 		// a method's memo on it is only a read of what it's bound to
 		if (k === "pipe") {
 			return Object.assign(
@@ -1057,12 +1084,12 @@ const shellProto = new Proxy(Object.create(proto), {
 		}
 		if (typeof k === "string" && (deferredMethods[k] || deferredForms[k]))
 			return target[k]
-		settled(receiver)
-		return receiver[k]
+		const resolved = settled(receiver)
+		return resolved === receiver ? receiver[k] : delegateGet(resolved, k)
 	},
 	set: (_, k, v, receiver) => {
-		settled(receiver)
-		return Reflect.set(receiver, k, v)
+		const resolved = settled(receiver)
+		return resolved === receiver ? Reflect.set(receiver, k, v) : false
 	},
 	// a read of an own key, which it can't ask of a Type it isn't told of
 	has: (target, k) => k in target || k in intrinsic.object

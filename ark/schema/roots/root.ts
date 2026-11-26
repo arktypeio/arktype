@@ -131,9 +131,8 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
-		return (this._standard ??=
+		return (this.c.standard ??=
 			Object.defineProperty<StandardSchemaV1.ArkTypeProps>(
 				{
 					vendor: "arktype",
@@ -270,9 +269,8 @@ export abstract class BaseRoot<
 		return this.$.schema(this.applyStruct("partial", []))
 	}
 
-	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
-		if (this._keyof) return this._keyof
+		if (this.c.keyof) return this.c.keyof
 		const result = this.applyStruct("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.kw.unknown.internal
@@ -283,7 +281,7 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return (this._keyof = this.$.fin(result))
+		return (this.c.keyof = this.$.fin(result))
 	}
 
 	get props(): Prop.Node[] {
@@ -547,7 +545,7 @@ export abstract class BaseRoot<
 	rawPipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "root")) {
 			return this.toNode(
-				isInstanceOf(morph, BaseRoot) ? morph : this.$.parseDef(morph)
+				isInstanceOf(morph, BaseRoot) ? morph.internal : this.$.parseDef(morph)
 			)
 		}
 

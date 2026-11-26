@@ -35,7 +35,6 @@ import {
 	type IntersectionContext,
 	type KeyOrKeyNode,
 	type Morph,
-	type NodeId,
 	type NodeKind,
 	type Prop,
 	type Sequence,
@@ -367,7 +366,14 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		node.caseNodes.push(cases.default)
 	}
 
-	return Object.assign(ctx.location, members ? { cases, members } : { cases })
+	return Object.assign(
+		ctx.location,
+		{ cases },
+		members && { members },
+		ctx.ownEnumerableDefault &&
+			cases.default &&
+			cases.default !== true && { ownEnumerableDefault: true as const }
+	)
 }
 
 // each unit of literal unions disjoint at a path is its own case, so data
@@ -465,6 +471,7 @@ type CaseResolutionContext = {
 	location: DiscriminantLocation
 	defaultPairs: BranchEntry[]
 	node: Union.Node
+	ownEnumerableDefault?: true
 }
 
 type BranchEntry = {
@@ -585,7 +592,8 @@ const resolveCase = (
 						branch: overlapping
 					})
 				}
-			}
+			} else if (disjointUsesOwnEnumerableCheck(entry.branch._in, intersection))
+				ctx.ownEnumerableDefault = true
 			nextDefaults.push(entry)
 		}
 	}
@@ -1506,7 +1514,7 @@ const nonDeleteTransformsEqual = (
 	)
 
 const peekAliasResolution = (alias: Alias.Node): BaseRoot | undefined => {
-	const registered = $ark.nodesById[alias.reference as NodeId]
+	const registered = $ark.nodesById.get(alias.reference) ?? alias.target
 	if (isNode(registered)) return registered as BaseRoot
 	if (hasArkKind(registered, "context") && registered.phase === "member")
 		return registered.resolution
@@ -1882,6 +1890,56 @@ const disjointEntryLeavesKeyOverlap = (
 				disjointEntryLeavesKeyOverlap(idx.value, entry, depth + 1)
 		)
 	)
+}
+
+// whether a disjoint excluded a branch solely via own-enumerable-only checks
+// ("+": "reject" or an index signature), which do not reject inherited or
+// non-enumerable properties read by switch (data?.k)
+const disjointUsesOwnEnumerableCheck = (
+	branch: BaseRoot,
+	disjoint: Disjoint
+): boolean =>
+	disjoint.length > 0 &&
+	disjoint.every(entry => disjointEntryUsesOwnEnumerableCheck(branch, entry, 0))
+
+const disjointEntryUsesOwnEnumerableCheck = (
+	node: BaseRoot,
+	entry: DisjointEntry,
+	depth: number
+): boolean => {
+	if (depth >= entry.path.length) return false
+	if (node.is("alias")) {
+		return isResolutionFinal() ?
+				disjointEntryUsesOwnEnumerableCheck(node.resolution, entry, depth)
+			:	false
+	}
+	if (node.is("union")) {
+		return node.branches.some(b =>
+			disjointEntryUsesOwnEnumerableCheck(b, entry, depth)
+		)
+	}
+	if (!node.is("intersection") || !node.structure) return false
+	const key = entry.path[depth]
+	if (typeof key === "number") {
+		const sequence = node.structure.sequence
+		if (!sequence) return false
+		if (!sequence.postfix) {
+			const element =
+				key < sequence.leading.length ?
+					sequence.tuple[key].node
+				:	sequence.variadic
+			return element ?
+					disjointEntryUsesOwnEnumerableCheck(element, entry, depth + 1)
+				:	false
+		}
+		return sequence.tuple.some(el =>
+			disjointEntryUsesOwnEnumerableCheck(el.node, entry, depth + 1)
+		)
+	}
+	const prop = node.structure.byKey[key]
+	if (prop)
+		return disjointEntryUsesOwnEnumerableCheck(prop.value, entry, depth + 1)
+	return !!entry.undeclared || node.structure.index !== undefined
 }
 
 export const writeIndiscriminableMorphMessage = (

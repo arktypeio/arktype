@@ -150,10 +150,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _unitBranches: (Unit.Node | Morph.Node)[] | undefined
 	get unitBranches(): (Unit.Node | Morph.Node)[] {
 		// only a morph's input can be a unit where it isn't one itself
-		return (this._unitBranches ??= this.branches.filter(
+		return (this.c.unitBranches ??= this.branches.filter(
 			(n): n is Unit.Node | Morph.Node =>
 				n.is("unit") || (n.is("morph") && n._in.is("unit"))
 		))
@@ -162,38 +161,31 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	private _disc: Discriminant | null | undefined
 	get discriminant(): Discriminant | null {
-		if (this._disc === undefined) {
+		if (this.c.disc === undefined) {
 			// null while discriminating, which can read this union's references
-			this._disc = null
-			this._disc = this.discriminate()
+			this.c.disc = null
+			this.c.disc = this.discriminate()
 		}
-		return this._disc
+		return this.c.disc
 	}
 
-	/** `discCases`, once read */
-	private _discCases: DiscriminantCases | undefined
 	/** the cases of its discriminant, by the serialized value each branch is discriminated by */
 	get discCases(): DiscriminantCases {
-		return (this._discCases ??= casesOf(this.discriminant!))
+		return (this.c.discCases ??= casesOf(this.discriminant!))
 	}
 
-	/** `missLists`, once read */
-	private _missLists: boolean | undefined
 	/** whether a miss of its own value lists its branches: if one is described, as an indiscriminable union's does */
 	get missLists(): boolean {
-		return (this._missLists ??=
+		return (this.c.missLists ??=
 			!isAuthored(this) &&
 			this.discriminant!.path.length === 0 &&
 			this.branches.some(isAuthored))
 	}
 
-	/** `discDesc`, once read */
-	private _discDesc: string | undefined
 	/** the description of what its discriminant expects */
 	get discDesc(): string {
-		return (this._discDesc ??=
+		return (this.c.discDesc ??=
 			isAuthored(this) ? this.meta.description! : describeCases(this.discCases))
 	}
 
@@ -210,11 +202,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return isAuthored(this) ? [] : this.discriminant!.path
 	}
 
-	/** `discMeta`, once read */
-	private _discMeta: ArkEnv.meta | undefined
 	/** the meta its discriminant's errors are written with: at a key, expected and actual describe the object around it */
 	get discMeta(): ArkEnv.meta {
-		return (this._discMeta ??= metaAtDiscriminant(
+		return (this.c.discMeta ??= metaAtDiscriminant(
 			this.meta,
 			this.missPath,
 			this.branches
@@ -249,7 +239,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// an indiscriminable union picks the branch it transforms by its Allows
 	protected override get ctxSel(): boolean {
 		const discriminant = this.discriminant
-		if (!discriminant) return true
+		if (!discriminant || discriminant.ownEnumerableDefault) return true
 		for (const k in discriminant.cases) {
 			const caseNode = discriminant.cases[k]
 			if (caseNode !== true && caseNode.tfCtx) return true
@@ -290,11 +280,20 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				:	b.tAllows(data, ctx)
 			)
 		}
-		const caseNode =
-			discriminant.cases[
-				caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
-			]
-		return caseNode === true || !!caseNode?.tAllows(data, ctx)
+		const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+		const caseNode = discriminant.cases[k]
+		if (caseNode === true || caseNode?.tAllows(data, ctx)) return true
+		if (
+			discriminant.ownEnumerableDefault &&
+			k !== "default" &&
+			!isOwnEnumerablePath(discriminant.path, data)
+		) {
+			const fallback = discriminant.cases.default as BaseRoot
+			return fallback.checksCtx ?
+					allowsInBranch(ctx as Traversal, fallback, data)
+				:	fallback.tAllows(data, ctx)
+		}
+		return false
 	}
 
 	tApply(data: unknown, ctx: InternalTraversal): void {
@@ -312,6 +311,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				this.applyDefault(data, ctx, value)
 				return
 			}
+			if (
+				discriminant.ownEnumerableDefault &&
+				!isOwnEnumerablePath(discriminant.path, data) &&
+				allowsInBranch(ctx, discriminant.cases.default as BaseRoot, data)
+			)
+				return
 			const member = discriminant.members?.[k]
 			if (member) applyMember(caseNode, data, ctx, member)
 			else caseNode.tApply(data, ctx)
@@ -360,10 +365,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
 	// built once, as a node's is, so its errors share a builder
 	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
-		return (this._missContexts ??= [false, true].map(
+		return (this.c.missContexts ??= [false, true].map(
 			(absent): omit<DiscriminantErrorContext, "data"> => ({
 				code: "discriminant",
 				...this.discCases,
@@ -396,6 +400,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 			const caseNode = discriminant.cases[k]
+			if (
+				discriminant.ownEnumerableDefault &&
+				k !== "default" &&
+				caseNode !== true &&
+				!isOwnEnumerablePath(discriminant.path, data) &&
+				(!caseNode || !allowsInBranch(ctx, caseNode, data))
+			) {
+				const fallback = discriminant.cases.default as BaseRoot
+				if (allowsInBranch(ctx, fallback, data))
+					return fallback.tfs ? transform(ctx, fallback, data) : data
+			}
 			if (caseNode === true || !caseNode?.tfs) return data
 			const member = discriminant.members?.[k]
 			return member ?
@@ -444,6 +459,20 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// we need to access the path as optional so we don't throw if it isn't present
 		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
 		const cases = discriminant.cases
+		const fallback =
+			discriminant.ownEnumerableDefault ?
+				(cases.default as BaseRoot)
+			:	undefined
+		const ownEnumGuard =
+			fallback ?
+				`!${compileOwnEnumerablePath(js, discriminant.path)}`
+			:	undefined
+		const fallbackAllows =
+			fallback ?
+				fallback.checksCtx ?
+					`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(fallback, "Allows")}, data)`
+				:	js.inv(fallback, { kind: "Allows" })
+			:	undefined
 		const written: SwitchCase[] = []
 		for (const k in cases) {
 			const v = cases[k]
@@ -460,18 +489,41 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
 				:	`case ${k}`
 			const member = discriminant.members?.[k]
-			const caseResult =
-				js.trav === "Transform" ?
-					v !== true && v.tfs ?
-						invokeTransform(js, v, member)
-					:	"data"
-				: v === true ? "true"
-				: js.trav !== "Apply" ? js.inv(v)
-				: k === "default" ?
-					(js.defaultFails?.(this, v) ??
-					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
-				: member ? js.applyMember(v, member)
-				: js.inv(v)
+			let caseResult: string
+			if (js.trav === "Transform") {
+				const caseTf =
+					v !== true && v.tfs ? invokeTransform(js, v, member) : "data"
+				if (
+					fallback &&
+					k !== "default" &&
+					v !== true &&
+					(v.tfs || fallback.tfs)
+				) {
+					const vAllows =
+						v.checksCtx ?
+							`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(v, "Allows")}, data)`
+						:	js.inv(v, { kind: "Allows" })
+					const fallbackTf =
+						fallback.tfs ? invokeTransform(js, fallback) : "data"
+					caseResult = `(${ownEnumGuard} && !(${vAllows}) && ${fallbackAllows}) ? ${fallbackTf} : ${caseTf}`
+				} else caseResult = caseTf
+			} else if (v === true) caseResult = "true"
+			else if (js.trav !== "Apply") {
+				caseResult =
+					fallback && k !== "default" ?
+						`(${js.inv(v)}) || (${ownEnumGuard} && ${fallbackAllows})`
+					:	js.inv(v)
+			} else if (k === "default") {
+				caseResult =
+					js.defaultFails?.(this, v) ??
+					`${js.ref(this)}.applyDefault(data, ctx, ${value})`
+			} else {
+				const applyCase = member ? js.applyMember(v, member) : js.inv(v)
+				caseResult =
+					fallback ?
+						`(${ownEnumGuard} && ${fallbackAllows}) || ${applyCase}`
+					:	applyCase
+			}
 			written.push([caseCondition, caseResult])
 		}
 		const otherwise =
@@ -595,6 +647,39 @@ export const compileDomainOf = (
 const expressBranch = (branch: Union.ChildNode): string =>
 	branch.is("intersection") ? branch.expression : branch.nestedExpr
 
+const propIsEnumerable = Object.prototype.propertyIsEnumerable
+
+const isOwnEnumerablePath = (
+	path: readonly PropertyKey[],
+	data: unknown
+): boolean => {
+	let cur: unknown = data
+	for (let i = 0; i < path.length; i++) {
+		if (!hasDomain(cur, "object")) return false
+		const k = path[i]
+		if (!propIsEnumerable.call(cur, k)) return false
+		cur = (cur as Record<PropertyKey, unknown>)[k]
+	}
+	return true
+}
+
+const compileOwnEnumerablePath = (
+	js: NodeCompiler,
+	path: readonly PropertyKey[]
+): string => {
+	const checks: string[] = []
+	let cur = "data"
+	for (let i = 0; i < path.length; i++) {
+		const k = path[i]
+		const keyExpr = typeof k === "symbol" ? js.ref(k) : JSON.stringify(k)
+		checks.push(
+			`${cur} !== null && (typeof ${cur} === "object" || typeof ${cur} === "function") && Object.prototype.propertyIsEnumerable.call(${cur}, ${keyExpr})`
+		)
+		cur = `${cur}${js.prop(k)}`
+	}
+	return `(${checks.join(" && ")})`
+}
+
 const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
 	let parent: any = data
 	for (const k of path) {
@@ -712,6 +797,8 @@ export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
 	cases: DiscriminatedCases<kind>
 	// the cyclic branch a case was pruned from, entered in its place
 	members?: { [caseKey in CaseKey<kind>]?: BaseRoot }
+	// whether a default branch was excluded from a case solely via own-enumerable-only checks
+	ownEnumerableDefault?: true
 }
 
 export type CaseContext = {

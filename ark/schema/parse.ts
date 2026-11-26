@@ -1,6 +1,7 @@
 /// <reference lib="es2021.weakref" />
 
 import {
+	hasOwn,
 	holdsWeakly,
 	includes,
 	isArray,
@@ -25,6 +26,7 @@ import {
 	type nodeOfKind
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
+import type { AliasNode } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -69,6 +71,7 @@ export interface AttachedParseContext {
 	phase: "unresolved" | "resolving" | "member" | "resolved" | "failed"
 	isReferencedById?: true
 	isReferencedAsThis?: true
+	aliases?: AliasNode[] | undefined
 	index?: number
 	lowlink?: number
 	/** whether a reference reached it while it was resolving */
@@ -150,7 +153,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	for (let i = 0; i < keys.length; i++) {
 		const k = keys[i]
 		if (k === "meta") continue
-		const keyImpl = impl.keys[k]
+		const keyImpl = hasOwn(impl.keys, k) ? impl.keys[k] : undefined
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 		const v = input[k]
@@ -169,11 +172,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
 				// a node already keyed with the meta it would get needs no key written
-				if (
-					reduced.c.key &&
-					isEmptyObject(reduced.meta) &&
-					isEmptyObject(meta)
-				) {
+				if (reduced.c.key && hasNoMeta(reduced.meta) && hasNoMeta(meta)) {
 					$ark.reached?.node(reduced)
 					return reduced
 				}
@@ -204,6 +203,12 @@ export const compareInnerKeys = (l: string, r: string): number =>
 	: l < r ? -1
 	: 1
 
+const hasSymbolMeta = (meta: object): boolean =>
+	Object.getOwnPropertySymbols(meta).length > 0
+
+const hasNoMeta = (meta: object): boolean =>
+	isEmptyObject(meta) && !hasSymbolMeta(meta)
+
 // a value holding an alias outside a structure is deferred to an alias of its own
 export const deferAliases = (v: unknown, $: BaseScope): unknown => {
 	if (isArray(v)) {
@@ -211,7 +216,7 @@ export const deferAliases = (v: unknown, $: BaseScope): unknown => {
 		return deferred.some((element, i) => element !== v[i]) ? deferred : v
 	}
 	if (!isNode(v) || !v.topAlias || v.is("alias")) return v
-	nodesById[v.id] = v
+	nodesById.set(v.id, v)
 	return $.node("alias", { reference: v.id }, { reduced: true })
 }
 
@@ -270,7 +275,13 @@ export const createNode = ({
 
 	// nodes are only cached with a set engine, which reduces them first
 	const key =
-		ignoreCache || isDeferredOrder || isUncachedTopAlias || !$ark.sets ?
+		(
+			ignoreCache ||
+			hasSymbolMeta(meta) ||
+			isDeferredOrder ||
+			isUncachedTopAlias ||
+			!$ark.sets
+		) ?
 			undefined
 		:	nodeKeyOf(kind, impl, inner, metaJson, $)
 
@@ -349,7 +360,7 @@ const nodeKeyOf = (
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
-		hasArkKind(nodesById[inner.reference as NodeId], "root")
+		hasArkKind(nodesById.get(inner.reference as string), "root")
 	)
 		key += ",!"
 	return metaJson ? `${key},${JSON.stringify(metaJson)}` : key
@@ -433,7 +444,7 @@ export const resolveDescription = <node extends BaseNode>(node: node): node => {
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node
-	if (isNode(nodesById[id]))
+	if (isNode(nodesById.get(id)))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	// have to ignore cache to force creation of new potentially cyclic id
 	return createNode({
@@ -451,7 +462,7 @@ export const withMeta = <node extends BaseNode>(
 	meta: ArkEnv.meta,
 	id?: NodeId
 ): node => {
-	if (id && isNode(nodesById[id]))
+	if (id && isNode(nodesById.get(id)))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	return createNode({
 		id,

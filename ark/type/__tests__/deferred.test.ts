@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { IntersectionNode, UnionNode, UnitNode } from "@ark/schema"
 import { hasOwn } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { domainsOf, unitBitsOf } from "arksets/internal"
 import { keywordDomains } from "arktype/internal/deferred.ts"
 import { spawnSync } from "node:child_process"
@@ -675,6 +675,168 @@ console.log(
 )`)
 				attest(out).equals("false true true\n")
 			}
+		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1751
+	describe("frozen and non-extensible deferred Types", () => {
+		it("supports Object.freeze before first call or property read", () => {
+			const Frozen = Object.freeze(type({ frozenProp: "string" }))
+			// direct call (cold + warm)
+			attest(Frozen({ frozenProp: "ok" })).equals({ frozenProp: "ok" })
+			attest(Frozen({ frozenProp: "ok2" })).equals({ frozenProp: "ok2" })
+			attest(Frozen({ frozenProp: 1 }).toString()).snap(
+				"frozenProp must be a string"
+			)
+			// methods, getters, Standard Schema, JSON Schema, instanceof
+			attest(Frozen.allows({ frozenProp: "ok" })).equals(true)
+			attest(Frozen.allows({ frozenProp: 1 })).equals(false)
+			attest(Frozen.assert({ frozenProp: "ok" })).equals({ frozenProp: "ok" })
+			attest(Frozen.expression).snap("{ frozenProp: string }")
+			attest(Frozen.toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { frozenProp: { type: "string" } },
+				required: ["frozenProp"]
+			})
+			attest(Frozen["~standard"].validate({ frozenProp: "ok" })).equals({
+				value: { frozenProp: "ok" }
+			})
+			attest(Frozen instanceof IntersectionNode).equals(true)
+			attest(Frozen instanceof UnionNode).equals(false)
+			// composition & embedding
+			const Extended = Frozen.and({ extra: "number" })
+			attest(Extended({ frozenProp: "ok", extra: 1 })).equals({
+				frozenProp: "ok",
+				extra: 1
+			})
+			const Piped = Frozen.pipe(v => v.frozenProp.length)
+			attest(Piped({ frozenProp: "abc" })).equals(3)
+			const Embedded = type({ inner: Frozen })
+			attest(Embedded({ inner: { frozenProp: "hi" } })).equals({
+				inner: { frozenProp: "hi" }
+			})
+		})
+
+		it("supports Object.freeze on unread chained, cyclic, sealed, and eager Types", () => {
+			const Chained = Object.freeze(type({ sealedProp: "string" }))
+			const Combined = Chained.or("number")
+			attest(Combined({ sealedProp: "a" })).equals({ sealedProp: "a" })
+			attest(Combined(5)).equals(5)
+
+			const Sealed = Object.seal(type({ sealedKey: "number" }))
+			attest(Sealed({ sealedKey: 1 })).equals({ sealedKey: 1 })
+			attest(Sealed.allows({ sealedKey: "x" })).equals(false)
+
+			const NonExt = Object.preventExtensions(type({ nonExtKey: "boolean" }))
+			attest(NonExt({ nonExtKey: true })).equals({ nonExtKey: true })
+
+			const Cyclic = Object.freeze(
+				type({ frozenNode: "string", "next?": "this" })
+			)
+			attest(Cyclic.expression).snap("{ frozenNode: string, next?: this }")
+			attest(Cyclic({ frozenNode: "a", next: { frozenNode: "b" } })).equals({
+				frozenNode: "a",
+				next: { frozenNode: "b" }
+			})
+
+			const Eager = Object.freeze(type.raw({ eagerFrozen: "string" }))
+			for (let i = 0; i < 3; i++) {
+				attest(Eager({ eagerFrozen: "ok" })).equals({ eagerFrozen: "ok" })
+				attest(Eager.allows({ eagerFrozen: "ok" })).equals(true)
+				attest(Eager.allows({ eagerFrozen: 1 })).equals(false)
+			}
+			// post-2nd-call operations & lazy memos on frozen eager/settled Types
+			attest(Eager.in.expression).snap("{ eagerFrozen: string }")
+			attest(Eager.out.expression).snap("{ eagerFrozen: string }")
+			attest(Eager.and("unknown").expression).snap("{ eagerFrozen: string }")
+			attest(Eager["~standard"].validate({ eagerFrozen: "ok" })).equals({
+				value: { eagerFrozen: "ok" }
+			})
+			attest(Eager.internal.keyof().expression).snap('"eagerFrozen"')
+
+			// frozen eager discriminated union (lazy _disc / _discCases / _missContexts / _errorCtx)
+			const FrozenUnion = Object.freeze(
+				type.raw({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" })
+			)
+			for (let i = 0; i < 3; i++) {
+				attest(FrozenUnion({ kind: "a", a: "hi" })).equals({
+					kind: "a",
+					a: "hi"
+				})
+				attest(FrozenUnion({ kind: "c" }).toString()).snap(
+					'kind must be "a" or "b"'
+				)
+				attest(FrozenUnion.allows({ kind: "b", b: 1 })).equals(true)
+			}
+			attest(FrozenUnion["~standard"].validate({ kind: "b", b: 1 })).equals({
+				value: { kind: "b", b: 1 }
+			})
+
+			// frozen eager morph pipeline (lazy _traversedMorphs) & basis errorCtx
+			const FrozenPipe = Object.freeze(
+				type
+					.raw("string")
+					.pipe(s => s.trim(), type.raw("string > 0"))
+					.configure({ message: "bad pipe" })
+			)
+			for (let i = 0; i < 3; i++) {
+				attest(FrozenPipe(" ok ")).equals("ok")
+				attest(FrozenPipe("   ").toString()).snap("bad pipe")
+			}
+
+			// frozen eager scope export (including cyclic alias)
+			const FrozenScoped = Object.freeze(
+				scope({
+					node: { label: "string", "next?": "node" }
+				}).export().node
+			)
+			for (let i = 0; i < 3; i++) {
+				attest(FrozenScoped({ label: "a", next: { label: "b" } })).equals({
+					label: "a",
+					next: { label: "b" }
+				})
+				attest(FrozenScoped.allows({ label: 1 })).equals(false)
+			}
+			attest(FrozenScoped.keyof().expression).snap('"label" | "next"')
+			attest(FrozenScoped["~standard"].validate({ label: "x" })).equals({
+				value: { label: "x" }
+			})
+
+			// settled-before-freeze Type
+			const SettledBeforeFreeze = type({ settledFirst: "string" })
+			void SettledBeforeFreeze.expression
+			Object.freeze(SettledBeforeFreeze)
+			for (let i = 0; i < 3; i++) {
+				attest(SettledBeforeFreeze({ settledFirst: "ok" })).equals({
+					settledFirst: "ok"
+				})
+				attest(SettledBeforeFreeze.allows({ settledFirst: 1 })).equals(false)
+			}
+			attest(SettledBeforeFreeze.in.expression).snap("{ settledFirst: string }")
+			attest(SettledBeforeFreeze.out.expression).snap(
+				"{ settledFirst: string }"
+			)
+			attest(SettledBeforeFreeze.and("unknown").expression).snap(
+				"{ settledFirst: string }"
+			)
+			attest(
+				SettledBeforeFreeze["~standard"].validate({ settledFirst: "ok" })
+			).equals({ value: { settledFirst: "ok" } })
+			attest(SettledBeforeFreeze.keyof().expression).snap('"settledFirst"')
+
+			// rawPipeOnce unwraps frozen deferred shell cleanly
+			const FrozenUnread = Object.freeze(type({ pipedFrozen: "string" }))
+			const PipedToFrozen = type("unknown").pipe(v => v, FrozenUnread)
+			attest(PipedToFrozen.internal.assertIs("morph").tail).is(
+				FrozenUnread.internal
+			)
+			attest(PipedToFrozen({ pipedFrozen: "ok" })).equals({
+				pipedFrozen: "ok"
+			})
+			attest(PipedToFrozen({ pipedFrozen: 1 }).toString()).snap(
+				"pipedFrozen must be a string"
+			)
 		})
 	})
 })

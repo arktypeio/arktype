@@ -207,4 +207,48 @@ contextualize(() => {
 		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1773
+	it("collects dynamically created recursive this and cyclic scope types", async () => {
+		const createThis = () => {
+			const T = type({ gcThisKey: "string", "children?": "this[]" })
+			// exercise both cold and JIT-compiled paths
+			attest(
+				T.allows({ gcThisKey: "a", children: [{ gcThisKey: "b" }] })
+			).equals(true)
+			attest(T.allows({ gcThisKey: "a", children: [{ gcThisKey: 1 }] })).equals(
+				false
+			)
+			return new WeakRef(T)
+		}
+		const createCyclicScope = () => {
+			const $ = scope({
+				node: { gcScopeKey: "string", "next?": "other" },
+				other: { gcOtherKey: "number", "back?": "node" }
+			})
+			const types = $.export()
+			attest(
+				types.node.allows({
+					gcScopeKey: "a",
+					next: { gcOtherKey: 1, back: { gcScopeKey: "b" } }
+				})
+			).equals(true)
+			attest(
+				types.node.allows({
+					gcScopeKey: "a",
+					next: { gcOtherKey: "bad" }
+				})
+			).equals(false)
+			return [new WeakRef($), new WeakRef(types.node), new WeakRef(types.other)]
+		}
+		const thisRef = createThis()
+		const scopeRefs = createCyclicScope()
+		for (const ref of [thisRef, ...scopeRefs]) await collectTarget(ref)
+		attest(thisRef.deref()).equals(undefined)
+		attest(scopeRefs.map(r => r.deref())).equals([
+			undefined,
+			undefined,
+			undefined
+		])
+	})
 })
