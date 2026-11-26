@@ -25,10 +25,12 @@ import {
 	pruneBeforePluginMessage,
 	writePruneHostMessage
 } from "@ark/aot/internal/settings.ts"
+import { configs } from "@ark/aot/eslint"
 import { precompile as bunPlugin } from "@ark/aot/bun"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { Linter } from "eslint"
 import { noIssueFeatures } from "arktype/internal/standalone.ts"
 import { rspack } from "@rspack/core"
 import {
@@ -6958,6 +6960,146 @@ console.log(String(User({ name: 5 })))
 					"0 sites in 0 files: 0 accepted (100.0%)\n"
 				])
 			}
+		})
+	})
+
+	describe("fromJsonSchema and Object.freeze/seal on Types", () => {
+		it("precompiles fromJsonSchema and Object.freeze/seal cleanly across speed, smallest, prune, ark check and eslint", async () => {
+			const main = `import { fromJsonSchema, type } from "arktype"
+
+export const Tags = fromJsonSchema({
+	type: "array",
+	items: { type: "string" }
+})
+export const FrozenA = Object.freeze(type({ a: "string" }))
+const T = type({ b: "number" })
+export const FrozenB = Object.freeze(T)
+export const SealedB = Object.seal(T)
+export const NonExtB = Object.preventExtensions(T)
+
+const out = Tags(["a", "b"])
+const mapped = out instanceof type.errors ? [] : out.map(s => s.toUpperCase())
+const bad = Tags["~standard"].validate([1])
+const issues = "issues" in bad && bad.issues ? bad.issues.map(i => i.message) : []
+const stdSchema = Tags["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+const directSchema = Tags.toJsonSchema()
+
+console.log(
+	JSON.stringify({
+		mapped,
+		issues,
+		stdType: stdSchema.type,
+		directType: directSchema.type,
+		aOk: FrozenA({ a: "hi" }),
+		aBad: FrozenA({ a: 1 }) instanceof type.errors,
+		bOk: FrozenB({ b: 42 }),
+		bBad: FrozenB({ b: "x" }) instanceof type.errors,
+		sealedOk: SealedB.allows({ b: 1 }),
+		nonExtOk: NonExtB.allows({ b: 2 }),
+		isFrozen: Object.isFrozen(FrozenA),
+		isSealed: Object.isSealed(SealedB),
+		isExtensible: Object.isExtensible(NonExtB)
+	})
+)
+`
+			const root = writeFixture(
+				{ "package.json": `{"type":"module"}`, "main.ts": main },
+				tempPath("prune", "fromJsonSchema-freeze")
+			)
+			const expected = runPlain(root)
+			attest(JSON.parse(expected)).snap({
+				mapped: ["A", "B"],
+				issues: ["must be a string"],
+				stdType: "array",
+				directType: "array",
+				aOk: { a: "hi" },
+				aBad: true,
+				bOk: { b: 42 },
+				bBad: true,
+				sealedOk: true,
+				nonExtOk: true,
+				isFrozen: true,
+				isSealed: true,
+				isExtensible: false
+			})
+			for (const opts of [
+				{ prune: true },
+				{ preset: "smallest", prune: true }
+			] as PrecompileUnpluginOptions[]) {
+				const { outputFiles } = await build({
+					entryPoints: [join(root, "main.ts")],
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions: ["ark-ts", "production"],
+					logLevel: "silent",
+					plugins: [
+						precompile.esbuild({
+							cwd: root,
+							conditions: ["ark-ts", "production"],
+							...opts
+						})
+					]
+				})
+				attest(run(outputFiles![0].text)).equals(expected)
+			}
+			const check = runCli(root, "--check", "--prune")
+			attest([check.status, check.stderr]).equals([0, ""])
+			const linted = new Linter({ configType: "flat", cwd: root }).verify(
+				main,
+				[configs.recommended],
+				{ filename: join(root, "main.ts") }
+			)
+			attest(linted).equals([])
+		}).timeout(120_000)
+
+		it("bakes introspection in the defining module when an exported Type is frozen/sealed under freeze: false per-module mode", () => {
+			const files = {
+				"/a.ts": `import { type } from "arktype"
+export const FrozenUser = Object.freeze(type({ name: "string" }))
+const Base = type({ count: "number" })
+Object.seal(Base)
+export const SealedCount = Base
+export const NonExtFlag = type({ ok: "boolean" })
+Object.preventExtensions(NonExtFlag)
+`,
+				"/b.ts": `import { FrozenUser, NonExtFlag, SealedCount } from "./a.ts"
+console.log(JSON.stringify({
+	frozen: FrozenUser.toJsonSchema().type,
+	sealed: SealedCount.toJsonSchema().type,
+	nonExt: NonExtFlag.toJsonSchema().type,
+	ok: FrozenUser.allows({ name: "Ada" })
+}))
+`
+			}
+			const compiler = new Precompiler(memoryHost(files), {
+				cwd: "/",
+				freeze: false,
+				inline: true
+			})
+			const outA = compiler.precompile(files["/a.ts"], "/a.ts")
+			const outB = compiler.precompile(files["/b.ts"], "/b.ts")
+			attest([outA.diagnostics, outB.diagnostics]).equals([[], []])
+			// importer must not emit a deferred bakeInto wrapper for frozen/sealed/non-extensible exports
+			attest(outB.code.includes("bakeInto")).equals(false)
+			const dir = writeFixture(
+				{
+					"package.json": `{"type":"module"}`,
+					"a.js": outA.code,
+					"b.js": outB.code.replace("./a.ts", "./a.js")
+				},
+				tempPath("prune", "freeze-false-per-module")
+			)
+			const res = spawnSync(
+				process.execPath,
+				["--conditions", "ark-ts", join(dir, "b.js")],
+				{ cwd: dir, encoding: "utf8" }
+			)
+			attest([res.status, res.stderr, JSON.parse(res.stdout)]).equals([
+				0,
+				"",
+				{ frozen: "object", sealed: "object", nonExt: "object", ok: true }
+			])
 		})
 	})
 })

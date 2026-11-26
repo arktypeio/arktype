@@ -1814,6 +1814,13 @@ class Follow {
 				return true
 			case "Object.freeze":
 			case "Object.seal":
+			case "Object.preventExtensions":
+				if (index === 0) {
+					if (isValue && !this.readers.program.whole)
+						this.lose(call, module, `prevents extensions with ${name}`)
+					this.push(call, module, held)
+				}
+				return true
 			case "Promise.resolve":
 				if (index === 0) this.push(call, module, held)
 				return true
@@ -1889,6 +1896,9 @@ class Follow {
 				if (isValue && this.isComparison(call.arguments[index], held, module))
 					this.lose(call, module, "compares it")
 				return true
+			case "Object.isFrozen":
+			case "Object.isSealed":
+			case "Object.isExtensible":
 			case "Array.isArray":
 			case "Boolean":
 			case "Number.isFinite":

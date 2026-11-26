@@ -2314,7 +2314,11 @@ export class Precompiler {
 					target.kind === "binding" || target.kind === "expression" ?
 						this.interpreter.exportValue(target).value
 					:	undefined
-				if (target.kind !== "namespace" && !isBakeable(value)) continue
+				if (
+					target.kind !== "namespace" &&
+					(!isBakeable(value) || this.isExportNonExtensible(target))
+				)
+					continue
 				for (const reference of binding.references) {
 					// an export is read by the modules importing it
 					const [, parent] = operatorOf(reference.id)
@@ -2358,7 +2362,7 @@ export class Precompiler {
 							exported.kind === "binding" || exported.kind === "expression" ?
 								this.interpreter.exportValue(exported).value
 							:	undefined
-						if (isBakeable(value))
+						if (isBakeable(value) && !this.isExportNonExtensible(exported))
 							seeds.push({ runtime, node: parent!, held: validatorHeld, value })
 						break
 					}
@@ -2418,6 +2422,96 @@ export class Precompiler {
 			:	undefined
 	}
 
+	private isNonExtensibleCall(node: Node, module: SourceModule): boolean {
+		const unwrapped = unwrapChain(node)
+		if (unwrapped.type !== "CallExpression") return false
+		const callee = unwrapChain(unwrapped.callee)
+		if (callee.type !== "MemberExpression") return false
+		const obj = unwrapChain(callee.object)
+		if (obj.type !== "Identifier" || module.scopes.byId.get(obj)?.binding)
+			return false
+		const name = memberNameOf(callee)
+		return (
+			obj.name === "Object" &&
+			(name === "freeze" || name === "seal" || name === "preventExtensions")
+		)
+	}
+
+	private isBindingNonExtensible(
+		binding: Binding,
+		module: SourceModule,
+		seen = new Set<Binding>()
+	): boolean {
+		if (seen.has(binding)) return false
+		seen.add(binding)
+		for (const reference of binding.references) {
+			const [operand, parent] = operatorOf(reference.id)
+			if (
+				parent?.type === "CallExpression" &&
+				parent.arguments[0] === operand &&
+				this.isNonExtensibleCall(parent, module)
+			)
+				return true
+			if (
+				parent?.type === "VariableDeclarator" &&
+				parent.init === operand &&
+				parent.id.type === "Identifier"
+			) {
+				const alias = module.scopes.bindingsById.get(parent.id)
+				if (alias && this.isBindingNonExtensible(alias, module, seen))
+					return true
+			}
+		}
+		const init =
+			binding.declaration.type === "VariableDeclarator" ?
+				binding.declaration.init
+			:	undefined
+		return !!init && this.isNodeNonExtensible(init, module, seen)
+	}
+
+	private isNodeNonExtensible(
+		node: Node,
+		module: SourceModule,
+		seen = new Set<Binding>()
+	): boolean {
+		const unwrapped = unwrapChain(node)
+		if (this.isNonExtensibleCall(unwrapped, module)) return true
+		if (unwrapped.type === "Identifier") {
+			const binding = module.scopes.byId.get(unwrapped)?.binding
+			if (binding) return this.isBindingNonExtensible(binding, module, seen)
+		}
+		return false
+	}
+
+	private isExportNonExtensible(target: ImportTarget): boolean {
+		if (target.kind === "binding")
+			return this.isBindingNonExtensible(target.binding, target.module)
+		if (target.kind === "expression")
+			return this.isNodeNonExtensible(target.node, target.module)
+		return false
+	}
+
+	private isSiteNonExtensible(site: Span, module: SourceModule): boolean {
+		const node = nodeAt(module, site)
+		if (!node) return false
+		const [operand, parent] = operatorOf(node)
+		if (
+			parent?.type === "CallExpression" &&
+			parent.arguments[0] === operand &&
+			this.isNonExtensibleCall(parent, module)
+		)
+			return true
+		if (
+			parent?.type === "VariableDeclarator" &&
+			parent.init === operand &&
+			parent.id.type === "Identifier"
+		) {
+			const binding = module.scopes.bindingsById.get(parent.id)
+			return !!binding && this.isBindingNonExtensible(binding, module)
+		}
+		return false
+	}
+
 	// the Types a module exports, by name, as an import of it whole reads them
 	private validatorExportsOf(
 		module: SourceModule,
@@ -2443,7 +2537,8 @@ export class Precompiler {
 				continue
 			}
 			const value = this.exportedValueOf(module, name)
-			if (isBakeable(value)) result[name] = value
+			if (isBakeable(value) && !this.isExportNonExtensible(exported))
+				result[name] = value
 		}
 		return result
 	}
@@ -4210,7 +4305,9 @@ export class Precompiler {
 				// a frozen validator takes no member its importer bakes
 				...(!this.standalone.freeze && {
 					importersBake: (exporter, name, value) =>
-						isBakeable(value) && this.exportedValueOf(exporter, name) === value,
+						isBakeable(value) &&
+						this.exportedValueOf(exporter, name) === value &&
+						!this.isExportNonExtensible(this.graph.exportOf(exporter, name)),
 					equalsBake: isBakeable
 				})
 			}
@@ -4234,8 +4331,12 @@ export class Precompiler {
 			const members = baked.get(siteKeyOf(module.id, site))
 			if (!members) continue
 			// its equal in another module may be created first, so it's baked as
-			// what reads that is
-			if (readsAlone && isBakeable(site.value)) {
+			// what reads that is — unless this module makes it non-extensible
+			if (
+				readsAlone &&
+				isBakeable(site.value) &&
+				!this.isSiteNonExtensible(site, module)
+			) {
 				const bake: ImportedBake = {
 					name: `bake${bakes.length}`,
 					baked: { bakes: site.value, ...members },

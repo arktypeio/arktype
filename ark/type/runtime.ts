@@ -281,7 +281,7 @@ export const bakeInto = <t>(
 	{ "~standard": standard, ...attributes }: Omit<ValidatorAttributes, "meta">
 ): t => {
 	// a Type arktype created, as where a site is left to it, has each member
-	if (validator instanceof Validator) {
+	if (validator instanceof Validator && Object.isExtensible(validator)) {
 		const prior: BakedJsonSchema | undefined = Reflect.getOwnPropertyDescriptor(
 			validator,
 			"toJsonSchema"

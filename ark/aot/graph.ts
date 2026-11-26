@@ -516,7 +516,13 @@ const readingMembersByGlobal: Record<string, string[]> = Object.setPrototypeOf(
 		JSON: ["stringify"],
 		Number: ["parseInt", "parseFloat", "isInteger", "isSafeInteger"],
 		// not is, which compares identity, as equal Types share one in arktype
-		Object: ["keys", "isFrozen", "isSealed", "getOwnPropertyNames"],
+		Object: [
+			"keys",
+			"isFrozen",
+			"isSealed",
+			"isExtensible",
+			"getOwnPropertyNames"
+		],
 		Array: ["isArray"]
 	},
 	null
@@ -844,12 +850,48 @@ const heldByMethod: Record<string, [result: Relation, callback?: Relation[]]> =
 const heldByGlobal: Record<string, Relation> = Object.setPrototypeOf(
 	{
 		"Object.freeze": "self",
+		"Object.seal": "self",
+		"Object.preventExtensions": "self",
 		"Object.values": "copy",
 		"Object.entries": "pairs",
 		"Object.getOwnPropertyDescriptor": "copy",
 		"Object.getOwnPropertyDescriptors": "pairs",
 		"Array.from": "copy",
 		"Reflect.get": "element"
+	},
+	null
+)
+
+// Object methods that return their first argument unchanged without reflecting on its properties
+const identityObjectMethods: Record<string, 1> = Object.setPrototypeOf(
+	{
+		"Object.freeze": 1,
+		"Object.seal": 1,
+		"Object.preventExtensions": 1
+	},
+	null
+)
+
+// Object methods that test identity or extensibility without reflecting on properties
+const predicateObjectMethods: Record<string, 1> = Object.setPrototypeOf(
+	{
+		"Object.is": 1,
+		"Object.isFrozen": 1,
+		"Object.isSealed": 1,
+		"Object.isExtensible": 1
+	},
+	null
+)
+
+const nonReflectingObjectMethods: Record<string, 1> = Object.setPrototypeOf(
+	{
+		is: 1,
+		freeze: 1,
+		seal: 1,
+		preventExtensions: 1,
+		isFrozen: 1,
+		isSealed: 1,
+		isExtensible: 1
 	},
 	null
 )
@@ -942,7 +984,7 @@ const inferenceMembers: Record<string, 1> = Object.setPrototypeOf(
 const exportKindOf = (name: ArkExportName): KindBits =>
 	isRuntimeExport(name) || name in errorReaders ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
-	: name === "codec" ? typeMethod
+	: name === "codec" || name === "fromJsonSchema" ? typeMethod
 	: kinds.otherArk | kinds.returnsArk
 
 // e.g. a Type for `T.in`, a method for `T.and`, data for `T.expression`
@@ -3870,6 +3912,17 @@ export class ModuleGraph {
 		if (!fn) {
 			const unrefed = node.type === "CallExpression" && unrefedOf(node, module)
 			if (unrefed) return this.transfer(unrefed, module, kindOfKey)
+			if (node.type === "CallExpression") {
+				const global = this.globalMemberOf(callee, module)
+				if (
+					global &&
+					global in identityObjectMethods &&
+					node.arguments[0] &&
+					node.arguments[0].type !== "SpreadElement"
+				)
+					return this.transfer(node.arguments[0], module, kindOfKey)
+				if (global && global in predicateObjectMethods) return kinds.data
+			}
 			return (
 				callKindOf(this.transfer(callee, module, kindOfKey)) |
 				(node.type === "CallExpression" ?
@@ -4931,7 +4984,9 @@ export class ModuleGraph {
 			) ?
 				[key.value, [object]]
 			: (
-				(global.name === "Object" && name !== "is") || global.name === "Reflect"
+				(global.name === "Object" &&
+					!(typeof name === "string" && name in nonReflectingObjectMethods)) ||
+				global.name === "Reflect"
 			) ?
 				[undefined, args]
 			:	undefined

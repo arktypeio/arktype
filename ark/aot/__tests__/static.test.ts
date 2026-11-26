@@ -3784,4 +3784,79 @@ const A = type(read({}))`)
 			"3:11 rejected\n  `o.a.b` reads a property of undefined, which throws"
 		])
 	})
+
+	describe("fromJsonSchema and non-reflecting Object methods", () => {
+		it("classifies fromJsonSchema as Type-returning", () => {
+			const source = `import { fromJsonSchema, type } from "arktype"
+export const Tags = fromJsonSchema({
+	type: "array",
+	items: { type: "string" }
+})
+export const upperTags = (input: unknown) => {
+	const out = Tags(input)
+	if (out instanceof type.errors) return []
+	return out.map(s => s.toUpperCase())
+}
+export const issueMessages = (input: unknown) => {
+	const res = Tags["~standard"].validate(input)
+	if ("issues" in res && res.issues) return res.issues.map(i => i.message)
+	return []
+}
+export const inputSchema = () =>
+	Tags["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+export const jsonSchema = () => Tags.toJsonSchema()`
+			attest(statusesOf(source)).snap([
+				"2:21 accepted string[]",
+				"18:33 accepted"
+			])
+			attest(diagnosticsOf(source)).equals([])
+		})
+
+		it("allows Object.freeze/seal/preventExtensions and extensibility checks on Types while still refusing reflection", () => {
+			const okSource = `import { type } from "arktype"
+export const FrozenA = Object.freeze(type({ a: "string" }))
+const T = type({ b: "number" })
+export const FrozenB = Object.freeze(T)
+export const Sealed = Object.seal(T)
+export const NonExt = Object.preventExtensions(T)
+export const check = (input: unknown) => {
+	const out = FrozenA(input)
+	if (out instanceof type.errors) return out.issues.map(i => i.message)
+	return [
+		out.a,
+		FrozenB.allows(input),
+		Sealed.allows(input),
+		NonExt.allows(input),
+		Object.isFrozen(T),
+		Object.isSealed(T),
+		Object.isExtensible(T),
+		Object.is(FrozenB, T)
+	]
+}`
+			attest(statusesOf(okSource)).snap([
+				"2:38 accepted { a: string }",
+				"3:11 accepted { b: number }"
+			])
+			attest(diagnosticsOf(okSource)).equals([])
+
+			const badSource = `import { type } from "arktype"
+const T = type({ a: "string" })
+export const a = Object.keys(T)
+export const b = Object.entries(T)
+export const c = Object.values(T)
+export const d = Object.assign({}, T)
+export const e = Object.getOwnPropertyNames(T)
+export const f = Object.getOwnPropertyDescriptors(T)
+export const g = Object.defineProperty(T, "x", { value: 1 })`
+			attest(diagnosticsOf(badSource)).snap([
+				'/main.ts:3:18  Object.keys(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:4:18  Object.entries(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:18  Object.values(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:6:18  Object.assign({}, T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:7:18  Object.getOwnPropertyNames(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:8:18  Object.getOwnPropertyDescriptors(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:9:18  Object.defineProperty(T, "x", { value: 1 }) writes to an arktype value, which throws at runtime\n  `T` is an arktype value, which the standalone runtime freezes with what it holds\n  Keep what you attach in an object of your own, or build with runtime: "arktype".'
+			])
+		})
+	})
 })
