@@ -26,6 +26,25 @@ contextualize(() => {
 		attest(T.json).equals(type("'a'|'b'").json)
 	})
 
+	it("all-optional and empty object literals", () => {
+		const Opt = type({ "a?": "string" }).keyof()
+		attest<"a">(Opt.infer)
+		attest(Opt.json).equals(type("'a'").json)
+
+		const Partial = type({ a: "string", b: "number" }).partial().keyof()
+		attest<"a" | "b">(Partial.infer)
+		attest(Partial.json).equals(type("'a' | 'b'").json)
+
+		// type({}) infers as Type<object> (matching type("object")); an exact empty
+		// object type `{}` (e.g. from omit) still has keyof `never`
+		const OmittedEmpty = type({ a: "string" }).omit("a")
+		attest(() => OmittedEmpty.keyof()).throws(
+			writeUnsatisfiableExpressionError("keyof {}")
+		)
+		const emptyKeyof = () => OmittedEmpty.keyof().infer
+		attest<() => never>(emptyKeyof)
+	})
+
 	it("overlapping union", () => {
 		const T = type({ a: "number", b: "boolean" })
 			.or({ b: "number", c: "string" })

@@ -10,7 +10,7 @@ import {
 	writeIndiscriminableMorphMessage,
 	writeMorphIntersectionMessage
 } from "arksets/internal"
-import { scope, type, type Type } from "arktype"
+import { scope, type, type Brand, type Type } from "arktype"
 import { writeUnresolvedFilterMessage } from "arktype/internal/keywords/ts.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 
@@ -1669,5 +1669,24 @@ swap.swap.order[1] must be "on"`)
 			proto._resolve = _resolve
 		}
 		attest(resolves < 10).equals(true)
+	})
+
+	it("infers recursive readonly arrays without infinite recursion", () => {
+		type Value = number | readonly Value[]
+		const Thing = type("unknown").as<Value>()
+		attest<Value>(Thing.infer)
+		attest<Value>(Thing.inferIn)
+		attest(Thing([1, [2]])).equals([1, [2]])
+
+		// also when distillation must traverse into the readonly array (e.g. branded element)
+		type BrandedValue = number | Brand<string, "id"> | readonly BrandedValue[]
+		type UnbrandedValue = number | string | readonly UnbrandedValue[]
+		const BrandedThing = type("unknown").as<BrandedValue>()
+		attest<BrandedValue>(BrandedThing.infer)
+		attest<UnbrandedValue>(BrandedThing.inferIn)
+
+		// wrapped in an object type
+		const Wrapped = type({ value: Thing })
+		attest<{ value: Value }>(Wrapped.infer)
 	})
 })

@@ -79,7 +79,8 @@ type distilledSidesOf<t> =
 			{ [i: number]: distilledSidesOf<t[number]> }
 		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
 	: isSafelyMappable<t> extends true ?
-		string extends keyof t ? indexedSidesOf<t>
+		keyof t extends never ? never
+		: string extends keyof t ? indexedSidesOf<t>
 		: symbol extends keyof t ? indexedSidesOf<t>
 		: { [k in keyof t]-?: distilledSidesOf<t[k]> }
 	:	never
@@ -171,8 +172,12 @@ type isInferredDefault<v> =
 
 type distillArray<t extends array, side extends DistillSide> =
 	// fast path for non-tuple arrays with no extra props
-	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ? alignReadonly<_distill<t[number], side>[], t>
+	// this also allows TS to infer certain recursive arrays like JSON,
+	// including readonly recursive arrays without forcing Readonly<...>
+	t[number][] extends t ?
+		t extends unknown[] ?
+			_distill<t[number], side>[]
+		:	readonly _distill<t[number], side>[]
 	:	distillNonArraykeys<
 			t,
 			alignReadonly<distillArrayFromPrefix<[...t], side, []>, t>,

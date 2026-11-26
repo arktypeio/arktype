@@ -712,5 +712,219 @@ contextualize(() => {
 			>().type({ name: "string", kind: "'a'" })
 			attest<{ name: string; kind: "a" }>(T.t)
 		})
+
+		it("object union member", () => {
+			type U = { kind: "a"; a: string } | { kind: "b"; b: number }
+			const A = declare<U, { assignable: true }>().type({
+				kind: "'a'",
+				a: "string"
+			})
+			attest<{ kind: "a"; a: string }>(A.t)
+
+			const B = declare<U, { assignable: true }>().type({
+				kind: "'b'",
+				b: "number"
+			})
+			attest<{ kind: "b"; b: number }>(B.t)
+
+			attest(() =>
+				declare<U, { assignable: true }>().type({
+					kind: "'a'",
+					// @ts-expect-error
+					a: "number"
+				})
+			).type.errors("not assignable to")
+
+			attest(() =>
+				declare<U, { assignable: true }>().type({
+					kind: "'a'",
+					a: "string",
+					// @ts-expect-error
+					extra: "boolean"
+				})
+			).type.errors("'extra' does not exist")
+		})
+	})
+
+	describe("optional and variadic tuples", () => {
+		it("optional element", () => {
+			const StrOpt = declare<[string, number?]>().type(["string", "number?"])
+			attest<[string, number?]>(StrOpt.infer)
+			attest(StrOpt(["a"])).equals(["a"])
+			attest(StrOpt(["a", 1])).equals(["a", 1])
+
+			const TupleOpt = declare<[string, number?]>().type([
+				"string",
+				["number", "?"]
+			])
+			attest<[string, number?]>(TupleOpt.infer)
+
+			attest(() =>
+				// @ts-expect-error
+				declare<[string, number?]>().type(["string", "boolean?"])
+			).type.errors("declared: number; inferred: boolean")
+
+			attest(() =>
+				// @ts-expect-error
+				declare<[string, number?]>().type(["string", "number"])
+			).type.errors("not assignable to type 'OptionalPropertyDefinition'")
+
+			attest(() =>
+				// @ts-expect-error
+				declare<[string, number?]>().type(["string"])
+			).type.errors("Source has 1 element(s) but target requires 2")
+
+			attest(() =>
+				// @ts-expect-error
+				declare<[string, number]>().type(["string", "number?"])
+			).type.errors("declared: number; inferred: number | undefined")
+		})
+
+		it("variadic tuple", () => {
+			const Rest = declare<[string, ...number[]]>().type([
+				"string",
+				"...",
+				"number[]"
+			])
+			attest<[string, ...number[]]>(Rest.infer)
+			attest(Rest(["a", 1, 2])).equals(["a", 1, 2])
+
+			const OptRest = declare<[string, number?, ...boolean[]]>().type([
+				"string",
+				"number?",
+				"...",
+				"boolean[]"
+			])
+			attest<[string, number?, ...boolean[]]>(OptRest.infer)
+
+			attest(() =>
+				// @ts-expect-error
+				declare<[string, ...number[]]>().type(["string", "...", "string[]"])
+			).type.errors(
+				"declared: [string, ...number[]]; inferred: [string, ...string[]]"
+			)
+		})
+
+		it("assignable optional and variadic tuples", () => {
+			const Exact = declare<[string, number?], { assignable: true }>().type([
+				"string",
+				"number"
+			])
+			attest<[string, number]>(Exact.t)
+
+			const Short = declare<[string, number?], { assignable: true }>().type([
+				"string"
+			])
+			attest<[string]>(Short.t)
+
+			const NarrowVariadic = declare<
+				[string, ...number[]],
+				{ assignable: true }
+			>().type(["'a'", "1"])
+			attest<["a", 1]>(NarrowVariadic.t)
+
+			const UnknownTuple = declare<unknown, { assignable: true }>().type([
+				"string"
+			])
+			attest<[string]>(UnknownTuple.t)
+
+			const UnknownObj = declare<unknown, { assignable: true }>().type({
+				a: "string"
+			})
+			attest<{ a: string }>(UnknownObj.t)
+
+			const AnyObj = declare<object, { assignable: true }>().type({
+				a: "string"
+			})
+			attest<{ a: string }>(AnyObj.t)
+
+			const AnyObjTuple = declare<object, { assignable: true }>().type([
+				"string"
+			])
+			attest<[string]>(AnyObjTuple.t)
+		})
+	})
+
+	describe("side: in with defaulted keys", () => {
+		it("accepts defaulted keys for declared-optional input keys", () => {
+			const StrDefault = declare<{ a?: number }, { side: "in" }>().type({
+				a: "number = 1"
+			})
+			attest<{ a?: number }>(StrDefault.inferIn)
+			attest<{ a: number }>(StrDefault.infer)
+			attest(StrDefault({})).equals({ a: 1 })
+
+			const TupleDefault = declare<{ a?: number }, { side: "in" }>().type({
+				a: ["number", "=", 1]
+			})
+			attest<{ a?: number }>(TupleDefault.inferIn)
+			attest<{ a: number }>(TupleDefault.infer)
+
+			const MorphDefault = declare<{ a?: string }, { side: "in" }>().type({
+				a: ["string.numeric.parse", "=", "1"]
+			})
+			attest<{ a?: string }>(MorphDefault.inferIn)
+			attest<{ a: number }>(MorphDefault.infer)
+			attest(MorphDefault({})).equals({ a: 1 })
+
+			const OutRequiredDefault = declare<{ a: number }, { side: "out" }>().type(
+				{
+					a: "number = 1"
+				}
+			)
+			attest<{ a?: number }>(OutRequiredDefault.inferIn)
+			attest<{ a: number }>(OutRequiredDefault.infer)
+		})
+
+		it("rejects mismatched, wrong-side, or required-key defaulted defs", () => {
+			attest(() =>
+				declare<{ a?: number }, { side: "in" }>().type({
+					// @ts-expect-error
+					a: "string = 'hi'"
+				})
+			).type.errors("declared: number; inferred: string")
+
+			attest(() =>
+				declare<{ a?: number }, { side: "out" }>().type({
+					// @ts-expect-error
+					a: "number = 1"
+				})
+			).type.errors("'a' does not exist")
+
+			attest(() =>
+				declare<{ a?: number }>().type({
+					// @ts-expect-error
+					a: "number = 1"
+				})
+			).type.errors("'a' does not exist")
+
+			attest(() =>
+				declare<{ a: number }, { side: "in" }>().type({
+					// @ts-expect-error
+					a: "number = 1"
+				})
+			).type.errors("declared: number; inferred: number | undefined")
+
+			attest(() =>
+				declare<{ a: number }, { side: "in" }>().type({
+					// @ts-expect-error
+					a: ["number", "=", 1]
+				})
+			).type.errors("declared: number; inferred: number | undefined")
+
+			attest(() =>
+				declare<{ a: number }>().type({
+					// @ts-expect-error
+					a: "number?"
+				})
+			).type.errors("declared: number; inferred: number | undefined")
+
+			attest(() =>
+				declare<{ "@": number }, { side: "in" }>().type({
+					// @ts-expect-error
+					"\\@": "number = 1"
+				})
+			).type.errors("declared: number; inferred: number | undefined")
+		})
 	})
 })

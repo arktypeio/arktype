@@ -1,4 +1,4 @@
-import type { anyOrNever, array } from "@ark/util"
+import type { anyOrNever, array, Primitive } from "@ark/util"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
 import type { DateType } from "./date.ts"
@@ -8,10 +8,13 @@ import type { StringType } from "./string.ts"
 
 export type instantiateType<t, $> =
 	// all branches have to conform to a single basis type those methods to be available
+	// check primitives before object so branded primitives (e.g. string & Brand<...>)
+	// don't resolve to ObjectType
 	[t] extends [anyOrNever] ? BaseType<t, $>
-	: [t] extends [object] ? instantiateObjectType<t, $>
 	: [t] extends [string] ? StringType<t, $>
 	: [t] extends [number] ? NumberType<t, $>
+	: [t] extends [Primitive] ? BaseType<t, $>
+	: [t] extends [object] ? instantiateObjectType<t, $>
 	: BaseType<t, $>
 
 // a nested [array] check on t would resolve every member of an array t

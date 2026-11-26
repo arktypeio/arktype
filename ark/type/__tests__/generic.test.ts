@@ -780,4 +780,129 @@ contextualize(() => {
 			attest<{ of: string }>(BoxType.t)
 		})
 	})
+
+	it("checks generic constraints against a morph's input side", () => {
+		const Bounded = generic(["t", "string"])({ v: "t" })
+		const Parsed = Bounded("string.numeric.parse")
+		attest<{ v: string }>(Parsed.inferIn)
+		attest<{ v: number }>(Parsed.infer)
+		attest(Parsed({ v: "5" })).equals({ v: 5 })
+
+		const NumToStr = type("number").pipe(n => String(n))
+		// @ts-expect-error
+		attest(() => Bounded(NumToStr))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"string",
+					NumToStr.expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: string]>')
+
+		const $ = scope({
+			"bounded<t extends string>": { v: "t" },
+			parsed: "bounded<string.numeric.parse>"
+		}).export()
+		attest<{ v: string }>($.parsed.inferIn)
+		attest<{ v: number }>($.parsed.infer)
+		attest($.parsed({ v: "5" })).equals({ v: 5 })
+
+		// morphs whose input is not an object/Function must not satisfy object/Function constraints
+		const GObj = generic(["t", "object"])({ v: "t" })
+		// @ts-expect-error
+		attest(() => GObj("string.numeric.parse"))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					type("string.numeric.parse").expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: object]>')
+
+		const GFn = generic(["t", "Function"])({ v: "t" })
+		// @ts-expect-error
+		attest(() => GFn("string.numeric.parse"))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"Function",
+					type("string.numeric.parse").expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: Function]>')
+
+		const GNested = generic(["t", { a: "object" }])({ v: "t" })
+		// @ts-expect-error
+		attest(() => GNested({ a: "string.numeric.parse" }))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"{ a: object }",
+					type({ a: "string.numeric.parse" }).expression
+				)
+			)
+			.type.errors(
+				'ErrorType<["Invalid argument for t", expected: { a: object; }]>'
+			)
+
+		attest(() =>
+			scope({
+				"gObj<t extends object>": { v: "t" },
+				// @ts-expect-error
+				badObj: "gObj<string.numeric.parse>"
+			}).export()
+		)
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					type("string.numeric.parse").expression
+				)
+			)
+			.type.errors(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					"string.numeric.parse"
+				)
+			)
+
+		// morph whose output is an object but input is string must still be rejected
+		const StrToObj = type("string")
+			.pipe(s => ({ s }))
+			.to({ s: "string" })
+		// @ts-expect-error
+		attest(() => GObj(StrToObj))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					StrToObj.expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: object]>')
+
+		// nested, array, and union Brand constraints
+		const GNestedBrand = generic(["t", { id: "string#Id" }])({ v: "t" })
+		const NestedBranded = GNestedBrand({ id: "string#Id" })
+		attest<{ v: { id: string } }>(NestedBranded.inferIn)
+		// @ts-expect-error
+		attest(() => GNestedBrand({ id: "string" })).type.errors(
+			"Invalid argument for t"
+		)
+
+		const GArrayBrand = generic(["t", "string#Id[]"])({ v: "t" })
+		const ArrayBranded = GArrayBrand("string#Id[]")
+		attest<{ v: string[] }>(ArrayBranded.inferIn)
+		// @ts-expect-error
+		attest(() => GArrayBrand("string[]")).type.errors("Invalid argument for t")
+
+		const GUnionBrand = generic(["t", "string#Id | number"])({ v: "t" })
+		const UnionBranded = GUnionBrand("string#Id")
+		attest<{ v: string }>(UnionBranded.inferIn)
+		// @ts-expect-error
+		attest(() => GUnionBrand("string")).type.errors("Invalid argument for t")
+	})
 })

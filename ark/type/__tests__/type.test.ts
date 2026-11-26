@@ -440,4 +440,19 @@ contextualize(() => {
 		attest<{ a: string }>(Declared.inferIn)
 		attest<{ a: number }>(Declared.infer)
 	})
+
+	it("assigns array, tuple, and Date Types to Type<object>", () => {
+		const takesObj = (t: Type<object>) => t
+		takesObj(type("string[]"))
+		takesObj(type(["string", "number"]))
+		takesObj(type("Date"))
+		takesObj(type("string[]#Tags"))
+		takesObj(type("Date#Created"))
+		takesObj(type({ a: "string" }))
+
+		// @ts-expect-error
+		attest(() => takesObj(type("string"))).type.errors(
+			"is missing the following properties from type 'Type<object, {}>'"
+		)
+	})
 })

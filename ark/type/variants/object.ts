@@ -10,6 +10,8 @@ import type {
 	arkIndexableOf,
 	arkKeyOf,
 	array,
+	brand,
+	exactEquals,
 	ErrorType,
 	inferred,
 	intersectUnion,
@@ -37,9 +39,16 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t extends object = object, in out $ = {}>
 	extends BaseType<t, $> {
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
-	:	Type<{ readonly [k in keyof t]: t[k] }, $>
+	:	Type<
+			exactEquals<t, object> extends true ? object
+			:	{ readonly [k in keyof t]: t[k] },
+			$
+		>
 
-	keyof(): instantiateType<arkKeyOf<t>, $>
+	keyof(): instantiateType<
+		exactEquals<t, object> extends true ? Key : arkKeyOf<t>,
+		$
+	>
 
 	/**
 	 * #### the Type at a key, or at a path of up to three keys
@@ -157,7 +166,10 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * // Type<{ title: string; body: string }>
 	 * const Post = Draft.required()
 	 */
-	required(): instantiateType<show<required<t>>, $>
+	required(): instantiateType<
+		exactEquals<t, object> extends true ? object : show<required<t>>,
+		$
+	>
 
 	/**
 	 * #### copy with every key optional
@@ -173,7 +185,10 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * // Type<{ name?: string; email?: string }>
 	 * const UserPatch = User.partial()
 	 */
-	partial(): instantiateType<{ [k in keyof t]?: t[k] }, $>
+	partial(): instantiateType<
+		exactEquals<t, object> extends true ? object : { [k in keyof t]?: t[k] },
+		$
+	>
 
 	/**
 	 * #### copy with each property transformed by a function
@@ -237,10 +252,39 @@ type typePropOf<o, $> =
 		:	never
 	:	never
 
-// an array's elements and methods aren't props at runtime, only keys
-// intersected onto it, e.g. type("string[]").and({ foo: "string" })
+// an array's elements and methods (and Date's methods) aren't props at runtime,
+// only keys intersected onto them, e.g. type("string[]").and({ length: "1" })
 type propKeyOf<o> =
-	o extends array ? Exclude<keyof o, keyof unknown[] | `${number}`> : keyof o
+	o extends array ?
+		arrayBaseOf<o> extends infer base ?
+			[base, keyof o] extends [o, keyof base] ?
+				never
+			:	intersectedPropKeyOf<o, base, number | `${number}` | typeof brand>
+		:	never
+	: o extends Date ?
+		[Date, keyof o] extends [o, keyof Date] ?
+			never
+		:	intersectedPropKeyOf<o, Date, typeof brand>
+	:	Exclude<keyof o, typeof brand>
+
+type arrayBaseOf<o extends array> =
+	o extends unknown[] ? [...o] : readonly [...o]
+
+type intersectedPropKeyOf<o, base, excluded = never> = keyof {
+	[k in Exclude<keyof o, excluded> as k extends keyof base ?
+		isInheritedKey<o, base, k> extends true ?
+			never
+		:	k
+	:	k]: 0
+}
+
+type isInheritedKey<o, base, k extends keyof o & keyof base> =
+	base[k] extends o[k] ? true
+	: base[k] extends (...args: infer a) => base ?
+		((...args: a) => o) extends o[k] ?
+			true
+		:	false
+	:	false
 
 // checked whole, since a prop's value is one Type, whatever its branches
 type typeProp<o, k extends keyof o, $, v = propValueOf<o, k>> =

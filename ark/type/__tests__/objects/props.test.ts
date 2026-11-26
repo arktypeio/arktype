@@ -246,6 +246,45 @@ a must be a number (was missing)`)
 		attest(snapshottableProps(WithKey.props)).snap([
 			{ kind: "required", key: "foo", value: "string" }
 		])
+
+		const WithLength = type("string[]").and({ length: "1" })
+		attest<array<BaseTypeProp<"required", "length", 1, {}>>>(WithLength.props)
+		attest(snapshottableProps(WithLength.props)).snap([
+			{ kind: "required", key: "length", value: "1" }
+		])
+
+		const WithBoth = type("string[]").and({ foo: "string", length: "1" })
+		attest<"foo" | "length">(WithBoth.props[0].key)
+		attest(snapshottableProps(WithBoth.props)).snap([
+			{ kind: "required", key: "foo", value: "string" },
+			{ kind: "required", key: "length", value: "1" }
+		])
+
+		const D = type("Date")
+		attest<array<never>>(D.props)
+		attest(D.props).snap([])
+
+		const DateWithKey = type("Date").and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			DateWithKey.props
+		)
+		attest(snapshottableProps(DateWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const BrandedArray = type("string[]#Tags")
+		attest<array<never>>(BrandedArray.props)
+		attest(BrandedArray.props).snap([])
+
+		const BrandedDate = type("Date#Created")
+		attest<array<never>>(BrandedDate.props)
+		attest(BrandedDate.props).snap([])
+
+		const BrandedObj = type({ a: "string" }).brand("User")
+		attest<array<BaseTypeProp<"required", "a", string, {}>>>(BrandedObj.props)
+		attest(snapshottableProps(BrandedObj.props)).snap([
+			{ kind: "required", key: "a", value: "string" }
+		])
 	})
 
 	it("base object", () => {

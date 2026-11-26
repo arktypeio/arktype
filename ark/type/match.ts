@@ -13,12 +13,14 @@ import {
 	type conform,
 	type ErrorMessage,
 	type ErrorType,
+	type exactEquals,
 	type isDisjoint,
 	type Key,
 	type mutable,
 	type numericStringKeyOf,
 	type show,
-	type unionToTuple
+	type unionToTuple,
+	type unset
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -34,6 +36,7 @@ type MatchParserContext<input = unknown> = {
 	cases: Morph[]
 	$: unknown
 	input: input
+	callInput: unknown
 	checked: boolean
 	key: PropertyKey | null
 }
@@ -41,18 +44,37 @@ type MatchParserContext<input = unknown> = {
 declare namespace ctx {
 	export type from<ctx extends MatchParserContext> = ctx
 
-	export type init<$, input = unknown, checked extends boolean = false> = from<{
+	export type init<
+		$,
+		input = unknown,
+		checked extends boolean = false,
+		callInput = unset
+	> = from<{
 		cases: []
 		$: $
 		input: input
+		callInput: callInput
 		checked: checked
 		key: null
 	}>
+
+	export type initDef<$, def> =
+		inferDefinition<def, $> extends infer inferred ?
+			init<
+				$,
+				distill.Out<inferred>,
+				true,
+				exactEquals<distill.In<inferred>, distill.Out<inferred>> extends true ?
+					unset
+				:	distill.In<inferred>
+			>
+		:	never
 
 	export type atKey<ctx extends MatchParserContext, key extends string> = from<{
 		cases: ctx["cases"]
 		$: ctx["$"]
 		input: ctx["input"]
+		callInput: ctx["callInput"]
 		checked: ctx["checked"]
 		key: key
 	}>
@@ -61,7 +83,9 @@ declare namespace ctx {
 export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, inferDefinition<def, $>, true>>
+	): ctx.initDef<$, def> extends infer next extends MatchParserContext ?
+		ChainableMatchParser<next>
+	:	never
 	in<const typedInput = never>(
 		...args: [typedInput] extends [never] ?
 			[
@@ -72,7 +96,9 @@ export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	// include this signature a second time so that e.g. `match.in({ foo: "strin" })` shows the right error
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, inferDefinition<def, $>, true>>
+	): ctx.initDef<$, def> extends infer next extends MatchParserContext ?
+		ChainableMatchParser<next>
+	:	never
 
 	case: CaseParser<ctx.init<$>>
 
@@ -87,11 +113,15 @@ type addCasesToContext<
 		ctx.from<{
 			$: ctx["$"]
 			input: ctx["input"]
+			callInput: ctx["callInput"]
 			cases: [...ctx["cases"], ...cases]
 			checked: ctx["checked"]
 			key: ctx["key"]
 		}>
 	:	never
+
+type resolvedCallInput<ctx extends MatchParserContext> =
+	[ctx["callInput"]] extends [unset] ? ctx["input"] : ctx["callInput"]
 
 type addDefaultToContext<
 	ctx extends MatchParserContext,
@@ -99,15 +129,22 @@ type addDefaultToContext<
 > = ctx.from<{
 	$: ctx["$"]
 	input: defaultCase extends "never" ? Morph.In<ctx["cases"][number]>
-	:	ctx["input"]
+	:	resolvedCallInput<ctx>
+	callInput: ctx["callInput"]
 	cases: defaultCase extends "never" | "assert" ? ctx["cases"]
 	: defaultCase extends Morph ?
-		ctx["checked"] extends true ?
-			[(In: unknown) => ArkErrors, ...ctx["cases"], defaultCase]
-		:	[...ctx["cases"], defaultCase]
+		(
+			[ctx["callInput"]] extends [unset] ?
+				defaultCase
+			:	(In: ctx["callInput"]) => Morph.Out<defaultCase>
+		) extends infer normalizedDefault extends Morph ?
+			ctx["checked"] extends true ?
+				[(In: unknown) => ArkErrors, ...ctx["cases"], normalizedDefault]
+			:	[...ctx["cases"], normalizedDefault]
+		:	never
 	:	// we already are guaranteed ArkErrors as a possible output here
 		// so don't bother adding it as an input case
-		[...ctx["cases"], (In: ctx["input"]) => ArkErrors]
+		[...ctx["cases"], (In: resolvedCallInput<ctx>) => ArkErrors]
 	checked: ctx["checked"]
 	key: ctx["key"]
 }>
@@ -123,13 +160,27 @@ type casesToMorphTuple<
 	[i in keyof defs]: cases[defs[i]] extends Morph<never, infer o> ?
 		kind extends "def" ?
 			(
-				In: inferCaseArg<
-					defs[i] extends number ? `${number}` : defs[i],
-					ctx,
-					"in"
-				>
+				In: [ctx["callInput"]] extends [unset] ?
+					inferCaseArg<
+						defs[i] extends number ? `${number}` : defs[i],
+						ctx,
+						"in"
+					>
+				: [
+					inferCaseArg<
+						defs[i] extends number ? `${number}` : defs[i],
+						ctx,
+						"in"
+					>
+				] extends [never] ?
+					never
+				:	ctx["callInput"]
 			) => o
-		:	(In: maybeLiftToKey<defs[i], ctx>) => o
+		:	(
+				In: [ctx["callInput"]] extends [unset] ? maybeLiftToKey<defs[i], ctx>
+				: [_finalizeCaseArg<defs[i], ctx, "in">] extends [never] ? never
+				: ctx["callInput"]
+			) => o
 	:	never
 }
 
@@ -151,11 +202,7 @@ type inferCaseArg<
 	def,
 	ctx extends MatchParserContext,
 	endpoint extends "in" | "out"
-> = _finalizeCaseArg<
-	maybeLiftToKey<inferDefinition<def, ctx["$"]>, ctx>,
-	ctx,
-	endpoint
->
+> = _finalizeCaseArg<inferDefinition<def, ctx["$"]>, ctx, endpoint>
 
 type maybeLiftToKey<t, ctx extends MatchParserContext> =
 	ctx["key"] extends PropertyKey ? { [k in ctx["key"]]: t } : t
@@ -163,16 +210,36 @@ type maybeLiftToKey<t, ctx extends MatchParserContext> =
 type _finalizeCaseArg<
 	t,
 	ctx extends MatchParserContext,
-	endpoint extends "in" | "out",
-	ctxInput = ctx["input"]
+	endpoint extends "in" | "out"
 > =
-	ctxInput extends unknown ?
-		t extends unknown ?
-			distill<t, endpoint> extends infer result ?
-				unknown extends ctxInput ? result
-				: ctxInput extends result ? ctxInput
-				: showIfSafelyMappable<ctxInput & result>
-			:	never
+	distill<t, endpoint> extends infer val ?
+		unknown extends ctx["input"] ?
+			ctx["key"] extends infer key extends PropertyKey ?
+				{ [k in key]: val }
+			:	val
+		: ctx["key"] extends infer key extends PropertyKey ?
+			narrowAtKey<ctx["input"], key, val>
+		:	narrowInput<ctx["input"], val>
+	:	never
+
+type narrowAtKey<ctxInput, key extends PropertyKey, val> =
+	ctxInput extends { [k in key]: infer v } ?
+		[v] extends [val] ? ctxInput
+		: [v & val] extends [never] ? never
+		: showIfSafelyMappable<ctxInput & { [k in key]: val }>
+	:	showIfSafelyMappable<ctxInput & { [k in key]: val }>
+
+type narrowInput<ctxInput, result> =
+	Exclude<ctxInput, result> extends infer rest ?
+		[rest] extends [never] ?
+			ctxInput
+		:	Extract<ctxInput, result> | narrowInputRest<rest, result>
+	:	never
+
+type narrowInputRest<rest, result> =
+	rest extends unknown ?
+		result extends unknown ?
+			showIfSafelyMappable<rest & result>
 		:	never
 	:	never
 
@@ -181,12 +248,31 @@ type showIfSafelyMappable<t> =
 	: show<t> extends infer shown extends t ? shown
 	: t
 
-type CaseParser<ctx extends MatchParserContext> = <const def, ret>(
+type addCaseToContext<ctx extends MatchParserContext, caseIn, ret> = {
+	$: ctx["$"]
+	input: ctx["input"]
+	callInput: ctx["callInput"]
+	cases: [
+		...ctx["cases"],
+		(
+			In: [ctx["callInput"]] extends [unset] ? caseIn
+			: [caseIn] extends [never] ? never
+			: ctx["callInput"]
+		) => ret
+	]
+	checked: ctx["checked"]
+	key: ctx["key"]
+}
+
+type CaseParser<ctx extends MatchParserContext> = <
+	const def,
+	ret,
+	caseIn = inferCaseArg<def, ctx, "in">,
+	next extends MatchParserContext = addCaseToContext<ctx, caseIn, ret>
+>(
 	def: type.validate<def, ctx["$"]>,
 	resolve: (In: inferCaseArg<def, ctx, "out">) => ret
-) => ChainableMatchParser<
-	addCasesToContext<ctx, [(In: inferCaseArg<def, ctx, "in">) => ret]>
->
+) => ChainableMatchParser<next>
 
 type validateKey<key extends Key, ctx extends MatchParserContext> =
 	ctx["key"] extends Key ? ErrorMessage<doubleAtMessage>
@@ -207,13 +293,13 @@ type validateStringCases<cases, ctx extends MatchParserContext> =
 	unknown extends ctx["input"] ?
 		{
 			[k in keyof cases]?: k extends "default" ? DefaultCase<ctx>
-			:	(In: _finalizeCaseArg<maybeLiftToKey<k, ctx>, ctx, "out">) => unknown
+			:	(In: _finalizeCaseArg<k, ctx, "out">) => unknown
 			// always autocomplete the "default" key
 		} & { default?: DefaultCase<ctx> }
 	:	{
 			[k in keyof cases]?: k extends "default" ? DefaultCase<ctx>
 			: k extends stringValue<ctx> ?
-				(In: _finalizeCaseArg<maybeLiftToKey<k, ctx>, ctx, "out">) => unknown
+				(In: _finalizeCaseArg<k, ctx, "out">) => unknown
 			:	ErrorType<`${k & string} must be a possible string value`>
 		} & { [k in stringValue<ctx>]?: unknown } & {
 			default?: DefaultCase<ctx>
@@ -230,7 +316,9 @@ type stringValue<ctx extends MatchParserContext> =
 interface AtParser<ctx extends MatchParserContext> {
 	<const key extends string>(
 		key: validateKey<key, ctx>
-	): ChainableMatchParser<ctx.atKey<ctx, key>>
+	): ctx.atKey<ctx, key> extends infer next extends MatchParserContext ?
+		ChainableMatchParser<next>
+	:	never
 
 	<
 		const key extends string,

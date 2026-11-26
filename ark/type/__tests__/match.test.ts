@@ -1119,4 +1119,213 @@ contextualize(() => {
 		attest<string>(onRecord({ a: "x", other: "y" })).equals("y")
 		attest(onRecord({ a: "z", other: "y" })).equals("")
 	})
+
+	it("types match.in(morph) call input as distill.In and case input as distill.Out", () => {
+		const m = match
+			.in("string.numeric.parse")
+			.match({ number: n => n * 2, default: "assert" })
+
+		attest<number>(m("5")).equals(10)
+		// @ts-expect-error
+		attest(() => m(5))
+			.throws.snap("TraversalError: must be a string")
+			.type.errors(
+				"Argument of type 'number' is not assignable to parameter of type 'string'"
+			)
+
+		const chained = match
+			.in("string.numeric.parse")
+			.case("number > 0", n => `${n}` as const)
+			.default(n => {
+				attest<number>(n)
+				return "nonpos" as const
+			})
+
+		attest<`${number}` | "nonpos" | ArkErrors>(chained("5")).equals("5")
+		attest(chained("-1")).equals("nonpos")
+
+		const rejected = match
+			.in("string.numeric.parse")
+			.match({ number: n => n, default: "reject" })
+		attest<number | ArkErrors>(rejected("7")).equals(7)
+
+		const nevered = match
+			.in("string.numeric.parse")
+			.match({ number: n => n, default: "never" })
+		attest<number>(nevered("9")).equals(9)
+
+		// morph whose output is `any` (e.g. JSON.parse) must still enforce callInput
+		const parseJson = match
+			.in(type("string").pipe(s => JSON.parse(s)))
+			.match({ object: o => o, default: "assert" })
+		attest<object>(parseJson('{"a":1}')).equals({ a: 1 })
+		// @ts-expect-error
+		attest(() => parseJson(123))
+			.throws.snap("TraversalError: must be a string")
+			.type.errors(
+				"Argument of type 'number' is not assignable to parameter of type 'string'"
+			)
+	})
+
+	it("handles 60 chained .case() calls without TS2589", () => {
+		const m = match
+			.case("'k0'", () => 0 as const)
+			.case("'k1'", () => 1 as const)
+			.case("'k2'", () => 2 as const)
+			.case("'k3'", () => 3 as const)
+			.case("'k4'", () => 4 as const)
+			.case("'k5'", () => 5 as const)
+			.case("'k6'", () => 6 as const)
+			.case("'k7'", () => 7 as const)
+			.case("'k8'", () => 8 as const)
+			.case("'k9'", () => 9 as const)
+			.case("'k10'", () => 10 as const)
+			.case("'k11'", () => 11 as const)
+			.case("'k12'", () => 12 as const)
+			.case("'k13'", () => 13 as const)
+			.case("'k14'", () => 14 as const)
+			.case("'k15'", () => 15 as const)
+			.case("'k16'", () => 16 as const)
+			.case("'k17'", () => 17 as const)
+			.case("'k18'", () => 18 as const)
+			.case("'k19'", () => 19 as const)
+			.case("'k20'", () => 20 as const)
+			.case("'k21'", () => 21 as const)
+			.case("'k22'", () => 22 as const)
+			.case("'k23'", () => 23 as const)
+			.case("'k24'", () => 24 as const)
+			.case("'k25'", () => 25 as const)
+			.case("'k26'", () => 26 as const)
+			.case("'k27'", () => 27 as const)
+			.case("'k28'", () => 28 as const)
+			.case("'k29'", () => 29 as const)
+			.case("'k30'", () => 30 as const)
+			.case("'k31'", () => 31 as const)
+			.case("'k32'", () => 32 as const)
+			.case("'k33'", () => 33 as const)
+			.case("'k34'", () => 34 as const)
+			.case("'k35'", () => 35 as const)
+			.case("'k36'", () => 36 as const)
+			.case("'k37'", () => 37 as const)
+			.case("'k38'", () => 38 as const)
+			.case("'k39'", () => 39 as const)
+			.case("'k40'", () => 40 as const)
+			.case("'k41'", () => 41 as const)
+			.case("'k42'", () => 42 as const)
+			.case("'k43'", () => 43 as const)
+			.case("'k44'", () => 44 as const)
+			.case("'k45'", () => 45 as const)
+			.case("'k46'", () => 46 as const)
+			.case("'k47'", () => 47 as const)
+			.case("'k48'", () => 48 as const)
+			.case("'k49'", () => 49 as const)
+			.case("'k50'", () => 50 as const)
+			.case("'k51'", () => 51 as const)
+			.case("'k52'", () => 52 as const)
+			.case("'k53'", () => 53 as const)
+			.case("'k54'", () => 54 as const)
+			.case("'k55'", () => 55 as const)
+			.case("'k56'", () => 56 as const)
+			.case("'k57'", () => 57 as const)
+			.case("'k58'", () => 58 as const)
+			.case("'k59'", () => 59 as const)
+			.default("assert")
+
+		attest<0>(m("k0")).equals(0)
+		attest<59>(m("k59")).equals(59)
+	})
+
+	it("scales match.in<U>().at(key) over large discriminated unions", () => {
+		type LargeUnion =
+			| { kind: "k0"; v0: 0 }
+			| { kind: "k1"; v1: 1 }
+			| { kind: "k2"; v2: 2 }
+			| { kind: "k3"; v3: 3 }
+			| { kind: "k4"; v4: 4 }
+			| { kind: "k5"; v5: 5 }
+			| { kind: "k6"; v6: 6 }
+			| { kind: "k7"; v7: 7 }
+			| { kind: "k8"; v8: 8 }
+			| { kind: "k9"; v9: 9 }
+			| { kind: "k10"; v10: 10 }
+			| { kind: "k11"; v11: 11 }
+			| { kind: "k12"; v12: 12 }
+			| { kind: "k13"; v13: 13 }
+			| { kind: "k14"; v14: 14 }
+			| { kind: "k15"; v15: 15 }
+			| { kind: "k16"; v16: 16 }
+			| { kind: "k17"; v17: 17 }
+			| { kind: "k18"; v18: 18 }
+			| { kind: "k19"; v19: 19 }
+			| { kind: "k20"; v20: 20 }
+			| { kind: "k21"; v21: 21 }
+			| { kind: "k22"; v22: 22 }
+			| { kind: "k23"; v23: 23 }
+			| { kind: "k24"; v24: 24 }
+			| { kind: "k25"; v25: 25 }
+			| { kind: "k26"; v26: 26 }
+			| { kind: "k27"; v27: 27 }
+			| { kind: "k28"; v28: 28 }
+			| { kind: "k29"; v29: 29 }
+			| { kind: "k30"; v30: 30 }
+			| { kind: "k31"; v31: 31 }
+			| { kind: "k32"; v32: 32 }
+			| { kind: "k33"; v33: 33 }
+			| { kind: "k34"; v34: 34 }
+			| { kind: "k35"; v35: 35 }
+			| { kind: "k36"; v36: 36 }
+			| { kind: "k37"; v37: 37 }
+			| { kind: "k38"; v38: 38 }
+			| { kind: "k39"; v39: 39 }
+
+		const handle = match
+			.in<LargeUnion>()
+			.at("kind")
+			.match({
+				"'k0'": x => x.v0,
+				"'k1'": x => x.v1,
+				"'k2'": x => x.v2,
+				"'k3'": x => x.v3,
+				"'k4'": x => x.v4,
+				"'k5'": x => x.v5,
+				"'k6'": x => x.v6,
+				"'k7'": x => x.v7,
+				"'k8'": x => x.v8,
+				"'k9'": x => x.v9,
+				"'k10'": x => x.v10,
+				"'k11'": x => x.v11,
+				"'k12'": x => x.v12,
+				"'k13'": x => x.v13,
+				"'k14'": x => x.v14,
+				"'k15'": x => x.v15,
+				"'k16'": x => x.v16,
+				"'k17'": x => x.v17,
+				"'k18'": x => x.v18,
+				"'k19'": x => x.v19,
+				"'k20'": x => x.v20,
+				"'k21'": x => x.v21,
+				"'k22'": x => x.v22,
+				"'k23'": x => x.v23,
+				"'k24'": x => x.v24,
+				"'k25'": x => x.v25,
+				"'k26'": x => x.v26,
+				"'k27'": x => x.v27,
+				"'k28'": x => x.v28,
+				"'k29'": x => x.v29,
+				"'k30'": x => x.v30,
+				"'k31'": x => x.v31,
+				"'k32'": x => x.v32,
+				"'k33'": x => x.v33,
+				"'k34'": x => x.v34,
+				"'k35'": x => x.v35,
+				"'k36'": x => x.v36,
+				"'k37'": x => x.v37,
+				"'k38'": x => x.v38,
+				"'k39'": x => x.v39,
+				default: "never"
+			})
+
+		attest<0>(handle({ kind: "k0", v0: 0 })).equals(0)
+		attest<39>(handle({ kind: "k39", v39: 39 })).equals(39)
+	})
 })

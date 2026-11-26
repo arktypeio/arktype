@@ -20,6 +20,7 @@ import {
 	type Scanner,
 	type WhitespaceChar
 } from "@ark/util"
+import type { distill } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
@@ -42,8 +43,18 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferDefinition<arg, $> extends param[1] ? unknown
+	unknown extends param[1] ? unknown
+	: satisfiesGenericConstraint<inferDefinition<arg, $>, param[1]> extends true ?
+		unknown
 	:	ErrorType<[`Invalid argument for ${param[0]}`, expected: param[1]]>
+
+export type satisfiesGenericConstraint<t, constraint> =
+	[distill.In<t>] extends [constraint] ? true
+	: [distill.In<t>, distill.Out<t>] extends (
+		[distill.In<constraint>, constraint]
+	) ?
+		true
+	:	false
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
