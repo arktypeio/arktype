@@ -970,7 +970,9 @@ console.log(Object.isExtensible(later), later("a"), later(1).toString(), later("
 					attest(t.allows({})).equals(false)
 				}
 				// what compiled before it was frozen is still what it checks with
-				attest(t.precompilation !== undefined).equals(name === "compiled")
+				attest(t.precompilation !== undefined).equals(
+					name === "compiled" && !t.internal.$.cfg.jitless
+				)
 				const again = type({ warm: "string", [name]: "number = 1" })
 				attest(Object.isExtensible(again)).equals(true)
 				attest(again({ warm: "a" })).equals({ warm: "a", [name]: 1 })
@@ -1022,7 +1024,9 @@ console.log(Object.isExtensible(later), later("a"), later(1).toString(), later("
 					"part must be a string"
 				)
 			}
-			attest(piped.precompilation !== undefined).equals(true)
+			attest(piped.precompilation !== undefined).equals(
+				!piped.internal.$.cfg.jitless
+			)
 			attest(frozen.precompilation).equals(undefined)
 		})
 	})
