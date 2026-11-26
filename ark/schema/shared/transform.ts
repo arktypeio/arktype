@@ -3,6 +3,7 @@ import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { ArkErrors } from "./issues.ts"
 import type { RootApplyRuntime } from "./rootApply.ts"
+import type { InternalTraversal, TraverseTransform } from "./traversal.ts"
 
 // installed by arktype/mutatesInput, so a bundle without it only copies
 export interface InPlaceTransforms {
@@ -57,6 +58,10 @@ export const holdsOnlyIndices = (data: unknown[]): boolean => {
 	)
 }
 
+// what each object written in place held before, while a union transforms
+// data by more than one branch
+let writtenInPlace: Map<object, PropertyDescriptorMap> | undefined
+
 export const copyOf = (data: object): object => {
 	if (isArray(data)) {
 		const copy: unknown[] = Array.prototype.slice.call(data)
@@ -81,9 +86,71 @@ export const copyOf = (data: object): object => {
 	// a builtin keeps state in internal slots, so it's written in place. Each
 	// has its own toString tag, as does a host object, where a class instance
 	// is tagged Object
-	return Object.prototype.toString.call(data) === "[object Object]" ?
-			Object.setPrototypeOf({ ...data }, prototype)
-		:	data
+	if (Object.prototype.toString.call(data) === "[object Object]")
+		return Object.setPrototypeOf({ ...data }, prototype)
+	if (writtenInPlace && !writtenInPlace.has(data))
+		writtenInPlace.set(data, Object.getOwnPropertyDescriptors(data))
+	return data
+}
+
+/**
+ * what a union whose branches delete different undeclared keys makes of data
+ * more than one of them allows: each transforms it, and a key is kept where
+ * any of them keeps it, so the order they're checked in decides nothing.
+ * `transforms` are those of the branches allowing data, each called on its
+ * node where it's passed one
+ */
+export const transformKept = (
+	data: unknown,
+	ctx: InternalTraversal | undefined,
+	transforms: readonly TraverseTransform[],
+	nodes?: readonly BaseNode[]
+): unknown => {
+	if (transforms.length === 1)
+		return transforms[0].call(nodes?.[0], data, ctx as never)
+	const outer = writtenInPlace
+	const written = (writtenInPlace = new Map<object, PropertyDescriptorMap>())
+	try {
+		let out = data
+		for (let i = 0; i < transforms.length; i++) {
+			const kept = transforms[i].call(nodes?.[i], data, ctx as never)
+			// one that deleted nothing kept all the others do
+			if (kept === data) return data
+			out = i === 0 ? kept : joinKept(data, out, kept)
+		}
+		return out
+	} finally {
+		// an object written in place can't hold what each branch made of it,
+		// and a key one deleted another may keep, so it's left as it was
+		for (const [object, held] of written) restore(object, held)
+		writtenInPlace = outer
+	}
+}
+
+const restore = (written: object, held: PropertyDescriptorMap): void => {
+	const keys = Reflect.ownKeys(held)
+	// a key defined again follows those still held, so each after the first
+	// one deleted is defined again too, in the order it was held
+	const deleted = keys.findIndex(k => !hasOwn(written, k))
+	if (deleted !== -1) {
+		for (let i = deleted + 1; i < keys.length; i++)
+			Reflect.deleteProperty(written, keys[i])
+	}
+	Object.defineProperties(written, held)
+}
+
+// what two branches made of data both allow, each a copy without the keys it
+// deleted. Written into l's, whose keys r's others follow
+const joinKept = (data: any, l: any, r: any): unknown => {
+	if (l === data || r === data) return data
+	// a value neither copied, which a getter returned each its own of
+	if (!hasDomain(l, "object") || !hasDomain(r, "object")) return l
+	for (const k of [...Object.keys(r), ...Object.getOwnPropertySymbols(r)]) {
+		if (!hasOwn(l, k)) setOwnValue(l, k, r[k])
+		else if (!Object.is(l[k], r[k]))
+			setOwnValue(l, k, joinKept(data[k], l[k], r[k]))
+	}
+	return l
 }
 
 export const setOwnValue = (

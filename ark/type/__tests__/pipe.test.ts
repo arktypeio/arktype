@@ -1056,12 +1056,12 @@ s must be at least length 5`)
 				{ "kind?": "'b'" },
 				{ a: "number", kind: "1" },
 				{ kind: "'b'" },
-				{ kind: "number", "+": "delete" }
+				{ kind: ["number", "=>", n => `${n}`] }
 			)
 		).throws(
 			writeIndiscriminableMorphMessage(
 				"{ a: number, kind: 1 }",
-				"{ kind: number, + (undeclared): delete }"
+				"{ kind: (In: number) => Out<unknown> }"
 			)
 		)
 	})

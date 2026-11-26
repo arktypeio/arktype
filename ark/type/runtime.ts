@@ -147,6 +147,7 @@ export {
 	transformed,
 	transformedInApply,
 	transformIfAllowed,
+	transformKept,
 	transformResolution,
 	transformsBranches,
 	transformsValid,

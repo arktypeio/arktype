@@ -853,9 +853,9 @@ import { type } from "arktype"
 scope({}, { numberAllowsInfinity: true } as never)
 ```
 
-### onUndeclaredKey: "delete" rejects overlapping object unions
+### "delete" keeps each key an overlapping union's branches declare
 
-With `onUndeclaredKey: "delete"` configured, a union of objects whose inputs overlap throws a `ParseError`, as it already did with `"+": "delete"` in each object. Before, data both allowed came out as whichever branch sorted first:
+Where objects that delete undeclared keys overlap in a union, data more than one of them allows keeps each key any of them declares. Before, with `onUndeclaredKey: "delete"` configured it came out as whichever branch sorted first, and with `"+": "delete"` in each object the union threw a `ParseError`:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -864,12 +864,16 @@ configure({ onUndeclaredKey: "delete" })
 ```
 
 ```ts
-// throws ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
-// before: { uri: "u", blob: "b" } for { uri: "u", text: "t", blob: "b" }
-type({ uri: "string", text: "string" }).or({ uri: "string", blob: "string" })
+const Contents = type({ uri: "string", text: "string" }).or({
+	uri: "string",
+	blob: "string"
+})
+
+// { uri: "u", blob: "b", text: "t" }, before: { uri: "u", blob: "b" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
 ```
 
-Give the branches a key that tells them apart, like a literal `kind`, or delete outside the union.
+A union still throws that `ParseError` where an overlapping object also has a default or another morph at a key. Give those branches a key that tells them apart, like a literal `kind`, or choose the branch in a `.pipe()`.
 
 ### meta.keyword is reserved
 

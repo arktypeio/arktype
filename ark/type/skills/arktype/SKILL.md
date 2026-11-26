@@ -351,10 +351,10 @@ const Stripped = type({ "+": "delete", name: "string" })
 
 To remove them everywhere, as Zod does, call `configure({ onUndeclaredKey: "delete" })` instead. `.merge()` takes `"+"` from the object merged in, so with per-object `"+"`, write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
 
-An object that deletes keys, whether by `"+"` or by `configure`, or that has a default or a transform at a key, transforms its input. A union holding one throws a `ParseError` saying it's indeterminate when another branch could accept the same data: a second object with no literal key like `kind` to tell them apart, or an array, a `Date` or a `Record` beside it. Choose the branch in a `.pipe()` instead:
+Objects that delete keys, whether by `"+"` or by `configure`, can overlap in a union: data more than one branch accepts keeps each key any of them declares, so `Item.or(Item.array())` and a union of two objects with no literal key like `kind` to tell them apart both work. A default or a transform at a key can't be joined that way, so a union throws a `ParseError` saying it's indeterminate when an object holding one accepts data another branch also could. Choose the branch in a `.pipe()` instead:
 
 ```ts
-const Item = type({ "+": "delete", id: "string" })
+const Item = type({ "+": "delete", id: "string", tags: "string[] = []" })
 const Items = Item.array()
 
 const OneOrMany = type("object").pipe(v =>
@@ -417,7 +417,7 @@ check(User, { name: "Ada" }, { name: "", age: -1 })
 | `Defaultable definitions like 'number = 0' are only valid as properties in an object or tuple`      | give the default in an object, `{ count: "number = 0" }`                                                                                                                                    |
 | `Only required keys may specify default values`                                                     | drop the `?`: a key with a default may be missing                                                                                                                                           |
 | `Argument of type 'never[]' is not assignable to parameter of type '() => ...'` at `.default([])`   | an object or array default is a function, `.default(() => [])`, or `"string[] = []"` in a string                                                                                            |
-| `An unordered union of a type including a morph and a type with overlapping input is indeterminate` | narrow the morph's input so no other branch accepts it, as in `"string.numeric.parse \| undefined"`; for objects that delete keys, see [Extra keys](#extra-keys)                            |
+| `An unordered union of a type including a morph and a type with overlapping input is indeterminate` | narrow the morph's input so no other branch accepts it, as in `"string.numeric.parse \| undefined"`; for an object with a default or a transform at a key, see [Extra keys](#extra-keys)    |
 | `merge operand must be an object (was (In: { ... }) => To<...>)`, or `pick`, `omit`, `partial`      | the object has a `.narrow()` and deletes undeclared keys or has a default or morph at a key: call the method on the object before its `.narrow()`, then add the narrow                      |
 | `Intersection at a of string and number results in an unsatisfiable type`                           | `.and()` found conflicting keys; use `.merge()` to replace them                                                                                                                             |
 | `Index keys "a", "b" should be specified as named props`                                            | write `Record<"a" \| "b", T>` as `{ a: T, b: T }`                                                                                                                                           |

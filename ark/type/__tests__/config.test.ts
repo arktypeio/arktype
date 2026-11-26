@@ -738,15 +738,66 @@ age must be non-negative`)
 	})
 
 	describe("onUndeclaredKey", () => {
-		it("delete fails on an indiscriminable union", () => {
+		// https://github.com/arktypeio/arktype/issues/1752
+		it("delete keeps each key a branch of a union allowing the data declares", () => {
+			for (const jitless of [false, true]) {
+				const Contents = withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}, { jitless })
+						.type({ uri: "string", "text?": "string" })
+						.or({ uri: "string", "blob?": "string" })
+				)
+				// the first data is checked uncompiled
+				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents.precompilation === undefined).equals(jitless)
+				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents({ uri: "a", text: "t" })).equals({
+					uri: "a",
+					text: "t"
+				})
+				attest(Contents({ uri: "a", blob: "b" })).equals({
+					uri: "a",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", text: "t", blob: "b" })).equals({
+					uri: "a",
+					text: "t",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", text: 1, blob: "b" })).equals({
+					uri: "a",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", z: 1 })).equals({ uri: "a" })
+			}
+		})
+
+		it("delete keeps an object beside an array of it", () => {
+			const OneOrMany = withConfig({ onUndeclaredKey: "delete" }, () => {
+				const Item = scope({}).type({ id: "string" })
+				return Item.or(Item.array())
+			})
+			attest(OneOrMany({ id: "a", z: 1 })).equals({ id: "a" })
+			attest(OneOrMany([{ id: "a", z: 1 }])).equals([{ id: "a" }])
+			// an array holding the object's key is both
+			const both = OneOrMany(
+				Object.assign([{ id: "a", z: 1 }], { id: "b", z: 1 })
+			)
+			attest(both).equals(Object.assign([{ id: "a" }], { id: "b" }))
+		})
+
+		it("delete is indeterminate in a union beside a morph", () => {
 			attest(() =>
 				withConfig({ onUndeclaredKey: "delete" }, () =>
-					scope({}).type([{ a: "string" }, "|", { b: "boolean" }])
+					scope({}).type([
+						{ a: "string.trim", "x?": "1" },
+						"|",
+						{ a: "string.trim", "y?": "2" }
+					])
 				)
 			).throws
 				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { a: string, + (undeclared): delete }
-Right: { b: boolean, + (undeclared): delete }
+Left: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, x?: 1, + (undeclared): delete }
+Right: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, y?: 2, + (undeclared): delete }
 Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 		})
 
@@ -766,32 +817,34 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		})
 
 		// the ignoring branch's input took the config's delete back once it
-		// held a morph, so the branches looked disjoint
-		it("an explicit ignore fails an indeterminate union", () => {
-			const [optional, required] = withConfig(
+		// held a morph, so the branches looked disjoint and data both allow was
+		// transformed by one
+		it("an explicit ignore keeps what a deleting branch of its union would delete", () => {
+			const [Optional, Required] = withConfig(
 				{ onUndeclaredKey: "delete" },
 				() => {
 					const C = scope({}).type({ provider: "string" })
 					return [
-						() => C.or({ "+": "ignore", uses: "string", "o?": C }),
-						() => C.or({ "+": "ignore", uses: "string", o: C })
+						C.or({ "+": "ignore", uses: "string", "o?": C }),
+						C.or({ "+": "ignore", uses: "string", o: C })
 					]
 				}
 			)
-			attest(optional).throws(
-				"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
-			)
-			attest(required).throws("is indeterminate")
+			const both = () => ({
+				provider: "p",
+				uses: "u",
+				o: { provider: "q", z: 1 },
+				z: 1
+			})
+			const kept = { provider: "p", uses: "u", o: { provider: "q" }, z: 1 }
+			attest(Optional(both())).equals(kept)
+			attest(Required(both())).equals(kept)
+			// only the deleting branch allows it
+			attest(Optional({ provider: "p", z: 1 })).equals({ provider: "p" })
 			const C = type({ "+": "delete", provider: "string" })
-			attest(() => C.or({ "+": "ignore", uses: "string", "o?": C })).throws(
-				"is indeterminate"
+			attest(C.or({ "+": "ignore", uses: "string", "o?": C })(both())).equals(
+				kept
 			)
-			attest(() =>
-				withConfig({ onUndeclaredKey: "delete" }, () => {
-					const D = scope({}).type({ provider: "string" })
-					return D.or({ uses: "string", "o?": D })
-				})
-			).throws("is indeterminate")
 		})
 
 		it("an explicit ignore stays ignore in what's built from it", () => {

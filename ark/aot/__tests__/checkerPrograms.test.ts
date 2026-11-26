@@ -604,6 +604,16 @@ run(() => { const out = type({ a: Trim })(d); return [out === d, out instanceof 
 const list = Object.assign([" a "], { extra: 1 })
 run(() => { const out = Trim.array()(list); return [out === list, out.extra, out[0]] })
 `,
+	joinedDeletes: `
+const Contents = type({ "+": "delete", uri: "string", "text?": "string" }).or({ "+": "delete", uri: "string", "blob?": "string" })
+for (const data of [{ uri: "a" }, { uri: "a", text: "t", blob: "b", z: 1 }, { uri: "a", text: 1, blob: "b" }, { uri: "a", z: 1 }, { uri: 1 }, 5]) {
+	run(() => Contents(data))
+	run(() => type({ k: Contents })({ k: data }))
+	run(() => Contents.array()([data, data]))
+	run(() => Contents.or("string")(data))
+	run(() => Contents.pipe(function (v) { return [v] })(data))
+}
+`,
 	unions: `
 const Nullable = Trim.or("null")
 run(() => Nullable(" a "))
@@ -1095,6 +1105,7 @@ const themes: Record<string, [marker: string, names: string[]]> = {
 			"returnsErrors",
 			"heads",
 			"closedAndDeleted",
+			"joinedDeletes",
 			"unions",
 			"pipedTo",
 			"rangeUnion",

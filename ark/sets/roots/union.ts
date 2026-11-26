@@ -843,13 +843,23 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
+			const joined =
+				!ordered && assertDeterminateOverlap(branches[i], branches[j])
 
+			// a joined branch whose input is a subtype of another's keeps keys the
+			// other deletes, unless that one deletes none
 			if (intersection.equals(branches[i]._in)) {
+				// of two with the same input, the one deleting none is kept
+				if (
+					joined &&
+					!branches[i].alters &&
+					intersection.equals(branches[j]._in)
+				)
+					uniquenessByIndex[j] = false
 				// preserve ordered branches that are a subtype of a subsequent branch
-				uniquenessByIndex[i] = !!ordered
+				else uniquenessByIndex[i] = !!ordered || (joined && branches[j].alters)
 			} else if (intersection.equals(branches[j]._in))
-				uniquenessByIndex[j] = false
+				uniquenessByIndex[j] = joined && branches[i].alters
 		}
 	}
 	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
@@ -1307,7 +1317,13 @@ const sameMeta = (nodes: readonly BaseNode[]) =>
 const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))
 
-const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
+// whether the branches are joined: all either does to data both allow is
+// delete undeclared keys, and not the same ones, so that data keeps each key
+// either does and neither is transformed before the other
+const assertDeterminateOverlap = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): boolean => {
 	if (l.hasAlias || r.hasAlias) {
 		if (!isResolutionFinal()) {
 			// aliased branches' transforms and overlap are known once definitions close
@@ -1319,23 +1335,26 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 				)
 					assertDeterminateOverlap(l, r)
 			}, `${l.id}|${r.id}`)
-			return
+			return false
 		}
-		if (!l.tfs && !r.tfs) return
-	} else if (!l.alters && !r.alters) return
+		if (!l.tfs && !r.tfs) return false
+	} else if (!l.alters && !r.alters) return false
 
 	if (
-		!arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) ||
-		(l as Morph.Node).inverse !== (r as Morph.Node).inverse ||
-		!arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) ||
-		!arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
+		arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
+		(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
+		arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) &&
+		arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
 			isEqual: flatRefsAreEqual
 		})
-	) {
-		throwParseError(
-			writeIndiscriminableMorphMessage(l.expression, r.expression)
-		)
-	}
+	)
+		return false
+
+	if (l.deletesOnly && r.deletesOnly) return true
+
+	return throwParseError(
+		writeIndiscriminableMorphMessage(l.expression, r.expression)
+	)
 }
 
 const transformingAliasRefsOf = (node: BaseRoot): FlatRef[] =>

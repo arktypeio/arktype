@@ -16,7 +16,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - If `package.json` sets `"sideEffects": false`, list the config file there instead, like `"sideEffects": ["./src/arktype.config.ts"]`. A bundler otherwise drops the import, and the built app runs without the config while unbundled tests pass.
    - Migrating from another library? Set what its column of [Defaults that differ](#defaults-that-differ) says instead.
 3. **Convert each schema in place,** using the [tables](#zod). Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. The migrated schemas should accept, reject and return what the old ones did:
-   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. A union throws a `ParseError` saying it's indeterminate where one of its objects overlaps another branch, like a second object with no literal key to tell them apart, or an array of the same object: write it as [Unions of objects](#unions-of-objects) shows. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](#composing-objects).
+   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. Where objects of a union overlap, like two with no literal key to tell them apart, data both accept keeps the keys of each, where Zod returns the first match's, and the union throws a `ParseError` saying it's indeterminate if one has a default or a transform at a key: [Unions of objects](#unions-of-objects) shows both. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](#composing-objects).
    - **Optional keys.** Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"` and a `z.any()` key is `"key?": "unknown.any"`; from 4.4, only `.optional()` and defaults let a key be missing, so they stay `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, as does `.partial()` on a key with a default, so it's `key: T.default(x)`. In Zod 3 neither does: write the first as `"key?": "T"`, and for the second, call `.partial()` on a Type of the keys without their defaults, and `.merge()` the defaults into the full object. `"unknown.any"` infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - **Coercions and refinements,** literally, as in [Coercion is a parse](#coercion-is-a-parse). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema, with its `path` as `relativePath`. A `.refine()` that only rejects a literal, like `z.boolean().refine(v => v, "Accept the terms")`, becomes that literal with a `message`; [Refinements](#refinements) has both.
    - **Custom messages,** each as a `message`, as in [Custom messages](#custom-messages): a message beside a check goes beside the same check, so `.min(1, "Name is required")` is `type.string.atLeastLength(1, "Name is required")`, a check without a method, like `.email("...")`'s, names its code, as in `.message("...", "pattern")`, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.mustBe()`, to `ctx.error()` as a string, to `.describe()` or as `expected`, each of which writes `must be` before it.
@@ -275,13 +275,13 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 
 ### Unions and recursion
 
-| Zod                                    | ArkType                                                                        |
-| -------------------------------------- | ------------------------------------------------------------------------------ |
-| `z.union([A, B])`, `A.or(B)`           | `A.or(B)`, `"string \| number"`                                                |
-| `z.discriminatedUnion("kind", [A, B])` | `A.or(B)`: ArkType finds the discriminant itself                               |
-| `z.union([Item, z.array(Item)])`       | a `.pipe()` that picks the branch, see [Unions of objects](#unions-of-objects) |
-| `z.intersection(A, B)`, `A.and(B)`     | `A.and(B)`                                                                     |
-| `z.lazy(() => T)`, a getter            | `"this"` or a scope, see [Recursion](#recursion-needs-no-annotation)           |
+| Zod                                    | ArkType                                                              |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| `z.union([A, B])`, `A.or(B)`           | `A.or(B)`, `"string \| number"`                                      |
+| `z.discriminatedUnion("kind", [A, B])` | `A.or(B)`: ArkType finds the discriminant itself                     |
+| `z.union([Item, z.array(Item)])`       | `Item.or(Item.array())`, see [Unions of objects](#unions-of-objects) |
+| `z.intersection(A, B)`, `A.and(B)`     | `A.and(B)`                                                           |
+| `z.lazy(() => T)`, a getter            | `"this"` or a scope, see [Recursion](#recursion-needs-no-annotation) |
 
 ### Refinements and transforms
 
@@ -719,24 +719,23 @@ The key's input type is `unknown`, where `z.input` gave the inner schema's.
 
 ArkType finds a union's discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
 
-An object transforms its input when it deletes undeclared keys, by `"+": "delete"` or the global option, or when one of its keys has a default or a transform. A union can't hold a transform whose input another branch also accepts: it throws a `ParseError` saying the union is indeterminate, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. These do:
-
-- two objects with no such key, like `{ uri, text }` and `{ uri, blob }`
-- an object beside an array, a `Date` or another class's instance, which could hold the object's keys, as in `Item.or(Item.array())`
-- a `Record` beside an array
-
-For those, choose the branch in a `.pipe()`, which infers the union of what they return:
+Objects that delete undeclared keys, by `"+": "delete"` or the global option, can overlap in a union, as `{ uri, text }` and `{ uri, blob }` do, or an object and an array of it in `Item.or(Item.array())`. Data more than one branch accepts keeps each key any of them declares, where `z.union` returns what the first branch that matches does:
 
 ```ts
-const Item = type({ "+": "delete", id: "string" })
-const Items = Item.array()
-
-// z.union([Item, z.array(Item)])
-const OneOrMany = type("object").pipe(v =>
-	Array.isArray(v) ? Items(v) : Item(v)
-)
-
 const Text = type({ "+": "delete", uri: "string", text: "string" })
+const Blob = type({ "+": "delete", uri: "string", blob: "string" })
+
+const Contents = Text.or(Blob)
+
+// { uri: "u", blob: "b", text: "t" }
+// z.union([Text, Blob]) returns { uri: "u", text: "t" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
+```
+
+A key's default or transform, like `.default()` or `string.trim`, can't be joined that way. A union throws a `ParseError` saying it's indeterminate where an object holding one accepts data another branch also accepts, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. For those that do, or to return what the first matching branch does, choose the branch in a `.pipe()`, which infers the union of what they return:
+
+```ts
+const Text = type({ "+": "delete", uri: "string", text: "string.trim" })
 const Blob = type({ "+": "delete", uri: "string", blob: "string" })
 
 // z.union([Text, Blob]), which takes the first branch that matches
@@ -923,7 +922,7 @@ const parameters = (object: JsonSchema, where: "query" | "path") => {
 }
 ```
 
-With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
+With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes, except for objects that overlap in a union, whose output can hold each other's keys. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
 
 Where you call `toJsonSchema` yourself, a scope can be the registry instead: with [`aliasDefs: true`](https://arktype.io/docs/json-schema/to-json-schema#named-aliases), each alias is written once, by name, and a `$ref` wherever it's used, and a [`defs` fallback](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) collects them into `components`.
 

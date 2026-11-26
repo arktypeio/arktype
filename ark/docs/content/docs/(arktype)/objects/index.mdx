@@ -282,7 +282,20 @@ Both act on string keys: `"reject"` checks only an object's string keys, and `"d
 
 `"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
-Deleting keys makes an object a [morph](/docs/expressions#pipe), so a union holding one throws a `ParseError` if another branch accepts the same data, as an array, a `Date` or a second object with no literal key to tell them apart does. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write such a union.
+Deleting keys makes an object a [morph](/docs/expressions#pipe). In a union, data more than one branch accepts keeps each key any of them declares, the keys of one branch and then those only another declares:
+
+```ts
+const Contents = type({
+	"+": "delete",
+	uri: "string",
+	"text?": "string"
+}).or({ "+": "delete", uri: "string", "blob?": "string" })
+
+// { uri: "u", blob: "b", text: "t" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
+```
+
+A union still throws a `ParseError` where such an object also has a default or another morph at a key and a second branch accepts the same data. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write that union.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 

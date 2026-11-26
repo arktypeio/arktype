@@ -241,6 +241,15 @@ contextualize(() => {
 		attest(input).snap({ a: { c: " c " } })
 	})
 
+	it("copies data each branch of a union allowing it transforms", () => {
+		const T = always
+			.type({ "+": "ignore", v: { "+": "delete", "x?": "1" } })
+			.or({ "+": "ignore", v: { "+": "delete", "y?": "2" }, "k?": "1" })
+		const input = { v: { x: 1, y: 2, z: 3 }, w: 1 }
+		attest(T(input) as object).snap({ v: { x: 1, y: 2 }, w: 1 })
+		attest(input).snap({ v: { x: 1, y: 2, z: 3 }, w: 1 })
+	})
+
 	it("throws without arktype/mutatesInput", () => {
 		const installed = $ark.inPlace!
 		delete $ark.inPlace

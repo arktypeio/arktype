@@ -236,14 +236,230 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			)
 		})
 
-		it("fails on delete indiscriminable union key", () => {
-			attest(() =>
-				type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey("delete")
-			).throws
-				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { a: string, + (undeclared): delete }
-Right: { b: boolean, + (undeclared): delete }
+		// https://github.com/arktypeio/arktype/issues/1752
+		describe("delete in a union of overlapping objects", () => {
+			const testKept = (jitless: boolean) => {
+				const $ = scope({}, { jitless })
+				const Contents = $.type({
+					"+": "delete",
+					uri: "string",
+					"text?": "string"
+				}).or({ "+": "delete", uri: "string", "blob?": "string" })
+				// the first data is checked uncompiled
+				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents.precompilation === undefined).equals(jitless)
+				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents({ uri: "a", text: "t" })).equals({
+					uri: "a",
+					text: "t"
+				})
+				attest(Contents({ uri: "a", blob: "b" })).equals({
+					uri: "a",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", text: "t", blob: "b" })).equals({
+					uri: "a",
+					text: "t",
+					blob: "b"
+				})
+				// only the branch that doesn't declare text allows it
+				attest(Contents({ uri: "a", text: 1, blob: "b" })).equals({
+					uri: "a",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", z: 1 })).equals({ uri: "a" })
+				attest(Contents({ uri: 1, text: "t" }).toString()).snap(
+					"uri must be a string"
+				)
+			}
+
+			it("keeps each key a branch allowing the data declares", () =>
+				testKept(false))
+
+			it("keeps each key a branch allowing the data declares jitless", () =>
+				testKept(true))
+
+			it("is the same union in either order", () => {
+				const Text = type({ "+": "delete", uri: "string", "text?": "string" })
+				const Blob = type({ "+": "delete", uri: "string", "blob?": "string" })
+				attest(Text.or(Blob).json).equals(Blob.or(Text).json)
+				attest(Text.or(Blob).expression).snap(
+					"{ uri: string, blob?: string, + (undeclared): delete } | { uri: string, text?: string, + (undeclared): delete }"
+				)
+			})
+
+			it("keeps what any of three branches declares", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({ "+": "delete", a: "string" })
+						.or({ "+": "delete", "b?": "number" })
+						.or({ "+": "delete", a: "string", "c?": "boolean" })
+					const all = () => ({ a: "x", b: 1, c: true, z: 0 })
+					attest(T(all())).equals({ a: "x", b: 1, c: true })
+					attest(T(all())).equals({ a: "x", b: 1, c: true })
+					attest(T({ a: "x", b: "1", c: true })).equals({ a: "x", c: true })
+					attest(T({ a: 1, b: 1, c: true })).equals({ b: 1 })
+				}
+			})
+
+			it("applies at a key, in an array and to nested objects", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Either = $.type({ "+": "delete", "x?": "1" }).or({
+						"+": "delete",
+						"y?": "2"
+					})
+					const Held = $.type({
+						"+": "delete",
+						at: Either,
+						each: Either.array()
+					})
+					const held = () => ({
+						at: { x: 1, y: 2, z: 3 },
+						each: [
+							{ x: 1, y: 2, z: 3 },
+							{ x: 0, y: 2 }
+						],
+						z: 3
+					})
+					for (const data of [held(), held()]) {
+						attest(Held(data)).equals({
+							at: { x: 1, y: 2 },
+							each: [{ x: 1, y: 2 }, { y: 2 }]
+						})
+					}
+
+					const Nested = $.type({
+						"+": "delete",
+						a: { "+": "delete", "x?": "1" }
+					}).or({ "+": "delete", a: { "+": "delete", "y?": "2" }, "b?": "1" })
+					const nested = () => ({ a: { x: 1, y: 2, z: 3 }, b: 1, z: 3 })
+					attest(Nested(nested())).equals({ a: { x: 1, y: 2 }, b: 1 })
+					attest(Nested(nested())).equals({ a: { x: 1, y: 2 }, b: 1 })
+					// only the first branch allows a.y
+					attest(Nested({ a: { x: 1, y: 3 }, b: 1 })).equals({ a: { x: 1 } })
+				}
+			})
+
+			it("applies to the branches a discriminant leaves", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({ "+": "delete", kind: "'a'", "x?": "1" })
+						.or({ "+": "delete", kind: "'a'", "y?": "2" })
+						.or({ "+": "delete", kind: "'b'", "z?": "3" })
+					const a = () => ({ kind: "a", x: 1, y: 2, z: 3 })
+					attest(T(a())).equals({ kind: "a", x: 1, y: 2 })
+					attest(T(a())).equals({ kind: "a", x: 1, y: 2 })
+					attest(T({ kind: "a", x: 0, y: 2 })).equals({ kind: "a", y: 2 })
+					attest(T({ kind: "b", x: 1, y: 2, z: 3 })).equals({ kind: "b", z: 3 })
+					attest(T({ kind: "c" }).toString()).snap('kind must be "a" or "b"')
+				}
+			})
+
+			it("keeps every key where a branch deleting none allows the data", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({ "+": "delete", "a?": "1" }).or("Date")
+					attest(T({ a: 1, z: 2 })).equals({ a: 1 })
+					const date = Object.assign(new Date(0), { a: 1, z: 2 })
+					attest(T(date)).is(date)
+					attest(Object.keys(date)).equals(["a", "z"])
+				}
+			})
+
+			it("keeps a branch whose input is a subtype of another's", () => {
+				const Point = type({ "+": "delete", x: "number" }).or({
+					"+": "delete",
+					x: "number",
+					y: "number"
+				})
+				attest(Point.expression).snap(
+					"{ x: number, y: number, + (undeclared): delete } | { x: number, + (undeclared): delete }"
+				)
+				attest(Point({ x: 1, y: 2, z: 3 })).equals({ x: 1, y: 2 })
+				attest(Point({ x: 1, y: "2", z: 3 })).equals({ x: 1 })
+				// a branch deleting none keeps all a subtype of it does
+				attest(
+					type({ "+": "delete", x: "number" }).or("object").expression
+				).snap("object")
+				// or one with the same input
+				attest(
+					type({ "+": "delete", x: "number" }).or({ x: "number" }).expression
+				).snap("{ x: number }")
+			})
+
+			it("pipes what its branches keep", () => {
+				const T = type({ "+": "delete", "x?": "1" })
+					.or({ "+": "delete", "y?": "2" })
+					.to({ "+": "reject", "x?": "1", "y?": "2" })
+				attest(T({ x: 1, y: 2, z: 3 })).equals({ x: 1, y: 2 })
+				attest(T({ x: 0, y: 2, z: 3 })).equals({ y: 2 })
+			})
+
+			it("has an output allowing what its branches keep", () => {
+				const T = type({ "+": "delete", "x?": "1" }).or({
+					"+": "delete",
+					"y?": "2"
+				})
+				attest(T.out.expression).snap("{ x?: 1 } | { y?: 2 }")
+				attest(T.out.allows(T({ x: 1, y: 2, z: 3 }))).equals(true)
+			})
+
+			it("leaves an object it can't copy as it was", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({
+						"+": "delete",
+						message: "string",
+						"code?": "string"
+					}).or({ "+": "delete", message: "string", "errno?": "number" })
+					const thrown = () =>
+						Object.assign(new Error("m"), { z: 0, code: "E", errno: 1 })
+					for (const error of [thrown(), thrown()]) {
+						attest(T(error)).is(error)
+						attest(Object.keys(error)).equals(["z", "code", "errno"])
+					}
+					// one branch allowing it writes it in place, as an object alone does
+					const coded = Object.assign(new Error("m"), {
+						z: 0,
+						code: "E",
+						errno: "1"
+					})
+					attest(T(coded)).is(coded)
+					attest(Object.keys(coded)).equals(["code"])
+				}
+			})
+
+			it("is indeterminate beside a morph or a default", () => {
+				attest(() =>
+					type({ "+": "delete", a: "string.trim", "x?": "1" }).or({
+						"+": "delete",
+						a: "string.trim",
+						"y?": "2"
+					})
+				).throws
+					.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, x?: 1, + (undeclared): delete }
+Right: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, y?: 2, + (undeclared): delete }
 Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+				attest(() =>
+					type({ "+": "delete", a: "string", x: "number = 1" }).or({
+						"+": "delete",
+						a: "string",
+						"y?": "2"
+					})
+				).throws("is indeterminate")
+			})
+
+			it("is indeterminate through a cycle", () => {
+				attest(() =>
+					scope({
+						a: { "+": "delete", "x?": "1", "next?": "a" },
+						b: { "+": "delete", "y?": "2" },
+						either: "a | b"
+					}).export()
+				).throws("is indeterminate")
+			})
 		})
 
 		it("reject key", () => {
