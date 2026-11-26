@@ -14,6 +14,7 @@ import {
 	type,
 	type Generic,
 	type GenericAst,
+	type Out,
 	type To
 } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
@@ -245,6 +246,18 @@ contextualize(() => {
 
 			attest<{ v: (In: string) => To<number> }>(types.Parsed.t)
 			attest(types.Parsed({ v: "5" })).snap({ v: 5 })
+
+			// as it does a constraint that's a morph
+			const ParsedBox = generic(["t", "string.numeric.parse"])({ v: "t" })
+			attest<{ v: (In: string) => To<number> }>(
+				ParsedBox("string.numeric.parse").t
+			)
+			attest<{ v: (In: string) => To<number> }>(
+				scope({
+					"Box<t extends string.numeric.parse>": { v: "t" },
+					Parsed: "Box<string.numeric.parse>"
+				}).export().Parsed.t
+			)
 		})
 
 		it("a morph whose input doesn't satisfy a constraint is unsatisfied", () => {
@@ -254,6 +267,63 @@ contextualize(() => {
 			attest(() => Boxed("string.numeric.parse"))
 				.throws("t must be assignable to number")
 				.type.errors(`ErrorType<["Invalid argument for t", expected: number]>`)
+		})
+
+		it("a morph or any isn't taken for what TypeScript infers it as", () => {
+			// TypeScript would take a morph for a function, so for an object
+			attest(() =>
+				scope({
+					"Box<t extends object>": { v: "t" },
+					// @ts-expect-error
+					Parsed: "Box<string.numeric.parse>"
+				}).export()
+			)
+				.throws("t must be assignable to object (was (In: ")
+				.type.errors(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						"object",
+						"string.numeric.parse"
+					)
+				)
+			// a morph whose input is an object still is one
+			const ToKeys = type("object").pipe(o => Object.keys(o))
+			const types = scope({
+				"Box<t extends object>": { v: "t" },
+				ToKeys,
+				Boxed: "Box<ToKeys>"
+			}).export()
+			attest<{ v: (In: object) => Out<string[]> }>(types.Boxed.t)
+			attest(types.Boxed({ v: { a: 1 } })).snap({ v: ["a"] })
+			// any is unknown at runtime
+			// @ts-expect-error
+			attest(() => type("Record<unknown.any, string>"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"K",
+						"string | symbol",
+						"unknown"
+					)
+				)
+				.type.errors(
+					writeUnsatisfiedParameterConstraintMessage(
+						"K",
+						"string | symbol",
+						"unknown.any"
+					)
+				)
+			// as when the generic is called
+			const Boxed = generic(["t", "object"])({ v: "t" })
+			// @ts-expect-error
+			attest(() => Boxed("string.numeric.parse"))
+				.throws("t must be assignable to object (was (In: ")
+				.type.errors(`ErrorType<["Invalid argument for t", expected: object]>`)
+			// @ts-expect-error
+			attest(() => Boxed("unknown.any"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage("t", "object", "unknown")
+				)
+				.type.errors(`ErrorType<["Invalid argument for t", expected: object]>`)
 		})
 
 		it("unsatisfied parameter string", () => {

@@ -3,8 +3,15 @@ import type {
 	GenericParamAst,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import type { array, ErrorMessage, Hkt, Key, typeToString } from "@ark/util"
-import type { distill } from "../../attributes.ts"
+import type {
+	anyOrNever,
+	array,
+	ErrorMessage,
+	Hkt,
+	Key,
+	typeToString
+} from "@ark/util"
+import type { distill, InferredMorph } from "../../attributes.ts"
 import type { RecordHkt } from "../../keywords/ts.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
@@ -66,12 +73,10 @@ type validateGenericArgs<
 > =
 	argAsts extends readonly [infer arg, ...infer argsTail] ?
 		validateAst<arg, $, args> extends infer e extends ErrorMessage ? e
-		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
-			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
-		: // like the runtime check, a morph satisfies a constraint its input does
-		distill.In<inferAstRoot<arg, $, args>> extends (
+		: satisfiesConstraint<
+			inferAstRoot<arg, $, args>,
 			params[indices["length"]][1]
-		) ?
+		> extends true ?
 			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
 		:	ErrorMessage<
 				writeUnsatisfiedParameterConstraintMessage<
@@ -81,6 +86,26 @@ type validateGenericArgs<
 				>
 			>
 	:	undefined
+
+/**
+ * As the runtime check has it: any is unknown there, so it satisfies only an
+ * unconstrained parameter, and a morph satisfies a constraint only as its
+ * input does that of the constraint, though TypeScript would take it for the
+ * function it's inferred as. A structure is read through its morphs the same
+ * way
+ */
+export type satisfiesConstraint<t, constraint> =
+	unknown extends constraint ? true
+	: [t] extends [anyOrNever] ?
+		unknown extends t ?
+			false
+		:	true
+	: [t] extends [constraint] ?
+		[Extract<t, InferredMorph>] extends [never] ? true
+		: [distill.In<t>] extends [distill.In<constraint>] ? true
+		: false
+	: [distill.In<t>] extends [constraint] ? true
+	: false
 
 type resolveScope<g$, $> =
 	// If the generic was defined in the current scope, its definition can be
