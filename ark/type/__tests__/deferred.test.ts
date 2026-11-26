@@ -271,6 +271,76 @@ seen false
 		attest(seen).equals([])
 	})
 
+	it("a union calls what a branch narrows on the one value its range and another's meet at, at its call", () => {
+		const seen: unknown[] = []
+		const sees = (data: unknown) => {
+			seen.push(data)
+			return true
+		}
+		// each from a number of its own, since a unit is asked of a predicate once
+		const from = (n: number) => type.raw(`number >= ${n}`).narrow(sees)
+		const unions: (() => unknown)[] = [
+			() => type.or("number.integer >= 1", "number <= 1").narrow(sees),
+			() => type.or(from(2), "number <= 2"),
+			() =>
+				type
+					.or(type.or("number.integer >= 3", "string"), "number <= 3")
+					.narrow(sees),
+			() => type({ a: from(4) }).or({ a: "number <= 4" }),
+			// a discriminant read after the prop doesn't spare the call
+			() =>
+				type({ a: { b: from(5) }, z: "'l'" }).or({
+					a: { b: "number <= 5" },
+					z: "'r'"
+				}),
+			() => type.or(from(6).array(), "(0 <= number <= 6)[]"),
+			() =>
+				type.or(
+					type.raw("Date >= d'2000-01-01'").narrow(sees),
+					type.raw("Date <= d'2000-01-01'")
+				)
+		]
+		for (const union of unions) {
+			seen.length = 0
+			attest(isUnread(union() as object)).equals(false)
+			attest(seen.length).equals(1)
+		}
+		seen.length = 0
+		// ranges that overlap, stop short of each other or meet at what one excludes
+		// allow no value alone
+		const apart = [
+			type.or(from(10), "number.integer >= 10"),
+			type.or(from(12), "number <= 11"),
+			type.or(type.raw("number > 13").narrow(sees), "number <= 13"),
+			type({ kind: "'l'", n: type.raw("0 <= number <= 100").narrow(sees) }).or({
+				kind: "'r'",
+				n: "0 <= number <= 100"
+			}),
+			type.or(type.raw("string >= 2").narrow(sees), "string <= 2")
+		]
+		for (const t of apart) attest(isUnread(t)).equals(true)
+		attest(seen).equals([])
+	})
+
+	it("a range narrowed before it's read says where it ends", () => {
+		attest(
+			printed(`const seen = []
+const sees = n => (seen.push(n), true)
+const narrowed = type("number >= 1").narrow(sees)
+const bounded = type("number").narrow(sees).atLeast(2)
+const elements = type("number >= 3").narrow(sees).array().atLeastLength(1)
+const short = type("number >= 4").narrow(sees)
+const unions = [
+	narrowed.or("number <= 1"),
+	bounded.or("number.integer <= 2"),
+	elements.or("(number <= 3)[]"),
+	short.or("number < 4")
+]
+console.log(seen.join(), unions.map(t => Object.hasOwn(t, "kind")).join())`)
+		).snap(`1,2,3 true,true,true,false
+`)
+	})
+
 	it("holding a built union calls nothing discriminating it would", () => {
 		const seen: unknown[] = []
 		const sees = (data: unknown) => {

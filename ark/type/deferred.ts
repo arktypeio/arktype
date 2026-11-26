@@ -58,6 +58,9 @@ interface Facts {
 	narrowedWithin?: boolean | undefined
 	/** which of those each prop of an object literal holds, if only its props hold them */
 	held?: Map<string, number> | undefined
+	/** the bounds each range it is or holds includes: two ranges meeting at one
+	 * allow it alone, a unit */
+	ends?: Ends | undefined
 	min?: number | undefined
 	minExclusive?: boolean | undefined
 	max?: number | undefined
@@ -79,6 +82,12 @@ interface Facts {
 	cyclic?: boolean | "this" | undefined
 	/** whether it's a property's default, which only a property can be */
 	defaults?: boolean | undefined
+}
+
+/** the least and the greatest of what ranges include, a Date as its time */
+type Ends = {
+	lows: number[]
+	highs: number[]
 }
 
 interface Deferred extends DeferredShell {
@@ -206,16 +215,53 @@ const holds = (f: Facts) =>
 	(f.narrowed || f.narrowedWithin ? holdsNarrow : 0) |
 	(f.units || f.unitsWithin ? holdsUnit : 0)
 
-type Holding = Pick<Facts, "narrowedWithin" | "unitsWithin">
+type Holding = Pick<Facts, "narrowedWithin" | "unitsWithin" | "ends">
+
+// each once, however many of what it holds end there
+const joinEnds = (
+	l: Ends | undefined,
+	r: Ends | undefined
+): Ends | undefined =>
+	l && r ?
+		{
+			lows: [...new Set([...l.lows, ...r.lows])],
+			highs: [...new Set([...l.highs, ...r.highs])]
+		}
+	:	(l ?? r)
 
 const holding = (...held: Facts[]): Holding => {
 	let bits = 0
-	for (const f of held) bits |= holds(f)
+	let ends: Ends | undefined
+	for (const f of held) {
+		bits |= holds(f)
+		ends = joinEnds(ends, f.ends)
+	}
 	return {
 		narrowedWithin: (bits & holdsNarrow) !== 0,
-		unitsWithin: (bits & holdsUnit) !== 0
+		unitsWithin: (bits & holdsUnit) !== 0,
+		ends
 	}
 }
+
+/** the ends of a range that includes its bounds */
+const endsOf = (
+	min: number | undefined,
+	max: number | undefined
+): Ends | undefined =>
+	min === undefined && max === undefined ?
+		undefined
+	:	{
+			lows: min === undefined ? [] : [min],
+			highs: max === undefined ? [] : [max]
+		}
+
+// whether a range of one ends where a range of the other starts, wherever each
+// holds it
+const meet = ({ ends: l }: Facts, { ends: r }: Facts) =>
+	!!l &&
+	!!r &&
+	(l.highs.some(n => r.lows.includes(n)) ||
+		l.lows.some(n => r.highs.includes(n)))
 
 /** what an inclusive range is, which any way of writing it is one Type */
 const rangeFacts = (
@@ -245,7 +291,10 @@ const rangeFacts = (
 		values: unit ? [min] : undefined,
 		units: unit,
 		narrowedWithin: d.narrowedWithin,
-		unitsWithin: d.unitsWithin
+		unitsWithin: d.unitsWithin,
+		// a length's bounds end nothing it allows, where an array's elements could
+		ends:
+			d.base === "number" || d.base === "integer" ? endsOf(min, max) : d.ends
 	}
 }
 
@@ -290,6 +339,7 @@ const scanRange = (def: string): Facts | undefined => {
 	)
 		return
 
+	const minExcluded = left ? leftOp === "<" : op === ">"
 	// bounds apart from what they exclude
 	return {
 		key: def,
@@ -297,9 +347,10 @@ const scanRange = (def: string): Facts | undefined => {
 		pure: true,
 		base: of.base,
 		min,
-		minExclusive: of.base === "number" && (left ? leftOp === "<" : op === ">"),
+		minExclusive: of.base === "number" && minExcluded,
 		max,
-		maxExclusive: of.base === "number" && op === "<"
+		maxExclusive: of.base === "number" && op === "<",
+		ends: endsOf(minExcluded ? undefined : min, op === "<" ? undefined : max)
 	}
 }
 
@@ -417,6 +468,7 @@ const scanUnion = (def: string): Facts | undefined => {
 	let values: unknown[] | undefined = []
 	let units: boolean | undefined
 	let unitsWithin: boolean | undefined
+	let ends: Ends | undefined
 	const terms: string[] = []
 	for (let i = 0; i < parts.length; i++) {
 		const term = scanTerm(parts[i])
@@ -427,6 +479,7 @@ const scanUnion = (def: string): Facts | undefined => {
 		values = term.values && values?.concat(term.values)
 		units ||= term.units
 		unitsWithin ||= term.unitsWithin
+		ends = joinEnds(ends, term.ends)
 		if (!insertAll(terms, term)) return
 	}
 	return {
@@ -436,7 +489,8 @@ const scanUnion = (def: string): Facts | undefined => {
 		pure: true,
 		values,
 		units,
-		unitsWithin
+		unitsWithin,
+		ends
 	}
 }
 
@@ -600,23 +654,43 @@ const outputsUnit = (branch: BaseRoot) => {
 	}
 }
 
-const heldByNode = new WeakMap<BaseNode, number>()
+type NodeHeld = {
+	bits: number
+	ends: Ends | undefined
+}
+
+const heldByNode = new WeakMap<BaseNode, NodeHeld>()
+
+// a bound that includes its rule
+const endOf = (node: BaseNode) =>
+	(node.is("min") || node.is("after")) && !node.exclusive ?
+		endsOf(+node.rule, undefined)
+	: (node.is("max") || node.is("before")) && !node.exclusive ?
+		endsOf(undefined, +node.rule)
+	:	undefined
 
 // asked of what a node is made of and pipes to: its references are a union's
 // cases too, which it has once it's discriminated, when it's first used
-const nodeHolds = (node: BaseNode): number => {
-	let bits = heldByNode.get(node)
-	if (bits === undefined) {
-		bits =
-			node.is("unit") ? holdsUnit
-			: isNarrow(node) ? holdsNarrow
-			: 0
-		for (const child of node.children) bits |= nodeHolds(child)
-		if (node.is("morph"))
-			for (const piped of node.otherRefs) bits |= nodeHolds(piped)
-		heldByNode.set(node, bits)
+const nodeHolds = (node: BaseNode): NodeHeld => {
+	let held = heldByNode.get(node)
+	if (!held) {
+		held = {
+			bits:
+				node.is("unit") ? holdsUnit
+				: isNarrow(node) ? holdsNarrow
+				: 0,
+			ends: endOf(node)
+		}
+		const within =
+			node.is("morph") ? [...node.children, ...node.otherRefs] : node.children
+		for (const part of within) {
+			const { bits, ends } = nodeHolds(part)
+			held.bits |= bits
+			held.ends = joinEnds(held.ends, ends)
+		}
+		heldByNode.set(node, held)
 	}
-	return bits
+	return held
 }
 
 const nodeFacts = (node: BaseRoot): Facts | undefined => {
@@ -636,7 +710,7 @@ const nodeFacts = (node: BaseRoot): Facts | undefined => {
 			units ||= outputsUnit(branch)
 		}
 	}
-	const bits = nodeHolds(node)
+	const { bits, ends } = nodeHolds(node)
 	// a node says nothing of where it holds a predicate or a unit
 	const narrowed = (bits & holdsNarrow) !== 0
 	return {
@@ -647,7 +721,8 @@ const nodeFacts = (node: BaseRoot): Facts | undefined => {
 		units,
 		unitsWithin: (bits & holdsUnit) !== 0,
 		narrowed,
-		narrowedWithin: narrowed
+		narrowedWithin: narrowed,
+		ends
 	}
 }
 
@@ -699,7 +774,8 @@ const valueFacts = (
 				domains: objectBits,
 				pure: into.pure,
 				narrowedWithin: nested.narrowedWithin,
-				unitsWithin: nested.unitsWithin
+				unitsWithin: nested.unitsWithin,
+				ends: nested.ends
 			},
 			held
 		]
@@ -759,6 +835,7 @@ const walkLiteral = (
 			const spread = d ? d.facts : nodeFacts(v as BaseRoot)
 			if (spread?.narrowedWithin) facts.narrowedWithin = true
 			if (spread?.unitsWithin) facts.unitsWithin = true
+			facts.ends = joinEnds(facts.ends, spread?.ends)
 			if (d?.facts.cyclic) {
 				facts.cyclic = d.facts.cyclic
 				spreadThis = d.facts.key
@@ -812,6 +889,7 @@ const walkLiteral = (
 			if (bits & holdsNarrow) facts.narrowedWithin = true
 			if (bits & holdsUnit) facts.unitsWithin = true
 		}
+		facts.ends = joinEnds(facts.ends, of.ends)
 		// an optional value's union with undefined could be indeterminate or call
 		// what it narrows, and without exactOptionalPropertyTypes composes what an
 		// alias resolves to
@@ -870,6 +948,8 @@ const disjointByTag = (l: Facts, r: Facts) => {
 // props say where
 const calls = (l: Facts, r: Facts) => {
 	if (l.narrowed && r.units) return true
+	// or on what its range and another's meeting allow alone
+	if ((l.narrowed || l.narrowedWithin) && meet(l, r)) return true
 	if (!l.narrowedWithin || !r.unitsWithin) return false
 	if (!l.held || !r.held) return true
 	for (const [name, bits] of l.held)
@@ -929,12 +1009,15 @@ export const deferUnion = (
 	let cyclic: Facts["cyclic"]
 	let narrowedWithin: boolean | undefined
 	let unitsWithin: boolean | undefined
+	let ends: Ends | undefined
 	let held: Facts["held"] = new Map()
 	for (let i = 0; i < all.length; i++) {
 		const f = all[i]
 		for (let j = i + 1; j < all.length; j++) {
 			if (!determinate(f, all[j])) return
 			if (!apart(f, all[j])) reduced[i] = reduced[j] = overlaps = true
+			// what two ranges meeting allow alone is a unit to what narrows the union
+			if (meet(f, all[j])) units = true
 		}
 		domains |= f.domains
 		pure &&= f.pure
@@ -944,6 +1027,7 @@ export const deferUnion = (
 		cyclic ||= f.cyclic
 		narrowedWithin ||= f.narrowedWithin
 		unitsWithin ||= f.unitsWithin
+		ends = joinEnds(ends, f.ends)
 		// a branch that isn't a literal holds what no prop says
 		if (!f.held) held &&= f.narrowedWithin || f.unitsWithin ? undefined : held
 		else
@@ -986,6 +1070,7 @@ export const deferUnion = (
 			cyclic,
 			narrowedWithin,
 			unitsWithin,
+			ends,
 			held
 		},
 		$,
@@ -1026,7 +1111,12 @@ const boundMethod =
 					key: `${wrap(d.facts)}${isMin ? ">=" : "<="}${n}`,
 					terms: undefined,
 					min: lo,
-					max: hi
+					max: hi,
+					// a narrow's facts don't say which of its bounds it excludes
+					ends:
+						over === "number" || over === "integer" ?
+							endsOf(lo, hi)
+						:	d.facts.ends
 				}
 	}
 
@@ -1085,6 +1175,7 @@ const deferredMethods: Dict<
 				narrowed: true,
 				narrowedWithin: facts.narrowedWithin,
 				unitsWithin: facts.unitsWithin,
+				ends: facts.ends,
 				held: facts.held
 			}
 		:	undefined,
@@ -1135,6 +1226,7 @@ const deferredMethods: Dict<
 			tags: new Map([...(facts.tags ?? []), ...(rf.tags ?? [])]),
 			narrowedWithin: facts.narrowedWithin || rf.narrowedWithin,
 			unitsWithin: facts.unitsWithin || rf.unitsWithin,
+			ends: joinEnds(facts.ends, rf.ends),
 			held: facts.held && rf.held && new Map([...facts.held, ...rf.held])
 		}
 	},
