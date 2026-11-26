@@ -3,7 +3,7 @@ import {
 	registeredReference,
 	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
-import { deepClone } from "@ark/util"
+import { deepClone, writeInvalidDateMessage } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
@@ -1460,5 +1460,11 @@ baz[0] must be a number`)
 
 		attest<number>(t.defaulted)
 		attest<number | undefined>(t.nested?.defaulted)
+	})
+
+	it("rejects invalid date literal inside array default at runtime", () => {
+		attest(() => type({ dates: "Date[] = [d'not-a-date']" })).throws(
+			writeInvalidDateMessage("not-a-date")
+		)
 	})
 })

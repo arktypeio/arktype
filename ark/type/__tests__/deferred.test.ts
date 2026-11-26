@@ -876,6 +876,18 @@ console.log(
 			attest(PipedToFrozen({ pipedFrozen: 1 }).toString()).snap(
 				"pipedFrozen must be a string"
 			)
+
+			// freezing an unread deferred Type must not poison $.nodesByKey for later callers
+			const FrozenFirst = Object.freeze(type({ poisonKeyCheck: "string" }))
+			const FreshSecond = type({ poisonKeyCheck: "string" })
+			attest(FreshSecond !== FrozenFirst).equals(true)
+			attest(Object.isExtensible(FreshSecond)).equals(true)
+			attest(FreshSecond({ poisonKeyCheck: "ok" })).equals({
+				poisonKeyCheck: "ok"
+			})
+			attest(FrozenFirst({ poisonKeyCheck: "ok" })).equals({
+				poisonKeyCheck: "ok"
+			})
 		})
 	})
 })

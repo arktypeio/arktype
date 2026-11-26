@@ -1464,7 +1464,7 @@ age must be non-negative`)
 	})
 
 	it("configure after a type names the first Type that froze config", async function () {
-		this.timeout(30_000)
+		this?.timeout?.(30_000)
 		const errorAfter = async (setup: string): Promise<string> => {
 			const { stdout } = await execFileAsync(
 				process.execPath,

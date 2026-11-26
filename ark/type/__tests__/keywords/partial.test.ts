@@ -225,6 +225,62 @@ contextualize(() => {
 		attest(U({ y: 42 })).equals({ y: 42 })
 	})
 
+	it("selective partial on array with intersected props preserves array type", () => {
+		const T = type("string[]")
+			.and({ extra: "number", keep: "string" })
+			.partial("extra")
+			.atLeastLength(1)
+
+		attest<string[] & { keep: string; extra?: number }>(T.infer)
+		const valid = Object.assign(["a"], { keep: "ok" })
+		attest(T(valid)).equals(valid)
+		attest(T(["a"]).toString()).snap("keep must be a string (was missing)")
+		attest(T(Object.assign([], { keep: "ok" })).toString()).snap(
+			"must be non-empty"
+		)
+
+		// tuple with intersected props preserves exact tuple base without leaking length
+		const Tuple = type(["string", "number"])
+			.and({ extra: "number", keep: "string" })
+			.partial("extra")
+		attest<[string, number] & { keep: string; extra?: number }>(Tuple.infer)
+		const validTuple = Object.assign(["a", 1] as [string, number], {
+			keep: "ok"
+		})
+		attest(Tuple(validTuple)).equals(validTuple)
+
+		// tuple with multiple optional elements preserves distinct element types
+		const MultiOptTuple = type(["string", "number?", "boolean?"])
+			.and({ extra: "number", keep: "string" })
+			.partial("extra")
+		attest<[string, number?, boolean?] & { keep: string; extra?: number }>(
+			MultiOptTuple.infer
+		)
+
+		// array | object union distributes array handling per branch
+		const Mixed = type("string[]")
+			.and({ kind: "'arr'", a: "number" })
+			.or({ kind: "'obj'", a: "number" })
+			.partial("a")
+		attest<
+			(string[] & { kind: "arr"; a?: number }) | { kind: "obj"; a?: number }
+		>(Mixed.infer)
+		const validArr = Object.assign(["x"], { kind: "arr" as const })
+		attest(Mixed(validArr)).equals(validArr)
+		attest(Mixed({ kind: "obj" })).equals({ kind: "obj" })
+
+		// branded array with intersected props preserves Brand
+		const Branded = type("string[]")
+			.brand("tag")
+			.and({ a: "string", b: "number" })
+			.partial("a")
+		attest(Branded.infer).type.toString.snap(`string[] & {
+	readonly " brand": [string[], "tag"]
+	a?: string
+	b: number
+}`)
+	})
+
 	it("selective invalid key", () => {
 		const User = type({ name: "string" })
 		// @ts-expect-error

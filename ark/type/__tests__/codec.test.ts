@@ -583,4 +583,12 @@ pair[1] must be a Date`)
 		})
 		attest($.entry.encode({ tag: "a", next: 1 })).equals("encoded")
 	})
+
+	it("does not crash when unioning objects with an ordered codec encoder prop", () => {
+		const Enc = type("boolean | string.boolean.parse").encode
+		const U = type({ k: Enc, tag: "1" }).or({ k: "number", tag: "1" })
+		attest(U({ k: true, tag: 1 })).equals({ k: true, tag: 1 })
+		attest(U({ k: 42, tag: 1 })).equals({ k: 42, tag: 1 })
+		attest(U.allows({ k: "bad", tag: 1 })).equals(false)
+	})
 })

@@ -1102,7 +1102,8 @@ const shellProto = new Proxy(Object.create(proto), {
 // start each node's key, and nothing a definition is scanned to does
 const defer = (facts: Facts, $: InternalScope, resolve: () => BaseRoot) => {
 	const existing = $.nodesByKey.get(facts.key)
-	if (existing) return existing as never
+	if (existing && (!deferred.has(existing) || Object.isExtensible(existing)))
+		return existing as never
 	const { fn, c } = deferredCallable()
 	const self = fn as BaseRoot
 	Object.setPrototypeOf(self, shellProto)

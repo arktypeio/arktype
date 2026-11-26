@@ -244,6 +244,51 @@ contextualize(() => {
 		attest(T.allows({ a: undefined })).equals(false)
 	})
 
+	it("selective required on array with intersected props preserves array type", () => {
+		const T = type("string[]")
+			.and({ "extra?": "number", "other?": "string" })
+			.required("extra")
+			.atLeastLength(1)
+
+		attest<string[] & { other?: string; extra: number }>(T.infer)
+		const valid = Object.assign(["a"], { extra: 1 })
+		attest(T(valid)).equals(valid)
+		attest(T(["a"]).toString()).snap("extra must be a number (was missing)")
+		attest(T(Object.assign([], { extra: 1 })).toString()).snap(
+			"must be non-empty"
+		)
+
+		// optional tuple element with intersected props preserves exact tuple base
+		const Tuple = type(["string", "number?"])
+			.and({ "extra?": "number" })
+			.required("extra")
+		attest<[string, number?] & { extra: number }>(Tuple.infer)
+		const validTuple = Object.assign(["a"] as [string, number?], { extra: 1 })
+		attest(Tuple(validTuple)).equals(validTuple)
+		attest(Tuple(["a"]).toString()).snap("extra must be a number (was missing)")
+
+		// tuple with multiple optional elements preserves distinct element types
+		const MultiOptTuple = type(["string?", "number?"])
+			.and({ "extra?": "number" })
+			.required("extra")
+		attest<[string?, number?] & { extra: number }>(MultiOptTuple.infer)
+
+		// array | object union distributes array handling per branch
+		const Mixed = type("string[]")
+			.and({ kind: "'arr'", "a?": "number" })
+			.or({ kind: "'obj'", "a?": "number" })
+			.required("a")
+		attest<
+			(string[] & { kind: "arr"; a: number }) | { kind: "obj"; a: number }
+		>(Mixed.infer)
+		const validArr = Object.assign(["x"], { kind: "arr" as const, a: 1 })
+		attest(Mixed(validArr)).equals(validArr)
+		attest(Mixed({ kind: "obj", a: 1 })).equals({ kind: "obj", a: 1 })
+		attest(Mixed({ kind: "obj" }).toString()).snap(
+			"a must be a number (was missing)"
+		)
+	})
+
 	it("selective invalid key", () => {
 		const Draft = type({ "title?": "string" })
 		// @ts-expect-error

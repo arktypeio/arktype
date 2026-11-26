@@ -29,6 +29,7 @@ import {
 import type { next } from "arkregex/internal/parse.ts"
 import {
 	incompleteQuantifierMessage,
+	loneClosingBraceMessage,
 	writeMinExceedsMaxQuantifierError,
 	writeUnmatchedQuantifierError,
 	writeUnnaturalNumberQuantifierError
@@ -354,6 +355,19 @@ contextualize(() => {
 			attest(() => regex("^a{}$", "u"))
 				.throws("Incomplete quantifier")
 				.type.errors(incompleteQuantifierMessage)
+		})
+
+		it("rejects lone closing brace under u and v flags", () => {
+			// @ts-expect-error
+			attest(() => regex("}", "u"))
+				.throws("Lone quantifier brackets")
+				.type.errors(loneClosingBraceMessage)
+			// @ts-expect-error
+			attest(() => regex("}", "v"))
+				.throws("Lone quantifier brackets")
+				.type.errors(loneClosingBraceMessage)
+			attest<Regex<"}", { flags: "u" }>>(regex("^\\}$", "u"))
+			attest<Regex<"}", {}>>(regex("^}$"))
 		})
 
 		it("fallsback to literal on empty", () => {
@@ -815,6 +829,32 @@ contextualize(() => {
 				.type.errors(writeInvalidUnicodePropertyMessage("p"))
 			// inside a charset without u/v, \p is literal "p"
 			attest<Regex<"p" | "{" | "a" | "}", {}>>(regex("^[\\p{a}]$"))
+			// quantified identity escape \p{digits} without u/v is not a unicode property escape
+			// @ts-expect-error
+			attest(() => regex("^\\p{2}$")).type.errors(
+				writeUnnecessaryEscapeMessage("p")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\p{2,}$")).type.errors(
+				writeUnnecessaryEscapeMessage("p")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\P{1,3}$")).type.errors(
+				writeUnnecessaryEscapeMessage("P")
+			)
+			// non-integer range bodies are not valid quantifiers, so still flagged as needing u/v
+			// @ts-expect-error
+			attest(() => regex("^\\p{1.5,2}$")).type.errors(
+				writeUnicodePropertyRequiresFlagMessage("p")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\p{-1,2}$")).type.errors(
+				writeUnicodePropertyRequiresFlagMessage("p")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\p{1e2,3}$")).type.errors(
+				writeUnicodePropertyRequiresFlagMessage("p")
+			)
 		})
 	})
 

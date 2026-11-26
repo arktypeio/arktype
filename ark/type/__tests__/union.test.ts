@@ -579,4 +579,74 @@ x must be a string`)
 				.description
 		).snap('"a"')
 	})
+
+	it("does not flatten ordered prop unions during prop-group merging", () => {
+		const Ordered = type.schema({
+			branches: [
+				{
+					in: "string",
+					morphs: (s: string) => s.length
+				},
+				"string"
+			],
+			ordered: true
+		})
+		const U = type({ k: Ordered, tag: "1" }).or({ k: "number", tag: "1" })
+		attest(U({ k: "abc", tag: 1 })).equals({ k: 3, tag: 1 })
+		attest(U({ k: 42, tag: 1 })).equals({ k: 42, tag: 1 })
+		attest(U.allows({ k: false, tag: 1 })).equals(false)
+	})
+
+	it("preserves symbol-keyed metadata across union reduction and merging", () => {
+		const sym = Symbol("meta")
+		const A = type({ a: "'x'", b: "string" }).configure({
+			[sym]: 1
+		} as never)
+		const B = type({ a: "'x'", b: "number" }).configure({
+			[sym]: 2
+		} as never)
+		const U = A.or(B)
+		// differing symbol metadata must not be merged into a single branch
+		const branches = U.internal.assertIs("union").branches
+		attest(branches.length).equals(2)
+		attest(branches.map(b => (b.meta as any)[sym]).sort()).equals([1, 2])
+
+		// identical symbol metadata may merge and keeps the symbol metadata
+		const C = type({ a: "'x'", b: "number" }).configure({
+			[sym]: 1
+		} as never)
+		const Merged = A.or(C)
+		attest(Merged.internal.kind).equals("intersection")
+		attest((Merged.meta as any)[sym]).equals(1)
+
+		// differing symbol metadata on range branches prevents merging
+		const R1 = type("0 <= number <= 5").configure({ [sym]: "lo" } as never)
+		const R2 = type("5 <= number <= 10").configure({ [sym]: "hi" } as never)
+		const R = R1.or(R2)
+		attest(R.internal.assertIs("union").branches.length).equals(2)
+	})
+
+	it("preserves reduced node metadata on single-branch union reduction", () => {
+		const S = type("string").describe("my str")
+		const U = S.or(S)
+		attest(U.description).equals("my str")
+		attest(U.meta.description).equals("my str")
+
+		const sym = Symbol("tag")
+		const SymStr = type("string").configure({ [sym]: "keep" } as never)
+		const SymU = SymStr.or(SymStr)
+		attest((SymU.meta as any)[sym]).equals("keep")
+
+		// ordered unions must keep the earlier duplicate branch rather than promoting a later undescribed copy
+		const OrderedDup = type.schema({
+			branches: [
+				type("'a'").describe("x").internal,
+				type("string").pipe(s => `g:${s}`).internal,
+				type("'a'").internal
+			],
+			ordered: true
+		})
+		attest(OrderedDup("a")).equals("a")
+		attest(OrderedDup("b")).equals("g:b")
+	})
 })

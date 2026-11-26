@@ -42,13 +42,13 @@ export type validateDocument<schema> =
 			:	schema
 		:	never
 	) extends never ?
-		Extract<schema, boolean> | KeywordCompletions
+		Extract<schema, boolean> | completionsFor<schema>
 	: isUnion<schema> extends false ? validateMember<schema, schema, "document">
 	: // only invalid members are expected, since the completions of a valid
 	// one could accept them
 	invalidDocumentMemberOf<schema> extends infer invalid ?
 		[invalid] extends [never] ?
-			Extract<schema, boolean> | KeywordCompletions
+			Extract<schema, boolean> | completionsFor<schema>
 		:	validateDocumentMember<invalid>
 	:	never
 
@@ -72,7 +72,7 @@ export type validateSchema<schema, root, position extends SchemaPosition> =
 	: [schema] extends [boolean] ? schema
 	: JsonSchema extends schema ? schema
 	: [schema] extends [checkSchema<schema, root>] ?
-		Extract<schema, boolean> | KeywordCompletions
+		Extract<schema, boolean> | completionsFor<root>
 	:	validateSubschema<schema, root, position>
 
 /** a member of a union that passes on its own expects only what it is, since
@@ -121,21 +121,34 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 			  : k extends "items" ?
 					validateItems<schema[k], root, itemPositionOf<schema, position>>
 			  : k extends "prefixItems" ?
-					validateSchemaList<schema[k], root, itemPositionOf<schema, position>>
+					draftsOf<root> extends SiblinglessRefDraft ?
+						schema[k]
+					:	validateSchemaList<schema[k], root, itemPositionOf<schema, position>>
 			  : k extends SchemaKeyword | BranchKeyword ?
 					validateSchema<schema[k], root, "branch">
 			  : k extends CompositionKeyword ?
 					validateSchemaList<schema[k], root, "branch">
 			  : k extends "$ref" ? validateRef<schema[k], root>
+			  : k extends "minContains" | "maxContains" ?
+					draftsOf<root> extends SiblinglessRefDraft ?
+						schema[k]
+					:	validateCount<schema[k], k>
 			  : k extends CountKeyword ? validateCount<schema[k], k>
 			  : k extends "multipleOf" ? validateMultipleOf<schema[k]>
 			  : k extends "nullable" ?
 					validateNullable<schema[k], schema["type" & keyof schema]>
 			  : k extends keyof KeywordValueTypes ? KeywordValueTypes[k]
+			  : k extends "dependentSchemas" ?
+					draftsOf<root> extends SiblinglessRefDraft ?
+						schema[k]
+					:	validateSchemaRecord<schema[k], root, "branch">
 			  : k extends SchemaRecordKeyword ?
 					validateSchemaRecord<schema[k], root, "branch">
 			  : k extends "dependencies" ? validateDependencies<schema[k], root>
-			  : k extends "dependentRequired" ? validateDependentRequired<schema[k]>
+			  : k extends "dependentRequired" ?
+					draftsOf<root> extends SiblinglessRefDraft ?
+						schema[k]
+					:	validateDependentRequired<schema[k]>
 			  : k extends "additionalItems" ?
 					validateSchema<schema[k], root, "branch">
 			  : k extends UnsupportedKeyword ?
@@ -506,6 +519,7 @@ export interface StaticallyValidSchemaObject extends ContextFreeKeywords {
 	$defs?: StaticallyValidObjectRecord
 	definitions?: StaticallyValidObjectRecord
 	dependentSchemas?: StaticallyValidObjectRecord
+	dependentRequired?: DependentRequired
 	dependencies?: StaticDependencies
 	items?: StaticallyValidSchema | StaticallyValidObjectList
 	prefixItems?: StaticallyValidObjectList
@@ -530,7 +544,6 @@ export interface ContextFreeKeywords {
 	type?:
 		| JsonSchema.TypeName
 		| readonly [JsonSchema.TypeName, ...JsonSchema.TypeName[]]
-	dependentRequired?: DependentRequired
 	minimum?: number
 	maximum?: number
 	exclusiveMinimum?: number
@@ -605,16 +618,22 @@ export interface ValidSchemaObject<schema extends KeywordObject, root>
 	maxItems?: checkCount<schema["maxItems"]>
 	minProperties?: checkCount<schema["minProperties"]>
 	maxProperties?: checkCount<schema["maxProperties"]>
-	minContains?: checkCount<schema["minContains"]>
-	maxContains?: checkCount<schema["maxContains"]>
+	minContains?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	checkCount<schema["minContains"]>
+	maxContains?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	checkCount<schema["maxContains"]>
 	properties?: checkRecord<schema["properties"], root>
 	patternProperties?: checkRecord<schema["patternProperties"], root>
 	$defs?: checkRecord<schema["$defs"], root>
 	definitions?: checkRecord<schema["definitions"], root>
-	dependentSchemas?: checkRecord<schema["dependentSchemas"], root>
+	dependentSchemas?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	checkRecord<schema["dependentSchemas"], root>
+	dependentRequired?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	DependentRequired
 	dependencies?: checkDependencies<schema["dependencies"], root>
 	items?: checkItems<schema["items"], root>
-	prefixItems?: checkList<schema["prefixItems"], root>
+	prefixItems?: draftsOf<root> extends SiblinglessRefDraft ? unknown
+	:	checkList<schema["prefixItems"], root>
 	allOf?: checkList<schema["allOf"], root>
 	anyOf?: checkList<schema["anyOf"], root>
 	oneOf?: checkList<schema["oneOf"], root>
@@ -773,6 +792,18 @@ export type LocalRef = "#" | `#/${string}`
 export interface KeywordCompletions extends SubschemaCompletions {
 	[k: string]: any
 }
+
+export interface Draft07KeywordCompletions
+	extends Omit<SubschemaCompletions, "prefixItems" | "dependentSchemas"> {
+	[k: string]: any
+}
+
+type completionsFor<root> =
+	root extends unknown ?
+		draftsOf<root> extends SiblinglessRefDraft ?
+			Draft07KeywordCompletions
+		:	KeywordCompletions
+	:	never
 
 /** completions without an index signature, which would make the elements
  * of an array literal `any` in a slot that also accepts a list */

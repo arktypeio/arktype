@@ -171,9 +171,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
-				// a node already keyed with the meta it would get needs no key written
-				if (reduced.c.key && hasNoMeta(reduced.meta) && hasNoMeta(meta)) {
-					$ark.reached?.node(reduced)
+				if (hasNoMeta(meta) && (reduced.c.key || !hasNoMeta(reduced.meta))) {
+					if (reduced.c.key) $ark.reached?.node(reduced)
 					return reduced
 				}
 

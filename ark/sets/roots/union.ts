@@ -1153,8 +1153,11 @@ export const domainsOf = (node: BaseRoot): number => {
 	return anyDomain
 }
 
+const hasNoMeta = (meta: object): boolean =>
+	isEmptyObject(meta) && Object.getOwnPropertySymbols(meta).length === 0
+
 const isBareUnit = (branch: Union.ChildNode): boolean =>
-	branch.is("unit") && isEmptyObject(branch.meta)
+	branch.is("unit") && hasNoMeta(branch.meta)
 
 const pureDomainBitOf = (mask: number): number => {
 	const base = mask & 255
@@ -1193,6 +1196,15 @@ export const reduceBranches = (
 		if (readsInputs && requireDisjointProps(branches[i], branches[j], inputOf))
 			return
 		if (branches[i].equals(branches[j])) {
+			// if one copy has meta and the other does not, keep the undescribed copy
+			if (
+				!ordered &&
+				!hasNoMeta(branches[i].meta) &&
+				hasNoMeta(branches[j].meta)
+			) {
+				uniquenessByIndex[i] = false
+				return
+			}
 			// if the two branches are equal, only "j" is marked as
 			// redundant so at least one copy could still be included in
 			// the final set of branches.
@@ -1582,7 +1594,12 @@ const mergePropGroup = (
 		const branch = branches[idx] as Intersection.Node
 		const structure = branch.structure!
 		const prop = structure.byKey[propKey]
-		if (!prop || prop.value.hasAlias || (prop.is("optional") && prop.hasDef()))
+		if (
+			!prop ||
+			prop.value.hasAlias ||
+			(prop.value.is("union") && prop.value.ordered) ||
+			(prop.is("optional") && prop.hasDef())
+		)
 			continue
 		const metaKey = `${JSON.stringify(branch.metaJson)}\0${JSON.stringify(structure.metaJson)}\0${JSON.stringify(prop.metaJson)}`
 		const bucket = byMeta.get(metaKey)
@@ -1605,6 +1622,8 @@ const mergePropGroup = (
 			if (
 				leadStruct.props.length !== rStruct.props.length ||
 				leadStruct.undeclared !== rStruct.undeclared ||
+				!sameSymbolMeta(lead.meta, r.meta) ||
+				!sameSymbolMeta(leadStruct.meta, rStruct.meta) ||
 				!nodesEqual(leadStruct.index ?? [], rStruct.index ?? []) ||
 				!sequencesMatch(leadStruct.sequence, rStruct.sequence) ||
 				!nodesEqual(leadRest, childrenExcept(r, ["structure"]))
@@ -1614,14 +1633,22 @@ const mergePropGroup = (
 			for (const prop of leadStruct.props) {
 				if (prop.key === propKey) continue
 				const match = rStruct.byKey[prop.key]
-				if (!match || !hashesMatch(prop, match)) {
+				if (
+					!match ||
+					!hashesMatch(prop, match) ||
+					!sameSymbolMeta(prop.meta, match.meta)
+				) {
 					otherPropsMatch = false
 					break
 				}
 			}
 			if (!otherPropsMatch) continue
 			const rProp = rStruct.byKey[propKey]!
-			if (hashesMatch(leadProp, rProp)) continue
+			if (
+				!sameSymbolMeta(leadProp.meta, rProp.meta) ||
+				hashesMatch(leadProp, rProp)
+			)
+				continue
 			matchedIndices.push(idx)
 			matchedProps.push(rProp)
 		}
@@ -2333,18 +2360,44 @@ const splitPropBranch = (
 
 // a merge keeps a node only if its counterpart has the same meta
 const nodesEqual = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
-	arrayEquals(l, r, { isEqual: hashesMatch })
+	arrayEquals(l, r, {
+		isEqual: (a, b) => hashesMatch(a, b) && sameSymbolMeta(a.meta, b.meta)
+	})
 
 const sequencesMatch = (
 	l: Sequence.Node | undefined,
 	r: Sequence.Node | undefined
-) => (l && r ? hashesMatch(l, r) : l === r)
+) => (l && r ? hashesMatch(l, r) && sameSymbolMeta(l.meta, r.meta) : l === r)
+
+const sameSymbolMeta = (l: object, r: object): boolean => {
+	const lSyms = Object.getOwnPropertySymbols(l)
+	const rSyms = Object.getOwnPropertySymbols(r)
+	if (lSyms.length !== rSyms.length) return false
+	for (const sym of lSyms) {
+		if (
+			!Object.prototype.hasOwnProperty.call(r, sym) ||
+			!Object.is((l as dict)[sym as never], (r as dict)[sym as never])
+		)
+			return false
+	}
+	return true
+}
 
 // a merge replaces nodes only if they agree on the meta their replacement keeps
-const sameMeta = (nodes: readonly BaseNode[]) =>
-	nodes.every(
-		node => JSON.stringify(node.metaJson) === JSON.stringify(nodes[0].metaJson)
-	)
+const sameMeta = (nodes: readonly BaseNode[]) => {
+	if (nodes.length < 2) return true
+	const first = nodes[0]
+	const firstJson = JSON.stringify(first.metaJson)
+	for (let i = 1; i < nodes.length; i++) {
+		const node = nodes[i]
+		if (
+			JSON.stringify(node.metaJson) !== firstJson ||
+			!sameSymbolMeta(first.meta, node.meta)
+		)
+			return false
+	}
+	return true
+}
 
 const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))

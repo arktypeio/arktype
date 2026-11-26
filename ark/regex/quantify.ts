@@ -222,3 +222,9 @@ export const incompleteQuantifierMessage =
 
 export type incompleteQuantifierMessage =
 	"Incomplete quantifier: escape '{' with '\\{' to match literally with the 'u' or 'v' flag"
+
+export const loneClosingBraceMessage =
+	"Lone quantifier bracket: escape '}' with '\\\\}' to match literally with the 'u' or 'v' flag"
+
+export type loneClosingBraceMessage =
+	"Lone quantifier bracket: escape '}' with '\\}' to match literally with the 'u' or 'v' flag"

@@ -1,12 +1,14 @@
-import type { Backslash, ErrorMessage, Scanner } from "@ark/util"
+import type { Backslash, contains, ErrorMessage, Scanner } from "@ark/util"
 import type { parseCharset } from "./charset.ts"
 import type { parseEscape } from "./escape.ts"
 import type { parseGroup } from "./group.ts"
 import type {
+	loneClosingBraceMessage,
 	parseBuiltinQuantifier,
 	parsePossibleRange,
 	QuantifyingChar
 } from "./quantify.ts"
+import type { UnicodeFlag } from "./regex.ts"
 import type { Anchor, AnchorMarker, s, State, UnionTree } from "./state.ts"
 
 export type parseState<s extends State> =
@@ -30,6 +32,10 @@ export type next<s extends State> =
 		: lookahead extends QuantifyingChar ?
 			parseBuiltinQuantifier<s, lookahead, unscanned>
 		: lookahead extends "{" ? parsePossibleRange<s, unscanned>
+		: lookahead extends "}" ?
+			contains<s["flags"], UnicodeFlag> extends true ?
+				s.error<loneClosingBraceMessage>
+			:	s.shiftQuantifiable<s, "}", unscanned>
 		: lookahead extends "[" ? parseCharset<s, unscanned>
 		: s.shiftQuantifiable<
 				s,

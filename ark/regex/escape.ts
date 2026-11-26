@@ -1,4 +1,9 @@
-import type { contains, ErrorMessage, Scanner } from "@ark/util"
+import type {
+	contains,
+	ErrorMessage,
+	parseNonNegativeInteger,
+	Scanner
+} from "@ark/util"
 import type { UnicodeFlag } from "./regex.ts"
 import type { Control, ReferenceNode, s, State } from "./state.ts"
 
@@ -9,11 +14,30 @@ export type parseEscape<s extends State, unscanned extends string> =
 		: char extends UnicodePropertyChar ?
 			contains<s["flags"], UnicodeFlag> extends true ?
 				parseUnicodeProperty<s, char, nextUnscanned>
-			: nextUnscanned extends `{${string}}${string}` ?
-				s.error<writeUnicodePropertyRequiresFlagMessage<char>>
+			: nextUnscanned extends `{${infer body}}${string}` ?
+				isQuantifierBody<body> extends true ?
+					parseSingleEscapedCharacter<s, char, nextUnscanned>
+				:	s.error<writeUnicodePropertyRequiresFlagMessage<char>>
 			:	parseSingleEscapedCharacter<s, char, nextUnscanned>
 		:	parseSingleEscapedCharacter<s, char, nextUnscanned>
 	:	s.error<trailingBackslashMessage>
+
+type isQuantifierBody<body extends string> =
+	body extends `${infer l extends `${number}`},${infer r extends `${number}`}` ?
+		[parseNonNegativeInteger<l>, parseNonNegativeInteger<r>] extends (
+			[never, unknown] | [unknown, never]
+		) ?
+			false
+		:	true
+	: body extends `${infer l extends `${number}`},` ?
+		[parseNonNegativeInteger<l>] extends [never] ?
+			false
+		:	true
+	: body extends `${infer l extends `${number}`}` ?
+		[parseNonNegativeInteger<l>] extends [never] ?
+			false
+		:	true
+	:	false
 
 type parseNumericBackreference<
 	s extends State,

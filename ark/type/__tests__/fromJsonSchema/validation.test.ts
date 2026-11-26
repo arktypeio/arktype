@@ -991,4 +991,55 @@ Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"
 			).type.errors("Argument of type 'schema' is not assignable")
 		})
 	})
+
+	describe("draft-07 keyword gating", () => {
+		it("ignores 2019-09+ keywords under draft-07 matching runtime", () => {
+			attest<
+				true,
+				isValid<{
+					$schema: "http://json-schema.org/draft-07/schema#"
+					prefixItems: "ignored"
+					minContains: -1
+					maxContains: "ignored"
+					dependentRequired: 123
+					dependentSchemas: "ignored"
+				}>
+			>()
+			attest<
+				false,
+				isValid<{
+					$schema: "http://json-schema.org/draft-07/schema#"
+					prefixItems: "ignored"
+					minLength: -1
+				}>
+			>()
+			attest<false, isValid<{ prefixItems: "invalid" }>>()
+			attest<false, isValid<{ minContains: -1 }>>()
+			attest<false, isValid<{ maxContains: "invalid" }>>()
+			attest<false, isValid<{ dependentRequired: 123 }>>()
+			attest<false, isValid<{ dependentSchemas: "invalid" }>>()
+
+			const T = fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: "ignored",
+				minContains: -1,
+				maxContains: "ignored",
+				dependentRequired: 123,
+				dependentSchemas: "ignored"
+			})
+			attest(T.allows([1, "a"])).equals(true)
+			attest(T.allows("nope")).equals(false)
+
+			// union of draft-07 and 2020-12 schemas distributes completions per branch
+			type UnionSchema =
+				| {
+						$schema: "http://json-schema.org/draft-07/schema#"
+						type: "array"
+						prefixItems: "ignored"
+				  }
+				| { type: "string" }
+			attest<true, isValid<UnionSchema>>()
+		})
+	})
 })
