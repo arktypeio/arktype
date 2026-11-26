@@ -463,17 +463,33 @@ const scanAnd = (def: string): Facts | undefined => {
 	const l = scanTerm(def.slice(0, at))
 	const right = def.slice(at + 3)
 	const r =
-		regexLiteral.test(right) ?
-			regexFacts(new RegExp(right.slice(1, -1)))
-		:	scanTerm(right)
+		regexLiteral.test(right) ? regexLiteralFacts(right) : scanTerm(right)
 	return refinesString(l) && refinesString(r) ? andFacts(l, r) : undefined
 }
 
-const regexFacts = (v: RegExp): Facts => ({
-	key: String(v),
+// what its node holds, sized since a source is whatever's written
+const patternFacts = (rule: string, flags: string): Facts => ({
+	key: `/${sized(rule)}/${flags}`,
 	domains: stringBits,
 	pure: true
 })
+
+// a subclass says what it likes of its source and flags, or throws
+const regexFacts = (v: RegExp): Facts | undefined =>
+	Object.getPrototypeOf(v) === RegExp.prototype ?
+		patternFacts(v.source, v.flags)
+	:	undefined
+
+// a string's, whose source is what's written but for a / it escapes, which
+// isn't the source of a RegExp writing that escape
+const regexLiteralFacts = (literal: string): Facts => {
+	const rule = literal
+		.slice(1, -1)
+		.replace(/\\./g, escape => (escape === "\\/" ? "/" : escape))
+	// throws what parsing it would
+	void new RegExp(rule)
+	return patternFacts(rule, "")
+}
 
 const maxScannedDefs = 4096
 const scanned = new Map<string, Facts | null>()
@@ -519,7 +535,7 @@ const scanUncached = (def: string): Facts | undefined => {
 				{ key: `string.trim|>${to.key}`, domains: stringBits, pure: false }
 			:	undefined
 	}
-	if (regexLiteral.test(def)) return regexFacts(new RegExp(def.slice(1, -1)))
+	if (regexLiteral.test(def)) return regexLiteralFacts(def)
 	const record$ = record.exec(def)
 	if (record$) {
 		const value = scanUnion(record$[1])
@@ -622,7 +638,10 @@ const valueFacts = (
 				[arrayFacts(element[0]), [element[1], "[]"]]
 			:	undefined
 	}
-	if (v instanceof RegExp) return [regexFacts(v), v]
+	if (v instanceof RegExp) {
+		const facts = regexFacts(v)
+		return facts && [facts, v]
+	}
 	if (typeof v !== "object" && typeof v !== "function") return
 	if (!v) return
 	const d = deferred.get(v)
@@ -1329,8 +1348,10 @@ export const deferDefinition = (
 			: defer(facts, $, () => $.parseDef(def))
 		)
 	}
-	if (def instanceof RegExp)
-		return defer(regexFacts(def), $, () => $.parseDef(def))
+	if (def instanceof RegExp) {
+		const facts = regexFacts(def)
+		return facts && defer(facts, $, () => $.parseDef(def))
+	}
 	if (typeof def !== "object" || !def || !isPlainObject(def)) return
 	const facts: Facts = {
 		key: "",

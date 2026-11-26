@@ -11,6 +11,13 @@ const isUnread = (t: object) => !hasOwn(t, "kind")
 
 const anyType: any = type
 
+// a RegExp that isn't written as what it matches
+class Keyword extends RegExp {
+	override toString(): string {
+		return "string"
+	}
+}
+
 const messageOf = (define: () => unknown): string | undefined => {
 	try {
 		define()
@@ -349,7 +356,11 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 			["number > 1", "number >= 2"],
 			["number.integer > 1", "number.integer >= 2"],
 			["number >= 0", "number"],
-			["'1'", "true"]
+			["'1'", "true"],
+			// a string's regex is the source a / it escapes is bare in
+			[{ a: /b\/c/ }, { a: "/b\\/c/" }],
+			[{ a: "/b\rc/" }, { a: "/b\\rc/" }],
+			[{ a: new Keyword("b") }, { a: "string" }]
 		]
 		for (const [l, r] of apart)
 			attest([l, r, anyType(l) === anyType(r)]).equals([l, r, false])
