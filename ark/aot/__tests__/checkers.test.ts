@@ -2030,6 +2030,34 @@ run(() => Piped('{ "outer": { "v": "a" }, "other": 1 }'))
 		attest(behaviorOf(await bundle(root, smallest))).equals(compiled)
 	})
 
+	it("finds what a default a function returns fails where a key beside its shape fails", async () => {
+		const root = fixture(
+			"failingDefaultBeside",
+			appOf(
+				proved,
+				`const low = () => { globalThis.calls++; return 1 }
+const Limits = type({ max: type("number > 5").default(low) })
+const Settings = type({ "name?": "string", limits: Limits, "all?": Limits.array() })
+run(() => Settings({ name: 1, limits: {} }))
+run(() => Settings({ limits: {} }))
+run(() => Settings({ name: 1, limits: { max: 9 }, all: [{ max: 6 }, {}] }))
+run(() => Settings({ name: 1, limits: { max: 9 } }))
+`
+			)
+		)
+		const compiled = behaviorOf(await bundle(root))
+		attest(compiled).equals(
+			`name must be a string
+limits.max must be more than 5 1
+limits.max must be more than 5 1
+name must be a string
+all[1].max must be more than 5 1
+name must be a string 0
+`
+		)
+		attest(behaviorOf(await bundle(root, smallest))).equals(compiled)
+	})
+
 	it("reads a failing value once at each depth, with no ctx", async () => {
 		const js = await bundle(
 			fixture(

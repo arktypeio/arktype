@@ -220,7 +220,7 @@ const isUnion = (node: BaseNode): boolean => node.is("union")
 
 // what makes a checker apply a value itself
 const appliesValue =
-	/runtime\.(?:morphing|readingCtx|holdingAlias|aliasedValue|aliasedMember)\(/
+	/runtime\.(?:morphing|writtenBy|readingCtx|holdingAlias|aliasedValue|aliasedMember)\(/
 
 // a string key written alike may match too, where it's only read needlessly
 const discriminatesBoolean =

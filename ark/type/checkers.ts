@@ -1247,6 +1247,9 @@ const freed = (values: Written) => {
 // what holds an alias transforms with a ctx, whichever value transforms
 const readingValues = (t: Transform, held: readonly Checker[], withCtx?: 1) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	// a default a function writes may fail as a morph may, so what holds one
+	// is applied as what holds a morph is
+	if (held.some(({ w }) => w)) t.e = applyMorphAt
 	return holdingMorphs(t, held)
 }
 
