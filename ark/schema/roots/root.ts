@@ -261,12 +261,12 @@ export abstract class BaseRoot<
 		return this.$.schema(this.applyStruct("omit", keys))
 	}
 
-	required(): BaseRoot {
-		return this.$.schema(this.applyStruct("required", []))
+	required(...keys: KeyOrKeyNode[]): BaseRoot {
+		return this.$.schema(this.applyStruct("required", keys))
 	}
 
-	partial(): BaseRoot {
-		return this.$.schema(this.applyStruct("partial", []))
+	partial(...keys: KeyOrKeyNode[]): BaseRoot {
+		return this.$.schema(this.applyStruct("partial", keys))
 	}
 
 	keyof(): BaseRoot {

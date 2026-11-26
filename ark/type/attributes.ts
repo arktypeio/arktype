@@ -163,12 +163,10 @@ type indexedDefaults<o> = {
 	[k in keyof o as isInferredDefault<o[k]> extends true ? k : never]: 0
 }
 
-type isInferredDefault<v> =
-	unwrapInput<v> extends Default<infer t> ?
-		[t] extends [anyOrNever] ?
-			false
-		:	true
-	:	false
+export type isInferredDefault<v> =
+	[unwrapInput<v>] extends [anyOrNever] ? false
+	: unwrapInput<v> extends Default ? true
+	: false
 
 type distillArray<t extends array, side extends DistillSide> =
 	// fast path for non-tuple arrays with no extra props
@@ -350,7 +348,7 @@ export type withDefault<t, v, undistributed = t> =
 
 export type required<t> = { [k in keyof t]-?: withoutDefault<t[k]> }
 
-type withoutDefault<t> =
+export type withoutDefault<t> =
 	t extends Default<infer constraint> ? constraint
 	: t extends InferredMorph<infer i, infer o> ?
 		[i] extends [anyOrNever] ? t

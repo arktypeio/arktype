@@ -213,13 +213,21 @@ export const TuplePartial = Tuple.partial()
 export const OptPartial = AllOpt.partial()
 export const ReqRequired = AllReq.required()
 export const ArrPartial = Arr.partial()
-export const ArrRequired = Arr.required()`
+export const ArrRequired = Arr.required()
+
+// selective .partial(...keys) and .required(...keys)
+export const SelectivePartialDrop = Mixed.partial("a")
+export const SelectivePartialNoop = Mixed.partial("b")
+export const SelectiveRequiredDrop = Mixed.required("b")
+export const SelectiveRequiredNoop = Mixed.required("a")`
 			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
 				"/main.ts:9:27  `AllReq` has a narrow that `.partial()` drops",
 				"/main.ts:10:28  `AllOpt` has a narrow that `.required()` drops",
 				"/main.ts:11:29  `Mixed` has a narrow that `.partial()` drops",
 				"/main.ts:12:30  `Mixed` has a narrow that `.required()` drops",
-				"/main.ts:13:29  `Tuple` has a narrow that `.partial()` drops"
+				"/main.ts:13:29  `Tuple` has a narrow that `.partial()` drops",
+				"/main.ts:22:37  `Mixed` has a narrow that `.partial()` drops",
+				"/main.ts:24:38  `Mixed` has a narrow that `.required()` drops"
 			])
 		})
 

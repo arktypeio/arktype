@@ -26,8 +26,11 @@ import type {
 import type {
 	Default,
 	InferredMorph,
+	isInferredDefault,
 	required,
-	withDefault
+	TerminallyInferredObject,
+	withDefault,
+	withoutDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { inferDefinition } from "../parser/definition.ts"
@@ -153,7 +156,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	): r extends infer _ ? _ : never
 
 	/**
-	 * #### copy with every key required
+	 * #### copy with every key (or only the given keys) required
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
@@ -165,14 +168,19 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * const Draft = type({ "title?": "string", "body?": "string" })
 	 * // Type<{ title: string; body: string }>
 	 * const Post = Draft.required()
+	 * // Type<{ title: string; body?: string }>
+	 * const Titled = Draft.required("title")
 	 */
 	required(): instantiateType<
 		exactEquals<t, object> extends true ? object : show<required<t>>,
 		$
 	>
+	required<const key extends selectiveKeyOf<t>>(
+		...keys: [key | type.cast<key>, ...(key | type.cast<key>)[]]
+	): Type<selectiveRequired<t, key>, $>
 
 	/**
-	 * #### copy with every key optional
+	 * #### copy with every key (or only the given keys) optional
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
@@ -184,11 +192,16 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * const User = type({ name: "string", email: "string.email" })
 	 * // Type<{ name?: string; email?: string }>
 	 * const UserPatch = User.partial()
+	 * // Type<{ name: string; email?: string }>
+	 * const OptionalEmail = User.partial("email")
 	 */
 	partial(): instantiateType<
 		exactEquals<t, object> extends true ? object : { [k in keyof t]?: t[k] },
 		$
 	>
+	partial<const key extends selectiveKeyOf<t>>(
+		...keys: [key | type.cast<key>, ...(key | type.cast<key>)[]]
+	): Type<selectivePartial<t, key>, $>
 
 	/**
 	 * #### copy with each property transformed by a function
@@ -223,6 +236,37 @@ interface Type<out t extends object = object, in out $ = {}>
 	// declarations could only name through arktype/internal
 	props: readonly typePropOf<t, $>[]
 }
+
+type selectiveKeyOf<t> =
+	[t] extends [array] ? propKeyOf<t> & Key
+	: [t] extends [TerminallyInferredObject] ? never
+	: arkKeyOf<t>
+
+type selectiveRequired<t, key> =
+	exactEquals<t, object> extends true ? object
+	: t extends unknown ?
+		show<
+			{
+				[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+			} & {
+				[k in keyof t as Extract<toArkKey<t, k>, key>]-?: withoutDefault<t[k]>
+			}
+		>
+	:	never
+
+type selectivePartial<t, key> =
+	exactEquals<t, object> extends true ? object
+	: t extends unknown ?
+		show<
+			{
+				[k in keyof t as isInferredDefault<t[k]> extends true ? toArkKey<t, k>
+				:	Exclude<toArkKey<t, k>, key>]: t[k]
+			} & {
+				[k in keyof t as isInferredDefault<t[k]> extends true ? never
+				:	Extract<toArkKey<t, k>, key>]?: t[k]
+			}
+		>
+	:	never
 
 // a defaulted key is optional at runtime, so like an optional key's, the value
 // .get reads there includes undefined

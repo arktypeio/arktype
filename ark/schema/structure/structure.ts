@@ -528,7 +528,29 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// a prop changing kind would move to its kind's canonical place
-	optionalize(): StructureNode {
+	optionalize(...keys: KeyOrKeyNode[]): StructureNode {
+		if (keys.length) {
+			this.assertHasKeys(keys)
+			if (!this.required?.length) return this
+			const nextRequired: Required.Node[] = []
+			const nextOptional: Optional.Node[] =
+				this.optional ? [...this.optional] : []
+			let changed = false
+			for (const prop of this.required) {
+				if (keys.some(k => typeOrTermExtends(prop.key, k))) {
+					nextOptional.push(this.$.node("optional", prop.inner))
+					changed = true
+				} else nextRequired.push(prop)
+			}
+			if (!changed) return this
+			const { required: _, optional: __, ...inner } = this.inner
+			return this.$.node("structure", {
+				...inner,
+				...(nextRequired.length ? { required: nextRequired } : {}),
+				optional: nextOptional,
+				order: this.keyOrder
+			})
+		}
 		const { required, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
@@ -540,7 +562,34 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	require(): StructureNode {
+	require(...keys: KeyOrKeyNode[]): StructureNode {
+		if (keys.length) {
+			this.assertHasKeys(keys)
+			if (!this.optional?.length) return this
+			const nextRequired: Required.Node[] =
+				this.required ? [...this.required] : []
+			const nextOptional: Optional.Node[] = []
+			let changed = false
+			for (const prop of this.optional) {
+				if (keys.some(k => typeOrTermExtends(prop.key, k))) {
+					nextRequired.push(
+						this.$.node("required", {
+							key: prop.key,
+							value: prop.requiredValue
+						})
+					)
+					changed = true
+				} else nextOptional.push(prop)
+			}
+			if (!changed) return this
+			const { required: _, optional: __, ...inner } = this.inner
+			return this.$.node("structure", {
+				...inner,
+				required: nextRequired,
+				...(nextOptional.length ? { optional: nextOptional } : {}),
+				order: this.keyOrder
+			})
+		}
 		const { optional, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,

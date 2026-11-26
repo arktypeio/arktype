@@ -54,7 +54,7 @@ import {
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets/internal"
-import type { InferredMorph } from "./attributes.ts"
+import type { distill, InferredMorph } from "./attributes.ts"
 import type { AmbientKey } from "./config.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
@@ -75,7 +75,8 @@ import type {
 	Module,
 	Submodule,
 	exportScope,
-	instantiateExport
+	instantiateExport,
+	isGenericExport
 } from "./module.ts"
 import type {
 	NaryIntersectionParser,
@@ -740,6 +741,39 @@ export interface Scope<$ = {}> {
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): instantiateExport<$[name], $>
+}
+
+export declare namespace Scope {
+	/**
+	 * #### map each exported alias in a `Scope` to its inferred output type, recursing into nested submodules
+	 *
+	 * @example
+	 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+	 * // { id: string; user: { id: string; age: number } }
+	 * type Types = Scope.infer<typeof $>
+	 */
+	export type infer<s extends { [arkKind]: "scope"; t: unknown }> =
+		inferScopeExports<s["t"], "out">
+
+	/**
+	 * #### map each exported alias in a `Scope` to its inferred input type, recursing into nested submodules
+	 *
+	 * @example
+	 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+	 * // { id: string; user: { id: string; age?: number } }
+	 * type Inputs = Scope.inferIn<typeof $>
+	 */
+	export type inferIn<s extends { [arkKind]: "scope"; t: unknown }> =
+		inferScopeExports<s["t"], "in">
+}
+
+type inferScopeExports<$, side extends "in" | "out"> = {
+	[k in exportedNameOf<$> as isGenericExport<$[k]> extends true ? never : k]: [
+		$[k]
+	] extends [anyOrNever] ?
+		$[k]
+	: [$[k]] extends [{ [arkKind]: "module" }] ? inferScopeExports<$[k], side>
+	: distill<$[k], side>
 }
 
 export interface ScopeConstructor {

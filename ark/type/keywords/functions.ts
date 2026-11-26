@@ -315,6 +315,14 @@ export const emptyCollectionDefaults = {
 	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
 
+// returns a thunk producing a fresh array copy on each call
+export const arrayDefault = (
+	elements: readonly unknown[]
+): (() => unknown[]) =>
+	elements.some(e => e instanceof Date) ?
+		() => elements.map(e => (e instanceof Date ? new Date(e) : e))
+	:	() => [...elements]
+
 const regexPattern = "a regex pattern"
 
 const regexError = /* @__PURE__ */ keywordError("string.regex", regexPattern)

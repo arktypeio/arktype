@@ -699,6 +699,230 @@ contextualize(() => {
 				.type.errors("Default value [] must be assignable to number")
 		})
 
+		it("unit-literal array defaults via string syntax", () => {
+			const SingleQuoted = type({ hosts: "string[] = ['localhost']" })
+			attest(SingleQuoted.t).type.toString.snap(
+				'{ hosts: Default<string[], ["localhost"]> }'
+			)
+			attest<{ hosts?: string[] }>(SingleQuoted.inferIn)
+			attest<{ hosts: string[] }>(SingleQuoted.infer)
+			attest(SingleQuoted({})).equals({ hosts: ["localhost"] })
+			attest(SingleQuoted({ hosts: ["a"] })).equals({ hosts: ["a"] })
+
+			const DoubleQuoted = type({ hosts: 'string[] = ["a", "b"]' })
+			attest(DoubleQuoted.t).type.toString.snap(
+				'{ hosts: Default<string[], ["a", "b"]> }'
+			)
+			attest(DoubleQuoted({})).equals({ hosts: ["a", "b"] })
+
+			const Ports = type({ ports: "number[] = [3000, 8080]" })
+			attest(Ports.t).type.toString.snap(
+				"{ ports: Default<number[], [3000, 8080]> }"
+			)
+			attest(Ports({})).equals({ ports: [3000, 8080] })
+
+			const Nums = type({ nums: "number[] = [-1, 0, 3.14]" })
+			attest(Nums.t).type.toString.snap(
+				"{ nums: Default<number[], [-1, 0, 3.14]> }"
+			)
+			attest(Nums({})).equals({ nums: [-1, 0, 3.14] })
+
+			const Bigints = type({ bigs: "bigint[] = [-5n, 0n]" })
+			attest(Bigints.t).type.toString.snap(
+				"{ bigs: Default<bigint[], [-5n, 0n]> }"
+			)
+			attest(Bigints({})).equals({ bigs: [-5n, 0n] })
+
+			const Flags = type({ flags: "boolean[] = [true, false]" })
+			attest(Flags.t).type.toString.snap(
+				"{ flags: Default<boolean[], [true, false]> }"
+			)
+			attest(Flags({})).equals({ flags: [true, false] })
+
+			const Mixed = type({
+				items:
+					"(string | number | null | undefined | bigint)[] = ['a', 1, null, undefined, 2n]"
+			})
+			attest(Mixed.t).type.toString.snap(`{
+	items: Default<
+		(string | number | bigint | null | undefined)[],
+		["a", 1, null, undefined, 2n]
+	>
+}`)
+			attest(Mixed({})).equals({ items: ["a", 1, null, undefined, 2n] })
+
+			const Spaced = type({
+				a: "string[] = [ 'a' , 'b' ]",
+				b: "string[] = [ ]"
+			})
+			attest(Spaced.t).type.toString.snap(`{
+	a: Default<string[], ["a", "b"]>
+	b: Default<string[], []>
+}`)
+			attest(Spaced({})).equals({ a: ["a", "b"], b: [] })
+
+			const SpecialChars = type({
+				items: "string[] = ['a, b', 'c]d', 'it\\'s', \"x\\\"y\"]"
+			})
+			attest(SpecialChars.t).type.toString.snap(`{
+	items: Default<string[], ["a, b", "c]d", "it's", 'x"y']>
+}`)
+			attest(SpecialChars({})).equals({
+				items: ["a, b", "c]d", "it's", 'x"y']
+			})
+
+			attest(SingleQuoted.toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					hosts: {
+						type: "array",
+						items: { type: "string" },
+						default: ["localhost"]
+					}
+				}
+			})
+		})
+
+		it("unit-literal array default returns a fresh copy each call", () => {
+			const O = type({ hosts: "string[] = ['localhost']" })
+			const a = O.assert({})
+			a.hosts.push("mutated")
+			const b = O.assert({})
+			attest(a.hosts !== b.hosts).equals(true)
+			attest(b.hosts).equals(["localhost"])
+		})
+
+		it("unit-literal Date array default returns fresh array and Dates each call", () => {
+			const O = type({ dates: "Date[] = [d'2025-01-01']" })
+			attest(O.t).type.toString.snap("{ dates: Default<Date[], [Date]> }")
+			const a = O.assert({})
+			const b = O.assert({})
+			attest(a.dates !== b.dates).equals(true)
+			attest(a.dates[0] !== b.dates[0]).equals(true)
+			attest(a.dates[0].toISOString()).equals("2025-01-01T00:00:00.000Z")
+		})
+
+		it("unit-literal array default in tuple", () => {
+			const T = type(["string", "string[] = ['localhost']"])
+			attest(T(["ok"])).equals(["ok", ["localhost"]])
+		})
+
+		it("unit-literal array default validates against base Type at definition time", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					nums: "number[] = ['a']"
+				})
+			)
+				.throws.snap("ParseError: Default for nums[0] must be a number")
+				.type.errors("Default value ['a'] must be assignable to number[]")
+
+			attest(() =>
+				type({
+					items: "string[] >= 2 = ['onlyOne']"
+				})
+			).throws.snap("ParseError: Default for items must be at least length 2")
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					name: "string = ['a']"
+				})
+			)
+				.throws.snap("ParseError: Default for name must be a string")
+				.type.errors("Default value ['a'] must be assignable to string")
+		})
+
+		it("unit-literal array default rejects invalid syntax and non-unit elements", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a',]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a',]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = [,]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("[,]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a' 'b']"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a' 'b']"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = [string]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("[string]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a', foo]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a', foo]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "unknown[] = [[]]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("[[]]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a'"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a'"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "number[] = [01]"
+				})
+			)
+				.throws.snap(
+					"ParseError: '01' was parsed as a number but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation"
+				)
+				.type.errors(writeNonLiteralDefaultMessage("[01]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "number[] = [-0]"
+				})
+			)
+				.throws.snap(
+					"ParseError: '-0' was parsed as a number but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation"
+				)
+				.type.errors(writeNonLiteralDefaultMessage("[-0]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a',,'b']"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a',,'b']"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a']x"
+				})
+			)
+				.throws(writeUnexpectedCharacterMessage("x"))
+				.type.errors(writeNonLiteralDefaultMessage("['a']x"))
+		})
+
 		it("empty object default via string syntax", () => {
 			const O = type({ meta: "object = {}" })
 

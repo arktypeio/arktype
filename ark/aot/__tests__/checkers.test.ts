@@ -2218,4 +2218,45 @@ console.log(validator.allows(cyclic), validator(cyclic) === cyclic, validator.al
 			attest(runPlain(root)).equals("true true false\n")
 		})
 	})
+
+	describe("unit-literal array defaults and selective partial/required", () => {
+		it("precompiles unit-literal array defaults with fresh copies in speed and size builds", async () => {
+			const root = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+const Config = type({
+	hosts: "string[] = ['localhost']",
+	ports: "number[] = [3000, 8080]",
+	dates: "Date[] = [d'2025-01-01']",
+	mixed: "(bigint | undefined)[] = [-5n, undefined, 2n]"
+})
+const a: any = Config.assert({})
+a.hosts.push("mutated")
+const b: any = Config.assert({})
+console.log(
+	JSON.stringify(a.hosts),
+	JSON.stringify(b.hosts),
+	JSON.stringify(b.ports),
+	b.dates[0].toISOString(),
+	a.hosts !== b.hosts,
+	a.dates[0] !== b.dates[0],
+	b.mixed.map((x: unknown) => (typeof x === "bigint" ? x.toString() + "n" : String(x))).join(",")
+)
+const Base = type({ a: "string", b: "number", "c?": "boolean" })
+const P = Base.partial("a")
+const R = P.required("a", "c")
+console.log(P.allows({ b: 1 }), P.allows({}), R.allows({ a: "x", b: 1, c: true }), R.allows({ a: "x", b: 1 }))
+`
+				},
+				tempPath("checkers", "array-literal-defaults")
+			)
+			const expected = runPlain(root)
+			attest(expected).equals(
+				'["localhost","mutated"] ["localhost"] [3000,8080] 2025-01-01T00:00:00.000Z true true -5n,undefined,2n\ntrue false true false\n'
+			)
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			attest(behaviorOf(await bundle(root, smallest))).equals(expected)
+		})
+	})
 })

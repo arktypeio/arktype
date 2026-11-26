@@ -692,4 +692,156 @@ b.c.c must be an object (was missing)`)
 		const parser = Object.freeze(scope({}).type)
 		attest(parser.number("x").toString()).snap("must be a number")
 	})
+
+	it("Module.infer / Module.inferIn and Scope.infer / Scope.inferIn", () => {
+		const $ = scope({
+			"#secret": "string",
+			id: "string",
+			user: {
+				id: "id",
+				age: "number = 0",
+				"nickname?": "string"
+			},
+			parsed: "string.numeric.parse",
+			"box<t>": { value: "t" },
+			anyVal: "unknown.any",
+			neverVal: "never",
+			weird: { infer: "string", inferIn: "number" },
+			sub: scope({
+				root: "string",
+				"#hidden": "boolean",
+				count: "string.integer.parse",
+				deep: scope({
+					opts: { flag: "boolean = true" }
+				}).export()
+			}).export()
+		})
+		const mod = $.export()
+
+		type ExpectedOut = {
+			id: string
+			user: {
+				id: string
+				age: number
+				nickname?: string
+			}
+			parsed: number
+			anyVal: any
+			neverVal: never
+			weird: { infer: string; inferIn: number }
+			sub: {
+				root: string
+				count: number
+				deep: {
+					opts: { flag: boolean }
+				}
+			}
+		}
+
+		type ExpectedIn = {
+			id: string
+			user: {
+				id: string
+				age?: number
+				nickname?: string
+			}
+			parsed: string
+			anyVal: any
+			neverVal: never
+			weird: { infer: string; inferIn: number }
+			sub: {
+				root: string
+				count: string
+				deep: {
+					opts: { flag?: boolean }
+				}
+			}
+		}
+
+		attest<ExpectedOut, Module.infer<typeof mod>>()
+		attest<ExpectedIn, Module.inferIn<typeof mod>>()
+		attest<ExpectedOut, Scope.infer<typeof $>>()
+		attest<ExpectedIn, Scope.inferIn<typeof $>>()
+
+		// BoundModule from selective export
+		const partialMod = $.export("user", "parsed")
+		attest<
+			{ user: ExpectedOut["user"]; parsed: number },
+			Module.infer<typeof partialMod>
+		>()
+		attest<
+			{ user: ExpectedIn["user"]; parsed: string },
+			Module.inferIn<typeof partialMod>
+		>()
+
+		// BoundModule from custom ambient scope
+		const ambientScope = scope(
+			{ myStr: "custom" },
+			{ ambient: { custom: type.string } }
+		)
+		const ambientMod = ambientScope.export()
+		attest<{ myStr: string }, Scope.infer<typeof ambientScope>>()
+		attest<{ myStr: string }, Module.infer<typeof ambientMod>>()
+
+		// type.module() shorthand
+		const quickMod = type.module({
+			Experiment: { experiment_id: "string" },
+			Response: {
+				experiments: "Experiment[]",
+				"next_page_token?": "string"
+			}
+		})
+		attest<
+			{
+				Experiment: { experiment_id: string }
+				Response: {
+					experiments: { experiment_id: string }[]
+					next_page_token?: string
+				}
+			},
+			Module.infer<typeof quickMod>
+		>()
+
+		// type-only: no phantom runtime properties on instances
+		attest("infer" in mod).equals(false)
+		attest("inferIn" in mod).equals(false)
+		attest("infer" in $).equals(false)
+		attest("inferIn" in $).equals(false)
+
+		// recursive / cyclic scope & module
+		const cyclicScope = scope({
+			node: {
+				value: "string",
+				"children?": "node[]"
+			}
+		})
+		const cyclicMod = cyclicScope.export()
+		type CyclicNode = {
+			value: string
+			children?: CyclicNode[]
+		}
+		attest<{ node: CyclicNode }, Scope.infer<typeof cyclicScope>>()
+		attest<{ node: CyclicNode }, Scope.inferIn<typeof cyclicScope>>()
+		attest<{ node: CyclicNode }, Module.infer<typeof cyclicMod>>()
+		attest<{ node: CyclicNode }, Module.inferIn<typeof cyclicMod>>()
+
+		// top-level aliases literally named "infer", "inferIn", "internal"
+		const reservedScope = scope({
+			infer: "string",
+			inferIn: "number",
+			internal: "boolean"
+		})
+		const reservedMod = reservedScope.export()
+		attest<
+			{ infer: string; inferIn: number; internal: boolean },
+			Scope.infer<typeof reservedScope>
+		>()
+		attest<
+			{ infer: string; inferIn: number; internal: boolean },
+			Module.infer<typeof reservedMod>
+		>()
+		attest(reservedMod.infer("ok")).equals("ok")
+		attest(reservedMod.inferIn(42)).equals(42)
+		attest(reservedMod.internal(true)).equals(true)
+	})
 })

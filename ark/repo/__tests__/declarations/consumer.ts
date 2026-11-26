@@ -27,7 +27,9 @@ import {
 	type FromJsonSchema as FromJsonSchemaFn,
 	type inferFromJsonSchema,
 	type Locale,
+	type Module,
 	type ReadableIssue,
+	type Scope,
 	type ScopeParser,
 	type validateFromJsonSchema
 } from "arktype"
@@ -60,6 +62,8 @@ export const Or = type("string").or("number")
 export const And = type.and({ a: "string" }, { b: "string" })
 export const Merged = User.merge({ email: "string.email" })
 export const Picked = User.pick("name")
+export const PartialName = User.partial("name")
+export const RequiredName = PartialName.required("name")
 export const Keys = User.keyof()
 export const Props = User.props
 export const Users = User.array()
@@ -191,5 +195,9 @@ export type ExportedHelpers = [
 	validateFromJsonSchema<{ type: "string" }>,
 	inferFromJsonSchema<{ type: "string" }>,
 	ScopeParser,
-	ArkSchemaScopeConfig
+	ArkSchemaScopeConfig,
+	Module.infer<typeof exported>,
+	Module.inferIn<typeof exported>,
+	Scope.infer<typeof types>,
+	Scope.inferIn<typeof types>
 ]
