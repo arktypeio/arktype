@@ -1602,4 +1602,46 @@ nested.z must be removed`)
 			attest(T.allows({ k: 1, j: "a", x: 1, y: 2, z: 3 })).equals(true)
 		}
 	})
+
+	it("a case's branch isn't found to overlap a morph's input of another domain", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// an object's case holds the morph for its Date, whose input also
+			// allows a number, which an object pruned of its basis still isn't
+			const T = $.type("string")
+				.or({ c: "0" })
+				.or($.type("number | d'2000-01-01'").pipe(v => [v]))
+			// nor is it a number in a range
+			const Ranged = $.type("string")
+				.or({ c: "0" })
+				.or($.type("number > 0 | d'2000-01-01'").pipe(v => [v]))
+			for (let i = 0; i < 3; i++) {
+				attest(T({ c: 0 })).equals({ c: 0 })
+				attest(T(1)).equals([1])
+				attest(T("a")).equals("a")
+				attest(T({ c: 1 }).toString()).equals(
+					"c must be 0 or must be 2000-01-01"
+				)
+				attest(Ranged({ c: 0 })).equals({ c: 0 })
+				attest(Ranged(1)).equals([1])
+				attest(Ranged(0).toString()).equals(
+					"must be a string, an object or positive"
+				)
+			}
+			attest(T.allows(new Date("2000-01-01"))).equals(true)
+			attest(T.allows(new Date(0))).equals(false)
+		}
+	})
+
+	it("a morph whose input reaches another branch's case is still indeterminate", () => {
+		attest(() =>
+			type("string")
+				.or({ c: "0" })
+				.or(type("number | Date").pipe(v => [v]))
+		).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { c: 0 }
+Right: (In: number | Date) => Out<unknown>
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+	})
 })

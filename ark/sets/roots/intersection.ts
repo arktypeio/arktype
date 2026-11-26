@@ -1,6 +1,7 @@
 import {
 	$ark,
 	Disjoint,
+	type BaseConstraint,
 	type BaseRoot,
 	type BaseScope,
 	type Intersection,
@@ -49,6 +50,15 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 			const { domain, proto, ...lInnerConstraints } = l.inner
 
 			const lBasis = proto ?? domain
+
+			if (!lBasis) {
+				const disjoint = disjointFromImplied(
+					l.children as BaseConstraint[],
+					r,
+					ctx
+				)
+				if (disjoint) return disjoint
+			}
 
 			const basis = lBasis ? intersectOrPipeNodes(lBasis, r, ctx) : r
 
@@ -116,12 +126,38 @@ const intersectIntersections = (
 
 	if (basisResult) baseInner[basisResult.kind] = basisResult as never
 
+	const lConstraints = flatten(l)
+	const rConstraints = flatten(r)
+
+	if (lBasis ? !rBasis : rBasis) {
+		const disjoint =
+			lBasis ?
+				disjointFromImplied(rConstraints, lBasis, ctx)?.invert()
+			:	disjointFromImplied(lConstraints, rBasis!, ctx)
+		if (disjoint) return disjoint
+	}
+
 	return intersectConstraints({
 		kind: "intersection",
 		baseInner,
-		l: flatten(l),
-		r: flatten(r),
+		l: lConstraints,
+		r: rConstraints,
 		roots: [],
 		ctx
 	})
+}
+
+// a discriminant prunes the basis its case has checked, leaving constraints
+// that hold only of what the basis they imply allows, so they're disjoint from
+// a basis that excludes it, as they were before it was pruned
+const disjointFromImplied = (
+	constraints: readonly BaseConstraint[],
+	basis: BaseRoot,
+	ctx: IntersectionContext
+): Disjoint | undefined => {
+	for (const constraint of constraints) {
+		if (!constraint.implied) continue
+		const result = intersectOrPipeNodes(constraint.implied, basis, ctx)
+		if (result instanceof Disjoint) return result
+	}
 }
