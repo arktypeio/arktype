@@ -5,6 +5,7 @@ import type {
 	resolvableReferenceIn
 } from "@ark/schema"
 import {
+	hasOwn,
 	Scanner,
 	throwInternalError,
 	throwParseError,
@@ -37,16 +38,30 @@ import {
 	type parseOperator
 } from "./shift/operator/operator.ts"
 
+// a generic's parameter or `this` is what its name references ahead of a
+// keyword or private alias, as an expression resolves it and as parseString
+// infers it. Only a public alias is found first, which ark's own aren't to a
+// definition checked in it, where each is a keyword
+const isArg = (name: string, ctx: BaseParseContext): boolean =>
+	ctx.args !== undefined &&
+	hasOwn(ctx.args, name) &&
+	(ctx.$.isBuiltin || !ctx.$.exportedNames.includes(name))
+
 export const parseString = (
 	def: string,
 	ctx: BaseParseContext
 ): InnerParseResult => {
-	const aliasResolution = ctx.$.maybeResolveRoot(def)
-	if (aliasResolution) return aliasResolution
+	if (!isArg(def, ctx)) {
+		const aliasResolution = ctx.$.maybeResolveRoot(def)
+		if (aliasResolution) return aliasResolution
+	}
 
 	if (def.endsWith("[]")) {
-		const possibleElementResolution = ctx.$.maybeResolveRoot(def.slice(0, -2))
-		if (possibleElementResolution) return possibleElementResolution.rawArray()
+		const element = def.slice(0, -2)
+		if (!isArg(element, ctx)) {
+			const possibleElementResolution = ctx.$.maybeResolveRoot(element)
+			if (possibleElementResolution) return possibleElementResolution.rawArray()
+		}
 	}
 
 	const s = new RuntimeState(new Scanner(def), ctx)

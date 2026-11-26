@@ -592,6 +592,75 @@ contextualize(() => {
 		})
 	})
 
+	describe("contextual references", () => {
+		it("resolves a generic parameter ahead of an ambient entry of its name", () => {
+			const $ = scope(
+				{
+					"box<t>": { whole: "t", array: "t[]", expression: "t | 2" },
+					boxed: "box<'q'>",
+					// outside the generic, t is the ambient entry
+					plain: "t[]"
+				},
+				{ ambient: { t: type("1") } }
+			)
+			const types = $.export()
+
+			attest<{ whole: "q"; array: "q"[]; expression: "q" | 2 }>(
+				types.boxed.infer
+			)
+			attest(types.boxed.expression).snap(
+				'{ array: "q"[], expression: "q" | 2, whole: "q" }'
+			)
+			attest<1[]>(types.plain.infer)
+			attest(types.plain.expression).snap("1[]")
+
+			const fromType = $.type("<t>", { v: "t" })("'q'")
+			attest<{ v: "q" }>(fromType.infer)
+			attest(fromType.expression).snap('{ v: "q" }')
+
+			const fromGeneric = $.generic("t")("t[]")("'q'")
+			attest<"q"[]>(fromGeneric.infer)
+			attest(fromGeneric.expression).snap('"q"[]')
+		})
+
+		it("resolves this ahead of an ambient entry of its name", () => {
+			const $ = scope(
+				{
+					// an alias has no this, so here it's the ambient entry
+					aliased: { v: "this" }
+				},
+				{ ambient: { this: type("1") } }
+			)
+
+			attest<{ v: 1 }>($.export().aliased.infer)
+			attest($.export().aliased.expression).snap("{ v: 1 }")
+
+			const Node = $.type({ "next?": "this", siblings: "this[]" })
+			attest(Node.t).type.toString.snap("{ next?: cyclic; siblings: cyclic[] }")
+			attest(Node.expression).snap("{ siblings: this[], next?: this }")
+			attest(Node({ siblings: [{ siblings: [] }] })).equals({
+				siblings: [{ siblings: [] }]
+			})
+			attest(Node({ siblings: [1] }).toString()).snap(
+				"siblings[0] must be an object"
+			)
+		})
+
+		it("finds a public alias ahead of a generic parameter of its name", () => {
+			const types = scope(
+				{
+					t: "1",
+					"box<t>": { whole: "t", expression: "t | 2" },
+					a: "box<'q'>"
+				},
+				{ ambient: {} }
+			).export()
+
+			attest<{ whole: 1; expression: "q" | 2 }>(types.a.infer)
+			attest(types.a.expression).snap('{ expression: "q" | 2, whole: 1 }')
+		})
+	})
+
 	describe("hints and completions", () => {
 		it("suggests from custom ambient rather than global Ark", () => {
 			const $ = scope(

@@ -92,6 +92,34 @@ contextualize(() => {
 			attest(StringArray.json).equals(Expected.json)
 		})
 
+		it("parameter named for a keyword", () => {
+			const boxOf = type("<string>", {
+				whole: "string",
+				array: "string[]",
+				expression: "string | 2"
+			})
+
+			const T = boxOf("1")
+
+			attest<{ whole: 1; array: 1[]; expression: 1 | 2 }>(T.t)
+			attest(T.expression).snap("{ array: 1[], expression: 1 | 2, whole: 1 }")
+		})
+
+		it("parameter named for a private alias", () => {
+			const types = scope({
+				"#t": "1",
+				"box<t>": { whole: "t", array: "t[]" },
+				a: "box<'q'>",
+				// outside the generic, t is the alias
+				b: "t[]"
+			}).export()
+
+			attest<{ whole: "q"; array: "q"[] }>(types.a.t)
+			attest(types.a.expression).snap('{ array: "q"[], whole: "q" }')
+			attest<1[]>(types.b.t)
+			attest(types.b.expression).snap("1[]")
+		})
+
 		it("this not resolvable in generic def", () => {
 			attest(() =>
 				type("<t>", {
