@@ -361,13 +361,17 @@ export type GenericParser<$ = {}> = <
 	}
 ) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>
 
+// each returns through r, as a generic call written as an argument of another
+// is otherwise left for a second pass of inferring that call once TypeScript
+// sees it return a callable type, and a definition referencing the Generic
+// has failed by then
 interface GenericBodyParser<params extends array<GenericParamAst>, $> {
-	<const body>(
+	<const body, r = Generic<params, body, $, $>>(
 		body: type.validate<body, $, baseGenericConstraints<params>>
-	): Generic<params, body, $, $>
+	): r extends infer _ ? _ : never
 
-	<hkt extends Hkt.constructor>(
+	<hkt extends Hkt.constructor, r = Generic<params, InstanceType<hkt>, $, $>>(
 		instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
 		hkt: hkt
-	): Generic<params, InstanceType<hkt>, $, $>
+	): r extends infer _ ? _ : never
 }

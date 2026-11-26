@@ -7,8 +7,10 @@ import {
 	keywords,
 	scope,
 	type,
-	type Module
+	type Module,
+	type TypeParser
 } from "arktype"
+import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/ast/validate.ts"
 import { Scope } from "arktype/internal/scope.ts"
 
 contextualize(() => {
@@ -287,6 +289,101 @@ contextualize(() => {
 				'["a@b.com"] must be an integer'
 			)
 		})
+
+		it("neither resolves nor completes a private key of an ambient", () => {
+			const base = scope({ Foo: "'a'" })
+
+			attest(() =>
+				scope(
+					{
+						// @ts-expect-error
+						a: "Foo"
+					},
+					{ ambient: base.import() }
+				).export()
+			).throwsAndHasTypeError(writeUnresolvableMessage("Foo"))
+
+			const $ = scope(
+				{ a: "bar" },
+				{ ambient: { "#foo": type.string, bar: type.number } }
+			)
+			attest<number>($.export().a.infer)
+			// @ts-expect-error
+			attest(() => $.type("foo")).throwsAndHasTypeError(
+				writeUnresolvableMessage("foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("f")).type.errors(writeUnresolvableMessage("f"))
+
+			// nor is one read by the key itself
+			// @ts-expect-error
+			attest(() => $.type("#foo")).throwsAndHasTypeError(
+				writePrefixedPrivateReferenceMessage("foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("#foo[]")).throwsAndHasTypeError(
+				writePrefixedPrivateReferenceMessage("foo")
+			)
+			const imported = scope({}, { ambient: base.import() })
+			// @ts-expect-error
+			attest(() => imported.type("#Foo")).throwsAndHasTypeError(
+				writePrefixedPrivateReferenceMessage("Foo")
+			)
+
+			// the same aliases exported are what an ambient resolves
+			const exported = scope({ a: "Foo" }, { ambient: base.export() })
+			attest<"a">(exported.export().a.infer)
+			attest(exported.export().a.expression).snap('"a"')
+		})
+
+		it("neither resolves nor completes a private key of an ambient's submodule", () => {
+			const base = scope({ Foo: "'a'", "box<t>": ["t"] })
+			const $ = scope(
+				{},
+				{
+					ambient: {
+						sub: base.import(),
+						outer: scope({ sub: base.import() }).export()
+					}
+				}
+			)
+
+			// @ts-expect-error
+			attest(() => $.type("sub.Foo")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.Foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.Foo | null")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.Foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("outer.sub.Foo")).throwsAndHasTypeError(
+				writeUnresolvableMessage("outer.sub.Foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.box<string>")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.box")
+			)
+			// @ts-expect-error
+			attest(() => $.type("outer.sub.")).throwsAndHasTypeError(
+				writeUnresolvableMessage("outer.sub.")
+			)
+			// nor is one read by the key itself, which ends at the dot once scanned
+			attest(() => $.type("sub.#Foo")).throws(writeUnresolvableMessage("sub."))
+			attest(() => $.type("sub.#Foo[]")).throws(
+				writeUnresolvableMessage("sub.")
+			)
+			attest(() => $.type("outer.sub.#Foo")).throws(
+				writeUnresolvableMessage("outer.sub.")
+			)
+
+			const exported = scope(
+				{ a: "sub.Foo" },
+				{ ambient: { sub: base.export() } }
+			)
+			attest<"a">(exported.export().a.infer)
+			attest(exported.export().a.expression).snap('"a"')
+		})
 	})
 
 	describe("plain record ambient", () => {
@@ -339,6 +436,55 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => $.type("string")).throwsAndHasTypeError(
 				writeUnresolvableMessage("string")
+			)
+		})
+
+		it("binds $.type.keywords to the scope", () => {
+			const Box = generic("t")({ box: "t" })
+			const $ = scope(
+				{ local: "'local'" },
+				{ ambient: { num: type.number, Box, text: keywords.string } }
+			)
+
+			const withLocal = $.type.keywords.num.or("local")
+			attest<number | "local">(withLocal.infer)
+			attest(withLocal.expression).snap('number | "local"')
+
+			const boxed = $.type.keywords.Box("local")
+			attest<{ box: "local" }>(boxed.infer)
+			attest(boxed.expression).snap('{ box: "local" }')
+
+			const nested = $.type.keywords.text.email.or("num")
+			attest<string | number>(nested.infer)
+			attest(nested("nope").toString()).snap("must be an email address")
+
+			// @ts-expect-error
+			attest(() => $.type.keywords.num.or("string")).throwsAndHasTypeError(
+				writeUnresolvableMessage("string")
+			)
+			// the entry passed is still bound to the scope it came from
+			attest(type.number.or("string").expression).snap("number | string")
+		})
+
+		it("infers a Generic written where it's passed", () => {
+			const $ = scope(
+				{ emails: "List<string.email>", boxed: "Box<'x'>" },
+				{
+					ambient: {
+						...ark.export("string"),
+						List: generic("t")("t[]"),
+						Box: generic(["t", "string"])({ box: "t" })
+					}
+				}
+			)
+			const types = $.export()
+
+			attest<string[]>(types.emails.infer)
+			attest<{ box: "x" }>(types.boxed.infer)
+			attest(types.boxed.expression).snap('{ box: "x" }')
+			// @ts-expect-error
+			attest(() => $.type("number")).throwsAndHasTypeError(
+				writeUnresolvableMessage("number")
 			)
 		})
 
@@ -539,6 +685,75 @@ contextualize(() => {
 			)
 		})
 
+		it("shadows all of an ambient submodule with a submodule of its name", () => {
+			const ambientSub = scope({
+				shared: "'ambient'",
+				ambientOnly: "'ambient'"
+			}).export()
+			const localSub = scope({ shared: "'local'" }).export()
+
+			const $ = scope(
+				{ sub: localSub, a: "sub.shared" },
+				{ ambient: { sub: ambientSub } }
+			)
+
+			attest<"local">($.export().a.infer)
+			attest($.export().a.expression).snap('"local"')
+			// @ts-expect-error
+			attest(() => $.type("sub.ambientOnly")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.ambientOnly")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.ambientOnly | 1")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.ambientOnly")
+			)
+
+			// unshadowed, the ambient submodule resolves both
+			const unshadowed = scope(
+				{ a: "sub.ambientOnly" },
+				{ ambient: { sub: ambientSub } }
+			)
+			attest<"ambient">(unshadowed.export().a.infer)
+			attest(unshadowed.export().a.expression).snap('"ambient"')
+		})
+
+		it("resolves a private submodule ahead of an ambient submodule of its name", () => {
+			const ambientSub = scope({
+				shared: "'ambient'",
+				ambientOnly: "'ambient'"
+			}).export()
+			const localSub = scope({
+				shared: "'local'",
+				localOnly: "'local'"
+			}).export()
+
+			const $ = scope(
+				{
+					"#sub": localSub,
+					whole: "sub.shared",
+					array: "sub.shared[]",
+					expression: "sub.localOnly | 1"
+				},
+				{ ambient: { sub: ambientSub } }
+			)
+			const types = $.export()
+
+			attest<"local">(types.whole.infer)
+			attest(types.whole.expression).snap('"local"')
+			attest<"local"[]>(types.array.infer)
+			attest(types.array.expression).snap('"local"[]')
+			attest<"local" | 1>(types.expression.infer)
+			attest(types.expression.expression).snap('"local" | 1')
+			attest(Object.keys(types)).equals(["whole", "array", "expression"])
+
+			// @ts-expect-error
+			attest(() => $.type("sub.ambientOnly")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.ambientOnly")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.l")).completions({ "sub.l": ["sub.localOnly"] })
+		})
+
 		it("supports Scope.module and type.module with ambient config", () => {
 			const m1 = Scope.module({ Foo: "'a'" }, { ambient: {} })
 			attest<"a">(m1.Foo.infer)
@@ -582,6 +797,19 @@ contextualize(() => {
 			attest(c.type.string("ok")).equals("ok")
 		})
 
+		it("keeps default attachments and keywords on a scope typed as any", () => {
+			const $: Scope<any> = scope({ a: "string" })
+
+			attest($.type.string).type.toString.snap("Type<string, any>")
+			attest($.type.string("ok")).equals("ok")
+			attest<typeof keywords>($.type.keywords)
+			attest($.type.keywords.string.email("a@b.com")).equals("a@b.com")
+
+			const parser: TypeParser<any> = $.type
+			attest(parser.number).type.toString.snap("Type<number, any>")
+			attest(parser.number("1").toString()).snap("must be a number")
+		})
+
 		it("rejects ambient in global configure()", () => {
 			attest(() =>
 				configure({
@@ -589,6 +817,75 @@ contextualize(() => {
 					ambient: {}
 				})
 			).throwsAndHasTypeError("configure() has no option 'ambient'")
+		})
+	})
+
+	describe("contextual references", () => {
+		it("resolves a generic parameter ahead of an ambient entry of its name", () => {
+			const $ = scope(
+				{
+					"box<t>": { whole: "t", array: "t[]", expression: "t | 2" },
+					boxed: "box<'q'>",
+					// outside the generic, t is the ambient entry
+					plain: "t[]"
+				},
+				{ ambient: { t: type("1") } }
+			)
+			const types = $.export()
+
+			attest<{ whole: "q"; array: "q"[]; expression: "q" | 2 }>(
+				types.boxed.infer
+			)
+			attest(types.boxed.expression).snap(
+				'{ array: "q"[], expression: "q" | 2, whole: "q" }'
+			)
+			attest<1[]>(types.plain.infer)
+			attest(types.plain.expression).snap("1[]")
+
+			const fromType = $.type("<t>", { v: "t" })("'q'")
+			attest<{ v: "q" }>(fromType.infer)
+			attest(fromType.expression).snap('{ v: "q" }')
+
+			const fromGeneric = $.generic("t")("t[]")("'q'")
+			attest<"q"[]>(fromGeneric.infer)
+			attest(fromGeneric.expression).snap('"q"[]')
+		})
+
+		it("resolves this ahead of an ambient entry of its name", () => {
+			const $ = scope(
+				{
+					// an alias has no this, so here it's the ambient entry
+					aliased: { v: "this" }
+				},
+				{ ambient: { this: type("1") } }
+			)
+
+			attest<{ v: 1 }>($.export().aliased.infer)
+			attest($.export().aliased.expression).snap("{ v: 1 }")
+
+			const Node = $.type({ "next?": "this", siblings: "this[]" })
+			attest(Node.t).type.toString.snap("{ next?: cyclic; siblings: cyclic[] }")
+			attest(Node.expression).snap("{ siblings: this[], next?: this }")
+			attest(Node({ siblings: [{ siblings: [] }] })).equals({
+				siblings: [{ siblings: [] }]
+			})
+			attest(Node({ siblings: [1] }).toString()).snap(
+				"siblings[0] must be an object"
+			)
+		})
+
+		it("finds a public alias ahead of a generic parameter of its name", () => {
+			const types = scope(
+				{
+					t: "1",
+					"box<t>": { whole: "t", expression: "t | 2" },
+					a: "box<'q'>"
+				},
+				{ ambient: {} }
+			).export()
+
+			attest<{ whole: 1; expression: "q" | 2 }>(types.a.infer)
+			attest(types.a.expression).snap('{ expression: "q" | 2, whole: 1 }')
 		})
 	})
 

@@ -92,6 +92,72 @@ contextualize(() => {
 			attest(StringArray.json).equals(Expected.json)
 		})
 
+		it("parameter named for a keyword", () => {
+			const boxOf = type("<string>", {
+				whole: "string",
+				array: "string[]",
+				expression: "string | 2"
+			})
+
+			const T = boxOf("1")
+
+			attest<{ whole: 1; array: 1[]; expression: 1 | 2 }>(T.t)
+			attest(T.expression).snap("{ array: 1[], expression: 1 | 2, whole: 1 }")
+		})
+
+		it("parameter named for a private alias", () => {
+			const types = scope({
+				"#t": "1",
+				"box<t>": { whole: "t", array: "t[]" },
+				a: "box<'q'>",
+				// outside the generic, t is the alias
+				b: "t[]"
+			}).export()
+
+			attest<{ whole: "q"; array: "q"[] }>(types.a.t)
+			attest(types.a.expression).snap('{ array: "q"[], whole: "q" }')
+			attest<1[]>(types.b.t)
+			attest(types.b.expression).snap("1[]")
+		})
+
+		it("parameter named for a public generic", () => {
+			// as any public alias is, the generic is found first where its name is
+			// all of a definition or of an array's element, and is missing its args
+			attest(() =>
+				scope({
+					"t<x>": ["x"],
+					// @ts-expect-error
+					"box<t>": { whole: "t" }
+				}).export()
+			).throwsAndHasTypeError(
+				writeInvalidGenericArgCountMessage("t", ["x"], [])
+			)
+
+			attest(() =>
+				scope({
+					"t<x>": ["x"],
+					// @ts-expect-error
+					"box<t>": { array: "t[]" }
+				}).export()
+			).throws(writeInvalidGenericArgCountMessage("t", ["x"], []))
+
+			const $ = scope({ "t<x>": ["x"] })
+			// @ts-expect-error
+			attest(() => $.type("<t>", { whole: "t" })).throwsAndHasTypeError(
+				writeInvalidGenericArgCountMessage("t", ["x"], [])
+			)
+
+			// in an expression, it's the parameter
+			const types = scope({
+				"t<x>": ["x"],
+				"box<t>": { expression: "t | 2" },
+				a: "box<'q'>"
+			}).export()
+
+			attest<{ expression: "q" | 2 }>(types.a.t)
+			attest(types.a.expression).snap('{ expression: "q" | 2 }')
+		})
+
 		it("this not resolvable in generic def", () => {
 			attest(() =>
 				type("<t>", {
@@ -268,6 +334,16 @@ contextualize(() => {
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1343
+		it("an alias references a generic written where it's defined", () => {
+			const types = scope({
+				box: generic("t")({ box: "t" }),
+				boxed: "box<'x'>"
+			}).export()
+
+			attest<{ box: "x" }>(types.boxed.t)
+			attest(types.boxed.expression).snap('{ box: "x" }')
+		})
+
 		it("generic definition at a parameterized scope key", () => {
 			attest(() =>
 				scope({

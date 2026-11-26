@@ -1,10 +1,13 @@
-import type {
-	arkKind,
-	BaseParseContext,
-	GenericAst,
-	resolvableReferenceIn
+import {
+	hasArkKind,
+	type arkKind,
+	type BaseParseContext,
+	type BaseRoot,
+	type GenericAst,
+	type resolvableReferenceIn
 } from "@ark/schema"
 import {
+	hasOwn,
 	Scanner,
 	throwInternalError,
 	throwParseError,
@@ -30,7 +33,7 @@ import type {
 } from "./reduce/shared.ts"
 import type { s, StaticState } from "./reduce/static.ts"
 import type { EnclosingQuote } from "./shift/operand/enclosed.ts"
-import type { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
+import { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import { parseDefault } from "./shift/operator/default.ts"
@@ -39,15 +42,44 @@ import {
 	type parseOperator
 } from "./shift/operator/operator.ts"
 
+// a generic's parameter or `this` is what its name references ahead of a
+// keyword or private alias, as an expression resolves it and as parseString
+// infers it. Only a public alias is found first, which ark's own aren't to a
+// definition checked in it, where each is a keyword
+const isArg = (name: string, ctx: BaseParseContext): boolean =>
+	ctx.args !== undefined &&
+	hasOwn(ctx.args, name) &&
+	(ctx.$.isBuiltin || !ctx.$.exportedNames.includes(name))
+
+// a generic found this way is missing its args, as it is to parseString, even
+// if a parameter shares its name. Left to an expression, that name would
+// resolve to the parameter
+const maybeResolveReference = (
+	name: string,
+	ctx: BaseParseContext
+): BaseRoot | undefined => {
+	if (isArg(name, ctx)) return
+	const resolution = ctx.$.maybeResolve(name)
+	if (hasArkKind(resolution, "generic")) {
+		return throwParseError(
+			writeInvalidGenericArgCountMessage(name, resolution.names, [])
+		)
+	}
+	return resolution
+}
+
 export const parseString = (
 	def: string,
 	ctx: BaseParseContext
 ): InnerParseResult => {
-	const aliasResolution = ctx.$.maybeResolveRoot(def)
+	const aliasResolution = maybeResolveReference(def, ctx)
 	if (aliasResolution) return aliasResolution
 
 	if (def.endsWith("[]")) {
-		const possibleElementResolution = ctx.$.maybeResolveRoot(def.slice(0, -2))
+		const possibleElementResolution = maybeResolveReference(
+			def.slice(0, -2),
+			ctx
+		)
 		if (possibleElementResolution) return possibleElementResolution.rawArray()
 	}
 
