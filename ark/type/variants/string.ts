@@ -14,9 +14,9 @@ interface Type<out t extends string = string, in out $ = {}>
 	matching<const schema extends Pattern.Schema>(
 		schema: schema,
 		message?: MessageConfig<"pattern">
-	): schema extends string ? Type<regex.infer<schema>, $>
+	): schema extends string ? Type<t & regex.infer<schema>, $>
 	: schema extends { rule: infer pattern extends string } ?
-		Type<regex.infer<pattern>, $>
+		Type<t & regex.infer<pattern>, $>
 	:	this
 
 	atLeastLength(

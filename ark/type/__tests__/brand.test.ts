@@ -92,6 +92,12 @@ contextualize(() => {
 		const Cents = type("number").brand("cents").moreThan(0)
 		attest<Brand<number, "cents">>(Cents.t)
 		attest(Cents.expression).snap("number > 0")
+
+		// as a pattern intersected in a definition is
+		const A = type("string#id").matching("^a")
+		const Expected = type("string#id & /^a/")
+		attest<typeof Expected.t>(A.t)
+		attest(A.expression).snap("/^a/")
 	})
 
 	it("branded primitive isn't an object", () => {
