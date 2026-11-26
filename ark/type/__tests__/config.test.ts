@@ -965,6 +965,37 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			attest(out).snap({ a: "x", z: 1 })
 		})
 
+		it("an explicit ignore stays ignore in tuples that meet at more than one length", () => {
+			for (const jitless of [false, true]) {
+				for (const onUndeclaredKey of ["delete", "reject"] as const) {
+					const [Open, Configured] = withConfig({ onUndeclaredKey }, () => {
+						const $ = scope({}, { jitless })
+						const Leading = $.type(["0", "...", "number[]"])
+						const Trailing = $.type(["...", "number[]", "0"])
+						return [
+							Leading.onUndeclaredKey("ignore").and(
+								Trailing.onUndeclaredKey("ignore")
+							),
+							Leading.and(Trailing)
+						]
+					})
+					const data = () => Object.assign([0], { extra: 1 })
+					attest(Open.expression).equals("[0, ...number[], 0] | [0]")
+					attest(Open(data())).equals(data() as never)
+					attest(Open(data())).equals(data() as never)
+					// tuples left to the config still follow it
+					const configured = Configured(data())
+					if (onUndeclaredKey === "delete")
+						attest(configured).equals([0] as never)
+					else {
+						attest(configured.toString()).equals(
+							"must be at least length 2 or extra must be removed"
+						)
+					}
+				}
+			}
+		})
+
 		it("delete keeps a branch of a union at a case of a key it doesn't declare", () => {
 			for (const jitless of [false, true]) {
 				const Event = withConfig({ onUndeclaredKey: "delete" }, () =>

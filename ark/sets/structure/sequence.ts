@@ -64,9 +64,12 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 							ctx.$.node("intersection", {
 								proto: ctx.$.node("proto", { proto: Array }),
 								// an empty tuple has no sequence, only an exact length of 0
+								// what the structures it's of do with undeclared keys is
+								// theirs to say, whatever ctx.$ configures
 								...(state.result.length ?
 									{
 										structure: ctx.$.node("structure", {
+											undeclared: "ignore",
 											sequence: sequenceOf(state.result)
 										})
 									}
