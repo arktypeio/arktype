@@ -87,6 +87,37 @@ bench("record.in<t> define and invoke", () => {
 	return [zero, one, two]
 }).types([2684, "instantiations"])
 
+type Discriminated10 =
+	| { kind: "a0"; a0: string }
+	| { kind: "a1"; a1: string }
+	| { kind: "a2"; a2: string }
+	| { kind: "a3"; a3: string }
+	| { kind: "a4"; a4: string }
+	| { kind: "a5"; a5: string }
+	| { kind: "a6"; a6: string }
+	| { kind: "a7"; a7: string }
+	| { kind: "a8"; a8: string }
+	| { kind: "a9"; a9: string }
+
+bench("in<t>.at(10, define)", () =>
+	match
+		.in<Discriminated10>()
+		.at("kind")
+		.match({
+			"'a0'": o => o.a0,
+			"'a1'": o => o.a1,
+			"'a2'": o => o.a2,
+			"'a3'": o => o.a3,
+			"'a4'": o => o.a4,
+			"'a5'": o => o.a5,
+			"'a6'": o => o.a6,
+			"'a7'": o => o.a7,
+			"'a8'": o => o.a8,
+			"'a9'": o => o.a9,
+			default: "assert"
+		})
+).types([7292, "instantiations"])
+
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
 	.case("32", n => `${n}` as const)

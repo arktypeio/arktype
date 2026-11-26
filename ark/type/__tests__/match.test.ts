@@ -1125,6 +1125,47 @@ contextualize(() => {
 >`)
 	})
 
+	it("at narrows each member of a union input a case overlaps", () => {
+		type Input =
+			| { kind: "a" | "b"; x: 1 }
+			| { kind: string; y?: 2 }
+			| { kind: "c"; z: 3 }
+			| { other: true; kind: "a" }
+		const m = match
+			.in<Input>()
+			.at("kind")
+			.match({
+				"'a'": o => o,
+				"'b' | 'c'": o => o,
+				string: o => o,
+				default: "assert"
+			})
+		attest(m).type.toString.snap(`Match<
+	Input,
+	[
+		(
+			In:
+				| { kind: "a"; x: 1 }
+				| { kind: "a"; y?: 2 }
+				| { other: true; kind: "a" }
+		) =>
+			| { kind: "a"; x: 1 }
+			| { kind: "a"; y?: 2 }
+			| { other: true; kind: "a" },
+		(
+			In:
+				| { kind: "b"; x: 1 }
+				| { kind: "b" | "c"; y?: 2 }
+				| { kind: "c"; z: 3 }
+		) =>
+			| { kind: "b"; x: 1 }
+			| { kind: "b" | "c"; y?: 2 }
+			| { kind: "c"; z: 3 },
+		(In: Input) => Input
+	]
+>`)
+	})
+
 	it("matchers of different inputs in an array", () => {
 		const fromString = match({ string: s => s.length, default: "assert" })
 		const fromNumber = match({ number: n => n, default: "assert" })

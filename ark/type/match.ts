@@ -193,13 +193,15 @@ type _finalizeCaseArg<
 	endpoint extends "in" | "out",
 	ctxInput = ctx["input"]
 > =
-	ctxInput extends unknown ?
-		t extends unknown ?
-			distill<t, endpoint> extends infer result ?
-				unknown extends ctxInput ? result
-				: ctxInput extends result ? ctxInput
-				: showIfSafelyMappable<ctxInput & result>
-			:	never
+	// distill each case once, then distribute over ctxInput, dropping members
+	// it can't overlap (most, where it discriminates a union) before showing
+	// any intersection, since this runs for every case and member
+	t extends unknown ?
+		distill<t, endpoint> extends infer result ?
+			unknown extends ctxInput ? result
+			: ctxInput extends result ? ctxInput
+			: [ctxInput & result] extends [never] ? never
+			: showIfSafelyMappable<ctxInput & result>
 		:	never
 	:	never
 
