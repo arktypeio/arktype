@@ -30,6 +30,8 @@ interface Facts {
 	key: string
 	/** the terms of a union, flattened by another */
 	terms?: string[] | undefined
+	/** whether it's a union, any branch of which an intersection could conflict with */
+	branched?: boolean | undefined
 	/** what its input can be, as `domainsOf` writes it */
 	domains: number
 	/** whether it changes no data, which a union can't then find indeterminate */
@@ -783,6 +785,7 @@ export const deferUnion = (
 		{
 			key: terms.join("|"),
 			terms,
+			branched: true,
 			domains,
 			pure,
 			tags,
@@ -882,6 +885,7 @@ const deferredMethods: Dict<
 				min: facts.min,
 				max: facts.max,
 				bounds: facts.of ? facts.base : facts.bounds,
+				branched: facts.branched,
 				narrowed: true
 			}
 		:	undefined,
@@ -904,7 +908,8 @@ const deferredMethods: Dict<
 			: typeof r === "string" ? scanLeaf(r)
 			: undefined
 		if (string) {
-			return refinesString(facts) && refinesString(string) ?
+			// a union's branches could each have a range, which its facts don't say
+			return refinesString(facts) && refinesString(string) && !facts.branched ?
 					andFacts(facts, string)
 				:	undefined
 		}

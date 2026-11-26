@@ -187,6 +187,17 @@ console.log(Object.hasOwn(t, "kind"), t({}).limit)`)
 						.narrow(() => true) as any
 				).atMostLength(1),
 			() => type("string.trim").or("string.trim |> string > 1"),
+			() => type.or("string <= 2", "string >= 5").and("3 <= string <= 4"),
+			() =>
+				type
+					.or("string <= 2", "string >= 5")
+					.describe("d")
+					.and("3 <= string <= 4"),
+			() =>
+				type
+					.or("string <= 2", "string >= 5")
+					.narrow(() => true)
+					.and("3 <= string <= 4"),
 			() => type({ a: "string" }).and({ a: "number" }),
 			() => type({ a: "string.trim" }).or({ a: "string" })
 		]
@@ -196,6 +207,11 @@ console.log(Object.hasOwn(t, "kind"), t({}).limit)`)
 			const again = messageOf(chain)
 			attest(again).equals(messageOf(chain))
 		}
+	})
+
+	it("an intersection with a union of strings is built at its call", () => {
+		attest(isUnread(type.or("string <= 2", /b/).and(/c/))).equals(false)
+		attest(isUnread(type(/a/).and("string <= 2").and(/c/))).equals(true)
 	})
 
 	it("config it can't prove anything under parses at the call", () => {
