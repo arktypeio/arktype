@@ -220,11 +220,16 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 						`${fn}(${result})`
 					:	`${js.ref(callMorph)}(ctx, ${says ? `(In, at) => ${fn}(In, at, ${JSON.stringify(says)})` : fn}, ${result})`
 				// a labeled morph names its value in what it raises, as a labeled
-				// narrow does: only one passed ctx can raise
+				// narrow does, and sets the label it ran under again: only one
+				// passed ctx can raise
 				const labeled = label !== undefined && !this.contextFree[i]
-				if (labeled) js.line(`ctx.lbl = ${JSON.stringify(label)}`)
+				if (labeled) {
+					js.const(`lbl${i}`, "ctx.lbl").line(
+						`ctx.lbl = ${JSON.stringify(label)}`
+					)
+				}
 				js.const(morphed, call)
-				if (labeled) js.line("ctx.lbl = undefined")
+				if (labeled) js.line(`ctx.lbl = lbl${i}`)
 				js.if(`${morphed} instanceof ${js.ref(ArkErrors)}`, () =>
 					js.needsCtx ?
 						js.line(`${js.ref(addErrors)}(ctx, ${morphed})`).return("data")
@@ -261,14 +266,18 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			if (this.contextFree[i])
 				morphed = (morph as Morph.ContextFree)(result as never)
 			else {
-				if (label !== undefined) ctx.lbl = label
+				let outer: string | undefined
+				if (label !== undefined) {
+					outer = ctx.lbl
+					ctx.lbl = label
+				}
 				const says = this.says[i]
 				morphed = callMorph(
 					ctx,
 					says === undefined ? morph : (In, at) => (morph as Fn)(In, at, says),
 					result
 				)
-				if (label !== undefined) ctx.lbl = undefined
+				if (label !== undefined) ctx.lbl = outer
 			}
 			if (morphed instanceof ArkErrors) {
 				addErrors(ctx, morphed)

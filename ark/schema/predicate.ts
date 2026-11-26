@@ -91,12 +91,18 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		const predicate = this.predicate
 		const label = this.meta.label
 		const says = this.says
-		if (label !== undefined) ctx.lbl = label
+		// set aside, as a labeled callback applying this node to its own ctx
+		// still names its value in what it raises after
+		let outer: string | undefined
+		if (label !== undefined) {
+			outer = ctx.lbl
+			ctx.lbl = label
+		}
 		const valid =
 			says === undefined ?
 				predicate(data, ctx.external)
 			:	(predicate as Fn)(data, ctx.external, says)
-		if (label !== undefined) ctx.lbl = undefined
+		if (label !== undefined) ctx.lbl = outer
 		if (!valid && ctx.errN === errN) ctx.nodeError(this.errorCtx, data)
 	}
 
@@ -119,11 +125,13 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		js.initErrCount()
 		const label = this.meta.label
 		// a labeled narrow names its value in what it raises, as in the error
-		// returning false adds: an unlabeled one's call is as it was
+		// returning false adds: an unlabeled one's call is as it was. The label
+		// it runs under is a callback's that applied it, set again once it returns
 		if (label !== undefined) {
-			js.line(`ctx.lbl = ${JSON.stringify(label)}`)
+			js.const("lbl", "ctx.lbl")
+				.line(`ctx.lbl = ${JSON.stringify(label)}`)
 				.const("valid", condition)
-				.line("ctx.lbl = undefined")
+				.line("ctx.lbl = lbl")
 		}
 		js.if(
 			// only add the default error if the predicate didn't add one itself

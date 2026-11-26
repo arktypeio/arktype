@@ -175,6 +175,38 @@ contextualize(() => {
 		})
 	})
 
+	describe("a node a labeled callback applies to its ctx", () => {
+		const Inner = type("object")
+			.narrow(() => true)
+			.label("Inner")
+
+		it("leaves a narrow's label for what the narrow raises after", () => {
+			const T = type("object")
+				.narrow((o, ctx) => {
+					Inner.internal.tApply(o, ctx)
+					return ctx.mustBe("sorted")
+				})
+				.label("Outer")
+			attest(T({}).toString()).snap("Outer must be sorted")
+			// a Type compiles at its second call
+			attest(T({}).toString()).snap("Outer must be sorted")
+		})
+
+		it("leaves a morph's label for what the morph raises after", () => {
+			const Parsed = type("object")
+				.pipe((o, ctx) => o)
+				.label("Inner")
+			const T = type("object")
+				.pipe((o, ctx) => {
+					Parsed.internal.tTransform!(o, ctx)
+					return ctx.error("sorted")
+				})
+				.label("Outer")
+			attest(T({}).toString()).snap("Outer must be sorted")
+			attest(T({}).toString()).snap("Outer must be sorted")
+		})
+	})
+
 	describe("an explicit message", () => {
 		it("from .message() is said as written", () => {
 			const T = type({
