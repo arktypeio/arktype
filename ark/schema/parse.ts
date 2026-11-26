@@ -164,20 +164,19 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
+				const hasMeta =
+					!isEmptyObject(meta) || Object.getOwnPropertySymbols(meta).length > 0
+
 				// a node already keyed with the meta it would get needs no key written
-				if (
-					reduced.c.key &&
-					isEmptyObject(reduced.meta) &&
-					isEmptyObject(meta) &&
-					!Object.getOwnPropertySymbols(meta).length
-				) {
+				if (reduced.c.key && !hasMeta) {
 					$ark.reached?.node(reduced)
 					return reduced
 				}
 
 				// we can't cache this reduction for now in case the reduction involved
-				// impliedBy
-				return withMeta(reduced, meta)
+				// impliedBy. a schema with no meta of its own keeps what it reduced
+				// to, so a union of equal described branches is that branch
+				return withMeta(reduced, hasMeta ? meta : reduced.meta)
 			}
 		}
 	}

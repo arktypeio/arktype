@@ -348,6 +348,34 @@ s must be a string or undefined`)
 		})
 	})
 
+	it("equal branches with the same meta are that branch", () => {
+		const meta = {
+			description: "a name",
+			message: "not a name",
+			[Symbol("s")]: 1,
+			custom: "x"
+		}
+		const Name = type("string").configure(meta as never)
+		const T = Name.or(type("string").configure(meta as never))
+		attest(T.internal).is(Name.internal)
+		attest(T.description).snap("a name")
+		attest(T(5).toString()).snap("not a name")
+		attest(
+			type("string")
+				.label("Name")
+				.or(type("string").label("Name"))(5)
+				.toString()
+		).snap("Name must be a string")
+	})
+
+	it("equal branches with different meta keep one's, as alongside another branch", () => {
+		const X = type("string").describe("x")
+		const Y = type("string").describe("y")
+		attest(X.or(Y).description).snap("x")
+		attest(Y.or(X).description).snap("x")
+		attest(X.or(Y).or("number").description).snap("a number or x")
+	})
+
 	it("branches described like Object.prototype members", () => {
 		const T = type("string")
 			.describe("constructor")
@@ -550,6 +578,7 @@ x must be a string`)
 				.describe("an AB")
 				.or(type({ a: "number" }).describe("an AB"))
 			attest(T.expression).snap("{ a: number | string }")
+			attest(T.description).snap("an AB")
 			attest(T(5).toString()).snap("must be an AB")
 		})
 	})
@@ -640,10 +669,18 @@ x must be a string`)
 		attest(units("a", "b", "a")).snap('"a" | "b"')
 		attest(units(1, 2, 1, 2)).snap("1 | 2")
 		attest(units(new Date(0), new Date(0))).snap("d'1970-01-01T00:00:00.000Z'")
-		// a described unit sorts after its undescribed copy, which is the one kept
+		// a described unit sorts before its undescribed copy, which is the one
+		// dropped, as it is beside another branch
 		attest(
-			type.schema([{ unit: "a", meta: "first" }, { unit: "a" }] as never)
+			type.schema([{ unit: "a" }, { unit: "a", meta: "first" }] as never)
 				.description
-		).snap('"a"')
+		).snap("first")
+		attest(
+			type.schema([
+				{ unit: "a" },
+				{ unit: "a", meta: "first" },
+				{ unit: "b" }
+			] as never).description
+		).snap('first or "b"')
 	})
 })

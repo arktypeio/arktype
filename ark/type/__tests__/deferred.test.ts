@@ -733,11 +733,13 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 		const first = plain.or(described).or("string & /c/")
 		const last = plain.or("string & /c/").or(described)
 		attest(first === last).equals(false)
+		// equal branches keep the meta of the one kept, however they're nested
 		attest(first.json).snap([
 			{ domain: "string", pattern: ["c"] },
 			{
 				domain: { domain: "string", meta: "x" },
-				pattern: [{ rule: "a", meta: "x" }]
+				pattern: [{ rule: "a", meta: "x" }],
+				meta: "x"
 			}
 		])
 		attest(last.json).snap([
