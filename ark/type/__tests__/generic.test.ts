@@ -313,6 +313,16 @@ contextualize(() => {
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1343
+		it("an alias references a generic written where it's defined", () => {
+			const types = scope({
+				box: generic("t")({ box: "t" }),
+				boxed: "box<'x'>"
+			}).export()
+
+			attest<{ box: "x" }>(types.boxed.t)
+			attest(types.boxed.expression).snap('{ box: "x" }')
+		})
+
 		it("generic definition at a parameterized scope key", () => {
 			attest(() =>
 				scope({

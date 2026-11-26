@@ -401,6 +401,28 @@ contextualize(() => {
 			attest(type.number.or("string").expression).snap("number | string")
 		})
 
+		it("infers a Generic written where it's passed", () => {
+			const $ = scope(
+				{ emails: "List<string.email>", boxed: "Box<'x'>" },
+				{
+					ambient: {
+						...ark.export("string"),
+						List: generic("t")("t[]"),
+						Box: generic(["t", "string"])({ box: "t" })
+					}
+				}
+			)
+			const types = $.export()
+
+			attest<string[]>(types.emails.infer)
+			attest<{ box: "x" }>(types.boxed.infer)
+			attest(types.boxed.expression).snap('{ box: "x" }')
+			// @ts-expect-error
+			attest(() => $.type("number")).throwsAndHasTypeError(
+				writeUnresolvableMessage("number")
+			)
+		})
+
 		it("supports spreading a Module alongside custom entries", () => {
 			const $ = scope(
 				{
