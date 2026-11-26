@@ -5,6 +5,7 @@ import {
 	holeNameMarker,
 	writeMissingImportMessage,
 	writePrecompiledUnits,
+	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
 	type ErrorDetail,
@@ -734,6 +735,10 @@ const unsupportedModule = (file: string, message: string): Diagnostic => ({
 	hint: undefined
 })
 
+// one function for every build, as what it selects from a node is kept by it
+const holdsDefaultsOrIsAlias = (node: BaseNode): boolean =>
+	holdsDefaults(node) || node.is("alias")
+
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
 	isFoldable(value) && keyOf(value)[1].some(hole => isSetCell(hole, cells))
 
@@ -1444,9 +1449,7 @@ export class Precompiler {
 			const collectIn = (root: BaseRoot) => {
 				if (seen.has(root)) return
 				seen.add(root)
-				for (const node of root.selectReferences(
-					node => holdsDefaults(node) || node.is("alias")
-				)) {
+				for (const node of root.selectReferences(holdsDefaultsOrIsAlias)) {
 					if (node.is("alias")) collectIn(node.resolution)
 					else collectDefaults(node as never, collected)
 				}
