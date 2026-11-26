@@ -295,7 +295,7 @@ const Contents = type({
 Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
 ```
 
-A union still throws a `ParseError` where such an object also has a default or another morph at a key and a second branch accepts the same data. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write that union.
+A union still throws a `ParseError` where such an object also has a default or another morph at a key, or holds a recursive type, and a second branch accepts the same data. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write that union.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 

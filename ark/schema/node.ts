@@ -108,12 +108,12 @@ import {
 import {
 	composing,
 	hasArkKind,
-	inProgress,
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
 	printSelfAsThis,
 	removedProblemMessage,
+	resolving,
 	withoutHoleNames
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
@@ -1296,13 +1296,12 @@ export abstract class BaseNode<
 		| Extract<ReturnType<mapper>, null> {
 		const ctx = this._tfContext(opts)
 		if (!ctx.throughAliases) return this._tf(mapper, ctx) as never
-		// an alias to a resolution still transforming resolves once the transform returns
-		inProgress.resolutions++
+		// an alias to a resolution still transforming resolves once the transform
+		// returns, as do the checks a union it built left for then
 		let transformed: BaseNode | null
 		try {
-			transformed = this._tf(mapper, ctx)
+			transformed = resolving(() => this._tf(mapper, ctx))
 		} finally {
-			inProgress.resolutions--
 			for (const id in ctx.synth) delete $ark.nodesById[ctx.synth[id].id]
 		}
 		if (!transformed || opts?.names) return transformed as never

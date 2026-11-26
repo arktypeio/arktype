@@ -444,18 +444,13 @@ try {
 		).snap("configure() must be\n")
 	})
 
-	it("an optional prop holding an alias throws at its call where undefined composes it", () => {
+	it("an optional prop holding an alias is built at its call where undefined composes it", () => {
 		attest(
 			printed(`configure({ exactOptionalPropertyTypes: false })
-const X = type.or({ b: "true" }, ["this", "[]"]).onUndeclaredKey("delete")
-for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
-	try {
-		type(def)
-	} catch (e) {
-		console.log(e.message.slice(0, 30))
-	}
-}`)
-		).snap("An unordered union of a type i\nAn unordered union of a type i\n")
+const X = type({ "next?": "this" }).onUndeclaredKey("delete")
+for (const def of [{ "z?": X }, { z: [X, "=", () => ({})] }])
+	console.log(Object.hasOwn(type(def), "kind"))`)
+		).snap("true\ntrue\n")
 	})
 
 	it("a default of undefined throws at its call where a default replaces undefined", () => {

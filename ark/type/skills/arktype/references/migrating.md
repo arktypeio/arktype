@@ -732,7 +732,7 @@ const Contents = Text.or(Blob)
 Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
 ```
 
-A key's default or transform, like `.default()` or `string.trim`, can't be joined that way. A union throws a `ParseError` saying it's indeterminate where an object holding one accepts data another branch also accepts, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. For those that do, or to return what the first matching branch does, choose the branch in a `.pipe()`, which infers the union of what they return:
+A key's default or transform, like `.default()` or `string.trim`, can't be joined that way, and neither can an object holding a recursive type, like a scope alias that refers to itself or `"this"`. A union throws a `ParseError` saying it's indeterminate where an object holding one of those accepts data another branch also accepts, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. For those that do, or to return what the first matching branch does, choose the branch in a `.pipe()`, which infers the union of what they return:
 
 ```ts
 const Text = type({ "+": "delete", uri: "string", text: "string.trim" })

@@ -460,6 +460,58 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 					}).export()
 				).throws("is indeterminate")
 			})
+
+			it("is indeterminate through a cycle given delete by a method", () => {
+				const { Expr } = scope({
+					Expr: "Lit | Bin",
+					Bin: { "op?": "string", "l?": "Expr" },
+					Lit: { "value?": "number" }
+				}).export()
+				attest(() => Expr.onUndeclaredKey("delete")).throws
+					.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { l?: $Expr, op?: string, + (undeclared): delete }
+Right: { value?: number, + (undeclared): delete }
+Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+				attest(() => Expr.onDeepUndeclaredKey("delete")).throws(
+					"is indeterminate"
+				)
+				attest(() =>
+					type({ "value?": "number" })
+						.or({ "op?": "string", "l?": "this" })
+						.onUndeclaredKey("delete")
+				).throws("is indeterminate")
+			})
+
+			it("deletes by a method through a cycle a key tells apart", () => {
+				for (const jitless of [false, true]) {
+					const { Expr } = scope(
+						{
+							Expr: "Lit | Bin",
+							Bin: { kind: "'bin'", "l?": "Expr" },
+							Lit: { kind: "'lit'", "value?": "number" }
+						},
+						{ jitless }
+					).export()
+					const Shallow = Expr.onUndeclaredKey("delete")
+					const Deep = Expr.onDeepUndeclaredKey("delete")
+					const data = () => ({
+						kind: "bin",
+						z: 1,
+						l: { kind: "lit", value: 1, z: 2 }
+					})
+					for (const input of [data(), data()]) {
+						// only the objects the method was called on delete
+						attest(Shallow(input) as object).equals({
+							kind: "bin",
+							l: { kind: "lit", value: 1, z: 2 }
+						})
+						attest(Deep(input)).equals({
+							kind: "bin",
+							l: { kind: "lit", value: 1 }
+						})
+					}
+				}
+			})
 		})
 
 		it("reject key", () => {
