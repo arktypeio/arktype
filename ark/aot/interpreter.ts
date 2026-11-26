@@ -457,6 +457,10 @@ export class Interpreter {
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
 	private spreadsByObject = new WeakMap<object, SpreadSource>()
+	private stringPropsByObject = new WeakMap<
+		object,
+		Map<PropertyKey, SpreadSource>
+	>()
 	// unknown values a declaration computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	private dynamicFree = new WeakSet<object>()
@@ -811,6 +815,15 @@ export class Interpreter {
 				if (hasDomain(spread, "object")) {
 					const inherited = this.spreadsByObject.get(spread)
 					if (inherited) this.spreadsByObject.set(result, inherited)
+					const inheritedStrings = this.stringPropsByObject.get(spread)
+					if (inheritedStrings) {
+						let target = this.stringPropsByObject.get(result)
+						if (!target) {
+							target = new Map()
+							this.stringPropsByObject.set(result, target)
+						}
+						for (const [k, source] of inheritedStrings) target.set(k, source)
+					}
 				}
 				continue
 			}
@@ -850,6 +863,21 @@ export class Interpreter {
 			if (isDynamic(value) && !value.isOpaque) return value
 			if (key === "...") {
 				this.spreadsByObject.set(result, {
+					property,
+					valueNode: property.value,
+					module: ctx.module
+				})
+			}
+			if (
+				(typeof value === "string" && value.includes("<")) ||
+				Array.isArray(value)
+			) {
+				let target = this.stringPropsByObject.get(result)
+				if (!target) {
+					target = new Map()
+					this.stringPropsByObject.set(result, target)
+				}
+				target.set(key as PropertyKey, {
 					property,
 					valueNode: property.value,
 					module: ctx.module
@@ -2397,7 +2425,8 @@ export class Interpreter {
 					node,
 					module: ctx.module,
 					site: ctx.site,
-					spreadsByObject: this.spreadsByObject
+					spreadsByObject: this.spreadsByObject,
+					stringPropsByObject: this.stringPropsByObject
 				})
 			}
 			return result

@@ -1,5 +1,6 @@
 import type { KeySet } from "arktype/util"
 import { flatMorph, throwError } from "./util.ts"
+import { realpathSync } from "node:fs"
 import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { dirname, relative } from "node:path/posix"
@@ -98,13 +99,23 @@ const maxSettlePasses = 32
 const maxSolutionProjects = 256
 
 const canonicalConfigPath = (path: string): string => {
-	const normalized = tsPath(resolve(path))
+	const resolved = resolve(path)
+	let canonical = resolved
+	try {
+		canonical = realpathSync(resolved)
+	} catch {
+		// path may not exist on disk yet (e.g. emitted declaration output path)
+	}
+	const normalized = tsPath(canonical)
 	return process.platform === "win32" || process.platform === "darwin" ?
 			normalized.toLowerCase()
 		:	normalized
 }
 
-const commonDirOf = (dirs: readonly string[], fallback: string): string => {
+export const commonDirOf = (
+	dirs: readonly string[],
+	fallback: string
+): string => {
 	const split = dirs.map(dir => tsPath(dir).replace(/\/+$/, "").split("/"))
 	const first = split[0]
 	if (!first?.length) return fallback
@@ -116,7 +127,7 @@ const commonDirOf = (dirs: readonly string[], fallback: string): string => {
 		common++
 	if (common === 0) return fallback
 	const joined = first.slice(0, common).join("/")
-	return joined || "/"
+	return /^[A-Za-z]:$/.test(joined) ? `${joined}/` : joined || "/"
 }
 
 export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
@@ -350,7 +361,9 @@ const openJs = (
 		return {
 			configPath,
 			references: parsed.projectReferences.map(reference =>
-				ts.resolveProjectReferencePath(reference)
+				/\.json$/i.test(reference.path) ?
+					reference.path
+				:	ts.resolveProjectReferencePath(reference)
 			),
 			diagnostics: formatDiagnostics(ts, diagnostics, cwd),
 			errors: diagnostics.filter(

@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	checkers,
+	commonDirOf,
 	emitDeclarations,
 	type Checker
 } from "@ark/aot/internal/declare.ts"
@@ -12,6 +13,7 @@ import {
 	readdirSync,
 	readFileSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync
 } from "node:fs"
 import { join } from "node:path"
@@ -979,6 +981,62 @@ export type makeTree = {
 			`${colliding} is emitted by more than one referenced project. Set a distinct outDir or declarationDir for each referenced tsconfig, or run \`ark declare --tsconfig <path>\` for one project at a time.`
 		)
 	}).timeout(60000)
+
+	it("preserves Windows drive roots in commonDirOf and handles symlink loops and uppercase .JSON references", () => {
+		attest(commonDirOf(["C:/a", "C:/b"], "fallback")).equals("C:/")
+		attest(commonDirOf(["C:\\a", "C:\\b"], "fallback")).equals("C:/")
+		attest(commonDirOf(["C:/proj/a", "C:/proj/b"], "fallback")).equals(
+			"C:/proj"
+		)
+		attest(commonDirOf(["/a", "/b"], "fallback")).equals("/")
+		attest(commonDirOf(["C:/a", "D:/b"], "fallback")).equals("fallback")
+
+		const dir = tempPath("solution-edge")
+		try {
+			writeFixture(
+				{
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./tsconfig.Lib.JSON" },
+							{ path: "./tsconfig.loop.json" }
+						]
+					}),
+					"tsconfig.Lib.JSON": JSON.stringify({
+						compilerOptions: {
+							strict: true,
+							skipLibCheck: true,
+							composite: true,
+							target: "ES2022",
+							module: "ESNext",
+							moduleResolution: "bundler",
+							customConditions: ["ark-ts"],
+							types: [],
+							rootDir: "src",
+							outDir: "dist"
+						},
+						include: ["src"]
+					}),
+					"src/index.ts":
+						'import { type } from "arktype"\nexport const Item = type({ id: "string" })\n'
+				},
+				dir
+			)
+			symlinkSync(join(dir, "tsconfig.json"), join(dir, "tsconfig.loop.json"))
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: dir, checker })
+				attest(res.errors).equals(0)
+				attest(res.shapes).equals(1)
+				attest(
+					Object.keys(res.files)
+						.map(path => relative(tsPath(dir), path))
+						.sort()
+				).equals(["dist/index.d.ts", "dist/~arktype.d.ts"])
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true })
+		}
+	}).timeout(120_000)
 
 	it("refuses the CLI's other modes and options with --declare", () => {
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")

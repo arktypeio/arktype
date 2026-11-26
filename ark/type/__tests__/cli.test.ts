@@ -794,5 +794,49 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 				args: []
 			}
 		])
+		// explicit .cmd path works even if PATHEXT omits .CMD
+		attest(
+			resolveWindowsAgentCandidates(
+				join(dir, "npm-bin", "claude.cmd"),
+				{ PATH: "", PATHEXT: ".EXE" },
+				fakeNode
+			)
+		).equals([
+			{
+				command: fakeNode,
+				args: [
+					join(
+						dir,
+						"npm-bin",
+						"node_modules",
+						"@anthropic-ai",
+						"claude-code",
+						"cli.js"
+					)
+				]
+			}
+		])
+		// bare name with explicit .cmd works on PATH even if PATHEXT omits .CMD
+		attest(
+			resolveWindowsAgentCandidates(
+				"claude.cmd",
+				{ PATH: join(dir, "npm-bin"), PATHEXT: ".EXE" },
+				fakeNode
+			)
+		).equals([
+			{
+				command: fakeNode,
+				args: [
+					join(
+						dir,
+						"npm-bin",
+						"node_modules",
+						"@anthropic-ai",
+						"claude-code",
+						"cli.js"
+					)
+				]
+			}
+		])
 	})
 })

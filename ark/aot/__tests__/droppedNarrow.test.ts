@@ -144,10 +144,12 @@ export const $ = scope({
 	bad2: { "...": U, d: "boolean" },
 	bad3: { "...": "arr", d: "boolean" },
 	bad4: { "...": ["string[]", ":", (xs: string[]) => xs.length > 0], d: "boolean" },
+	bad5: { "...": [Dates, "&", "string[]"], d: "boolean" },
+	bad6: { "...": [Dates, "&", "number"], d: "boolean" },
 	good: { "...": Dates, d: "boolean" }
 })`
 			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
-				'/main.ts:17:10  `Dates` has a narrow that `"..."` drops'
+				'/main.ts:19:10  `Dates` has a narrow that `"..."` drops'
 			])
 		})
 
@@ -278,6 +280,156 @@ export const MetaSpread = type({ "...": [Dates, "@", "date range"], total: "numb
 			])
 		})
 
+		it("handles tuple intersections in Required/Partial without false positives on runtime no-ops", () => {
+			const source = `import { keywords, type } from "arktype"
+${datesDecl}
+const AllOpt = type({ "issued?": "string.date", "due?": "string.date" }).narrow(o => !!o)
+const ReqExtra = type({ extra: "boolean" })
+const OptExtra = type({ "extra?": "boolean" })
+// runtime no-ops on tuple intersections -> 0 warnings
+export const ReqInterNoop = keywords.Required([Dates, "&", ReqExtra])
+export const PartInterNoop = keywords.Partial([AllOpt, "&", OptExtra])
+// tuple intersections that actually drop -> warn
+export const ReqInterDrop = keywords.Required([Dates, "&", OptExtra])
+export const PartInterDrop = keywords.Partial([Dates, "&", ReqExtra])`
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+				'/main.ts:16:29  `[Dates, "&", OptExtra]` has a narrow that `.required()` drops',
+				'/main.ts:17:30  `[Dates, "&", ReqExtra]` has a narrow that `.partial()` drops'
+			])
+		})
+
+		it("warns on string-syntax structural generics in scope(), $.type(), and type.module()", () => {
+			const source = `import { scope, type } from "arktype"
+${datesDecl}
+const AllOpt = type({ "issued?": "string.date", "due?": "string.date" }).narrow(o => !!o)
+const Other = type({ x: "number" }).narrow(o => o.x > 0)
+const $ = scope({
+	dates: Dates,
+	allOpt: AllOpt,
+	other: Other,
+	plain: { total: "number" },
+	p: "Partial<dates>",
+	k: "Pick<dates, 'issued'>",
+	o: "Omit<dates, 'due'>",
+	m: "Merge<dates, plain>",
+	mb: "Merge<dates, other>",
+	nested: "Partial<Pick<dates, 'issued'>>",
+	union: "Partial<dates> | null",
+	// runtime no-ops -> 0 warnings
+	rNoop: "Required<dates>",
+	pNoop: "Partial<allOpt>",
+	// quoted string literal -> 0 warnings
+	lit: "'Partial<dates>'"
+})
+export const out = $.export()
+export const DirectPartial = $.type("Partial<dates>")
+export const DirectNoop = $.type("Required<dates>")
+export const Mod = type.module({
+	dates: Dates,
+	p: "Partial<dates>",
+	r: "Required<dates>"
+})
+const $shadow = scope({
+	dates: Dates,
+	"Partial<t>": { wrapped: "t" },
+	p: "Partial<dates>"
+})
+export const shadowOut = $shadow.export()`
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+				"/main.ts:16:2  `dates` has a narrow that `.partial()` drops",
+				"/main.ts:17:2  `dates` has a narrow that `.pick()` drops",
+				"/main.ts:18:2  `dates` has a narrow that `.omit()` drops",
+				"/main.ts:19:2  `dates` has a narrow that `.merge()` drops",
+				"/main.ts:20:2  `dates` has a narrow that `.merge()` drops",
+				"/main.ts:20:2  `other` has a narrow that `.merge()` drops",
+				"/main.ts:21:2  `dates` has a narrow that `.pick()` drops",
+				"/main.ts:22:2  `dates` has a narrow that `.partial()` drops",
+				"/main.ts:30:30  `dates` has a narrow that `.partial()` drops",
+				"/main.ts:34:2  `dates` has a narrow that `.partial()` drops"
+			])
+		})
+
+		it("handles partially-resolved scopes, private aliases, invalid unreferenced aliases, shadowed generic params, and tuple-property generics", () => {
+			const source = `import { scope, type } from "arktype"
+${datesDecl}
+// partially-resolved scope where dates/p are still unresolved BaseParseContext in scope.res
+const $partial = scope({
+	dates: Dates,
+	p: "Partial<dates>",
+	other: "string"
+})
+export const Other = $partial.type("other")
+
+// private #dates and #p in an exported scope
+const $priv = scope({
+	"#dates": Dates,
+	"#p": "Partial<dates>",
+	ok: "string"
+})
+export const privOut = $priv.export()
+
+// unreferenced private alias with unsatisfiable intersection must not crash precompilation
+const $unsat = scope({
+	"#p": "Partial<true & false>",
+	other: "string"
+})
+export const unsatOut = $unsat.export()
+
+// scope generic parameter shadowing a scope alias must not false-positive
+const $genShadow = scope({
+	dates: Dates,
+	"MyPartial<dates>": "Partial<dates>",
+	"Constrained<dates extends object, k extends string>": "Pick<dates, k>",
+	"SpreadGeneric<dates>": { "...": "dates", x: "number" }
+})
+export const genShadowOut = $genShadow.export()
+export const StandaloneParamShadow = $genShadow.type("<dates>", "Partial<dates>")
+
+// string generics inside tuple-valued properties report at the property line and respect suppression
+const $tupleProp = scope({
+	dates: Dates,
+	a: ["Partial<dates>", "|", "null"],
+	// @ark-allow-drop-narrow
+	b: ["Partial<dates>", "|", "null"]
+})
+export const tuplePropOut = $tupleProp.export()`
+			const result = analyze(source)
+			attest(result.sites.every(s => s.status === "accepted")).equals(true)
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+				"/main.ts:12:2  `dates` has a narrow that `.partial()` drops",
+				"/main.ts:20:2  `dates` has a narrow that `.partial()` drops",
+				"/main.ts:45:2  `dates` has a narrow that `.partial()` drops"
+			])
+		})
+
+		it("identifies destructured and aliased parser methods by function identity", () => {
+			const source = `import { scope, type } from "arktype"
+${datesDecl}
+const { unit, enumerated, merge, or } = type
+const $ = scope({ dates: Dates })
+const { unit: sUnit, merge: sMerge } = $.type
+const sm = $.type.merge
+// unit/enumerated take values, not definitions -> 0 dropped-narrow warnings
+export const U = unit({ "...": Dates })
+export const E = enumerated({ "...": Dates })
+export const SU = sUnit({ "...": Dates })
+// destructured/aliased merge and or -> warn
+export const M = merge(Dates, { total: "number" })
+export const O = or({ "...": Dates }, "null")
+export const SM = sMerge("dates", { total: "number" })
+export const SMAlias = sm("dates", { total: "number" })`
+			attest(
+				analyze(source)
+					.diagnostics.filter(d => d.rule === "dropped-narrow")
+					.map(d => `${d.line}:${d.column}  ${d.message}`)
+			).snap([
+				"18:18  `Dates` has a narrow that `.merge()` drops",
+				'19:23  `Dates` has a narrow that `"..."` drops',
+				"20:19  `dates` has a narrow that `.merge()` drops",
+				"21:24  `dates` has a narrow that `.merge()` drops"
+			])
+		})
+
 		it("does not warn for operations that preserve root narrows", () => {
 			const source = `import { type } from "arktype"
 ${datesDecl}
@@ -357,13 +509,47 @@ export const ChainTrailing = Dates.merge({ x: "number" }) // @ark-allow-drop-nar
 export const EndBrace = Dates.and({
 	total: "number"
 	// @ark-allow-drop-narrow
-}).pick("issued")`
+}).pick("issued")
+export const TrailingOnLaterChainMerge = Dates.pick("issued")
+	.merge(Other) // @ark-allow-drop-narrow
+export const TrailingOnLaterChainAnd = Dates.pick("issued")
+	.and({ total: "number" }) // @ark-allow-drop-narrow`
 			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
 				'/main.ts:12:41  `Dates` has a narrow that `"..."` drops',
 				"/main.ts:15:43  `Dates` has a narrow that `.pick()` drops",
 				"/main.ts:16:30  `Other` has a narrow that `.merge()` drops",
-				'/main.ts:18:25  `Dates.and({ total: "number" // @ark-allow-drop-narrow })` has a narrow that `.pick()` drops'
+				'/main.ts:18:25  `Dates.and({ total: "number" // @ark-allow-drop-narrow })` has a narrow that `.pick()` drops',
+				"/main.ts:22:42  `Dates` has a narrow that `.pick()` drops",
+				"/main.ts:24:40  `Dates` has a narrow that `.pick()` drops"
 			])
+		})
+
+		it("suppresses comment-after-dot, optional chaining, computed member, multiline trailing, local def trailing, and string generics", () => {
+			const source = `import { scope, type } from "arktype"
+${datesDecl}
+export const AfterDot = Dates.
+	// @ark-allow-drop-narrow
+	pick("issued")
+export const OptionalChain = Dates
+	// @ark-allow-drop-narrow
+	?.pick("issued")
+export const ComputedMember = Dates
+	// @ark-allow-drop-narrow
+	["pick"]("issued")
+export const MultilineTrailing = Dates.merge({
+	total: "number"
+}) // @ark-allow-drop-narrow
+const def = { "...": Dates, total: "number" }
+export const LocalDefTrailing = type(def) // @ark-allow-drop-narrow
+const $ = scope({
+	dates: Dates,
+	// @ark-allow-drop-narrow
+	p: "Partial<dates>",
+	k: "Pick<dates, 'issued'>" // @ark-allow-drop-narrow
+})
+export const out = $.export()
+export const DirectTrailing = $.type("Partial<dates>") // @ark-allow-drop-narrow`
+			attest(diagnosticsOf(source)).equals([])
 		})
 	})
 

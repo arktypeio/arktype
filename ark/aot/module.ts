@@ -284,7 +284,12 @@ const dropNarrowSuppressionsOf = (
 			return !marked && node.start <= start && start < node.end
 		})
 		if (marked) nodes.push(marked)
-		else if (source[start] === ".") leadingLines.add(lineOf(start))
+		else if (
+			source[start] === "." ||
+			source.startsWith("?.", start) ||
+			source[start] === "["
+		)
+			leadingLines.add(lineOf(start))
 	}
 	return { nodes, leadingLines, trailingLines }
 }

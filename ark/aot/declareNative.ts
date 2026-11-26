@@ -593,7 +593,7 @@ export const openNative = (
 		if (!parsed.fileNames.length && parsed.projectReferences?.length) {
 			const configDiagnostics = raw.getConfigFileParsingDiagnostics()
 			const referencePaths = parsed.projectReferences.map(({ path }) =>
-				path.endsWith(".json") ? path : join(path, "tsconfig.json")
+				/\.json$/i.test(path) ? path : join(path, "tsconfig.json")
 			)
 			const result: SolutionReferences = {
 				configPath,

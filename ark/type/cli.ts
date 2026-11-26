@@ -650,7 +650,8 @@ export const resolveWindowsAgentCandidates = (
 		.map(ext => ext.trim().toLowerCase())
 		.filter(ext => winRunnableExts.has(ext))
 	const exts = rawPathExt.length ? rawPathExt : [".exe", ".com", ".cmd", ".bat"]
-	const hasExt = exts.some(ext => cmd.toLowerCase().endsWith(ext))
+	const lowerCmd = cmd.toLowerCase()
+	const hasExt = [...winRunnableExts].some(ext => lowerCmd.endsWith(ext))
 	const paths: string[] = []
 	if (cmd.includes("/") || cmd.includes("\\")) {
 		const base = resolve(cmd)

@@ -41,6 +41,12 @@ export interface DroppedNarrow {
 	pending?: {
 		scope: BaseScope
 		def: unknown
+		shadowed?: ReadonlySet<string> | undefined
+	}
+	pendingString?: {
+		scope: BaseScope
+		expr: string
+		shadowed?: ReadonlySet<string> | undefined
 	}
 }
 
@@ -89,8 +95,8 @@ const isSpreadableObjectDef = (
 			return isSpreadableObjectDef(def[0], scope, seen)
 		if (def.length === 3 && def[1] === "&") {
 			return (
-				isSpreadableObjectDef(def[0], scope, seen) &&
-				isSpreadableObjectDef(def[2], scope, seen)
+				isSpreadableObjectDef(def[0], scope, new Set(seen)) &&
+				isSpreadableObjectDef(def[2], scope, new Set(seen))
 			)
 		}
 		return false
@@ -98,16 +104,36 @@ const isSpreadableObjectDef = (
 	return isPlainContainer(def)
 }
 
+const hasUserPredicatesOf = (
+	afterBranch: BaseRoot,
+	userPredicates: PredicateNode[]
+): boolean =>
+	afterBranch.is("intersection") &&
+	!!afterBranch.inner.predicate &&
+	userPredicates.every(up =>
+		afterBranch.inner.predicate!.some(ap => ap.predicate === up.predicate)
+	)
+
 // whether any branch of `before` carries a user-authored root predicate that
 // `after` no longer preserves (e.g. `.partial()` / `.required()` preserve
 // unchanged branches at runtime)
-const dropsUserPredicate = (before: BaseRoot, after?: BaseRoot): boolean => {
+const dropsUserPredicate = (
+	before: BaseRoot,
+	after?: BaseRoot,
+	inIntersection = false
+): boolean => {
 	for (const branch of before.branches) {
 		if (!branch.is("intersection") || !branch.inner.predicate) continue
-		if (!branch.inner.predicate.some(isUserPredicate)) continue
+		const userPredicates = branch.inner.predicate.filter(isUserPredicate)
+		if (!userPredicates.length) continue
 		if (
 			!after?.branches.some(
-				afterBranch => afterBranch === branch || afterBranch.equals(branch)
+				afterBranch =>
+					afterBranch === branch ||
+					afterBranch.equals(branch) ||
+					(inIntersection &&
+						hasUserPredicatesOf(afterBranch, userPredicates) &&
+						afterBranch.extends(branch))
 			)
 		)
 			return true
@@ -155,6 +181,27 @@ const nonDefinitionParserMembers = new Set([
 // rather than a single tuple expression
 const naryDefinitionMembers = new Set(["and", "or", "pipe", "merge"])
 
+const parserMembers = new Set([
+	...nonDefinitionParserMembers,
+	...naryDefinitionMembers
+])
+
+// identify a scope/type parser method by function identity first (so destructured
+// `const { unit, merge } = type` or `const sm = $.merge` match accurately)
+const parserMemberOf = (
+	fn: Function,
+	scope: BaseScope,
+	memberName: unknown
+): string | undefined => {
+	const s = scope as unknown as Record<string, unknown>
+	const t = s.type as Record<string, unknown> | undefined
+	const rootType = type as unknown as Record<string, unknown>
+	for (const name of parserMembers)
+		if (s[name] === fn || t?.[name] === fn || rootType[name] === fn) return name
+
+	return typeof memberName === "string" ? memberName : undefined
+}
+
 let structuralGenerics:
 	| Map<unknown, [op: DroppedNarrowOp, argIndices: number[]]>
 	| undefined
@@ -190,6 +237,7 @@ export interface RecordDroppedNarrowsInput {
 	module: SourceModule
 	site: SiteState
 	spreadsByObject: WeakMap<object, SpreadSource>
+	stringPropsByObject: WeakMap<object, Map<PropertyKey, SpreadSource>>
 }
 
 export const recordDroppedNarrows = ({
@@ -200,7 +248,8 @@ export const recordDroppedNarrows = ({
 	node,
 	module,
 	site,
-	spreadsByObject
+	spreadsByObject,
+	stringPropsByObject
 }: RecordDroppedNarrowsInput): void => {
 	const call = node.type === "CallExpression" ? node : undefined
 	const callee = call ? unwrapExpression(call.callee) : undefined
@@ -235,13 +284,31 @@ export const recordDroppedNarrows = ({
 				}
 			}
 		}
-		if (definitionRootMethods.has(fn) || memberName === "pipe")
-			recordSpreadDrops(args, result.$, node, module, site, spreadsByObject)
+		if (
+			definitionRootMethods.has(fn) ||
+			memberName === "pipe" ||
+			fn === receiver.pipe
+		) {
+			recordDefinitionDrops(
+				args,
+				result.$,
+				node,
+				module,
+				site,
+				spreadsByObject,
+				stringPropsByObject
+			)
+		}
 		return
 	}
 
+	const parserMember =
+		hasArkKind(result, "root") ?
+			parserMemberOf(fn, result.$, memberName)
+		:	undefined
+
 	// 2. N-ary `type.merge(A, B, ...)` / `$.merge(A, B, ...)`
-	if (hasArkKind(result, "root") && memberName === "merge") {
+	if (hasArkKind(result, "root") && parserMember === "merge") {
 		const operatorNode = member?.property ?? node
 		for (let i = 0; i < args.length; i++) {
 			if (defDropsUserPredicate(args[i], result.$, result)) {
@@ -254,7 +321,15 @@ export const recordDroppedNarrows = ({
 				})
 			}
 		}
-		recordSpreadDrops(args, result.$, node, module, site, spreadsByObject)
+		recordDefinitionDrops(
+			args,
+			result.$,
+			node,
+			module,
+			site,
+			spreadsByObject,
+			stringPropsByObject
+		)
 		return
 	}
 
@@ -277,20 +352,29 @@ export const recordDroppedNarrows = ({
 				}
 			}
 		}
-		recordSpreadDrops(args, result.$, node, module, site, spreadsByObject)
+		recordDefinitionDrops(
+			args,
+			result.$,
+			node,
+			module,
+			site,
+			spreadsByObject,
+			stringPropsByObject
+		)
 		return
 	}
 
-	// 4. Object literal `"..."` spreads in definition-parsing calls
+	// 4. Object literal `"..."` spreads & string-syntax structural generics in definition-parsing calls
 	if (hasArkKind(result, "scope")) {
 		if (args.length > 0 && isPlainContainer(args[0])) {
-			recordSpreadDrops(
-				Object.values(args[0] as Record<PropertyKey, unknown>),
+			recordObjectContainerDrops(
+				args[0] as Record<PropertyKey, unknown>,
 				result,
 				node,
 				module,
 				site,
 				spreadsByObject,
+				stringPropsByObject,
 				true
 			)
 		}
@@ -300,13 +384,14 @@ export const recordDroppedNarrows = ({
 	if (hasArkKind(result, "module")) {
 		if (args.length > 0 && isPlainContainer(args[0])) {
 			const scope = scopeOfModule(result)
-			recordSpreadDrops(
-				Object.values(args[0] as Record<PropertyKey, unknown>),
+			recordObjectContainerDrops(
+				args[0] as Record<PropertyKey, unknown>,
 				scope,
 				node,
 				module,
 				site,
 				spreadsByObject,
+				stringPropsByObject,
 				scope !== undefined
 			)
 		}
@@ -314,32 +399,41 @@ export const recordDroppedNarrows = ({
 	}
 
 	if (hasArkKind(result, "generic")) {
-		recordSpreadDrops(
+		recordDefinitionDrops(
 			[result.bodyDef],
 			result.$,
 			node,
 			module,
 			site,
 			spreadsByObject,
-			true
+			stringPropsByObject,
+			true,
+			result.names.length ? new Set(result.names) : undefined
 		)
 		return
 	}
 
 	if (
 		hasArkKind(result, "root") &&
-		(typeof memberName !== "string" ||
-			!nonDefinitionParserMembers.has(memberName))
+		(parserMember === undefined ||
+			!nonDefinitionParserMembers.has(parserMember))
 	) {
 		const defs =
 			(
 				args.length > 1 &&
-				(typeof memberName !== "string" ||
-					!naryDefinitionMembers.has(memberName))
+				(parserMember === undefined || !naryDefinitionMembers.has(parserMember))
 			) ?
 				[args]
 			:	args
-		recordSpreadDrops(defs, result.$, node, module, site, spreadsByObject)
+		recordDefinitionDrops(
+			defs,
+			result.$,
+			node,
+			module,
+			site,
+			spreadsByObject,
+			stringPropsByObject
+		)
 	}
 }
 
@@ -361,65 +455,193 @@ const scopeOfModule = (mod: object): BaseScope | undefined => {
 	}
 }
 
-const recordSpreadDrops = (
+const recordObjectContainerDrops = (
+	container: Record<PropertyKey, unknown>,
+	scope: BaseScope | undefined,
+	fallbackNode: Node,
+	fallbackModule: SourceModule,
+	site: SiteState,
+	spreadsByObject: WeakMap<object, SpreadSource>,
+	stringPropsByObject: WeakMap<object, Map<PropertyKey, SpreadSource>>,
+	deferScopeLookups: boolean
+): void => {
+	const propSources = stringPropsByObject.get(container)
+	const seen = new Set<unknown>()
+	for (const k of Reflect.ownKeys(container)) {
+		const val = container[k]
+		const propSource = propSources?.get(k)
+		const shadowed = genericParamNamesOfKey(k)
+		if (typeof val === "string" && val.includes("<") && scope) {
+			recordStringGenericDrop(
+				val,
+				scope,
+				propSource?.property ?? fallbackNode,
+				propSource?.module ?? fallbackModule,
+				site,
+				deferScopeLookups,
+				shadowed
+			)
+			continue
+		}
+		walkDefinition(
+			val,
+			(obj, spreadVal) =>
+				recordSpreadDrop(
+					obj,
+					spreadVal,
+					scope,
+					fallbackNode,
+					fallbackModule,
+					site,
+					spreadsByObject,
+					deferScopeLookups,
+					shadowed
+				),
+			(expr, source) => {
+				if (scope) {
+					recordStringGenericDrop(
+						expr,
+						scope,
+						source?.property ?? fallbackNode,
+						source?.module ?? fallbackModule,
+						site,
+						deferScopeLookups,
+						shadowed
+					)
+				}
+			},
+			stringPropsByObject,
+			seen,
+			propSource
+		)
+	}
+}
+
+const recordDefinitionDrops = (
 	defs: unknown[],
 	scope: BaseScope | undefined,
 	fallbackNode: Node,
 	fallbackModule: SourceModule,
 	site: SiteState,
 	spreadsByObject: WeakMap<object, SpreadSource>,
-	deferScopeLookups = false
+	stringPropsByObject: WeakMap<object, Map<PropertyKey, SpreadSource>>,
+	deferScopeLookups = false,
+	shadowed?: ReadonlySet<string>
 ): void => {
 	const seen = new Set<unknown>()
 	for (const def of defs) {
-		walkDefinitionForSpreads(
+		walkDefinition(
 			def,
-			(obj, spreadVal) => {
-				const source = spreadsByObject.get(obj)
-				const dropNode = source?.property ?? fallbackNode
-				const dropModule = source?.module ?? fallbackModule
-				const operand: Node | string =
-					source?.valueNode ??
-					(typeof spreadVal === "string" ? spreadVal : fallbackNode)
-				if (hasArkKind(spreadVal, "root")) {
-					if (spreadDropsUserPredicate(spreadVal)) {
-						site.droppedNarrows.push({
-							op: '"..."',
-							node: dropNode,
-							operand,
-							module: dropModule
-						})
-					}
-					return
-				}
-				if (
-					scope &&
-					(typeof spreadVal === "string" || Array.isArray(spreadVal))
-				) {
-					if (deferScopeLookups) {
-						site.droppedNarrows.push({
-							op: '"..."',
-							node: dropNode,
-							operand,
-							module: dropModule,
-							pending: { scope, def: spreadVal }
-						})
-					} else if (
-						defDropsUserPredicate(spreadVal, scope, undefined, {
-							spreadOnly: true
-						})
-					) {
-						site.droppedNarrows.push({
-							op: '"..."',
-							node: dropNode,
-							operand,
-							module: dropModule
-						})
-					}
+			(obj, spreadVal) =>
+				recordSpreadDrop(
+					obj,
+					spreadVal,
+					scope,
+					fallbackNode,
+					fallbackModule,
+					site,
+					spreadsByObject,
+					deferScopeLookups,
+					shadowed
+				),
+			(expr, source) => {
+				if (scope) {
+					recordStringGenericDrop(
+						expr,
+						scope,
+						source?.property ?? fallbackNode,
+						source?.module ?? fallbackModule,
+						site,
+						deferScopeLookups,
+						shadowed
+					)
 				}
 			},
+			stringPropsByObject,
 			seen
 		)
+	}
+}
+
+const recordSpreadDrop = (
+	obj: Record<PropertyKey, unknown>,
+	spreadVal: unknown,
+	scope: BaseScope | undefined,
+	fallbackNode: Node,
+	fallbackModule: SourceModule,
+	site: SiteState,
+	spreadsByObject: WeakMap<object, SpreadSource>,
+	deferScopeLookups: boolean,
+	shadowed?: ReadonlySet<string>
+): void => {
+	const source = spreadsByObject.get(obj)
+	const dropNode = source?.property ?? fallbackNode
+	const dropModule = source?.module ?? fallbackModule
+	const operand: Node | string =
+		source?.valueNode ??
+		(typeof spreadVal === "string" ? spreadVal : fallbackNode)
+	if (hasArkKind(spreadVal, "root")) {
+		if (spreadDropsUserPredicate(spreadVal)) {
+			site.droppedNarrows.push({
+				op: '"..."',
+				node: dropNode,
+				operand,
+				module: dropModule
+			})
+		}
+		return
+	}
+	if (scope && (typeof spreadVal === "string" || Array.isArray(spreadVal))) {
+		if (deferScopeLookups) {
+			site.droppedNarrows.push({
+				op: '"..."',
+				node: dropNode,
+				operand,
+				module: dropModule,
+				pending: { scope, def: spreadVal, shadowed }
+			})
+		} else if (
+			defDropsUserPredicate(spreadVal, scope, undefined, {
+				spreadOnly: true,
+				shadowed
+			})
+		) {
+			site.droppedNarrows.push({
+				op: '"..."',
+				node: dropNode,
+				operand,
+				module: dropModule
+			})
+		}
+	}
+}
+
+const recordStringGenericDrop = (
+	expr: string,
+	scope: BaseScope,
+	dropNode: Node,
+	dropModule: SourceModule,
+	site: SiteState,
+	deferScopeLookups: boolean,
+	shadowed?: ReadonlySet<string>
+): void => {
+	if (deferScopeLookups) {
+		site.droppedNarrows.push({
+			op: ".partial()",
+			node: dropNode,
+			operand: expr,
+			module: dropModule,
+			pendingString: { scope, expr, shadowed }
+		})
+		return
+	}
+	for (const found of checkStringGenericDrops(expr, scope, shadowed)) {
+		site.droppedNarrows.push({
+			op: found.op,
+			node: dropNode,
+			operand: found.operand,
+			module: dropModule
+		})
 	}
 }
 
@@ -431,26 +653,35 @@ const defDropsUserPredicate = (
 	after?: BaseRoot,
 	{
 		spreadOnly = false,
-		seen = new Set<unknown>()
-	}: { spreadOnly?: boolean; seen?: Set<unknown> } = {}
+		inIntersection = false,
+		seen = new Set<unknown>(),
+		shadowed
+	}: {
+		spreadOnly?: boolean
+		inIntersection?: boolean
+		seen?: Set<unknown>
+		shadowed?: ReadonlySet<string> | undefined
+	} = {}
 ): boolean => {
 	if (hasArkKind(def, "root")) {
 		return spreadOnly ?
 				spreadDropsUserPredicate(def)
-			:	dropsUserPredicate(def, after)
+			:	dropsUserPredicate(def, after, inIntersection)
 	}
 	if (typeof def === "string") {
+		if (shadowed?.has(def)) return false
 		if (seen.has(def)) return false
 		seen.add(def)
 		const resolved = scope.res[def]
 		if (hasArkKind(resolved, "root")) {
 			return spreadOnly ?
 					spreadDropsUserPredicate(resolved)
-				:	dropsUserPredicate(resolved, after)
+				:	dropsUserPredicate(resolved, after, inIntersection)
 		}
 		if (hasOwn(scope.aliases, def)) {
 			return defDropsUserPredicate(scope.aliases[def], scope, after, {
 				spreadOnly,
+				inIntersection,
 				seen
 			})
 		}
@@ -472,34 +703,68 @@ const defDropsUserPredicate = (
 				)
 			)
 				return true
-			return defDropsUserPredicate(def[0], scope, after, { spreadOnly, seen })
+			return defDropsUserPredicate(def[0], scope, after, {
+				spreadOnly,
+				inIntersection,
+				seen
+			})
 		}
 		// meta tuple: [base, "@", meta]
-		if (def.length === 3 && def[1] === "@")
-			return defDropsUserPredicate(def[0], scope, after, { spreadOnly, seen })
+		if (def.length === 3 && def[1] === "@") {
+			return defDropsUserPredicate(def[0], scope, after, {
+				spreadOnly,
+				inIntersection,
+				seen
+			})
+		}
 		// tuple intersection: [lhs, "&", rhs]
 		if (def.length === 3 && def[1] === "&") {
+			if (spreadOnly && !isSpreadableObjectDef(def, scope)) return false
+			const nextInIntersection = inIntersection || (!spreadOnly && !!after)
 			return (
-				defDropsUserPredicate(def[0], scope, after, { spreadOnly, seen }) ||
-				defDropsUserPredicate(def[2], scope, after, { spreadOnly, seen })
+				defDropsUserPredicate(def[0], scope, after, {
+					spreadOnly,
+					inIntersection: nextInIntersection,
+					seen: new Set(seen)
+				}) ||
+				defDropsUserPredicate(def[2], scope, after, {
+					spreadOnly,
+					inIntersection: nextInIntersection,
+					seen: new Set(seen)
+				})
 			)
 		}
 		// tuple union: [lhs, "|", rhs] (not spreadable by `"..."`, valid for `.merge()` / generics)
 		if (!spreadOnly && def.length === 3 && def[1] === "|") {
 			return (
-				defDropsUserPredicate(def[0], scope, after, { spreadOnly, seen }) ||
-				defDropsUserPredicate(def[2], scope, after, { spreadOnly, seen })
+				defDropsUserPredicate(def[0], scope, after, {
+					spreadOnly,
+					inIntersection,
+					seen: new Set(seen)
+				}) ||
+				defDropsUserPredicate(def[2], scope, after, {
+					spreadOnly,
+					inIntersection,
+					seen: new Set(seen)
+				})
 			)
 		}
 	}
 	return false
 }
 
-const walkDefinitionForSpreads = (
+const walkDefinition = (
 	def: unknown,
-	visit: (obj: Record<PropertyKey, unknown>, spreadVal: unknown) => void,
-	seen: Set<unknown>
+	visitSpread: (obj: Record<PropertyKey, unknown>, spreadVal: unknown) => void,
+	visitString: (expr: string, source?: SpreadSource) => void,
+	stringPropsByObject: WeakMap<object, Map<PropertyKey, SpreadSource>>,
+	seen: Set<unknown>,
+	propSource?: SpreadSource
 ): void => {
+	if (typeof def === "string") {
+		if (def.includes("<")) visitString(def, propSource)
+		return
+	}
 	if (!def || typeof def !== "object" || seen.has(def)) return
 	if (
 		hasArkKind(def, "root") ||
@@ -514,25 +779,478 @@ const walkDefinitionForSpreads = (
 	if (Array.isArray(def)) {
 		// [def, "=", defaultValue] -> defaultValue is data, not a definition
 		if (def.length === 3 && def[1] === "=") {
-			walkDefinitionForSpreads(def[0], visit, seen)
+			walkDefinition(
+				def[0],
+				visitSpread,
+				visitString,
+				stringPropsByObject,
+				seen,
+				propSource
+			)
 			return
 		}
 		if (def[0] === "===" || def[0] === "instanceof") return
 		if (def.length === 2 && def[1] === "@") return
 		if (def.length === 3 && def[1] === "@") {
-			walkDefinitionForSpreads(def[0], visit, seen)
+			walkDefinition(
+				def[0],
+				visitSpread,
+				visitString,
+				stringPropsByObject,
+				seen,
+				propSource
+			)
 			return
 		}
-		for (const item of def) walkDefinitionForSpreads(item, visit, seen)
+		for (const item of def) {
+			walkDefinition(
+				item,
+				visitSpread,
+				visitString,
+				stringPropsByObject,
+				seen,
+				propSource
+			)
+		}
 		return
 	}
 	if (!isPlainContainer(def)) return
 	const obj = def as Record<PropertyKey, unknown>
-	if (hasOwn(obj, "...")) visit(obj, obj["..."])
+	const propSources = stringPropsByObject.get(obj)
+	if (hasOwn(obj, "...")) visitSpread(obj, obj["..."])
 	for (const k of Reflect.ownKeys(obj)) {
 		if (k === "@" || k === "+") continue
-		walkDefinitionForSpreads(obj[k], visit, seen)
+		walkDefinition(
+			obj[k],
+			visitSpread,
+			visitString,
+			stringPropsByObject,
+			seen,
+			propSources?.get(k)
+		)
 	}
+}
+
+// --- string-syntax structural generic detection ---
+
+interface StringGenericCall {
+	name: string
+	args: string[]
+}
+
+const isIdentStart = (ch: string): boolean => /[#$A-Z_a-z]/.test(ch)
+const isIdentPart = (ch: string): boolean => /[\w#$.]/.test(ch)
+
+// skip `'...'`, `"..."`, or `/.../` literal starting at `index`, returning index after closing delimiter
+const skipQuotedOrRegex = (str: string, index: number): number => {
+	const quote = str[index]
+	if (quote === "'" || quote === '"') {
+		let i = index + 1
+		while (i < str.length) {
+			if (str[i] === "\\") {
+				i += 2
+				continue
+			}
+			if (str[i] === quote) return i + 1
+			i++
+		}
+		return str.length
+	}
+	if (quote === "/") {
+		let i = index + 1
+		let inClass = false
+		while (i < str.length) {
+			if (str[i] === "\\") {
+				i += 2
+				continue
+			}
+			if (str[i] === "[") inClass = true
+			else if (str[i] === "]") inClass = false
+			else if (str[i] === "/" && !inClass) return i + 1
+			i++
+		}
+		return str.length
+	}
+	return index + 1
+}
+
+// parse `<arg0, arg1, ...>` starting at `ltIndex` (where `str[ltIndex] === "<"`)
+const parseAngleArgs = (
+	str: string,
+	ltIndex: number
+): { args: string[]; end: number } | undefined => {
+	const args: string[] = []
+	let i = ltIndex + 1
+	let argStart = i
+	let angleDepth = 1
+	let parenDepth = 0
+	while (i < str.length) {
+		const ch = str[i]
+		if (ch === "'" || ch === '"' || ch === "/") {
+			i = skipQuotedOrRegex(str, i)
+			continue
+		}
+		if (ch === "(") {
+			parenDepth++
+			i++
+			continue
+		}
+		if (ch === ")") {
+			if (parenDepth > 0) parenDepth--
+			i++
+			continue
+		}
+		if (ch === "<") {
+			if (str[i + 1] === "=") {
+				i += 2
+				continue
+			}
+			angleDepth++
+			i++
+			continue
+		}
+		if (ch === ">") {
+			if (str[i + 1] === "=") {
+				i += 2
+				continue
+			}
+			angleDepth--
+			if (angleDepth === 0) {
+				args.push(str.slice(argStart, i).trim())
+				return { args, end: i + 1 }
+			}
+			i++
+			continue
+		}
+		if (ch === "," && angleDepth === 1 && parenDepth === 0) {
+			args.push(str.slice(argStart, i).trim())
+			argStart = i + 1
+		}
+		i++
+	}
+	return undefined
+}
+
+// find every generic instantiation in a string expression (innermost args scanned too)
+const scanStringGenerics = (str: string): StringGenericCall[] => {
+	const found: StringGenericCall[] = []
+	const scan = (s: string) => {
+		let i = 0
+		while (i < s.length) {
+			const ch = s[i]
+			if (ch === "'" || ch === '"' || ch === "/") {
+				i = skipQuotedOrRegex(s, i)
+				continue
+			}
+			if (isIdentStart(ch)) {
+				const start = i
+				i++
+				while (i < s.length && isIdentPart(s[i])) i++
+				const name = s.slice(start, i)
+				let j = i
+				while (j < s.length && /\s/.test(s[j])) j++
+				if (s[j] === "<" && s[j + 1] !== "=") {
+					const parsed = parseAngleArgs(s, j)
+					if (parsed) {
+						for (const arg of parsed.args) if (arg.includes("<")) scan(arg)
+
+						found.push({ name, args: parsed.args })
+						i = parsed.end
+						continue
+					}
+				}
+				continue
+			}
+			i++
+		}
+	}
+	scan(str)
+	return found
+}
+
+// extract parameter names from a scope generic key like `"MyPartial<t, k extends string>"`
+const genericParamNamesOfKey = (key: PropertyKey): Set<string> | undefined => {
+	if (typeof key !== "string" || !key.includes("<")) return undefined
+	const lt = key.indexOf("<")
+	const parsed = parseAngleArgs(key, lt)
+	if (!parsed) return undefined
+	const names = new Set<string>()
+	for (const raw of parsed.args) {
+		const match = /^([#$A-Z_a-z][\w#$]*)/.exec(raw)
+		if (match) names.add(match[1])
+	}
+	return names.size ? names : undefined
+}
+
+// non-mutating lookup of a name (including private `#name` or dotted `mod.name`) in `scope`
+const lookupInScope = (
+	name: string,
+	scope: BaseScope,
+	shadowed?: ReadonlySet<string>
+): unknown => {
+	const topName = name.includes(".") ? name.slice(0, name.indexOf(".")) : name
+	if (shadowed?.has(topName)) return undefined
+	const direct = (key: string): unknown => {
+		if (hasOwn(scope.res, key)) {
+			const resolved = scope.res[key]
+			if (resolved !== undefined && !hasArkKind(resolved, "context"))
+				return resolved
+		}
+		if (hasOwn(scope.res, `#${key}`)) {
+			const resolved = scope.res[`#${key}`]
+			if (resolved !== undefined && !hasArkKind(resolved, "context"))
+				return resolved
+		}
+		if (hasOwn(scope.aliases, key)) return scope.aliases[key]
+		if (hasOwn(scope.aliases, `#${key}`)) return scope.aliases[`#${key}`]
+		if (hasOwn(scope.ambient, key)) return scope.ambient[key]
+		return undefined
+	}
+	const found = direct(name)
+	if (found !== undefined) return found
+	if (!name.includes(".")) return undefined
+	const parts = name.split(".")
+	let cur = direct(parts[0])
+	for (let i = 1; i < parts.length; i++) {
+		if (!cur || typeof cur !== "object") return undefined
+		const rec = cur as Record<string, unknown>
+		if (!hasOwn(rec, parts[i])) return undefined
+		cur = rec[parts[i]]
+	}
+	return cur
+}
+
+// strip matching outer parentheses `(expr)`
+const stripOuterParens = (expr: string): string => {
+	let s = expr.trim()
+	while (s.startsWith("(") && s.endsWith(")")) {
+		let depth = 0
+		let wrapsWhole = true
+		for (let i = 0; i < s.length; i++) {
+			const ch = s[i]
+			if (ch === "'" || ch === '"' || ch === "/") {
+				i = skipQuotedOrRegex(s, i) - 1
+				continue
+			}
+			if (ch === "(") depth++
+			else if (ch === ")") {
+				depth--
+				if (depth === 0 && i < s.length - 1) {
+					wrapsWhole = false
+					break
+				}
+			}
+		}
+		if (!wrapsWhole) break
+		s = s.slice(1, -1).trim()
+	}
+	return s
+}
+
+// split `expr` on a top-level binary operator (`|` or `&`)
+const splitTopLevelOp = (expr: string, op: "|" | "&"): string[] | undefined => {
+	const parts: string[] = []
+	let start = 0
+	let parenDepth = 0
+	let angleDepth = 0
+	for (let i = 0; i < expr.length; i++) {
+		const ch = expr[i]
+		if (ch === "'" || ch === '"' || ch === "/") {
+			i = skipQuotedOrRegex(expr, i) - 1
+			continue
+		}
+		if (ch === "(") parenDepth++
+		else if (ch === ")") parenDepth = Math.max(0, parenDepth - 1)
+		else if (ch === "<" && expr[i + 1] !== "=") angleDepth++
+		else if (ch === ">" && expr[i + 1] !== "=")
+			angleDepth = Math.max(0, angleDepth - 1)
+		else if (ch === op && parenDepth === 0 && angleDepth === 0) {
+			parts.push(expr.slice(start, i).trim())
+			start = i + 1
+		}
+	}
+	if (!parts.length) return undefined
+	parts.push(expr.slice(start).trim())
+	return parts
+}
+
+const unescapeStringLiteral = (raw: string): string | undefined => {
+	if (raw.length < 2) return undefined
+	const quote = raw[0]
+	if ((quote !== "'" && quote !== '"') || raw[raw.length - 1] !== quote)
+		return undefined
+	// ensure closing quote is actually the end of the literal (not `'a' | 'b'`)
+	if (skipQuotedOrRegex(raw, 0) !== raw.length) return undefined
+	let out = ""
+	for (let i = 1; i < raw.length - 1; i++) {
+		if (raw[i] === "\\" && i + 1 < raw.length - 1) {
+			out += raw[i + 1]
+			i++
+		} else out += raw[i]
+	}
+	return out
+}
+
+const applyStructuralOp = (
+	op: DroppedNarrowOp,
+	argRoots: BaseRoot[]
+): BaseRoot | undefined => {
+	try {
+		if (op === ".partial()") return argRoots[0]?.partial()
+		if (op === ".required()") return argRoots[0]?.required()
+		if (op === ".pick()") return argRoots[0]?.pick(argRoots[1] as never)
+		if (op === ".omit()") return argRoots[0]?.omit(argRoots[1] as never)
+		if (op === ".merge()") return argRoots[0]?.merge(argRoots[1])
+	} catch {
+		return undefined
+	}
+}
+
+const evalDefInScope = (
+	def: unknown,
+	scope: BaseScope,
+	seen: Set<unknown>
+): BaseRoot | undefined => {
+	try {
+		if (hasArkKind(def, "root")) return def
+		if (typeof def === "string") return evalStringTypeInScope(def, scope, seen)
+		if (seen.has(def)) return undefined
+		if (Array.isArray(def)) {
+			seen.add(def)
+			if (def.length === 3 && def[1] === ":") {
+				const base = evalDefInScope(def[0], scope, seen)
+				if (base && typeof def[2] === "function")
+					return base.narrow(def[2] as never)
+				return base
+			}
+			if (def.length === 3 && def[1] === "@")
+				return evalDefInScope(def[0], scope, seen)
+			if (def.length === 3 && def[1] === "&") {
+				const l = evalDefInScope(def[0], scope, new Set(seen))
+				const r = evalDefInScope(def[2], scope, new Set(seen))
+				return l && r ? l.and(r) : undefined
+			}
+			if (def.length === 3 && def[1] === "|") {
+				const l = evalDefInScope(def[0], scope, new Set(seen))
+				const r = evalDefInScope(def[2], scope, new Set(seen))
+				return l && r ? l.or(r) : undefined
+			}
+			return undefined
+		}
+		if (isPlainContainer(def)) return type.raw(def) as unknown as BaseRoot
+	} catch {
+		return undefined
+	}
+	return undefined
+}
+
+const evalStringTypeInScope = (
+	rawExpr: string,
+	scope: BaseScope,
+	seen = new Set<unknown>(),
+	shadowed?: ReadonlySet<string>
+): BaseRoot | undefined => {
+	try {
+		const expr = stripOuterParens(rawExpr)
+		if (!expr) return undefined
+		const unionParts = splitTopLevelOp(expr, "|")
+		if (unionParts) {
+			const roots: BaseRoot[] = []
+			for (const part of unionParts) {
+				const r = evalStringTypeInScope(part, scope, new Set(seen), shadowed)
+				if (!r) return undefined
+				roots.push(r)
+			}
+			return roots.reduce((a, b) => a.or(b))
+		}
+		const interParts = splitTopLevelOp(expr, "&")
+		if (interParts) {
+			const roots: BaseRoot[] = []
+			for (const part of interParts) {
+				const r = evalStringTypeInScope(part, scope, new Set(seen), shadowed)
+				if (!r) return undefined
+				roots.push(r)
+			}
+			return roots.reduce((a, b) => a.and(b))
+		}
+		if (expr.endsWith("[]")) {
+			const inner = evalStringTypeInScope(
+				expr.slice(0, -2),
+				scope,
+				seen,
+				shadowed
+			)
+			return inner?.array()
+		}
+		const lit = unescapeStringLiteral(expr)
+		if (lit !== undefined) return type.unit(lit) as unknown as BaseRoot
+		// single generic instantiation spanning the whole expression
+		const genMatch = /^([#$A-Z_a-z][\w#$.]*)\s*</.exec(expr)
+		if (genMatch) {
+			const ltIndex = genMatch[0].length - 1
+			const parsed = parseAngleArgs(expr, ltIndex)
+			if (parsed && parsed.end === expr.length) {
+				const target = lookupInScope(genMatch[1], scope, shadowed)
+				if (hasArkKind(target, "generic")) {
+					const argRoots: BaseRoot[] = []
+					for (const arg of parsed.args) {
+						const r = evalStringTypeInScope(arg, scope, new Set(seen), shadowed)
+						if (!r) return undefined
+						argRoots.push(r)
+					}
+					const structural = structuralGenericOf(target)
+					if (structural) return applyStructuralOp(structural[0], argRoots)
+					return target(...argRoots)
+				}
+				return undefined
+			}
+		}
+		// simple or dotted alias / keyword
+		if (/^[#$A-Z_a-z][\w#$.]*$/.test(expr)) {
+			if (seen.has(expr)) return undefined
+			seen.add(expr)
+			const resolved = lookupInScope(expr, scope, shadowed)
+			if (hasArkKind(resolved, "root")) return resolved
+			if (resolved !== undefined) return evalDefInScope(resolved, scope, seen)
+		}
+	} catch {
+		return undefined
+	}
+	return undefined
+}
+
+const checkStringGenericDrops = (
+	expr: string,
+	scope: BaseScope,
+	shadowed?: ReadonlySet<string>
+): { op: DroppedNarrowOp; operand: string }[] => {
+	const drops: { op: DroppedNarrowOp; operand: string }[] = []
+	for (const call of scanStringGenerics(expr)) {
+		const target = lookupInScope(call.name, scope, shadowed)
+		if (!hasArkKind(target, "generic")) continue
+		const info = structuralGenericOf(target)
+		if (!info) continue
+		const [op, argIndices] = info
+		if (call.args.length !== target.params.length) continue
+		const argRoots: BaseRoot[] = []
+		let allResolved = true
+		for (const arg of call.args) {
+			const r = evalStringTypeInScope(arg, scope, new Set(), shadowed)
+			if (!r) {
+				allResolved = false
+				break
+			}
+			argRoots.push(r)
+		}
+		if (!allResolved) continue
+		const after = applyStructuralOp(op, argRoots)
+		if (!after) continue
+		for (const idx of argIndices) {
+			if (dropsUserPredicate(argRoots[idx], after))
+				drops.push({ op, operand: call.args[idx] })
+		}
+	}
+	return drops
 }
 
 export const isDropNarrowSuppressed = (
@@ -541,13 +1259,24 @@ export const isDropNarrowSuppressed = (
 	operatorNode?: Node
 ): boolean => {
 	const { nodes, leadingLines, trailingLines } = module.allowDropNarrows
-	if (nodes.some(mark => contains(mark, span))) return true
+	if (
+		nodes.some(
+			mark =>
+				contains(mark, span) || (!!operatorNode && contains(mark, operatorNode))
+		)
+	)
+		return true
+	const [endLine] = module.lineAndColumnOf(Math.max(span.start, span.end - 1))
 	if (operatorNode) {
 		const [opLine] = module.lineAndColumnOf(operatorNode.start)
-		return trailingLines.has(opLine) || leadingLines.has(opLine)
+		return (
+			trailingLines.has(opLine) ||
+			leadingLines.has(opLine) ||
+			trailingLines.has(endLine)
+		)
 	}
 	const [spanLine] = module.lineAndColumnOf(span.start)
-	return trailingLines.has(spanLine)
+	return trailingLines.has(spanLine) || trailingLines.has(endLine)
 }
 
 const operandLabelOf = (
@@ -579,29 +1308,31 @@ export const resolveDroppedNarrowDiagnostics = (
 	const result: Diagnostic[] = []
 	const siteNode = state.node
 	const siteFn = enclosingFunctionOf(siteNode)
-	for (const drop of state.droppedNarrows) {
-		if (
-			drop.pending &&
-			!defDropsUserPredicate(drop.pending.def, drop.pending.scope, undefined, {
-				spreadOnly: true
-			})
-		)
-			continue
+	const [siteEndLine] = module.lineAndColumnOf(
+		Math.max(siteNode.start, siteNode.end - 1)
+	)
+	const emitDrop = (
+		drop: DroppedNarrow,
+		op: DroppedNarrowOp,
+		operand: Node | string
+	) => {
 		// report in the site's module when the operation happened inside a helper
 		// function or another module, so `isQuiet` and ESLint surface it at the call
+		const dropInsideSite = contains(siteNode, drop.node)
 		const inSiteScope =
 			drop.module === module &&
-			(contains(siteNode, drop.node) ||
-				enclosingFunctionOf(drop.node) === siteFn)
+			(dropInsideSite || enclosingFunctionOf(drop.node) === siteFn)
 		if (
 			isDropNarrowSuppressed(drop.module, drop.node, drop.operatorNode) ||
 			(inSiteScope ?
-				module.allowDropNarrows.nodes.some(mark => contains(mark, siteNode))
+				module.allowDropNarrows.nodes.some(mark => contains(mark, siteNode)) ||
+				(!dropInsideSite &&
+					module.allowDropNarrows.trailingLines.has(siteEndLine))
 			:	isDropNarrowSuppressed(module, siteNode))
 		)
-			continue
+			return
 		const targetSpan = inSiteScope ? drop.node : siteNode
-		const label = operandLabelOf(drop.operand, drop.module)
+		const label = operandLabelOf(operand, drop.module)
 		const reasons =
 			inSiteScope ?
 				[]
@@ -613,12 +1344,32 @@ export const resolveDroppedNarrowDiagnostics = (
 				module,
 				targetSpan,
 				"dropped-narrow",
-				writeDroppedNarrowMessage(label, drop.op),
+				writeDroppedNarrowMessage(label, op),
 				reasons,
 				undefined,
 				"warning"
 			)
 		)
+	}
+	for (const drop of state.droppedNarrows) {
+		if (drop.pendingString) {
+			for (const found of checkStringGenericDrops(
+				drop.pendingString.expr,
+				drop.pendingString.scope,
+				drop.pendingString.shadowed
+			))
+				emitDrop(drop, found.op, found.operand)
+			continue
+		}
+		if (
+			drop.pending &&
+			!defDropsUserPredicate(drop.pending.def, drop.pending.scope, undefined, {
+				spreadOnly: true,
+				shadowed: drop.pending.shadowed
+			})
+		)
+			continue
+		emitDrop(drop, drop.op, drop.operand)
 	}
 	return result
 }
