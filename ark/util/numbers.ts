@@ -1,4 +1,4 @@
-import { throwParseError } from "./errors.ts"
+import { throwError, throwParseError } from "./errors.ts"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
@@ -259,7 +259,7 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
  * Returns the next or previous representable floating-point number after the given input.
  *
  * @param {"+" | "-"} [direction="+"] - The direction to find the nearest float. "+" for the next float, "-" for the previous float.
- * @throws {Error} If the input is not a finite number.
+ * @throws {RangeError} If no float is in that direction: from NaN, or past Infinity or -Infinity.
  *
  * @example
  * console.log(nearestFloat(0)); // Smallest positive number
@@ -271,8 +271,18 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
  * // JS can represent in a numeric value
  * console.log(nearestFloat(5555555555555555)); // 5555555555555556
  * console.log(nearestFloat(5555555555555555, "-")); // 5555555555555554
+ * // an infinity's neighbor is the largest finite float
+ * console.log(nearestFloat(-Infinity)); // -1.7976931348623157e+308
  */
 export const nearestFloat = (n: number, direction: "+" | "-" = "+"): number => {
+	// stepping the bits of NaN or past an infinity writes NaN
+	if (Number.isNaN(n) || n === (direction === "+" ? Infinity : -Infinity)) {
+		return throwError(
+			`No float is ${direction === "+" ? "after" : "before"} ${n}`,
+			RangeError
+		)
+	}
+
 	const buffer = new ArrayBuffer(8)
 	const f64 = new Float64Array(buffer)
 	const u32 = new Uint32Array(buffer)

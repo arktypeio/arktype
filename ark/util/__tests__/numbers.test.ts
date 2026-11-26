@@ -29,6 +29,24 @@ contextualize(() => {
 			attest(nearestFloat(-5555555555555555)).snap(-5555555555555554)
 			attest(nearestFloat(-5555555555555555, "-")).equals(-5555555555555556)
 		})
+
+		it("an infinity toward the finite floats", () => {
+			attest(nearestFloat(-Infinity)).equals(-Number.MAX_VALUE)
+			attest(nearestFloat(Infinity, "-")).equals(Number.MAX_VALUE)
+			attest(nearestFloat(Number.MAX_VALUE)).equals(Infinity)
+		})
+
+		it("throws where no float is in that direction", () => {
+			attest(() => nearestFloat(Infinity)).throws.snap(
+				"RangeError: No float is after Infinity"
+			)
+			attest(() => nearestFloat(-Infinity, "-")).throws.snap(
+				"RangeError: No float is before -Infinity"
+			)
+			attest(() => nearestFloat(Number.NaN)).throws.snap(
+				"RangeError: No float is after NaN"
+			)
+		})
 	})
 
 	describe("number matchers", () => {
