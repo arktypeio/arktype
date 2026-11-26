@@ -195,6 +195,15 @@ contextualize(() => {
 				"<a number>, <a string>, false, or true"
 			)
 		})
+
+		it("describes an anonymous class without trailing spaces", () => {
+			const Anon = (() => class {})()
+			const T = type.instanceOf(Anon)
+			const error = (T({}) as ArkErrors).issues[0]
+			attest(error.expected).snap("an instance of an anonymous class")
+			attest(enExpected(error)).equals(error.expected)
+			attest(error.message).snap("must be an instance of an anonymous class")
+		})
 	})
 
 	describe("writers", () => {

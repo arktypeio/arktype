@@ -66,7 +66,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				const builtinName = getBuiltinNameOfConstructor(node.proto)
 				return builtinName ?
 						objectKindDescriptions[builtinName]
-					:	`an instance of ${functionNameOf(node.proto)}`
+					:	`an instance of ${functionNameOf(node.proto) || "an anonymous class"}`
 			}
 		}
 	})

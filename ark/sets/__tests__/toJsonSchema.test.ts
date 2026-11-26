@@ -694,4 +694,93 @@ contextualize(() => {
 			})
 		})
 	})
+
+	describe("non-finite numeric bounds", () => {
+		it("never emits ±Infinity in JSON Schema or Standard JSON Schema", () => {
+			const TrivialMin = rootSchema({
+				domain: "number",
+				min: Number.NEGATIVE_INFINITY
+			})
+			const TrivialExclMin = rootSchema({
+				domain: "number",
+				min: { rule: Number.NEGATIVE_INFINITY, exclusive: true }
+			})
+			const TrivialMax = rootSchema({
+				domain: "number",
+				max: Number.POSITIVE_INFINITY
+			})
+			const TrivialExclMax = rootSchema({
+				domain: "number",
+				max: { rule: Number.POSITIVE_INFINITY, exclusive: true }
+			})
+			const TrivialNotEq = rootSchema({
+				domain: "number",
+				notEqual: [0, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]
+			})
+			const UnsatMin = rootSchema({
+				domain: "number",
+				min: Number.POSITIVE_INFINITY
+			})
+			const UnsatMax = rootSchema({
+				domain: "number",
+				max: Number.NEGATIVE_INFINITY
+			})
+
+			for (const T of [
+				TrivialMin,
+				TrivialExclMin,
+				TrivialMax,
+				TrivialExclMax
+			]) {
+				attest(toJsonSchema(T, { dialect: null })).equals({ type: "number" })
+				for (const target of [
+					"draft-2020-12",
+					"draft-07",
+					"openapi-3.0",
+					"openapi-3.1"
+				] as const) {
+					const schema = toJsonSchema(T, { target })
+					attest(JSON.stringify(schema).includes("null")).equals(false)
+				}
+				const stdIn = T["~standard"].jsonSchema.input({
+					target: "draft-2020-12"
+				})
+				const stdOut = T["~standard"].jsonSchema.output({
+					target: "draft-2020-12"
+				})
+				attest(stdIn).equals({
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "number"
+				})
+				attest(stdOut).equals(stdIn)
+				const validate = ajv2020.compile(stdIn)
+				attest(validate(0)).equals(true)
+				attest(validate(-1e100)).equals(true)
+				attest(validate("x")).equals(false)
+			}
+
+			attest(toJsonSchema(TrivialNotEq, { dialect: null })).equals({
+				type: "number",
+				not: { const: 0 }
+			})
+			attest(toJsonSchema(TrivialNotEq, { target: "openapi-3.0" })).equals({
+				type: "number",
+				not: { enum: [0] }
+			})
+
+			for (const T of [UnsatMin, UnsatMax]) {
+				attest(toJsonSchema(T, { dialect: null })).equals({ not: {} })
+				for (const target of ["draft-2020-12", "draft-07"] as const) {
+					const schema = toJsonSchema(T, { target })
+					attest(JSON.stringify(schema).includes("null")).equals(false)
+					const validate =
+						target === "draft-2020-12" ?
+							ajv2020.compile(schema)
+						:	ajv07.compile(schema)
+					attest(validate(0)).equals(false)
+					attest(validate(1e308)).equals(false)
+				}
+			}
+		})
+	})
 })

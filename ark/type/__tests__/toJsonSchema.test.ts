@@ -1222,4 +1222,34 @@ contextualize(() => {
 			'Can\'t convert "predicate" to JSON Schema'
 		)
 	})
+
+	it("omits trivial ±Infinity bounds and writes unsatisfiable ones as never", () => {
+		attest(
+			type("number")
+				.atLeast(Number.NEGATIVE_INFINITY)
+				.atMost(Number.POSITIVE_INFINITY)
+				.toJsonSchema({ dialect: null })
+		).snap({ type: "number" })
+		attest(
+			type("number")
+				.moreThan(Number.NEGATIVE_INFINITY)
+				.lessThan(10)
+				.toJsonSchema({ dialect: null })
+		).snap({ type: "number", exclusiveMaximum: 10 })
+		attest(
+			type("number")
+				.atLeast(Number.POSITIVE_INFINITY)
+				.toJsonSchema({ dialect: null })
+		).snap({ not: {} })
+		attest(
+			type("number")
+				.atMost(Number.NEGATIVE_INFINITY)
+				.toJsonSchema({ dialect: null })
+		).snap({ not: {} })
+		attest(
+			type
+				.schema({ domain: "number", notEqual: Number.POSITIVE_INFINITY })
+				.toJsonSchema({ dialect: null })
+		).snap({ type: "number" })
+	})
 })

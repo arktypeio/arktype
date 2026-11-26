@@ -1098,4 +1098,16 @@ contextualize(() => {
 
 		attest(five.expression).equals("5")
 	})
+
+	it("notEqualLength 0 schema reduces cleanly", () => {
+		const Str = type.schema({ domain: "string", notEqualLength: 0 })
+		attest(Str.expression).snap("string >= 1")
+		attest(Str.allows("")).equals(false)
+		attest(Str.allows("a")).equals(true)
+
+		const Arr = type.schema({ proto: Array, notEqualLength: 0 })
+		attest(Arr.expression).snap("Array >= 1")
+		attest(Arr.allows([])).equals(false)
+		attest(Arr.allows([1])).equals(true)
+	})
 })

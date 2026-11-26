@@ -602,4 +602,15 @@ next fehlt (muss ein Wert gemäß der Beschreibung „the next node“ sein)`
 			attest(issues.map(lineOf).join("\n")).equals(summary)
 		})
 	})
+
+	it("describes an anonymous class naturally", () => {
+		const Anon = (() => class {})()
+		const T = type.instanceOf(Anon)
+		attest((T({}) as ArkErrors).summaryIn(de)).snap(
+			"muss eine Instanz einer anonymen Klasse sein"
+		)
+		attest((type({ a: T })({}) as ArkErrors).summaryIn(de)).snap(
+			"a fehlt (muss eine Instanz einer anonymen Klasse sein)"
+		)
+	})
 })

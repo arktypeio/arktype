@@ -141,6 +141,43 @@ contextualize(() => {
 		attest(T.expression).snap("string")
 	})
 
+	it("cross-kind length reductions like notEqualLength: 0 and maxLength: 0", () => {
+		const NonEmptyString = rootSchema({ domain: "string", notEqualLength: 0 })
+		attest(NonEmptyString.expression).snap("string >= 1")
+		attest(NonEmptyString.allows("")).equals(false)
+		attest(NonEmptyString.allows("a")).equals(true)
+
+		const NonEmptyArray = rootSchema({ proto: Array, notEqualLength: 0 })
+		attest(NonEmptyArray.expression).snap("Array >= 1")
+		attest(NonEmptyArray.allows([])).equals(false)
+		attest(NonEmptyArray.allows([1])).equals(true)
+
+		const MultiExcluded = rootSchema({
+			domain: "string",
+			notEqualLength: [0, 3]
+		})
+		attest(MultiExcluded.expression).snap("string >= 1 & string != 3")
+		attest(MultiExcluded.allows("")).equals(false)
+		attest(MultiExcluded.allows("a")).equals(true)
+		attest(MultiExcluded.allows("abc")).equals(false)
+
+		const CombinedMin = rootSchema({
+			domain: "string",
+			minLength: 2,
+			notEqualLength: 0
+		})
+		attest(CombinedMin.expression).snap("string >= 2")
+
+		const EmptyString = rootSchema({ domain: "string", maxLength: 0 })
+		attest(EmptyString.expression).snap("string == 0")
+
+		attest(() =>
+			rootSchema({ domain: "string", maxLength: 0, exactLength: 5 })
+		).throws(
+			"Intersection at length of 5 and 0 results in an unsatisfiable type"
+		)
+	})
+
 	for (const [min, max] of entriesOf(boundKindPairsByLower)) {
 		describe(`${min}/${max}`, () => {
 			const basis =

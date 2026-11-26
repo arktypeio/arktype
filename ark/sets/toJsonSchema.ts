@@ -1253,7 +1253,17 @@ const writeBound = (
 	ctx: JsonSchemaContext,
 	key: "minimum" | "maximum",
 	exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum"
-): JsonSchema.Numeric => {
+): JsonSchema => {
+	if (!Number.isFinite(node.rule)) {
+		// every JSON number is finite, so >= / > -Infinity and <= / < Infinity are
+		// always satisfied, while >= / > Infinity and <= / < -Infinity never are
+		return (
+				(node.kind === "min" && node.rule === Number.NEGATIVE_INFINITY) ||
+					(node.kind === "max" && node.rule === Number.POSITIVE_INFINITY)
+			) ?
+				schema
+			:	{ not: {} }
+	}
 	if (!node.exclusive) schema[key] = node.rule
 	// openapi-3.0 marks the bound itself exclusive, with a boolean the type
 	// leaves out to fit JSONSchema7
@@ -1341,6 +1351,9 @@ const reduceJsonSchemaByKind: {
 	notEqual: (node, schema, ctx) => {
 		// a Date's is written with it
 		const rule = node.rule as number
+		// every JSON number is finite, so != ±Infinity is always satisfied
+		if (!Number.isFinite(rule)) return schema
+		if ("not" in schema && isEmptyObject(schema.not as object)) return schema
 		schema.not =
 			schema.not ?
 				{

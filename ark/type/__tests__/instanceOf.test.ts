@@ -91,6 +91,15 @@ contextualize(() => {
 			attest(Ark(a)).equals(a)
 			attest(Ark({}).toString()).snap("must be an instance of ArkClass")
 		})
+		it("anonymous class", () => {
+			const Anon = (() => class {})()
+			const T = type.instanceOf(Anon)
+			attest(T.description).snap("an instance of an anonymous class")
+			attest(T({}).toString()).snap("must be an instance of an anonymous class")
+			attest(type({ a: T })({}).toString()).snap(
+				"a must be an instance of an anonymous class (was missing)"
+			)
+		})
 		it("bidirectional checks doesn't break pipe inference", () => {
 			const T = type({
 				f: ["string", "=>", () => [] as unknown]

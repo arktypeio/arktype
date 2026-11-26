@@ -234,9 +234,11 @@ const casesOf: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 
 const describeProto = (proto: Function, locale: Locale.Resolved) => {
 	const builtinName = getBuiltinNameOfConstructor(proto)
-	return builtinName ?
-			locale.nouns[builtinName]
-		:	`eine Instanz von ${locale.verbatim(proto.name)}`
+	return (
+		builtinName ? locale.nouns[builtinName]
+		: proto.name ? `eine Instanz von ${locale.verbatim(proto.name)}`
+		: "eine Instanz einer anonymen Klasse"
+	)
 }
 
 // what was thrown is English text, shown as written
