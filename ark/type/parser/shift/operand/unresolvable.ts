@@ -80,7 +80,7 @@ export const writeUnresolvableHint = (
 	$: BaseScope,
 	args: Dict | undefined
 ): string => {
-	if (hasOwn(foreignAliases, name))
+	if ($.scopeConfig?.ambient === undefined && hasOwn(foreignAliases, name))
 		return writeDidYouMean([foreignAliases[name as keyof foreignAliases]])
 	// a malformed literal like 12px is nothing an alias was meant by
 	if (/^[\d-]/.test(name)) return ""

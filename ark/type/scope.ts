@@ -45,7 +45,9 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
+	type Fn,
 	type JsonStructure,
+	type Primitive,
 	type anyOrNever,
 	type array,
 	type inferred,
@@ -53,6 +55,7 @@ import {
 } from "@ark/util"
 import { setEngine } from "arksets/internal"
 import type { InferredMorph } from "./attributes.ts"
+import type { AmbientKey } from "./config.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
@@ -102,6 +105,7 @@ import {
 	type EnumeratedTypeParser,
 	type InstanceOfTypeParser,
 	type SchemaParser,
+	type Type,
 	type TypeParser,
 	type UnitTypeParser,
 	type ValueOfTypeParser
@@ -120,23 +124,120 @@ export type ScopeParserAttachments =
 	// map over to remove call signatures
 	Omit<ScopeParser, never>
 
-export interface ArkScopeConfig extends ArkSchemaScopeConfig {}
+export type AmbientEntry =
+	| Type<any, any>
+	| Generic<any, any, any, any>
+	| Module<any>
+	| BoundModule<any, any>
+
+export type AmbientInput =
+	| Module<any>
+	| BoundModule<any, any>
+	| { readonly [k: string]: AmbientEntry | "module" }
+
+type InvalidAmbientMessage =
+	"ambient must be a Module or a record of Types, Generics, or Modules"
+
+type writeInvalidAmbientEntryMessage<k extends string> =
+	`ambient.${k} must be a Type, Generic, or Module`
+
+type validateAmbientEntry<k, v> =
+	[v] extends [anyOrNever] ? v
+	: v extends InferredDefinition | { [arkKind]: "generic"; t: GenericAst } ? v
+	: v extends Module<infer exports> | BoundModule<infer exports, any> ?
+		Exclude<keyof v, arkKind> extends keyof exports ?
+			v
+		:	ErrorMessage<writeInvalidAmbientEntryMessage<k & string>>
+	:	ErrorMessage<writeInvalidAmbientEntryMessage<k & string>>
+
+type validateAmbientRecord<ambient> = {
+	[k in keyof ambient]: k extends arkKind ? unknown
+	:	validateAmbientEntry<k, ambient[k]>
+}
+
+type hasCustomAmbient<ambient> =
+	[ambient] extends [undefined] ? false
+	: [ambient] extends [anyOrNever] ? true
+	: unknown extends ambient ? false
+	: true
+
+type validateAmbient<ambient> =
+	[ambient] extends [undefined] ? unknown
+	: [ambient] extends [anyOrNever] ? ambient
+	: unknown extends ambient ? ambient
+	: ambient extends Module<infer exports> | BoundModule<infer exports, any> ?
+		Exclude<keyof ambient, arkKind> extends keyof exports ?
+			ambient
+		:	validateAmbientRecord<ambient>
+	: ambient extends Primitive | Fn | readonly unknown[] ?
+		ErrorMessage<InvalidAmbientMessage>
+	:	validateAmbientRecord<ambient>
+
+type normalizeAmbientEntry<v> =
+	[v] extends [anyOrNever] ? v
+	: v extends { t: infer g extends GenericAst } ? g
+	: v extends Module<infer exports> | BoundModule<infer exports, any> ?
+		Exclude<keyof v, arkKind> extends keyof exports ?
+			Submodule<exports>
+		:	never
+	: v extends { [inferred]: infer t } ? t
+	: never
+
+type normalizeAmbientRecord<ambient> = {
+	[k in Exclude<keyof ambient, arkKind>]: normalizeAmbientEntry<ambient[k]>
+} & unknown
+
+type normalizeAmbient<ambient> =
+	[ambient] extends [anyOrNever] ? ambient
+	: ambient extends Module<infer exports> | BoundModule<infer exports, any> ?
+		Exclude<keyof ambient, arkKind> extends keyof exports ?
+			exports
+		:	normalizeAmbientRecord<ambient>
+	: ambient extends Primitive | Fn | readonly unknown[] ? {}
+	: normalizeAmbientRecord<ambient>
+
+type withAmbient<$, ambient> =
+	hasCustomAmbient<ambient> extends true ?
+		$ & { readonly [k in AmbientKey]: normalizeAmbient<ambient> }
+	:	$
+
+type exportedModuleOf<$> =
+	[$] extends [{ readonly [k in AmbientKey]: unknown }] ?
+		BoundModule<{ [k in exportedNameOf<$>]: $[k] }, $>
+	:	Module<{ [k in exportedNameOf<$>]: $[k] }>
+
+type importedModuleOf<$> =
+	[$] extends [{ readonly [k in AmbientKey]: unknown }] ?
+		BoundModule<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }, $>
+	:	Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
+
+interface AmbientArgument<in out ambient> {
+	validated: validateAmbient<ambient>
+}
+
+type validateAmbientArgument<ambient> =
+	[ambient] extends [unknown] ?
+		AmbientArgument<ambient>[ambient extends unknown ? "validated" : never]
+	:	ambient
+
+export interface ArkScopeConfig<ambient = AmbientInput>
+	extends Omit<ArkSchemaScopeConfig, "ambient"> {
+	ambient?: validateAmbientArgument<ambient> | undefined
+}
 
 export interface ScopeParser {
-	<const def>(
-		def: scope.validate<def>,
-		config?: ArkScopeConfig
-	): Scope<scope.infer<def>>
+	<const def, const ambient>(
+		def: scope.validate<def, ambient>,
+		config?: ArkScopeConfig<ambient>
+	): Scope<scope.infer<def, ambient>>
 
 	define: <const def>(def: scope.validate<def>) => def
 }
 
-export type ModuleParser = <const def>(
-	def: scope.validate<def>,
-	config?: ArkScopeConfig
-) => scope.infer<def> extends infer $ ?
-	Module<{ [k in exportedNameOf<$>]: $[k] }>
-:	never
+export type ModuleParser = <const def, const ambient>(
+	def: scope.validate<def, ambient>,
+	config?: ArkScopeConfig<ambient>
+) => scope.infer<def, ambient> extends infer $ ? exportedModuleOf<$> : never
 
 export type bindThis<def> = { this: Def<def> }
 
@@ -149,30 +250,37 @@ export type UnparsedScope = "$"
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = PreparsedNodeResolution
 
-type bootstrapAliases<def> = {
-	[k in Exclude<keyof def, GenericDeclaration>]: def[k] extends (
-		PreparsedResolution
-	) ?
-		def[k] extends { t: infer g extends GenericAst } ? g
-		: def[k] extends Module<infer $> | BoundModule<infer $, any> ? Submodule<$>
-		: def[k]
-	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
-		thunkReturn extends { t: infer g extends GenericAst } ? g
-		: thunkReturn extends Module<infer $> | BoundModule<infer $, any> ?
-			Submodule<$>
-		:	thunkReturn
-	:	Def<def[k]>
-} & {
-	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
-		parseValidGenericParams<extractGenericParameters<k>, bootstrapAliases<def>>,
-		def[k],
-		UnparsedScope
-	>
-}
+type bootstrapAliases<def, ambient = unknown> = withAmbient<
+	{
+		[k in Exclude<keyof def, GenericDeclaration | noSuggest>]: def[k] extends (
+			PreparsedResolution
+		) ?
+			def[k] extends { t: infer g extends GenericAst } ? g
+			: def[k] extends Module<infer $> | BoundModule<infer $, any> ?
+				Submodule<$>
+			:	def[k]
+		: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
+			thunkReturn extends { t: infer g extends GenericAst } ? g
+			: thunkReturn extends Module<infer $> | BoundModule<infer $, any> ?
+				Submodule<$>
+			:	thunkReturn
+		:	Def<def[k]>
+	} & {
+		[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
+			parseValidGenericParams<
+				extractGenericParameters<k>,
+				bootstrapAliases<def, ambient>
+			>,
+			def[k],
+			UnparsedScope
+		>
+	},
+	ambient
+>
 
 type inferBootstrapped<$> = {
-	[name in keyof $]: $[name] extends Def<infer def> ?
-		inferDefinition<def, $, {}>
+	[name in keyof $]: name extends AmbientKey ? $[name]
+	: $[name] extends Def<infer def> ? inferDefinition<def, $, {}>
 	: // written out rather than through an alias so declarations emitted for a
 	// scope's generics name only GenericAst, which arktype exports
 	$[name] extends { t: infer g extends GenericAst } ?
@@ -223,7 +331,11 @@ export interface InternalScope {
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
-		if (!$arkTypeRegistry.typeAttachments) return
+		if (
+			!$arkTypeRegistry.typeAttachments ||
+			this.scopeConfig?.ambient !== undefined
+		)
+			return
 		return this.memo(
 			"ambientAttachments",
 			flatMorph(Object.keys($arkTypeRegistry.typeAttachments), (_, k) => [
@@ -394,7 +506,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
 	static scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
-		new InternalScope(def, config)) as never
+		new InternalScope(def, config as never)) as never
 
 	static module: ModuleParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 		InternalScope.scope(def as never, config).export()) as never
@@ -408,7 +520,7 @@ export const keywordModule = (
 	const module = new RootModule({})
 	let exports: RootModule | undefined
 	const resolve = (name: string) =>
-		(exports ??= new InternalScope(def, config, true).exportLazily())[
+		(exports ??= new InternalScope(def, config as never, true).exportLazily())[
 			name as never
 		]
 	for (const name in def)
@@ -431,11 +543,11 @@ export const scope: ScopeParser = Object.assign(InternalScope.scope, {
 type InferredDefinition = { [inferred]: unknown }
 
 export declare namespace scope {
-	export type validate<def> = {
+	export type validate<def, ambient = unknown> = {
 		[k in keyof def]: k extends noSuggest ?
 			// avoid trying to parse meta keys when spreading modules
 			unknown
-		: parseScopeKey<k, def>["params"] extends infer params ?
+		: parseScopeKey<k, def, ambient>["params"] extends infer params ?
 			params extends array<GenericParamAst> ?
 				params["length"] extends 0 ?
 					// checking against Type reads ArkEnv.meta, which a meta inferred from a
@@ -445,16 +557,16 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	validateAlias<k, def[k], bootstrapAliases<def>>
+					:	validateAlias<k, def[k], bootstrapAliases<def, ambient>>
 				: def[k] extends Generic ?
 					ErrorType<
 						writeParameterizedGenericKeyMessage<
-							parseScopeKey<k, def>["name"] & string
+							parseScopeKey<k, def, ambient>["name"] & string
 						>
 					>
 				:	validateDefinition<
 						def[k],
-						bootstrapAliases<def>,
+						bootstrapAliases<def, ambient>,
 						baseGenericConstraints<params>
 					>
 			:	// if we get here, the params failed to parse- return the error
@@ -462,7 +574,9 @@ export declare namespace scope {
 		:	never
 	}
 
-	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
+	export type infer<def, ambient = unknown> = inferBootstrapped<
+		bootstrapAliases<def, ambient>
+	>
 }
 
 // an alias is a property of scope's parameter, not a parameter itself, so it
@@ -603,7 +717,7 @@ export interface Scope<$ = {}> {
 
 	schema: SchemaParser<$>
 
-	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
+	import(): importedModuleOf<$>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): BoundModule<
@@ -613,7 +727,7 @@ export interface Scope<$ = {}> {
 		$
 	>
 
-	export(): Module<{ [k in exportedNameOf<$>]: $[k] }>
+	export(): exportedModuleOf<$>
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): BoundModule<
@@ -636,18 +750,23 @@ export interface ScopeConstructor {
 
 export const Scope: ScopeConstructor = InternalScope as never
 
-export type parseScopeKey<k, def> =
+export type parseScopeKey<k, def, ambient = unknown> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5
 	k extends `${infer name}<${infer params}>` ?
-		parseGenericScopeKey<name, params, def>
+		parseGenericScopeKey<name, params, def, ambient>
 	:	{
 			name: k
 			params: []
 		}
 
-type parseGenericScopeKey<name extends string, params extends string, def> = {
+type parseGenericScopeKey<
+	name extends string,
+	params extends string,
+	def,
+	ambient = unknown
+> = {
 	name: name
-	params: parseGenericParams<params, bootstrapAliases<def>>
+	params: parseGenericParams<params, bootstrapAliases<def, ambient>>
 }
 
 export type InnerParseResult =

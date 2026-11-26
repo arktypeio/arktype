@@ -12,11 +12,12 @@ import {
 	type Backslash,
 	type BigintLiteral,
 	type ErrorMessage,
+	type noSuggest,
 	type NumberLiteral,
 	type WhitespaceChar
 } from "@ark/util"
 import type { DateLiteral } from "../attributes.ts"
-import type { ArkAmbient } from "../config.ts"
+import type { ambientOf } from "../config.ts"
 import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { InferredAst, inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
@@ -63,7 +64,8 @@ export const parseString = (
  */
 export type parseString<def extends string, $, args> =
 	def extends keyof $ ?
-		$[def] extends GenericAst ?
+		def extends noSuggest ? parseNonReference<def, $, args>
+		: $[def] extends GenericAst ?
 			[$[def]] extends [anyOrNever] ?
 				resolutionToAst<def, $[def]>
 			:	ErrorMessage<
@@ -72,7 +74,10 @@ export type parseString<def extends string, $, args> =
 		:	resolutionToAst<def, $[def]>
 	: def extends `${string}[]` ?
 		def extends `${infer child}[]` ?
-			child extends keyof $ ? [resolutionToAst<child, $[child]>, "[]"]
+			child extends keyof $ ?
+				child extends noSuggest ?
+					parseNonReference<def, $, args>
+				:	[resolutionToAst<child, $[child]>, "[]"]
 			: resolveAmbient<child, $> extends [unknown] ?
 				parseAmbientReference<def, child, resolveAmbient<child, $>[0], $, args>
 			:	parseNonReference<def, $, args>
@@ -118,13 +123,15 @@ type parseDefaultExpression<def extends string, $, args> =
 	:	never
 
 // wrapped so a generic def isn't distributed over keywords
-type resolveAmbient<reference, $> =
-	[reference] extends [keyof ArkAmbient.$] ? [ArkAmbient.$[reference]]
+type resolveAmbient<reference extends string, $, ambient = ambientOf<$>> =
+	[`#${reference}`] extends [keyof $] ? null
+	: [reference] extends [keyof ambient] ? [ambient[reference]]
 	: reference extends `${string}.${string}` ?
 		reference extends `${infer submodule}.${infer name}` ?
 			[submodule] extends [keyof $] ? null
-			: [submodule] extends [keyof ArkAmbient.$] ?
-				resolveSubmodule<ArkAmbient.$[submodule], name>
+			: [`#${submodule}`] extends [keyof $] ? null
+			: [submodule] extends [keyof ambient] ?
+				resolveSubmodule<ambient[submodule], name>
 			:	null
 		:	null
 	:	null
@@ -215,7 +222,10 @@ type parseOperandToken<token extends string, $, args> =
 		:	never
 	: token extends `${EnclosingQuote}${string}` ? parseQuotedToken<token>
 	: [token] extends [keyof args] ? null
-	: token extends keyof $ ? referenceToAst<token, $[token]>
+	: token extends keyof $ ?
+		token extends noSuggest ?
+			null
+		:	referenceToAst<token, $[token]>
 	: resolveAmbient<token, $> extends [unknown] ?
 		referenceToAst<token, resolveAmbient<token, $>[0]>
 	: `#${token}` extends keyof $ ? null
@@ -290,7 +300,7 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| resolvableReferenceIn<$>
-	| resolvableReferenceIn<ArkAmbient.$>
+	| resolvableReferenceIn<ambientOf<$>>
 	| (keyof args & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions
