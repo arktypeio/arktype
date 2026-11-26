@@ -146,10 +146,10 @@ TypeScript shows an anonymous cycle as `...`, or as `any` if `noErrorTruncation`
 
 A declaration file is the exception. TypeScript can't write an inferred cycle in the `.d.ts` it emits for a module that exports a cyclic Type, as for a published package or a project reference: it writes `any` where the type recurs, which is what code importing it gets, or, depending on its version, fails with `TS5088` ([microsoft/TypeScript#64656](https://github.com/microsoft/TypeScript/issues/64656)).
 
-To ship a cyclic Type's types, write the declarations with [`arktype-precompile --declare`](/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
+To ship a cyclic Type's types, write the declarations with [`ark declare`](/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
 
 ```sh
-npx @ark/aot --declare
+npx arktype declare
 ```
 
 Without it, name the type yourself and [declare](/docs/declare) the Type with it:
@@ -317,6 +317,58 @@ const $ = scope({
 })
 ```
 
+## Ambient
+
+Every scope resolves ArkType's built-in keywords as an ambient fallback. To restrict a scope's vocabulary or build a DSL without global keywords, pass `ambient` in the scope's config.
+
+Pass `{ ambient: {} }` to start from a clean slate — literals, operators, structures and local aliases still work, while built-in keywords become unresolvable:
+
+```ts
+// @errors: 2345
+const $ = scope(
+	{
+		Status: "'draft' | 'published'",
+		Entry: { status: "Status", tags: "Status[]" }
+	},
+	{ ambient: {} }
+)
+
+const Bad = $.type("string")
+```
+
+To allow a subset of built-in keywords or your own fallback vocabulary, pass a `Module` (such as `ark.export(...)` or another scope's `.export()`), or a plain record of `Type`s, `Generic`s and `Module`s:
+
+```ts
+import { ark, generic, scope, type } from "arktype"
+
+const Id = type("string.uuid")
+const List = generic("t")("t[]")
+
+const $ = scope(
+	{
+		// local aliases can shadow ambient entries
+		id: "Id",
+		User: { id: "id", email: "string.email", tags: "List<string>" }
+	},
+	{
+		ambient: {
+			...ark.export("string"),
+			Id,
+			List
+		}
+	}
+)
+
+const types = $.export()
+// ambient entries are private to the scope, not re-exported
+Object.keys(types) // ["id", "User"]
+```
+
+- Works with both `scope(def, { ambient })` and `type.module(def, { ambient })`.
+- Ambient entries are not re-exported by `.export()` and can be shadowed by local aliases (including `#private` aliases).
+- Types created or exported from a scope keep its ambient on chained methods like `.and(...)` and `.or(...)`. Spreading an isolated `.export()` into a default scope leaves the outer scope's ambient unchanged.
+- A scope with custom `ambient` omits ArkType's default keyword attachments (`$.type.string`, `$.type.number`, etc.) and exposes its ambient entries on `$.type.keywords`.
+
 ## Configuration
 
 `scope` takes a config as its second argument. It applies to every `Type` parsed in the scope:
@@ -331,4 +383,4 @@ const $ = scope(
 $.export().Even(3)
 ```
 
-It accepts the same options as [global configuration](/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`.
+It accepts the same options as [global configuration](/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`. [`ambient`](#ambient) is scope-only.

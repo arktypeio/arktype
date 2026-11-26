@@ -395,12 +395,9 @@ const resolveAotCli = (cwd: string): string | undefined => {
 		findAotInNodeModules(cwd) ??
 		("pnp" in process.versions ? findAotViaRequire(cwd) : undefined)
 	if (!found) return undefined
-	const { pkgDir, manifest } = found
-	const bin =
-		typeof manifest.bin === "string" ?
-			manifest.bin
-		:	manifest.bin?.["arktype-precompile"]
-	if (bin && existsSync(join(pkgDir, bin))) return join(pkgDir, bin)
+	const { pkgDir } = found
+	const builtCli = join(pkgDir, "out", "cli.js")
+	if (existsSync(builtCli)) return builtCli
 	const srcCli = join(pkgDir, "cli.ts")
 	if (existsSync(srcCli)) return srcCli
 	return undefined

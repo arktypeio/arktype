@@ -32,7 +32,7 @@ const tsc = fromHere(
 	"tsc"
 )
 
-// as `tsc && arktype-precompile --emit` builds it, for a package of `type`
+// as `tsc && ark emit` builds it, for a package of `type`
 const build = (
 	type: "module" | "commonjs",
 	tsconfig: string,

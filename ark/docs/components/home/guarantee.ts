@@ -14,7 +14,7 @@ export const Name = type(\`string <= \${max}\`)
 `
 }
 
-/** `arktype-precompile --check "src/**\/*.ts"` on a project holding only that file */
+/** `ark check "src/**\/*.ts"` on a project holding only that file */
 export const diagnostic = {
 	at: "src/limits.ts:5:21",
 	what: "type(`string <= ${max}`) cannot be precompiled",

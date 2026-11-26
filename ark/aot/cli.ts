@@ -18,7 +18,7 @@ import { checkArktypeVersion } from "./version.ts"
 // before importing what reads fs.globSync, which older versions lack
 const [major, minor] = process.versions.node.split(".").map(Number)
 if (major < 22 || (major === 22 && minor < 12)) {
-	console.error(writeNodeVersionMessage("arktype-precompile", "22.12"))
+	console.error(writeNodeVersionMessage("@ark/aot", "22.12"))
 	process.exit(1)
 }
 
@@ -43,7 +43,7 @@ const options = Object.entries(cliOptions).filter(
 const flagOf = (name: string) =>
 	name.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)
 
-const usage = `Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] ${options
+const usage = `Usage: ark check [...files or globs] [--fail-under <percent>] ${options
 	.map(([name, { type, values }]) =>
 		type === "boolean" ?
 			`[--[no-]${flagOf(name)}]`
@@ -51,7 +51,7 @@ const usage = `Usage: arktype-precompile --check [...files or globs] [--fail-und
 	)
 	.join(
 		" "
-	)}\n       arktype-precompile --emit [--declare] [--tsconfig <path>] [...the options --check takes]\n       arktype-precompile --declare [--tsconfig <path>] [--checker <${checkers.join("|")}>]`
+	)}\n       ark emit [--declare] [--tsconfig <path>] [...the options check takes]\n       ark declare [--tsconfig <path>] [--checker <${checkers.join("|")}>]`
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -201,8 +201,8 @@ for (const [name, { type, values: taken }] of options) {
 
 try {
 	const set = withSettingsFile(opts)
-	// --check reads prune as the bundler does, but --emit can't prune
-	if (values.emit) refusePrune(set, "arktype-precompile")
+	// check reads prune as the bundler does, but emit can't prune
+	if (values.emit) refusePrune(set, "ark emit")
 	resolvePrecompileOptions(set)
 } catch (e) {
 	failSettings(e)

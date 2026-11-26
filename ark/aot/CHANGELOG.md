@@ -1,5 +1,9 @@
 # @ark/aot
 
+## 3.0.0-rc.9
+
+Removed the standalone `arktype-precompile` binary; all precompiler CLI commands now run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`).
+
 ## 3.0.0-rc.7
 
 A standalone validator writes a `.label()`'s messages and summary lines as arktype does.

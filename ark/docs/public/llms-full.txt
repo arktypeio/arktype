@@ -170,7 +170,7 @@ register()
 node --import ./register.ts src/main.ts
 ```
 
-Node 22.15 or later. A program `tsc` compiles for production precompiles with [`arktype-precompile --emit`](https://arktype.io/docs/precompile/setup#tsc).
+Node 22.15 or later. A program `tsc` compiles for production precompiles with [`ark emit`](https://arktype.io/docs/precompile/setup#tsc).
 
 Rspack, Rsbuild, Farm and the rest are in [Setup](https://arktype.io/docs/precompile/setup).
 
@@ -187,7 +187,7 @@ A precompiled error reads as arktype's does at runtime.
 To see what the build makes of each definition without bundling, run:
 
 ```sh
-npx @ark/aot --check
+npx arktype check
 ```
 
 ```
@@ -516,6 +516,8 @@ Keywords follow a `typescriptType.constraint.subconstraint` pattern. See [Keywor
 type("string.email") // email address
 type("string.uuid") // UUID
 type("string.url") // parsable URL
+type("string.url.http") // http:// or https:// URL
+type("string.nonblank") // non-whitespace string (without trimming)
 type("string.trim") // morph: trims whitespace
 type("string.json.parse") // morph: string → parsed JSON
 type("string.date.parse") // morph: string → Date
@@ -627,6 +629,8 @@ const types = scope({
 
 const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 ```
+
+Pass `{ ambient: {} }` (or a `Module` / record of `Type`s, `Generic`s and `Module`s) as the second argument to `scope` or `type.module` to opt out of ArkType's default keywords or restrict a DSL scope's vocabulary. See [Ambient](https://arktype.io/docs/scopes#ambient).
 
 ## Morphs and pipes
 
@@ -865,7 +869,7 @@ Agents that don't load skills still read your `AGENTS.md` or `CLAUDE.md`. Paste 
 If you precompile, add:
 
 ```md
-- ArkType definitions are precompiled by @ark/aot when the app builds. Fix each precompile error as its last line says, and don't set allowUnsafe or runtime: "arktype" to get past one. `npx @ark/aot --check src` lists them without building. Setup and fixes: https://arktype.io/docs/precompile/llms.txt
+- ArkType definitions are precompiled by @ark/aot when the app builds. Fix each precompile error as its last line says, and don't set allowUnsafe or runtime: "arktype" to get past one. `npx arktype check src` lists them without building. Setup and fixes: https://arktype.io/docs/precompile/llms.txt
 ```
 
 ## Building agents
@@ -1688,7 +1692,7 @@ const types = scope({
 
 Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`ark declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
 
 ### Composing objects
 
@@ -1998,7 +2002,7 @@ const argsSchema = {
 6. **Compare with the originals while Zod is still installed.** The project's tests check the schemas they use. Check the rest directly, and every schema if there's no `test` script: in a scratch file, import each original from a copy of its file (`git show HEAD:src/schemas.ts > scratch/schemas.zod.ts`) and its conversion, call both on the same inputs and compare which they accept and what they return. Use the project's fixtures or sample data where it has them, plus each case [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) lists: a missing key, a key present as `undefined`, an undeclared key, a wrong type, an array in place of an object, an empty string and a value at each bound. Fix each difference in the schema, then delete the scratch files. [How to convert](https://arktype.io/docs/migrating#how-to-convert) shows a check that their types match too.
 7. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says. If a dependency requires `zod` as a peer dependency, keep it installed for that dependency and say so.
 8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If Jest fails with `Must use import to load ES Module`, naming arktype, [have it transform arktype's packages](https://arktype.io/docs/faq#why-does-jest-say-must-use-import-to-load-es-module), which ship ES modules only. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message, an issue `code` or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
-9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 2 as `config` in `ark.json`, run `npx @ark/aot --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
+9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 2 as `config` in `ark.json`, run `npx arktype check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
 10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for. Where the code ships to a browser and wasn't precompiled, say that arktype's parser now ships with it, which [precompiling](https://arktype.io/docs/migrating#precompile) removes.
 11. **Offer editor support.** ArkType has integrations for VS Code (and forks), JetBrains IDEs, Zed, Neovim and Helix that add syntax highlighting inside definition strings, inline one-line summaries of ArkType's type errors, string autocomplete and `os` auto-import exclusion (see [Editor setup](https://arktype.io/docs/editor)). Ask which editor the user uses and whether they want help setting it up:
     - **VS Code, Cursor, VSCodium and Windsurf:** published as [ArkType](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) (`arktypeio.arkdark`, also on [Open VSX](https://open-vsx.org/extension/arktypeio/arkdark)), which bundles ErrorLens (`usernamehw.errorlens`) and enables `"editor.quickSuggestions": { "strings": "on" }`. If they say yes, run `code --install-extension arktypeio.arkdark` (or `cursor` / `codium` / `windsurf` for those forks), or share the store link if the CLI isn't available. You can also offer to recommend `"arktypeio.arkdark"` in `.vscode/extensions.json` and add `"typescript.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"]` to `.vscode/settings.json` so auto-import picks ArkType's `type`.
@@ -2062,7 +2066,7 @@ export default defineConfig({
 })
 ```
 
-To see what's left, run `npx @ark/aot --check`, which lists each definition the default build would refuse. See [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled).
+To see what's left, run `npx arktype check`, which lists each definition the default build would refuse. See [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled).
 
 `drizzle-arktype`, from [Swap integrations](https://arktype.io/docs/migrating#migrating-a-project), creates Types from your tables as the program runs, so the build [runs it on arktype](https://arktype.io/docs/precompile/options#dependencies), shipping the parser. To precompile those Types too, write each one out, with a line that fails to compile if it drifts from the table, like `const matches: Equals<typeof selectTask.infer, typeof tasks.$inferSelect> = true`, `Equals` as in [How to convert](https://arktype.io/docs/migrating#how-to-convert).
 
@@ -2890,6 +2894,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 - `number.safe` and other ranges given `Infinity`: `must be a number`, before: their range error.
 - An arktype Type embedded through `~standard`: `user.age must be an integer`, before: `user.age age must be ...`.
 - Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
+- `""` and a length of `0` read as `empty`, mirroring `non-empty`: `"string.email | ''"` reads `must be an email address or empty` (before: `must be an email address or ""`), and `"string == 0"` reads `must be empty` (before: `must be exactly length 0`).
 - A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
 - A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true"`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
 - `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.
@@ -6260,10 +6265,10 @@ For a single recursive `Type`, you don't need a scope: use the [`this`](https://
 
 A declaration file is the exception. TypeScript can't write an inferred cycle in the `.d.ts` it emits for a module that exports a cyclic Type, as for a published package or a project reference: it writes `any` where the type recurs, which is what code importing it gets, or, depending on its version, fails with `TS5088` ([microsoft/TypeScript#64656](https://github.com/microsoft/TypeScript/issues/64656)).
 
-To ship a cyclic Type's types, write the declarations with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
+To ship a cyclic Type's types, write the declarations with [`ark declare`](https://arktype.io/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
 
 ```sh
-npx @ark/aot --declare
+npx arktype declare
 ```
 
 Without it, name the type yourself and [declare](https://arktype.io/docs/declare) the Type with it:
@@ -6424,6 +6429,58 @@ const $ = scope({
 })
 ```
 
+## Ambient
+
+Every scope resolves ArkType's built-in keywords as an ambient fallback. To restrict a scope's vocabulary or build a DSL without global keywords, pass `ambient` in the scope's config.
+
+Pass `{ ambient: {} }` to start from a clean slate — literals, operators, structures and local aliases still work, while built-in keywords become unresolvable:
+
+```ts
+const $ = scope(
+	{
+		Status: "'draft' | 'published'",
+		Entry: { status: "Status", tags: "Status[]" }
+	},
+	{ ambient: {} }
+)
+
+const Bad = $.type("string")
+// TypeScript: 'string' is unresolvable
+```
+
+To allow a subset of built-in keywords or your own fallback vocabulary, pass a `Module` (such as `ark.export(...)` or another scope's `.export()`), or a plain record of `Type`s, `Generic`s and `Module`s:
+
+```ts
+import { ark, generic, scope, type } from "arktype"
+
+const Id = type("string.uuid")
+const List = generic("t")("t[]")
+
+const $ = scope(
+	{
+		// local aliases can shadow ambient entries
+		id: "Id",
+		User: { id: "id", email: "string.email", tags: "List<string>" }
+	},
+	{
+		ambient: {
+			...ark.export("string"),
+			Id,
+			List
+		}
+	}
+)
+
+const types = $.export()
+// ambient entries are private to the scope, not re-exported
+Object.keys(types) // ["id", "User"]
+```
+
+- Works with both `scope(def, { ambient })` and `type.module(def, { ambient })`.
+- Ambient entries are not re-exported by `.export()` and can be shadowed by local aliases (including `#private` aliases).
+- Types created or exported from a scope keep its ambient on chained methods like `.and(...)` and `.or(...)`. Spreading an isolated `.export()` into a default scope leaves the outer scope's ambient unchanged.
+- A scope with custom `ambient` omits ArkType's default keyword attachments (`$.type.string`, `$.type.number`, etc.) and exposes its ambient entries on `$.type.keywords`.
+
 ## Configuration
 
 `scope` takes a config as its second argument. It applies to every `Type` parsed in the scope:
@@ -6438,7 +6495,7 @@ const $ = scope(
 $.export().Even(3)
 ```
 
-It accepts the same options as [global configuration](https://arktype.io/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`.
+It accepts the same options as [global configuration](https://arktype.io/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`. [`ambient`](https://arktype.io/docs/scopes#ambient) is scope-only.
 
 # Generics
 
@@ -6622,12 +6679,12 @@ const User = type.declare<User>().type({
 })
 ```
 
-`declare` works with any definition, not only objects:
+`declare` works with any definition, including spread [tuple expressions](https://arktype.io/docs/expressions):
 
 ```ts
 type Role = "admin" | "member"
 
-const Role = type.declare<Role>().type("'admin' | 'member'")
+const Role = type.declare<Role>().type("===", "admin", "member")
 
 const Entry = type.declare<[string, number]>().type(["string", "number"])
 ```
@@ -7401,6 +7458,7 @@ User({ email: "david@arktype.io", password: "ez123" })
 | [`errors`](https://arktype.io/docs/configuration#errors) | `"all"` | global, scope |
 | [`mutatesInput`](https://arktype.io/docs/configuration#mutatesinput) | `false` | global, scope |
 | [`keywords`](https://arktype.io/docs/configuration#keywords) | `{}` | global |
+| [`ambient`](https://arktype.io/docs/configuration#ambient) | ArkType's built-in keywords | scope |
 | [`locale`](https://arktype.io/docs/configuration#locale) | `en` | global |
 | [an error code](https://arktype.io/docs/configuration#by-code), like `divisor` | ArkType's messages | global, scope |
 | [`toJsonSchema`](https://arktype.io/docs/configuration#tojsonschema) | draft 2020-12, throwing for what it can't express | global, scope |
@@ -7725,6 +7783,18 @@ const User = type({
 //            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
+
+## ambient
+
+Scope-only. Overrides the ambient keywords a `scope` or `type.module` falls back to when resolving references. Pass `{}` to opt out of ArkType's built-in keywords entirely, a `Module` (such as `ark.export("string", "number")`), or a plain record of `Type`s, `Generic`s and `Module`s:
+
+```ts
+import { ark, scope } from "arktype"
+
+const dsl = scope({ Email: "string.email" }, { ambient: ark.export("string") })
+```
+
+See [Ambient](https://arktype.io/docs/scopes#ambient) for shadowing, chaining and clean-slate DSL scopes.
 
 ## onUndeclaredKey
 
@@ -10197,7 +10267,7 @@ import { type } from "arktype"
 
 ## Other packages
 
-- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI (run via `npx @ark/aot`, `pnpm exec arktype-precompile`, or `ark check`/`emit`/`declare`) for `--check`, `--emit` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). Its CLI commands run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`), and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
@@ -10295,10 +10365,10 @@ If your app is bundled, yes. A [precompiled](https://arktype.io/docs/precompile)
 
 ## How do I ship the types of my Types?
 
-If a package or a referenced project exports types derived from arktype, write its declarations with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#declarations) rather than `tsc`:
+If a package or a referenced project exports types derived from arktype, write its declarations with [`ark declare`](https://arktype.io/docs/precompile/advanced#declarations) rather than `tsc`:
 
 ```sh
-npx @ark/aot --declare
+npx arktype declare
 ```
 
 It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.

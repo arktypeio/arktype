@@ -7,7 +7,7 @@ import {
 	type ArkSchemaConfig,
 	type writeUnknownConfigOptionMessage
 } from "@ark/schema/config"
-import type { anyOrNever, ErrorMessage } from "@ark/util"
+import type { anyOrNever, ErrorMessage, noSuggest } from "@ark/util"
 
 export type KeywordConfig = {
 	[k in keyof Ark.flat as parseConfigurableFlatAlias<
@@ -47,3 +47,8 @@ export declare namespace ArkAmbient {
 
 	export type prototypes = ArkEnv.prototypes
 }
+
+export type AmbientKey = noSuggest<"ambient">
+
+export type ambientOf<$> =
+	[$] extends [{ readonly [k in AmbientKey]: infer a }] ? a : ArkAmbient.$

@@ -5,6 +5,7 @@ import {
 	hashOf,
 	hasOwn,
 	isInstanceOf,
+	isPlainObjectOrArray,
 	isThunk,
 	ParseError,
 	printable,
@@ -93,7 +94,10 @@ import { bindPrecompiledUnits, precompile, precompileRoot } from "./units.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
-export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
+export type exportedNameOf<$> = Exclude<
+	keyof $ & string,
+	PrivateDeclaration | noSuggest
+>
 
 export type resolvableReferenceIn<$> =
 	[keyof $] extends [never] ? never
@@ -143,7 +147,7 @@ export type PrivateDeclaration<key extends string = string> = `#${key}`
 export type InternalResolution = BaseRoot | GenericRoot | InternalModule
 
 export type toInternalScope<$> = BaseScope<{
-	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
+	[k in Exclude<keyof $, noSuggest>]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
 		: kind extends "module" ? InternalModule
@@ -223,9 +227,50 @@ export type writeGlobalOnlyConfigMessage<
 	name extends GlobalOnlyConfigOptionName
 > = `${name} can only be configured globally, with configure()`
 
+export type SchemaAmbient = RootModule<any> | InternalResolutions
+
+export const writeInvalidAmbientMessage = (actual: unknown): string =>
+	`ambient must be a Module or a record of Types, Generics, or Modules (was ${printable(actual)})`
+
+export const writeInvalidAmbientEntryMessage = (
+	key: string,
+	actual: unknown
+): string =>
+	`ambient.${key} must be a Type, Generic, or Module (was ${printable(actual)})`
+
+const validateAmbientConfig = (ambient: unknown): void => {
+	if (hasArkKind(ambient, "module")) {
+		if (!isInstanceOf(ambient, RootModule))
+			throwParseError(writeForeignArkMessage("ambient"))
+		return
+	}
+	if (
+		typeof ambient !== "object" ||
+		ambient === null ||
+		Array.isArray(ambient) ||
+		!isPlainObjectOrArray(ambient)
+	)
+		throwParseError(writeInvalidAmbientMessage(ambient))
+	for (const [k, v] of Object.entries(ambient)) {
+		if (
+			(hasArkKind(v, "root") && !isInstanceOf(v, BaseRoot)) ||
+			(hasArkKind(v, "module") && !isInstanceOf(v, RootModule)) ||
+			(hasArkKind(v, "generic") && !isInstanceOf(v, GenericRoot))
+		)
+			throwParseError(writeForeignArkMessage(`ambient.${k}`))
+		if (
+			!hasArkKind(v, "root") &&
+			!hasArkKind(v, "module") &&
+			!hasArkKind(v, "generic")
+		)
+			throwParseError(writeInvalidAmbientEntryMessage(k, v))
+	}
+}
+
 export interface ScopeOnlyConfigOptions {
 	name?: string
 	prereducedAliases?: boolean
+	ambient?: SchemaAmbient | undefined
 }
 
 export interface ArkSchemaScopeConfig
@@ -306,6 +351,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				throwParseError(writeGlobalOnlyConfigMessage(k))
 		}
 		assertNoProblemConfig(config as ArkSchemaConfig | undefined)
+		if (config?.ambient !== undefined) validateAmbientConfig(config.ambient)
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseEntry(...entry)
@@ -538,7 +584,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	get ambient(): InternalModule {
-		return $ark.ambient as never
+		return (this.scopeConfig?.ambient ?? $ark.ambient) as never
 	}
 
 	private aliasOf(ctx: BaseParseContext): Alias.Node {

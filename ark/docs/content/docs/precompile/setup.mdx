@@ -221,7 +221,7 @@ By default, each definition becomes a standalone validator and `arktype` resolve
 
 ## Options in ark.json [#ark-json]
 
-Set [options](/docs/precompile/options) in `ark.json` beside your `package.json` rather than in the plugin call, so `arktype-precompile --check`, the Node and Bun drivers and the ESLint rule build as your bundler does. A program that calls `configure()` names its config module there:
+Set [options](/docs/precompile/options) in `ark.json` beside your `package.json` rather than in the plugin call, so `ark check`, the Node and Bun drivers and the ESLint rule build as your bundler does. A program that calls `configure()` names its config module there:
 
 ```json title="ark.json"
 {
@@ -238,7 +238,7 @@ A validator ships its JSON Schema where the build sees code read it, so a librar
 
 ## Cache [#cache]
 
-A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so a later build, dev server or Next.js process can reuse it. An entry is read only while everything its build had read when it wrote the entry is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source, each file the precompiler had read, what each import had resolved to, and your settings. That includes files the module doesn't import, so the cache serves a build where nothing changed, while a build after you edit a module reuses only what was written before that module was first read, which can be little. A pruned production build or `arktype-precompile --emit` reads the whole program, so it reuses nothing once any module changes. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so a later build, dev server or Next.js process can reuse it. An entry is read only while everything its build had read when it wrote the entry is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source, each file the precompiler had read, what each import had resolved to, and your settings. That includes files the module doesn't import, so the cache serves a build where nothing changed, while a build after you edit a module reuses only what was written before that module was first read, which can be little. A pruned production build or `ark emit` reads the whole program, so it reuses nothing once any module changes. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
 
 ## Frameworks [#frameworks]
 
@@ -346,7 +346,7 @@ Add the two to a `transpilePackages` you already set, and the plugin to a `webpa
 Check the app before its first build, from its directory, which takes seconds where the build takes minutes:
 
 ```sh
-npx @ark/aot --check
+npx arktype check
 ```
 
 Nothing else is set for the workspace:
@@ -385,7 +385,7 @@ A program `tsc` compiles to run from its `outDir` precompiles what it emits with
 ```json title="package.json"
 {
 	"scripts": {
-		"build": "tsc && arktype-precompile --emit"
+		"build": "tsc && ark emit"
 	}
 }
 ```
@@ -429,7 +429,7 @@ Metro has no plugin: it caches each module by its own text, so a module whose va
 		".": { "types": "./out/index.d.ts", "default": "./out/index.js" }
 	},
 	"scripts": {
-		"build": "tsc && arktype-precompile --emit --declare"
+		"build": "tsc && ark emit --declare"
 	},
 	"peerDependencies": { "arktype": "*" }
 }
@@ -487,10 +487,10 @@ Some tools and modules can't be precompiled. [Troubleshooting](/docs/precompile/
 
 ## Check an existing project
 
-`--check` lists the definitions that can't be precompiled, and why, without bundling (also runnable via `pnpm exec arktype-precompile --check` or `arktype`'s `ark check` — use `npx arktype check` outside an installed project, since `ark` on npm is an unrelated package):
+`ark check` lists the definitions that can't be precompiled, and why, without bundling (use `npx arktype check` outside an installed project, since `ark` on npm is an unrelated package):
 
 ```sh
-npx @ark/aot --check src
+npx arktype check src
 ```
 
 ```

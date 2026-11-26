@@ -1,5 +1,27 @@
 # arktype
 
+## 3.0.0-rc.9
+
+### Per-scope `ambient` config
+
+Pass `ambient` in a `scope` or `type.module`'s config to override or opt out of ArkType's default keywords without global `ArkEnv` augmentation:
+
+```ts
+import { ark, scope } from "arktype"
+
+// clean slate — built-in keywords like "string" are unresolvable
+const dsl = scope({ Status: "'draft' | 'published'" }, { ambient: {} })
+
+// subset of built-ins or a custom record of Types, Generics and Modules
+const web = scope({ email: "string.email" }, { ambient: ark.export("string") })
+```
+
+`ambient` is scope-only and accepts a `Module`, `BoundModule`, or a plain record of `Type`s, `Generic`s and `Module`s. Ambient entries are private (not re-exported by `.export()`), can be shadowed by public or `#private` aliases, and stay bound to exported Types on chained methods like `.and()` and `.or()`. A custom-ambient scope omits ArkType's default attachments (`$.type.string`, etc.) and exposes its ambient entries on `$.type.keywords`.
+
+### Standardize CLI commands under `ark`
+
+All CLI commands — `ark check`, `ark emit`, `ark declare`, `ark init`, `ark migrate` and `ark skill` — now run through `ark` (or `npx arktype ...`). `@ark/aot` no longer installs a separate `arktype-precompile` binary.
+
 ## 3.0.0-rc.8
 
 ### `string.nonblank` and `string.url.http`
@@ -28,6 +50,18 @@ LineItem({ unitPriceCents: 0 })
 ```
 
 The label is part of each error's `message`, so Standard Schema consumers like form libraries show it too, while `path` keeps the key. A summary leaves out only the key a label names, keeping the rest of its path, as in `items[0]: Unit price must be positive`. A message passed to a constraint method or set with `.message()` is said as written. Like `.describe()`, a label applies to the Type it's called on, not the Types inside it, and `["number > 0", "@", { label: "Unit price" }]` sets one in a definition. `toJsonSchema` writes a label as `title` unless one is set. `de` writes it as its message's subject: `Stückpreis muss positiv sein`.
+
+## 3.0.0-rc.6
+
+### Preserve const context in `declare<T>().type` spread expressions
+
+Inline object and array literals passed as the first argument of a variadic `declare<T>().type(...)` call (e.g. `type.declare<U>().type({ kind: "'a'" }, "|", { kind: "'b'" })`) now retain `const` inference rather than widening string literals before validation.
+
+## 3.0.0-rc.5
+
+### Spread tuple expressions in `declare<T>().type`
+
+`declare<T>().type` now accepts spread tuple expression arguments alongside a single definition — e.g. `type.declare<Role>().type("===", "admin", "member")` or `type.declare<A | B>().type(A, "|", B)` — validating each operand and operator as `type(...)` does while checking the inferred type against the declaration.
 
 ## 3.0.0-beta.2
 

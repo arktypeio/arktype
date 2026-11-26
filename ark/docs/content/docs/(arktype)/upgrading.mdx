@@ -573,6 +573,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 - `number.safe` and other ranges given `Infinity`: `must be a number`, before: their range error.
 - An arktype Type embedded through `~standard`: `user.age must be an integer`, before: `user.age age must be ...`.
 - Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
+- `""` and a length of `0` read as `empty`, mirroring `non-empty`: `"string.email | ''"` reads `must be an email address or empty` (before: `must be an email address or ""`), and `"string == 0"` reads `must be empty` (before: `must be exactly length 0`).
 - A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
 - A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true"`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
 - `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.

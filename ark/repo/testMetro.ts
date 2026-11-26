@@ -12,10 +12,10 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { runInNewContext } from "node:vm"
 
-// a shared ESM package of Types, built with `tsc` and `arktype-precompile
-// --emit` and bundled by Metro for a React Native app, as Setup shows. Its
-// bundle must match the one Metro builds from the package's source, with
-// arktype and its parser, and must leave out that parser
+// a shared ESM package of Types, built with `tsc` and `ark emit` and bundled by
+// Metro for a React Native app, as Setup shows. Its bundle must match the one
+// Metro builds from the package's source, with arktype and its parser, and must
+// leave out that parser
 
 const require = createRequire(import.meta.url)
 const Metro = require("metro") as {
@@ -48,9 +48,7 @@ const bin = {
 	tsc: fileURLToPath(
 		new URL("./node_modules/typescript/bin/tsc", import.meta.url)
 	),
-	"arktype-precompile": fileURLToPath(
-		new URL("../aot/out/cli.js", import.meta.url)
-	)
+	ark: fileURLToPath(new URL("../type/out/cli.js", import.meta.url))
 }
 
 // what the app prints from each Type, and the exact text of the messages a

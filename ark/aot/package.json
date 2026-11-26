@@ -13,7 +13,7 @@
 		"esbuild",
 		"unplugin"
 	],
-	"version": "3.0.0-rc.8",
+	"version": "3.0.0-rc.9",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -106,9 +106,6 @@
 	],
 	"engines": {
 		"node": ">=22.12.0"
-	},
-	"bin": {
-		"arktype-precompile": "out/cli.js"
 	},
 	"scripts": {
 		"build": "ts ../repo/build.ts",

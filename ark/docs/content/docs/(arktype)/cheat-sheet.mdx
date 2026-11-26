@@ -31,6 +31,8 @@ Keywords follow a `typescriptType.constraint.subconstraint` pattern. See [Keywor
 type("string.email") // email address
 type("string.uuid") // UUID
 type("string.url") // parsable URL
+type("string.url.http") // http:// or https:// URL
+type("string.nonblank") // non-whitespace string (without trimming)
 type("string.trim") // morph: trims whitespace
 type("string.json.parse") // morph: string → parsed JSON
 type("string.date.parse") // morph: string → Date
@@ -142,6 +144,8 @@ const types = scope({
 
 const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 ```
+
+Pass `{ ambient: {} }` (or a `Module` / record of `Type`s, `Generic`s and `Module`s) as the second argument to `scope` or `type.module` to opt out of ArkType's default keywords or restrict a DSL scope's vocabulary. See [Ambient](/docs/scopes#ambient).
 
 ## Morphs and pipes
 

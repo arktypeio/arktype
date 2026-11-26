@@ -53,7 +53,7 @@ export type {
 	validateDefinition
 } from "./parser/definition.ts"
 export { scope, type bindThis, type Scope } from "./scope.ts"
-export { Type, type TypeParser } from "./type.ts"
+export { Type, type BaseTypeParser, type TypeParser } from "./type.ts"
 // tsc names a consumer's Types by these (as it does TypedFn, Match,
 // MatchParser, TypeParser and ParsedFormData) when it emits their
 // declarations, so each is exported here rather than reached under

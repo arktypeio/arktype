@@ -73,7 +73,7 @@ const emittedConfig = JSON.stringify({
 	include: ["*.ts"]
 })
 
-// as `tsc && arktype-precompile --emit` builds it
+// as `tsc && ark emit` builds it
 const runEmitted = (root: string) => {
 	spawnSync(
 		process.execPath,

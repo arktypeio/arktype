@@ -22,9 +22,10 @@ import {
 	type NumberLiteral,
 	type Scanner,
 	type join,
-	type lastOf
+	type lastOf,
+	type noSuggest
 } from "@ark/util"
-import type { ArkAmbient } from "../../../config.ts"
+import type { AmbientKey, ambientOf } from "../../../config.ts"
 import type { resolutionToAst } from "../../../scope.ts"
 import type { GenericInstantiationAst } from "../../ast/generic.ts"
 import type { InferredAst } from "../../ast/infer.ts"
@@ -183,17 +184,20 @@ type tryResolve<
 	unscanned extends string,
 	token extends string,
 	$,
-	args
+	args,
+	ambient = ambientOf<$>
 > =
 	token extends keyof args ?
 		parseResolution<s, unscanned, token, args[token], $, args>
 	: token extends keyof $ ?
-		parseResolution<s, unscanned, token, $[token], $, args>
-	: // this assumes there are no private aliases in the ambient scope
-	token extends keyof ArkAmbient.$ ?
-		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
+		token extends noSuggest ?
+			unresolvableState<s, token, $, args, []>
+		:	parseResolution<s, unscanned, token, $[token], $, args>
 	: `#${token}` extends keyof $ ?
 		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
+	: // this assumes there are no private aliases in the ambient scope
+	token extends keyof ambient ?
+		parseResolution<s, unscanned, token, ambient[token], $, args>
 	: token extends NumberLiteral<infer n> ?
 		s.setRoot<s, InferredAst<n, token>, unscanned>
 	: token extends NonFiniteNumberLiteral ?
@@ -201,22 +205,24 @@ type tryResolve<
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<
-			token,
-			$[submodule],
-			reference,
-			s,
-			unscanned,
-			$,
-			args,
-			[submodule]
-		>
+		submodule extends noSuggest ?
+			unresolvableState<s, token, $, args, []>
+		:	tryResolveSubmodule<
+				token,
+				$[submodule],
+				reference,
+				s,
+				unscanned,
+				$,
+				args,
+				[submodule]
+			>
 	: token extends (
-		`${infer submodule extends keyof ArkAmbient.$ & string}.${infer reference}`
+		`${infer submodule extends keyof ambient & string}.${infer reference}`
 	) ?
 		tryResolveSubmodule<
 			token,
-			ArkAmbient.$[submodule],
+			ambient[submodule],
 			reference,
 			s,
 			unscanned,
@@ -255,7 +261,7 @@ type tryResolveSubmodule<
 				args,
 				[...submodulePath, nestedSubmodule]
 			>
-		:	unresolvableState<s, reference, resolution, {}, submodulePath>
+		:	unresolvableState<s, reference, resolution, {}, submodulePath, $>
 	:	s.error<writeNonSubmoduleDotMessage<lastOf<submodulePath>>>
 
 /** Provide valid completions for the current token, or fallback to an
@@ -265,7 +271,8 @@ export type unresolvableState<
 	token extends string,
 	res,
 	args,
-	submodulePath extends string[]
+	submodulePath extends string[],
+	$ = res
 > =
 	[token, s["unscanned"]] extends ["", Scanner.shift<"#", infer unscanned>] ?
 		shiftUntilTerminator<unscanned> extends (
@@ -274,14 +281,18 @@ export type unresolvableState<
 			s.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never
 	: validReferenceFromToken<token, res, args, submodulePath> extends never ?
-		s.error<writeUnresolvableWithHint<qualifiedReference<token, submodulePath>>>
+		s.error<
+			writeUnresolvableWithHint<qualifiedReference<token, submodulePath>, $>
+		>
 	:	s.completion<`${s["scanned"]}${qualifiedReference<
 			validReferenceFromToken<token, res, args, submodulePath>,
 			submodulePath
 		>}`>
 
-type writeUnresolvableWithHint<name extends string> =
-	`${writeUnresolvableMessage<name>}${writeUnresolvableHint<name>}`
+type writeUnresolvableWithHint<name extends string, $> =
+	[$] extends [{ readonly [k in AmbientKey]: unknown }] ?
+		writeUnresolvableMessage<name>
+	:	`${writeUnresolvableMessage<name>}${writeUnresolvableHint<name>}`
 
 type qualifiedReference<
 	reference extends string,
