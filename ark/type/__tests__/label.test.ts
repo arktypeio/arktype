@@ -108,6 +108,48 @@ contextualize(() => {
 		})
 	})
 
+	describe("a narrow", () => {
+		const inRange = (s: string) => +s >= 0 && +s <= 100
+
+		it("names its value in what ctx.mustBe says it must be", () => {
+			const T = type({
+				pct: type("string")
+					.narrow((s, ctx) => inRange(s) || ctx.mustBe("between 0 and 100"))
+					.label("Pct")
+			})
+			attest(reportOf(T, { pct: "200" })).snap([
+				[[["pct"], "pct", "Pct must be between 0 and 100"]],
+				"Pct must be between 0 and 100"
+			])
+		})
+
+		it("names its value in what ctx.reject's expected says it must be", () => {
+			const T = type("string")
+				.narrow(
+					(s, ctx) =>
+						inRange(s) || ctx.reject({ expected: "between 0 and 100" })
+				)
+				.label("Pct")
+			attest(reportOf(T, "200")).snap([
+				[[[], "", "Pct must be between 0 and 100"]],
+				"Pct must be between 0 and 100"
+			])
+		})
+
+		it("names no value at another path it rejects", () => {
+			const T = type({ a: "string" })
+				.narrow(
+					(o, ctx) =>
+						inRange(o.a) ||
+						ctx.reject({ expected: "between 0 and 100", relativePath: ["a"] })
+				)
+				.label("Pct")
+			attest((T({ a: "200" }) as type.errors).summary).snap(
+				"a must be between 0 and 100"
+			)
+		})
+	})
+
 	describe("an explicit message", () => {
 		it("from .message() is said as written", () => {
 			const T = type({
@@ -132,6 +174,13 @@ contextualize(() => {
 			attest((T({ price: "1" }) as type.errors).summary).snap(
 				"Price must be a number"
 			)
+		})
+
+		it("a narrow rejects with is said as written", () => {
+			const T = type("string")
+				.narrow((s, ctx) => s.length < 3 || ctx.reject({ message: "Too long" }))
+				.label("Pct")
+			attest((T("abcd") as type.errors).summary).snap("Too long")
 		})
 
 		it("configured for its code is said as written", () => {

@@ -155,6 +155,7 @@ LineItem({ unitPriceCents: 0 })
 
 - The label is part of each error's `message`, at `unitPriceCents`, so a form library, [`flatMessagesByPath`](/docs/errors), a toast and `summary` all say it. The error's `path` keeps the key, and a summary leaves out only the key the label names, keeping where it is: `items[0]: Unit price must be positive`.
 - A [message](#message), whether passed to a constraint method or set with `.message()`, is said as written. A label names the checks that have none, so `type.number.moreThan(0, "Enter a price").label("Price")` reads `Enter a price` for `0` and `Price must be a number` for `"1"`.
+- A narrow saying what its value must be is labeled too: `type("string").narrow((s, ctx) => isPercent(s) || ctx.mustBe("between 0 and 100")).label("Percent")` reads `Percent must be between 0 and 100`, as does `ctx.reject({ expected })`. `ctx.reject({ message })` is said as written.
 - Like `.describe()`, `.label()` applies to the Type it's called on, not to the Types inside it: a label on an object names what isn't an object, and each key keeps its own. A union of branches labeled alike names them together.
 - `toJsonSchema` writes a label as the schema's `title` unless it has one.
 
