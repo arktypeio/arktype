@@ -465,7 +465,10 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 				}
 			})
 
-			it("leaves an object it can't copy as it was", () => {
+			// an Error, like any builtin, is written in place rather than copied
+			const thrown = (props: object) => Object.assign(new Error("m"), props)
+
+			it("deletes from an object it can't copy what each branch allowing it would", () => {
 				for (const jitless of [false, true]) {
 					const $ = scope({}, { jitless })
 					const T = $.type({
@@ -473,20 +476,172 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 						message: "string",
 						"code?": "string"
 					}).or({ "+": "delete", message: "string", "errno?": "number" })
-					const thrown = () =>
-						Object.assign(new Error("m"), { z: 0, code: "E", errno: 1 })
-					for (const error of [thrown(), thrown()]) {
+					const both = () => thrown({ z: 0, code: "E", y: 0, errno: 1 })
+					for (const error of [both(), both()]) {
 						attest(T(error)).is(error)
-						attest(Object.keys(error)).equals(["z", "code", "errno"])
+						attest(Object.keys(error)).equals(["code", "errno"])
+						attest(error.message).equals("m")
 					}
-					// one branch allowing it writes it in place, as an object alone does
-					const coded = Object.assign(new Error("m"), {
-						z: 0,
-						code: "E",
-						errno: "1"
-					})
+					// one branch allowing it deletes as an object alone does
+					const coded = thrown({ z: 0, code: "E", errno: "1" })
 					attest(T(coded)).is(coded)
 					attest(Object.keys(coded)).equals(["code"])
+				}
+			})
+
+			it("writes into an object it can't copy what its branches made of its values", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({
+						"+": "delete",
+						error: { "+": "delete", a: { "+": "delete", x: "1" } }
+					}).or({
+						"+": "delete",
+						error: { "+": "delete", b: { "+": "delete", y: "2" } }
+					})
+					const held = () =>
+						thrown({ a: { x: 1, z: 0 }, b: { y: 2, z: 0 }, z: 0 })
+					for (const error of [held(), held()]) {
+						const out = T({ error, z: 0 }) as { error: object }
+						attest(Object.keys(out)).equals(["error"])
+						attest(out.error).is(error)
+						attest({ ...error } as object).equals({
+							a: { x: 1 },
+							b: { y: 2 }
+						})
+					}
+				}
+			})
+
+			it("deletes from an object it can't copy only for the branches holding it", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Coded = $.type({ "+": "delete", "code?": "string" })
+					// the other branch deletes its key
+					const Dropped = $.type({ "+": "delete", error: Coded }).or({
+						"+": "delete",
+						"at?": "number"
+					})
+					// the other branch keeps all it holds
+					const Whole = $.type({ "+": "delete", error: Coded }).or({
+						"+": "delete",
+						error: "Error",
+						"at?": "number"
+					})
+					// each branch holds it twice, to delete other keys
+					const Twice = $.type({
+						"+": "delete",
+						l: { "+": "delete", code: "string", "a?": "1" },
+						r: { "+": "delete", code: "string", "b?": "2" }
+					}).or({ "+": "delete", l: Coded, r: Coded, "at?": "number" })
+					for (let i = 0; i < 2; i++) {
+						const error = thrown({ code: "E", a: 1, b: 2 })
+						attest(Dropped({ error, at: 0 }) as object).equals({ at: 0, error })
+						attest(Object.keys(error)).equals(["code"])
+						const whole = thrown({ code: "E", z: 0 })
+						attest(Whole({ error: whole, at: 0 }) as object).equals({
+							error: whole,
+							at: 0
+						})
+						attest(Object.keys(whole)).equals(["code", "z"])
+						const twice = thrown({ code: "E", a: 1, b: 2, z: 0 })
+						attest(Twice({ l: twice, r: twice }) as object).equals({
+							l: twice,
+							r: twice
+						})
+						attest(Object.keys(twice)).equals(["code"])
+					}
+				}
+			})
+
+			it("writes an object it can't copy once a join holding another has joined", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Inner = $.type({ "+": "delete", "a?": "1" }).or({
+						"+": "delete",
+						"b?": "2"
+					})
+					const T = $.type({ "+": "delete", v: Inner, "x?": "1" }).or({
+						"+": "delete",
+						v: { "+": "delete", "c?": "3" },
+						"y?": "2"
+					})
+					for (let i = 0; i < 2; i++) {
+						const error = thrown({ a: 1, b: 2, c: 3, z: 0 })
+						attest(T({ v: error, x: 1, y: 2, z: 0 }) as object).equals({
+							v: error,
+							x: 1,
+							y: 2
+						})
+						attest(Object.keys(error)).equals(["a", "b", "c"])
+						// only the inner union's branches allow it
+						const inner = thrown({ a: 1, b: 2, c: 3, z: 0 })
+						attest(T({ v: inner, x: 1, y: 0 }) as object).equals({
+							v: inner,
+							x: 1
+						})
+						attest(Object.keys(inner)).equals(["a", "b"])
+					}
+				}
+			})
+
+			it("writes an object it can't copy that two constraints of a branch transform", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const seconds = [
+						// allows the first's copy, which it writes
+						$.type({ "+": "delete", "a?": "1", "c?": "3" }),
+						// allows only the object, so what each made of it is merged
+						$.type("Error").and({ "+": "delete", "a?": "1", "c?": "3" })
+					]
+					for (const second of seconds) {
+						const T = $.type({
+							"+": "delete",
+							e: { "+": "delete", "a?": "1", "b?": "2" },
+							"[/^e/]": second,
+							"x?": "1"
+						}).or({ "+": "delete", e: { "+": "delete", "d?": "4" }, "y?": "2" })
+						for (let i = 0; i < 2; i++) {
+							const error = thrown({ a: 1, b: 2, c: 3, d: 4, z: 0 })
+							attest(T({ e: error, x: 1, y: 2 }) as object).equals({
+								e: error,
+								x: 1,
+								y: 2
+							})
+							attest(Object.keys(error)).equals(["a", "d"])
+						}
+					}
+				}
+			})
+
+			it("writes a key deleting doesn't read only where each branch transforms it", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Pruned = $.type({
+						"+": "delete",
+						cause: { "+": "delete", x: "1" }
+					})
+					const Each = Pruned.or({
+						"+": "delete",
+						cause: { "+": "delete", y: "2" }
+					})
+					// which alone leaves an Error's cause as it is
+					const One = Pruned.or({ "+": "delete", "k?": "1" })
+					const caused = (): Error & { cause?: unknown } =>
+						Object.defineProperty(thrown({ z: 0 }), "cause", {
+							value: { x: 1, y: 2, z: 0 },
+							writable: true,
+							configurable: true
+						})
+					for (let i = 0; i < 2; i++) {
+						const each = caused()
+						attest(Each(each) as object).is(each)
+						attest(each.cause).equals({ x: 1, y: 2 })
+						const one = caused()
+						attest(One(one) as object).is(one)
+						attest(one.cause).equals({ x: 1, y: 2, z: 0 })
+						attest(Object.keys(one)).equals([])
+					}
 				}
 			})
 

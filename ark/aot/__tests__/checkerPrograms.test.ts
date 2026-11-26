@@ -613,6 +613,9 @@ for (const data of [{ uri: "a" }, { uri: "a", text: "t", blob: "b", z: 1 }, { ur
 	run(() => Contents.or("string")(data))
 	run(() => Contents.pipe(function (v) { return [v] })(data))
 }
+const thrown = () => Object.assign(new Error("m"), { uri: "a", text: "t", blob: "b", z: 1 })
+run(() => { const e = thrown(); return [Contents(e) === e, Object.keys(e)] })
+run(() => { const e = thrown(); const out: any = type({ k: Contents })({ k: e }); return [out.k === e, Object.keys(e)] })
 `,
 	unions: `
 const Nullable = Trim.or("null")
