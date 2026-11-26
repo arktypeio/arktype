@@ -8,6 +8,7 @@ import type {
 } from "@ark/schema"
 
 import {
+	allowsInBranchBy,
 	ArkErrors,
 	codedIssue,
 	describeActual,
@@ -943,6 +944,10 @@ export const failsListed = ((
 	return ctx.failFast
 }) satisfies Fn
 
+// what a ctx's _e and failsUnion are while an Allows reading its ctx asks it:
+// a failure stops there, adding no issue
+export const stops = (): true => true
+
 // whether a union fails, by the first issue of each branch; none where one that
 // a write or a getter has made valid since passes
 export const failsBranches = ((
@@ -952,6 +957,13 @@ export const failsBranches = ((
 	issueOf: UnionIssueOf
 ): boolean | undefined => {
 	if (!ctx?._e) return true
+	// a branch that fails adds no issue to a ctx that's only asked, so none
+	// would be read as passing: each is asked as arktype's union asks it
+	if (traversesUnions && ctx._e === stops) {
+		return !branches.some(branch =>
+			allowsInBranchBy(ctx, branch as never, data)
+		)
+	}
 	const firsts: ArkIssue[] = []
 	for (const branch of branches) {
 		let first: ArkIssue | undefined

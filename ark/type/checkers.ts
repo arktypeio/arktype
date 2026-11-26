@@ -32,6 +32,7 @@ import {
 	runtimeScope,
 	silentCtx,
 	siteOf,
+	stops,
 	transformedInApply,
 	TransformErrors,
 	transformIfAllowed,
@@ -170,8 +171,6 @@ export const narrowedWithCtx = ((
 	checker.description = description
 	return checker
 }) satisfies Fn
-
-const stops = () => true
 
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
 	if (ctx._e === stops) return checker(data, ctx)

@@ -461,6 +461,40 @@ false
 		).equals(["readingCtxNode(Apply)", "readingCtxNode(Apply)"])
 	})
 
+	it("fails a union no branch allows where a callback reading its ctx has its root's Allows ask", async () => {
+		const root = fixture(
+			"ctx-union",
+			`import { type } from "arktype"
+
+const print = (t: { (data: unknown): unknown; allows(data: unknown): boolean }, data: unknown) => {
+	const out = t(data)
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out), t.allows(data))
+}
+const shallow = (data: unknown, ctx: { path: unknown[] }) => ctx.path.length < 3
+const Either = type({ a: "string" }).or({ b: "number" })
+const Held = type({ either: Either }).narrow(shallow)
+print(Held, { either: {} })
+print(Held, { either: 1 })
+print(Held, { either: { b: 1 } })
+// a case a key doesn't tell from the rest, an element, and a sibling's callback
+print(type({ either: type({ kind: "'a'" }).or({ b: "number" }) }).narrow(shallow), { either: { kind: "b" } })
+print(type({ eithers: Either.array() }).narrow(shallow), { eithers: [{ a: "" }, {}] })
+print(type({ either: Either, name: type("string").narrow(shallow) }), { either: {}, name: "" })
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `either.a must be a string or either.b must be a number false
+either must be an object false
+{"either":{"b":1}} true
+either.b must be a number or either.kind must be "a" false
+eithers[1].a must be a string or eithers[1].b must be a number false
+either.a must be a string or either.b must be a number false
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		attest(behaviorOf(await bundle(root, smallest))).equals(expected)
+	})
+
 	it("returns what a factory created before for the same function, keyed by an object its module declares", async () => {
 		const root = fixture(
 			"intern-holder",
