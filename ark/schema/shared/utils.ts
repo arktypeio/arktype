@@ -227,6 +227,9 @@ export const removedProblemMessage = "problem was removed in 3.0; write message"
 export const removedCloneMessage =
 	"clone was removed in 3.0; remove it, or set mutatesInput to write into the input"
 
+export const writeInvalidMetaMessage = (meta: string): string =>
+	`Meta must be a string, an object or a function (was ${meta})`
+
 // a user-authored description on a value, distinct from a built-in keyword's
 // phrase or a node whose `expected` explicitly overrides its description
 // (e.g. fromJsonSchema description annotations)

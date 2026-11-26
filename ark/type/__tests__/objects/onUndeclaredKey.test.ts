@@ -5,8 +5,13 @@ import { writeInvalidUndeclaredBehaviorMessage } from "arktype/internal/parser/o
 contextualize(() => {
 	it("can parse an undeclared restriction", () => {
 		const T = type({ "+": "reject" })
-		attest<{}>(T.infer)
+		// an object, as {} would be any value but null or undefined
+		attest(T.infer).type.toString.snap("object")
 		attest(T.json).snap({ undeclared: "reject", domain: "object" })
+		// @ts-expect-error
+		attest(() => T.from(5))
+			.throws("must be an object")
+			.type.errors("not assignable to parameter of type 'object'")
 	})
 
 	it("fails on type definition for undeclared", () => {

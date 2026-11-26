@@ -22,6 +22,7 @@ import {
 	type NonFiniteNumberLiteral,
 	type NumberLiteral,
 	type Scanner,
+	type anyOrNever,
 	type join,
 	type lastOf,
 	type noSuggest
@@ -262,7 +263,11 @@ type tryResolveSubmodule<
 	args,
 	submodulePath extends string[]
 > =
-	resolution extends { [arkKind]: "module" } ?
+	// never or any, like the keyword never or unknown.any, is no module, where
+	// checking it as one would distribute over or into both branches
+	[resolution] extends [anyOrNever] ?
+		s.error<writeNonSubmoduleDotMessage<lastOf<submodulePath>>>
+	: resolution extends { [arkKind]: "module" } ?
 		reference extends keyof resolution ?
 			parseResolution<s, unscanned, token, resolution[reference], $, args>
 		: reference extends (

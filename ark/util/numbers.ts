@@ -146,9 +146,6 @@ export const writeMalformedNumericLiteralMessage = <
 
 type ValidationKind = "number" | "integer"
 
-const isWellFormed = (def: string, kind: ValidationKind) =>
-	kind === "number" ? isWellFormedNumber(def) : isWellFormedInteger(def)
-
 const parseKind = (def: string, kind: ValidationKind) =>
 	kind === "number" ? Number(def) : Number.parseInt(def)
 
@@ -161,10 +158,20 @@ export const tryParseNumber = <errorOnFail extends boolean | string>(
 ): errorOnFail extends true | string ? number : number | undefined =>
 	parseNumeric(token, "number", options)
 
+// TypeScript reads a number from any token JS does, like 1e3 or 0x10, so each
+// is malformed unless it's written as the number prints, which also rejects
+// digits past what a number can hold, like 9007199254740993
 export const tryParseWellFormedNumber: typeof tryParseNumber = (
 	token,
 	options
-) => parseNumeric(token, "number", { ...options, strict: true })
+) => {
+	const value = Number(token)
+	if (token === "" || !Number.isFinite(value))
+		return parseNumeric(token, "number", options)
+	return printDecimal(value) === token ? value : (
+			throwParseError(writeMalformedNumericLiteralMessage(token, "number"))
+		)
+}
 
 export type tryParseNumber<token extends string, messageOnFail extends string> =
 	token extends `${infer n extends number}` ?
@@ -207,7 +214,6 @@ export type parseNonNegativeInteger<token extends string> =
 
 export type NumericParseOptions<errorOnFail extends boolean | string> = {
 	errorOnFail?: errorOnFail
-	strict?: boolean
 }
 
 const parseNumeric = <errorOnFail extends boolean | string>(
@@ -216,16 +222,7 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 	options?: NumericParseOptions<errorOnFail>
 ): errorOnFail extends true | string ? number : number | undefined => {
 	const value = parseKind(token, kind)
-	if (!Number.isNaN(value)) {
-		if (isKindLike(token, kind)) {
-			if (options?.strict) {
-				return isWellFormed(token, kind) ? value : (
-						throwParseError(writeMalformedNumericLiteralMessage(token, kind))
-					)
-			}
-			return value
-		}
-	}
+	if (!Number.isNaN(value) && isKindLike(token, kind)) return value
 	return (
 		options?.errorOnFail ?
 			throwParseError(
@@ -248,11 +245,13 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 	}
 	if (wellFormedIntegerMatcher.test(maybeIntegerLiteral)) return value
 
-	if (integerLikeMatcher.test(maybeIntegerLiteral)) {
-		// If the definition looks like a bigint but is
-		// not well-formed, throw.
+	// If the definition looks like a bigint but is not well-formed, like 007n,
+	// or is one TypeScript reads but can't narrow, like 0x10n, throw.
+	if (
+		integerLikeMatcher.test(maybeIntegerLiteral) ||
+		/^0[box]/i.test(maybeIntegerLiteral)
+	)
 		return throwParseError(writeMalformedNumericLiteralMessage(def, "bigint"))
-	}
 }
 
 /**

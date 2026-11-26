@@ -3,7 +3,11 @@ import {
 	registeredReference,
 	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
-import { deepClone, writeInvalidDateMessage } from "@ark/util"
+import {
+	deepClone,
+	writeInvalidDateMessage,
+	writeMalformedNumericLiteralMessage
+} from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
@@ -508,11 +512,46 @@ contextualize(() => {
 				.type.errors("Default value true must be assignable to number")
 		})
 
+		it("incorrect default type for a branded or piped base", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "string#id = 5" }))
+				.throws.snap("ParseError: Default for foo must be a string")
+				.type.errors("Default value 5 must be assignable to string#id")
+			// @ts-expect-error
+			attest(() => type({ foo: "string.trim |> string.lower = 5" }))
+				.throws.snap("ParseError: Default for foo must be a string")
+				.type.errors(
+					"Default value 5 must be assignable to string.trim |> string.lower"
+				)
+		})
+
 		it("non-literal", () => {
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", bar: "unknown = number" })
 			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("number"))
+		})
+
+		it("number literal TypeScript can't narrow", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "number = 1.50" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("1.50", "number")
+			)
+			// malformed before it's unassignable, as parsing reads it first
+			// @ts-expect-error
+			attest(() => type({ foo: "string = 0x10" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10", "number")
+			)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "number = 9007199254740993" })
+			).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("9007199254740993", "number")
+			)
+			// @ts-expect-error
+			attest(() => type({ foo: "bigint = 0x10n" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10n", "bigint")
+			)
 		})
 
 		it("operand that sets no root", () => {

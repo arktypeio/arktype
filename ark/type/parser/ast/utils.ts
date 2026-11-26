@@ -15,9 +15,10 @@ export type astToString<ast> =
 			`${astToString<operand>}[]`
 		:	never
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
-		operator extends "&" | "|" | "%" | Comparator ?
+		operator extends "&" | "|" | "%" | "|>" | Comparator ?
 			`${astToString<l>} ${operator} ${astToString<r>}`
-		:	never
+		: operator extends "#" ? `${astToString<l>}#${astToString<r>}`
+		: never
 	: ast extends Stringifiable ? `${ast extends bigint ? `${ast}n` : ast}`
 	: "..."
 

@@ -157,6 +157,21 @@ contextualize(() => {
 		).throws.snap("ParseError: problem was removed in 3.0; write message")
 	})
 
+	it("meta that's not a string, an object or a function", () => {
+		// @ts-expect-error
+		attest(() => type(["string", "@", 5]))
+			.throws.snap(
+				"ParseError: Meta must be a string, an object or a function (was 5)"
+			)
+			.type.errors("not assignable")
+		attest(() => type("string").configure(null as never)).throws.snap(
+			"ParseError: Meta must be a string, an object or a function (was null)"
+		)
+		attest(() => type("string", "@", ["a"] as never)).throws.snap(
+			'ParseError: Meta must be a string, an object or a function (was ["a"])'
+		)
+	})
+
 	it("node writer config works on nested constraint", () => {
 		const CustomEven = type("number % 2", "@", {
 			expected: ctx => `custom expected ${ctx.description}`,

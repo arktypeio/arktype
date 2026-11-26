@@ -426,6 +426,21 @@ contextualize.each(
 			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("true"))
 		})
 
+		it("dot access on a keyword inferred as never or any", () => {
+			// @ts-expect-error
+			attest(() => type("never.foo")).throwsAndHasTypeError(
+				writeNonSubmoduleDotMessage("never")
+			)
+			// @ts-expect-error
+			attest(() => type("unknown.any.foo")).throwsAndHasTypeError(
+				writeNonSubmoduleDotMessage("any")
+			)
+			attest(() =>
+				// @ts-expect-error
+				scope({ a: "never", b: "a.foo" }).export()
+			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("a"))
+		})
+
 		it("completions", $ => {
 			attest(() =>
 				$.type({

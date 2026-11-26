@@ -9,6 +9,12 @@ contextualize(() => {
 		attest(User(5).toString()).snap("must be a user")
 	})
 
+	it("describes an object with no props", () => {
+		const T = type({ "@": "an empty object" })
+		attest(T.infer).type.toString.snap("object")
+		attest(T(5).toString()).snap("must be an empty object")
+	})
+
 	it("meta object", () => {
 		const User = type({
 			name: "string",

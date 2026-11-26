@@ -132,6 +132,10 @@ console.log(
 			"Record<string, strin>",
 			{ a: "strin" },
 			{ a: "string = 5" },
+			// more digits than a number holds, so another number than written
+			{ a: "number = 9007199254740993" },
+			{ a: "number < 9007199254740993" },
+			{ a: "9007199254740993 < number < 9007199254740995" },
 			{ a: ["string", "=", 5] },
 			{ "a?": "string = 'x'" },
 			{ a: "string", "a?": "string" },
@@ -416,9 +420,10 @@ console.log(type.Record.params.length)`)
 		attest(messageOf(() => anyType.Record("number", "number"))).snap(
 			"K must be assignable to string | symbol (was number)"
 		)
-		attest(messageOf(() => anyType.Record("'a'", "number"))).snap(
-			'Index keys "a" should be specified as named props.'
-		)
+		// a literal key is a prop, which isn't deferred
+		const literal = type.Record("'a'", "number")
+		attest(isUnread(literal)).equals(false)
+		attest(literal.expression).snap("{ a: number }")
 	})
 
 	it("this is its own in each definition", () => {
