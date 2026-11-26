@@ -932,6 +932,9 @@ console.log(Object.isExtensible(later), later("a"), later(1).toString(), later("
 				attest(t.array().expression).equals(`${t.expression}[]`)
 				attest(t.keyof().expression).equals(`"${key}" | "n"`)
 				attest(t.assert({ [key]: "a" })).equals({ [key]: "a" })
+				// a method is the one it read before
+				for (const method of ["array", "traverse", "equals", "assert"])
+					attest([method, t[method] === t[method]]).equals([method, true])
 				// a function's own keys, as an unread Type's are
 				attest(Object.keys(t)).equals([])
 				attest(isUnread(t)).equals(true)

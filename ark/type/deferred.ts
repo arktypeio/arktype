@@ -97,6 +97,8 @@ interface Deferred extends DeferredShell {
 	resolve: (() => BaseRoot) | undefined
 	/** the node it built, where it was frozen before it could become one */
 	node?: BaseRoot
+	/** each of that node's methods it's read, bound to it */
+	bound?: WeakMap<Function, Function>
 }
 
 const deferred = new WeakMap<object, Deferred>()
@@ -1387,12 +1389,19 @@ for (const k of [
 // what a Type frozen before it was read reads of the node it built: a method is
 // bound to the node, since it's called on the Type, and what a getter returns is
 // the node's already
-const through = (node: BaseRoot, k: PropertyKey): unknown => {
+const through = (d: Deferred, node: BaseRoot, k: PropertyKey): unknown => {
 	const value: unknown = Reflect.get(node, k)
 	if (typeof value !== "function" || k === "constructor") return value
+	// once, so it reads as the method it read before, as any Type's does
+	const read = d.bound?.get(value)
+	if (read) return read
 	for (let o = Object.getPrototypeOf(node); o; o = Object.getPrototypeOf(o)) {
 		const held = Object.getOwnPropertyDescriptor(o, k)
-		if (held) return held.value ? value.bind(node) : value
+		if (!held) continue
+		if (!held.value) return value
+		const bound: Function = value.bind(node)
+		;(d.bound ??= new WeakMap()).set(value, bound)
+		return bound
 	}
 	return value
 }
@@ -1400,7 +1409,7 @@ const through = (node: BaseRoot, k: PropertyKey): unknown => {
 const shellProto = new Proxy(Object.create(proto), {
 	get: (target, k, receiver) => {
 		const d = deferred.get(receiver)
-		if (d?.node) return through(d.node, k)
+		if (d?.node) return through(d, d.node, k)
 		// while it's becoming a node
 		if (!d?.resolve) return Reflect.get(target, k, receiver)
 		// a method's memo on it is only a read of what it's bound to
