@@ -207,6 +207,45 @@ contextualize(() => {
 		})
 	})
 
+	describe("a labeled callback that throws in a Type called with a ctx", () => {
+		const Throwing = type("object")
+			.narrow((): boolean => {
+				throw new Error("unreachable host")
+			})
+			.label("Host")
+
+		it("leaves no label for what's raised once it's caught", () => {
+			const T = type({
+				host: type("object").pipe.try(function resolve(o, ctx) {
+					return Throwing.internal(o, ctx)
+				}),
+				port: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+			})
+			const data = { host: {}, port: 0 }
+			attest(T(data).toString())
+				.snap(`host must be valid according to resolve (Error: unreachable host)
+port must be positive`)
+			// a Type compiles at its second call
+			attest(T(data).toString())
+				.snap(`host must be valid according to resolve (Error: unreachable host)
+port must be positive`)
+		})
+
+		it("leaves the label of the callback that caught it", () => {
+			const T = type("object")
+				.pipe.try(function resolve(o, ctx) {
+					return Throwing.internal(o, ctx)
+				})
+				.label("Server")
+			attest(String(T({}))).snap(
+				"Server must be valid according to resolve (Error: unreachable host)"
+			)
+			attest(String(T({}))).snap(
+				"Server must be valid according to resolve (Error: unreachable host)"
+			)
+		})
+	})
+
 	describe("an explicit message", () => {
 		it("from .message() is said as written", () => {
 			const T = type({

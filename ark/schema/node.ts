@@ -177,6 +177,26 @@ const selectedFrom = (
 	return selected
 }
 
+// A Type called with the ctx of the callback calling it. A label names that
+// callback's value, not the values this checks, so what it raises is its own,
+// as a validator's is. Apart from what a node is called as, which holds no try,
+// since a labeled callback of this Type's that throws leaves its label set,
+// which a caller catching it, as pipe.try() does, would then raise under
+const pipeCalled = (
+	pipedFromCtx: Traversal,
+	node: BaseNode,
+	data: unknown
+): unknown => {
+	const ctx = siteTraversalOf(pipedFromCtx)
+	const lbl = ctx.lbl
+	if (lbl !== undefined) ctx.lbl = undefined
+	try {
+		return pipe(ctx, node, data)
+	} finally {
+		if (ctx.lbl !== lbl) ctx.lbl = lbl
+	}
+}
+
 // what a node is called as, so a Type deferred until it's read is the same function
 const callableOf = (cache: NodeCache) =>
 	// not bound to a name, which a Type would have
@@ -185,16 +205,7 @@ const callableOf = (cache: NodeCache) =>
 		pipedFromCtx?: Traversal | undefined,
 		onFail?: ArkErrors.Handler | null
 	) => {
-		if (pipedFromCtx) {
-			const ctx = siteTraversalOf(pipedFromCtx)
-			// a label names the value of the callback calling this, not the
-			// values this checks: what it raises is its own, as a validator's is
-			const lbl = ctx.lbl
-			if (lbl !== undefined) ctx.lbl = undefined
-			const out = pipe(ctx, cache.self, data)
-			if (lbl !== undefined) ctx.lbl = lbl
-			return out
-		}
+		if (pipedFromCtx) return pipeCalled(pipedFromCtx, cache.self, data)
 
 		const rootApply = cache.rootApply
 		return rootApply === undefined ?

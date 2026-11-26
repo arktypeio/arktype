@@ -195,6 +195,9 @@ const labeled: Record<string, string> = {
 		const Limits = type({ max: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")) })
 		show(type("object").narrow((o, ctx) => !(Limits(o, ctx) instanceof type.errors)).label("Config"), { max: 0 }, 0)
 		show(type({ k: type("object").narrow((o, ctx) => !(Limits(o, ctx) instanceof type.errors) && ctx.mustBe("sorted")).label("Config") }), { k: { max: 1 } })
+		const Throwing = type("object").narrow((): boolean => { throw new Error("unreachable host") }).label("Host")
+		show(type({ host: type("object").pipe.try(function resolve(o, ctx) { return Throwing(o, ctx) }), port: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")) }), { host: {}, port: 0 })
+		show(type("object").pipe.try(function resolve(o, ctx) { return Throwing(o, ctx) }).label("Server"), {})
 	`,
 	"names a value by its label in what a morph raises it must be": `
 		show(type({ k: type("string").pipe((s, ctx) => ctx.error("a product")).label("K") }), { k: "x" }, { k: 1 })
