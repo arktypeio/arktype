@@ -728,6 +728,31 @@ s must be at least length 5`)
 		attest(T({ a: "5", b: "x" })).equals({ a: 5, b: "x" })
 	})
 
+	it("a morph with no input is narrowed by what it's intersected with", () => {
+		const stringify = (data: unknown) => `${data}`
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Stringify = $.schema({ morphs: [stringify] })
+			const T = Stringify.and("number")
+			attest(T.json).equals({
+				morphs: ["number", registeredReference(stringify)]
+			})
+			attest($.type("number").and(Stringify).equals(T)).equals(true)
+			attest(T(1)).equals("1" as never)
+			attest(T(1)).equals("1" as never)
+			attest(T("1" as never).toString()).equals("must be a number")
+			// unknown narrows it no further
+			attest(Stringify.and("unknown").json).equals(Stringify.json)
+			attest(Stringify.extends("unknown")).equals(true)
+			attest(() => Stringify.or("string")).throws(
+				writeIndiscriminableMorphMessage(
+					"string",
+					"(In: unknown) => Out<unknown>"
+				)
+			)
+		}
+	})
+
 	it("object intersection", () => {
 		const _pipeScopedObjectIntersection = (data: { a: 1 }) => `${data}`
 		const $ = scope({

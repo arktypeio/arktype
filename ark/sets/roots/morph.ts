@@ -54,10 +54,10 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 			const declaredIn =
 				l.declaredIn ? intersectOrPipeNodes(l.declaredIn, r, ctx) : undefined
 			if (declaredIn instanceof Disjoint) return declaredIn
-			return (
-					headTersection.equals(l.head) &&
-						(!declaredIn || declaredIn.equals(l.declaredIn))
-				) ?
+			// a morph with no head allows whatever unknown does
+			const sameHead =
+				l.head ? headTersection.equals(l.head) : headTersection.isUnknown()
+			return sameHead && (!declaredIn || declaredIn.equals(l.declaredIn)) ?
 					l
 				:	ctx.$.node("morph", {
 						...l.inner,
