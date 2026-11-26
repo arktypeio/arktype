@@ -74,13 +74,26 @@ const holdWeakly = (
 	else if (!sharing.includes(registration)) sharing.push(registration)
 }
 
-const registerTo = (id: string, to: BaseNode | BaseParseContext): void => {
+const registerTo = (id: string, to: Registration["to"]): true => {
+	const registered = registrationOf(id)
+	if (to === undefined) {
+		// an alias holding it would otherwise hold the context it referenced
+		if (registered) registered.to = to
+		registrations.delete(id)
+		return true
+	}
 	// kept as its context resolves, so an alias that referenced the context holds the node
-	const registration = registrationOf(id) ?? { to }
+	const registration = registered ?? { to }
 	registration.to = to
-	if (!forgetCollected || arkKindOf(to) === "context")
-		registrations.set(id, registration)
-	else holdWeakly(id, registration, (to as BaseNode).inner)
+	// only a node has an inner to hold what it's registered under. A context is
+	// held while its definition parses, and whatever else as a record holds it
+	const inner =
+		forgetCollected &&
+		arkKindOf(to) !== "context" &&
+		(to as Partial<BaseNode> | null)?.inner
+	if (inner && typeof inner === "object") holdWeakly(id, registration, inner)
+	else registrations.set(id, registration)
+	return true
 }
 
 /**
@@ -93,23 +106,21 @@ export const releaseContext = (id: string, holder?: object): void => {
 }
 
 // an object to what reads it, so an id is read, written and deleted as its key.
-// A key nothing is registered under is undefined, even one Object.prototype has
+// A key nothing is registered under is undefined, even one Object.prototype has,
+// as is one assigned undefined
 export const nodesById: Record<
 	NodeId,
 	BaseNode | BaseParseContext | undefined
 > = new Proxy(Object.create(null), {
 	get: (_, id) => registrationOf(id as string)?.to,
-	set: (_, id, to) => {
-		registerTo(id as string, to)
-		return true
-	},
-	deleteProperty: (_, id) => {
-		const registration = registrationOf(id as string)
-		// an alias holding it would otherwise hold the context it referenced
-		if (registration) registration.to = undefined
-		registrations.delete(id as string)
-		return true
-	},
+	set: (_, id, to) => registerTo(id as string, to),
+	deleteProperty: (_, id) => registerTo(id as string, undefined),
+	// no id is a property of the target, so one is defined only as assigning
+	// its value would define it, and the target stays as it is
+	defineProperty: (_, id, { configurable, enumerable, writable, value }) =>
+		!!(configurable && enumerable && writable) &&
+		registerTo(id as string, value),
+	preventExtensions: () => false,
 	has: (_, id) => registrationOf(id as string)?.to !== undefined,
 	ownKeys: () =>
 		[...registrations.keys()].filter(
@@ -117,9 +128,8 @@ export const nodesById: Record<
 		),
 	getOwnPropertyDescriptor: (_, id) => {
 		const value = registrationOf(id as string)?.to
-		return (
-			value && { value, writable: true, enumerable: true, configurable: true }
-		)
+		if (value !== undefined)
+			return { value, writable: true, enumerable: true, configurable: true }
 	}
 })
 

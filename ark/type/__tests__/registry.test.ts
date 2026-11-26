@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark } from "@ark/schema"
+import { $ark, type NodeId } from "@ark/schema"
 import { register } from "@ark/util"
 import { type } from "arktype"
 
@@ -55,6 +55,56 @@ contextualize(() => {
 		attest(Box({ box: { box: 5 } }).toString()).snap(
 			"box.box must be an object or undefined"
 		)
+	})
+
+	it("unregisters an id assigned undefined", () => {
+		const id = "assignedUndefined" as NodeId
+		$ark.nodesById[id] = undefined
+		$ark.nodesById[id] = type.string.internal
+		attest(id in $ark.nodesById).equals(true)
+		$ark.nodesById[id] = undefined
+		attest([
+			id in $ark.nodesById,
+			Object.keys($ark.nodesById).includes(id)
+		]).equals([false, false])
+	})
+
+	it("holds what isn't a node as a record would", () => {
+		const id = "assignedNull" as NodeId
+		$ark.nodesById[id] = null as never
+		attest($ark.nodesById[id]).equals(null as never)
+		attest(Object.keys($ark.nodesById).includes(id)).equals(true)
+		attest({ ...$ark.nodesById }[id]).equals(null as never)
+		delete $ark.nodesById[id]
+		attest(id in $ark.nodesById).equals(false)
+	})
+
+	it("defines an id only as assigning it would", () => {
+		const id = "defined" as NodeId
+		const value = type.string.internal
+		// a property of its own could be read no other way than as an id is
+		attest(Reflect.defineProperty($ark.nodesById, id, { value })).equals(false)
+		attest(
+			Reflect.defineProperty($ark.nodesById, id, { get: () => value })
+		).equals(false)
+		attest(id in $ark.nodesById).equals(false)
+		Object.defineProperty($ark.nodesById, id, {
+			value,
+			configurable: true,
+			enumerable: true,
+			writable: true
+		})
+		attest(
+			Object.entries($ark.nodesById).some(entry => entry[0] === id)
+		).equals(true)
+		attest(delete $ark.nodesById[id] && $ark.nodesById[id]).equals(undefined)
+	})
+
+	it("stays extensible", () => {
+		attest(Reflect.preventExtensions($ark.nodesById)).equals(false)
+		attest(() => Object.freeze($ark.nodesById)).throws("preventExtensions")
+		const Box = type({ "box?": "this" })
+		attest(Box.internal.id in $ark.nodesById).equals(true)
 	})
 
 	it("prints bare names", () => {
