@@ -466,9 +466,20 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 			: context.description !== undefined ? context.description
 			: context.missingValueDescription
 	}
+	// what a union says its value was is its own to say only where its message
+	// is, saying what it is or expects rather than what its branches did
+	const saysActual =
+		code !== "union" ||
+		(meta.description !== undefined && meta.keyword === undefined) ||
+		typeof meta.expected === "string"
 	if (
-		!unwritableCodes.has(code) &&
-		Object.values(custom).some(writer => typeof writer === "function")
+		unwritableCodes.has(code) ?
+			// which reads only its value, as no other writer of these does
+			saysActual &&
+			typeof custom.actual === "function" &&
+			typeof custom.expected !== "function" &&
+			typeof custom.message !== "function"
+		:	Object.values(custom).some(writer => typeof writer === "function")
 	) {
 		const describer =
 			custom.actual === undefined ?
@@ -529,6 +540,9 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		custom.actual &&
 		custom.message === undefined &&
 		(configured.message === errorWriters.message ||
+			(code === "union" &&
+				saysActual &&
+				configured.message === errorWritersByCode.union.message) ||
 			(configured.message === errorWritersByCode.unit.message &&
 				custom.actual !== issueContext.description))
 	) {
