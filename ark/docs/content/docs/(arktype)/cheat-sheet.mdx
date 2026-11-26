@@ -185,7 +185,7 @@ const Signup = type({
 
 1. Start with ArkType's built-in messages. They're specific and compose across unions: `"string.email | string.uuid"` reads `must be an email address or a UUID`.
 2. Use `.describe()` for your own `must be ...` wording, which still composes.
-3. Use `.label("Unit price")` to name a field in every built-in message: `Unit price must be positive`.
+3. Use `.label("Unit price")` in place of a message that would only name the field: `Unit price must be positive`.
 4. Pass a sentence to a constraint method for that check, or to `.message()` for a whole Type, a keyword or a union.
 5. Save `.narrow()` for rules built-in constraints can't express.
 
@@ -199,7 +199,8 @@ const Signup = type({
 	email: type("string.email").message("Enter a valid email"),
 	// what the value must be, after "must be", so it composes in unions
 	age: type("number >= 18").describe("an adult's age"),
-	// the field's name before every built-in message
+	// the field's name before every built-in message, in place of a
+	// message like "Seats must be at most 10"
 	seats: type("1 <= number.integer <= 10").label("Seats")
 })
 

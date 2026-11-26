@@ -291,20 +291,22 @@ Each function also receives the active [locale](/docs/i18n#your-own-messages) as
 
 ### Form fields
 
-A form library reading a Type through [Standard Schema](/docs/standard-schema), like TanStack Form or react-hook-form's `standardSchemaResolver`, shows each issue's `message` beside its field, or in a toast or summary away from it. A [label](#label) per field gets messages that read well in either place, with nothing else to write:
+A form library reading a Type through [Standard Schema](/docs/standard-schema), like TanStack Form or react-hook-form's `standardSchemaResolver`, shows each issue's `message` beside its field, or in a toast or summary away from it. Start with the built-in messages, which read well beside a field with nothing to configure, while a summary puts each one after its path:
 
 ```ts
 const Booking = type({
-	name: type("string > 0").label("Name"),
-	email: type("string.email").label("Email"),
-	seats: type("1 <= number.integer <= 10").label("Seats")
+	name: "string > 0",
+	email: "string.email",
+	seats: "1 <= number.integer <= 10"
 })
 
-// ArkErrors: Name must be non-empty
-//            Email must be an email address
-//            Seats must be at most 10
+// ArkErrors: name must be non-empty
+//            email must be an email address
+//            seats must be at most 10
 Booking({ name: "", email: "x", seats: 12 })
 ```
+
+Customize a field only when its copy has to differ. Where a message would exist only to name the field, like `Unit price must be greater than 0` for `unitPriceCents`, write a [label](#label) instead. A field whose message you wouldn't otherwise write needs neither.
 
 For copy of your own, a field's empty state is usually `""` or `undefined`, so choose a required field's message by which of those it should cover:
 
@@ -323,8 +325,8 @@ Signup({ name: undefined, nickname: undefined })
 
 Each is one expression, so write it where the field is defined rather than in a helper like `requiredString(message)`, which hides which of the two the field gets.
 
-- A field that must hold more than whitespace is `string.nonblank`, which rejects `""` and `"   "` and keeps the value as it is: `type("string.nonblank").label("Name")` reads `Name must be non-blank`. `string.trim` [transforms it](/docs/expressions#pipe) instead.
-- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or empty`. Give the union a [label](#label), as in `type("string.email | ''").label("Email")`, a message, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`, or a [description](#description). A website is `"string.url.http | ''"`, since `string.url` accepts `mailto:` and `javascript:`.
+- A field that must hold more than whitespace is `string.nonblank`, which rejects `""` and `"   "` and keeps the value as it is: `"string.nonblank"` reads `must be non-blank`. `string.trim` [transforms it](/docs/expressions#pipe) instead.
+- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or empty`. For copy of your own, configure the whole union, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`. A website is `"string.url.http | ''"`, since `string.url` accepts `mailto:` and `javascript:`.
 - A pattern beside a length reports both for `""`, as `must be non-empty` and the pattern's message. Let the pattern match `""`, with `*` rather than `+`, so an empty field says only that it's required: `type("0 < string <= 50").matching(/^[a-z ]*$/i, "Use letters only")`.
 - A rule about a value computed from the data, like an order's total, can check what a [pipe](/docs/expressions#pipe) computes rather than narrow the input: `Order.pipe(totalOf, type({ total: type.number.moreThan(0, "Add something to the order") }))`.
 

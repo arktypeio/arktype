@@ -252,7 +252,7 @@ Choose in this order:
 
 1. **Built-in messages.** They're specific (`must be non-empty`, `must be an email address`, `must be even`) and compose across unions: `"string.email | string.uuid"` reads `must be an email address or a UUID`. Customize only when the UI or an existing schema needs its own copy.
 2. **`.describe()`, for wording that still composes.** `.describe("a valid email")` reads `must be a valid email`, joins a union's error (`must be a phone number, a username or a valid email`) and is the JSON Schema `description`.
-3. **`.label()`, to name a field in its messages.** `unitPriceCents: type("number > 0").label("Unit price")` reads `Unit price must be positive`, or `Unit price must be a number (was missing)`, in the issue's `message` and the summary, while its `path` stays `unitPriceCents`. One call replaces a message per check written only to say which field failed. It names the value it's on, not Types nested in it.
+3. **`.label()`, to name a field in its messages.** `unitPriceCents: type("number > 0").label("Unit price")` reads `Unit price must be positive`, or `Unit price must be a number (was missing)`, in the issue's `message` and the summary, while its `path` stays `unitPriceCents`. One call replaces a message per check written only to say which field failed, so use it only in place of such a message: a field whose message wouldn't otherwise be customized keeps the built-in one. It names the value it's on, not Types nested in it.
 4. **A constraint method's `message`, for a sentence per check**: `type.string.atLeastLength(1, "Name is required").matching(/^[a-z]+$/i, "Enter a valid name")`. `.message()` gives a whole Type, a keyword or a union one sentence. Write `.message()` and `.describe()`, not `.configure({ message })` or `.configure({ description })`.
 5. **`.narrow()`, only for what constraints can't express**: a rule across keys, a conditional rule, a check from another library. Never rewrite a length, range, pattern, non-empty array or keyword like `string.email` as a `.narrow()`.
 
@@ -302,18 +302,18 @@ A form library like TanStack Form, or react-hook-form through `standardSchemaRes
 
 | A field that                              | Write                                                                                                                      |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| reads well with ArkType's own text        | `type("string > 0").label("Name")`: `Name must be non-empty`, `Name must be a string`                                      |
+| reads well with ArkType's own text        | `"string > 0"`: `must be non-empty`, with nothing to configure                                                             |
+| had a message only to name it             | `type("number > 0").label("Unit price")`: `Unit price must be positive`, `Unit price must be a number`                     |
 | is required, empty as `""` or `undefined` | `type("string > 0").message("Name is required")`                                                                           |
-| must hold more than whitespace            | `type("string.nonblank")`, which keeps the value; `string.trim` morphs it                                                  |
-| is optional, left as `""`                 | `type("string.email \| ''").message("Enter a valid email or leave it blank")`                                              |
-| is a number above zero                    | `type.number.moreThan(0, "Enter an amount")`                                                                               |
+| must hold more than whitespace            | `"string.nonblank"`, which keeps the value; `string.trim` morphs it                                                        |
+| is optional, left as `""`                 | `"string.email \| ''"`: `must be an email address or empty`                                                                |
+| is a number above zero                    | `"number > 0"`: `must be positive`                                                                                         |
 | is a choice that must be made             | `type.boolean.message("Choose yes or no")`                                                                                 |
 | is a web link, or a plain `1.2.3` version | `"string.url.http"` (`string.url` allows `mailto:` and `javascript:`), `type("string.semver").matching(/^[\d.]+$/, "...")` |
 
 - `type.string.atLeastLength(1, "Name is required")` says its message only for a string. `undefined`, a field's state before it's touched, reads `must be a string`. A whole-value `.message()` says it for both.
-- Without a message, `"string.email | ''"` reads `must be an email address or empty`.
 - A pattern chained beside a length, like `type("0 < string <= 50").matching(...)`, also fails `""`. Match `""` in the pattern, with `*` rather than `+`, so an empty field says only `must be non-empty`.
-- Label every field a user reads about, then write a message only where the copy must differ from ArkType's: `price: type.number.moreThan(0, "Enter a price").label("Price")` says `Enter a price` for `0` and `Price must be a number` for anything else. A message, given or set with `.message()`, is never labeled.
+- Leave a field with ArkType's own text unless its copy must differ. Don't add a label, a description or a message to a field that has none just because a user reads it: the built-in text is the simpler default. Converting a schema, keep its custom copy where it said more than the field's name, and turn a message that only named the field into a label. A message, given or set with `.message()`, is never labeled.
 - Don't wrap these in helpers like `nonEmptyString(name)`, `positiveNumber(message)` or `requiredBoolean(message)`: each is one expression, and the helper hides which of a constraint's message or a whole-value message the field gets.
 - Name a nested object's Type and reuse it, as `beneficiary: Beneficiary.or("undefined")`, rather than writing `type({ ... })` inline at the key. Export the inferred type under the same name: `export const Beneficiary = type({ ... })` beside `export type Beneficiary = typeof Beneficiary.infer`, and annotate defaults and values with `Beneficiary`.
 - Form state whose keys are present but may be `undefined` is `"string | undefined"` at each key. `.partial()` makes keys optional instead, which rejects `undefined` under `exactOptionalPropertyTypes`, the default.

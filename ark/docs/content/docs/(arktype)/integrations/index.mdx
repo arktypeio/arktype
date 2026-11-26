@@ -20,7 +20,7 @@ import { type } from "arktype"
 
 const User = type({
 	name: type("string > 0").message("Name is required"),
-	age: type("number.integer >= 0").label("Age")
+	age: "number.integer >= 0"
 })
 
 export const useUserForm = () =>
@@ -163,14 +163,14 @@ import { useForm } from "react-hook-form"
 
 const User = type({
 	name: type("string > 0").message("Name is required"),
-	age: type("number.integer >= 0").label("Age")
+	age: "number.integer >= 0"
 })
 
 export const useUserForm = () =>
 	useForm({ resolver: standardSchemaResolver(User) })
 ```
 
-Each field's error holds its issue's `message`: `errors.name.message` is the [`message`](/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, named by its [`label`](/docs/configuration#label), like `Age must be an integer`. Without a label, a message doesn't name its field, as in `must be an integer`.
+Each field's error holds its issue's `message`: `errors.name.message` is the [`message`](/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, like `must be an integer`.
 
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 

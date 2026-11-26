@@ -670,7 +670,7 @@ const Signup = type({
 
 1. Start with ArkType's built-in messages. They're specific and compose across unions: `"string.email | string.uuid"` reads `must be an email address or a UUID`.
 2. Use `.describe()` for your own `must be ...` wording, which still composes.
-3. Use `.label("Unit price")` to name a field in every built-in message: `Unit price must be positive`.
+3. Use `.label("Unit price")` in place of a message that would only name the field: `Unit price must be positive`.
 4. Pass a sentence to a constraint method for that check, or to `.message()` for a whole Type, a keyword or a union.
 5. Save `.narrow()` for rules built-in constraints can't express.
 
@@ -684,7 +684,8 @@ const Signup = type({
 	email: type("string.email").message("Enter a valid email"),
 	// what the value must be, after "must be", so it composes in unions
 	age: type("number >= 18").describe("an adult's age"),
-	// the field's name before every built-in message
+	// the field's name before every built-in message, in place of a
+	// message like "Seats must be at most 10"
 	seats: type("1 <= number.integer <= 10").label("Seats")
 })
 
@@ -7509,6 +7510,7 @@ const Contact = type.or(Email, Username, Phone)
 // ArkErrors: must be a phone number, a username or a valid email
 Contact("!")
 ```
+- A narrow saying what its value must be is labeled too: `type("string").narrow((s, ctx) => isPercent(s) || ctx.mustBe("between 0 and 100")).label("Percent")` reads `Percent must be between 0 and 100`, as does `ctx.reject({ expected })`. `ctx.reject({ message })` is said as written.
 
 ### label
 
@@ -7659,21 +7661,23 @@ Entry({ age: "5" })
 ```
 
 Each function also receives the active [locale](https://arktype.io/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in. A [locale](https://arktype.io/docs/i18n#writing-a-locale) also decides how a summary places a path before a message.
+Customize a field only when its copy has to differ. Where a message would exist only to name the field, like `Unit price must be greater than 0` for `unitPriceCents`, write a [label](https://arktype.io/docs/configuration#label) instead. A field whose message you wouldn't otherwise write needs neither.
+
 
 ### Form fields
 
-A form library reading a Type through [Standard Schema](https://arktype.io/docs/standard-schema), like TanStack Form or react-hook-form's `standardSchemaResolver`, shows each issue's `message` beside its field, or in a toast or summary away from it. A [label](https://arktype.io/docs/configuration#label) per field gets messages that read well in either place, with nothing else to write:
+A form library reading a Type through [Standard Schema](https://arktype.io/docs/standard-schema), like TanStack Form or react-hook-form's `standardSchemaResolver`, shows each issue's `message` beside its field, or in a toast or summary away from it. Start with the built-in messages, which read well beside a field with nothing to configure, while a summary puts each one after its path:
 
 ```ts
 const Booking = type({
-	name: type("string > 0").label("Name"),
-	email: type("string.email").label("Email"),
-	seats: type("1 <= number.integer <= 10").label("Seats")
+	name: "string > 0",
+	email: "string.email",
+	seats: "1 <= number.integer <= 10"
 })
 
-// ArkErrors: Name must be non-empty
-//            Email must be an email address
-//            Seats must be at most 10
+// ArkErrors: name must be non-empty
+//            email must be an email address
+//            seats must be at most 10
 Booking({ name: "", email: "x", seats: 12 })
 ```
 
@@ -7694,8 +7698,8 @@ Signup({ name: undefined, nickname: undefined })
 
 Each is one expression, so write it where the field is defined rather than in a helper like `requiredString(message)`, which hides which of the two the field gets.
 
-- A field that must hold more than whitespace is `string.nonblank`, which rejects `""` and `"   "` and keeps the value as it is: `type("string.nonblank").label("Name")` reads `Name must be non-blank`. `string.trim` [transforms it](https://arktype.io/docs/expressions#pipe) instead.
-- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or empty`. Give the union a [label](https://arktype.io/docs/configuration#label), as in `type("string.email | ''").label("Email")`, a message, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`, or a [description](https://arktype.io/docs/configuration#description). A website is `"string.url.http | ''"`, since `string.url` accepts `mailto:` and `javascript:`.
+- A field that must hold more than whitespace is `string.nonblank`, which rejects `""` and `"   "` and keeps the value as it is: `"string.nonblank"` reads `must be non-blank`. `string.trim` [transforms it](https://arktype.io/docs/expressions#pipe) instead.
+- An optional field a form leaves as `""` is a union with `''`, like `"string.email | ''"`, whose own text is `must be an email address or empty`. For copy of your own, configure the whole union, as in `type("string.email | ''").message("Enter a valid email or leave it blank")`. A website is `"string.url.http | ''"`, since `string.url` accepts `mailto:` and `javascript:`.
 - A pattern beside a length reports both for `""`, as `must be non-empty` and the pattern's message. Let the pattern match `""`, with `*` rather than `+`, so an empty field says only that it's required: `type("0 < string <= 50").matching(/^[a-z ]*$/i, "Use letters only")`.
 - A rule about a value computed from the data, like an order's total, can check what a [pipe](https://arktype.io/docs/expressions#pipe) computes rather than narrow the input: `Order.pipe(totalOf, type({ total: type.number.moreThan(0, "Add something to the order") }))`.
 
@@ -8638,7 +8642,7 @@ import { type } from "arktype"
 
 const User = type({
 	name: type("string > 0").message("Name is required"),
-	age: type("number.integer >= 0").label("Age")
+	age: "number.integer >= 0"
 })
 
 export const useUserForm = () =>
@@ -8770,14 +8774,14 @@ import { useForm } from "react-hook-form"
 
 const User = type({
 	name: type("string > 0").message("Name is required"),
-	age: type("number.integer >= 0").label("Age")
+	age: "number.integer >= 0"
 })
 
 export const useUserForm = () =>
 	useForm({ resolver: standardSchemaResolver(User) })
 ```
 
-Each field's error holds its issue's `message`: `errors.name.message` is the [`message`](https://arktype.io/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, named by its [`label`](https://arktype.io/docs/configuration#label), like `Age must be an integer`. Without a label, a message doesn't name its field, as in `must be an integer`.
+Each field's error holds its issue's `message`: `errors.name.message` is the [`message`](https://arktype.io/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, like `must be an integer`.
 
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 
