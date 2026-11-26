@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { getDiagnosticTscOutput } from "@ark/attest/internal/cli/shared.ts"
 import {
 	parseCallSite,
+	ProgressDisplay,
 	resolveTraceTsconfig
 } from "@ark/attest/internal/cli/trace.ts"
 import {
@@ -130,5 +131,57 @@ contextualize(() => {
 		attest(getSuiteName("/repo/pkg/__tests__/perf.bench.ts")).equals("perf")
 		attest(getSuiteName("/repo/pkg/__tests__/helper.ts")).equals("helper")
 		attest(getSuiteName("/repo/pkg/standalone.test.mjs")).equals("standalone")
+	})
+
+	it("handles non-TTY stdout without clearLine or cursorTo in trace ProgressDisplay", () => {
+		const stdout = process.stdout as typeof process.stdout & {
+			clearLine?: typeof process.stdout.clearLine
+			cursorTo?: typeof process.stdout.cursorTo
+		}
+		const prevIsTTY = Object.getOwnPropertyDescriptor(stdout, "isTTY")
+		const prevClearLine = Object.getOwnPropertyDescriptor(stdout, "clearLine")
+		const prevCursorTo = Object.getOwnPropertyDescriptor(stdout, "cursorTo")
+		const prevWrite = stdout.write
+		const written: string[] = []
+		try {
+			Object.defineProperty(stdout, "isTTY", {
+				value: false,
+				configurable: true
+			})
+			Object.defineProperty(stdout, "clearLine", {
+				value: undefined,
+				configurable: true
+			})
+			Object.defineProperty(stdout, "cursorTo", {
+				value: undefined,
+				configurable: true
+			})
+			stdout.write = ((chunk: string | Uint8Array) => {
+				written.push(String(chunk))
+				return true
+			}) as typeof stdout.write
+
+			const progress = new ProgressDisplay(2)
+			progress.start()
+			progress.update(1)
+			progress.update(2)
+			progress.stop()
+
+			attest(written.length).equals(1)
+			attest(
+				/^Processing: \[={30}] 2\/2 entries \(100%\) \| .* \(Done\)\n$/.test(
+					written[0]
+				)
+			).equals(true)
+		} finally {
+			stdout.write = prevWrite
+			if (prevIsTTY) Object.defineProperty(stdout, "isTTY", prevIsTTY)
+			else delete (stdout as { isTTY?: boolean }).isTTY
+			if (prevClearLine)
+				Object.defineProperty(stdout, "clearLine", prevClearLine)
+			else delete (stdout as { clearLine?: unknown }).clearLine
+			if (prevCursorTo) Object.defineProperty(stdout, "cursorTo", prevCursorTo)
+			else delete (stdout as { cursorTo?: unknown }).cursorTo
+		}
 	})
 })

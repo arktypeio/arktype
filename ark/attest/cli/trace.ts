@@ -177,11 +177,19 @@ const formatSeconds = (totalSeconds: number): string => {
 	return `${seconds}s`
 }
 
-class ProgressDisplay {
+const canRewriteStdoutLine = (): boolean =>
+	Boolean(
+		process.stdout?.isTTY &&
+			typeof process.stdout.clearLine === "function" &&
+			typeof process.stdout.cursorTo === "function"
+	)
+
+export class ProgressDisplay {
 	private totalItems: number
 	private processedItems: number = 0
 	private startTime: number = 0
 	private timerId?: NodeJS.Timeout
+	private stopped: boolean = false
 	private barWidth: number = 30 // Width of the progress bar itself
 
 	constructor(totalItems: number) {
@@ -194,21 +202,25 @@ class ProgressDisplay {
 
 		this.startTime = Date.now()
 		this.processedItems = 0
+		this.stopped = false
+		if (!canRewriteStdoutLine()) return
 		this.render() // Initial render
 		// Update every second for elapsed time and ETA
 		this.timerId = setInterval(() => this.render(), 1000)
 	}
 
 	update(processedCount: number): void {
-		if (this.totalItems === 0) return
+		if (this.totalItems === 0 || this.stopped) return
 
 		this.processedItems = Math.min(processedCount, this.totalItems)
-		this.render() // Re-render on each item processed for immediate feedback
-
-		if (this.processedItems >= this.totalItems) this.stop() // Automatically stop if all items are processed
+		if (this.processedItems >= this.totalItems) {
+			this.stop() // Automatically stop if all items are processed
+			return
+		}
+		if (canRewriteStdoutLine()) this.render() // Re-render on each item processed for immediate feedback
 	}
 
-	private render(): void {
+	private render(final = false): void {
 		if (this.totalItems === 0 && this.processedItems === 0 && !this.startTime)
 			return // Avoid rendering if not started for 0 items
 
@@ -236,21 +248,26 @@ class ProgressDisplay {
 
 		const summary = `${this.processedItems}/${this.totalItems} entries (${percent.toFixed(0)}%)`
 		const timeInfo = `${formattedElapsed} elapsed${etaStr}`
+		const line = `Processing: ${bar} ${summary} | ${timeInfo}`
 
-		process.stdout.clearLine(0) // Clear the current line
-		process.stdout.cursorTo(0) // Move cursor to the beginning of the line
-		process.stdout.write(`Processing: ${bar} ${summary} | ${timeInfo}`)
+		if (canRewriteStdoutLine()) {
+			process.stdout.clearLine(0) // Clear the current line
+			process.stdout.cursorTo(0) // Move cursor to the beginning of the line
+			process.stdout.write(line)
+		} else if (final) process.stdout?.write(`${line}\n`)
 	}
 
 	stop(): void {
+		if (this.stopped) return
+		this.stopped = true
 		if (this.timerId) {
 			clearInterval(this.timerId)
 			this.timerId = undefined as never
 		}
 		if (this.totalItems > 0) {
 			this.processedItems = this.totalItems // Ensure final state is 100%
-			this.render() // Final render
-			process.stdout.write("\n") // Move to the next line
+			this.render(true) // Final render
+			if (canRewriteStdoutLine()) process.stdout?.write("\n") // Move to the next line
 		}
 	}
 }
