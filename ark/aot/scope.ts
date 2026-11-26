@@ -64,6 +64,7 @@ export class ModuleScopes {
 	references: Reference[] = []
 	byId = new Map<Node, Reference>()
 	bindingsById = new Map<Node, Binding>()
+	byNode = new Map<Node, Scope>()
 	exportsByName: Record<string, ExportEntry> = Object.create(null)
 	starExports: string[] = []
 	private scope: Scope
@@ -74,6 +75,7 @@ export class ModuleScopes {
 
 	constructor(program: Program) {
 		this.root = this.scope = createScope(program, undefined)
+		this.byNode.set(program, this.root)
 		for (const statement of program.body) this.visit(statement, program)
 		this.close()
 		for (const reference of this.references) {
@@ -630,9 +632,22 @@ export class ModuleScopes {
 		return reference
 	}
 
+	bindingIn(node: Node | undefined, name: string): Binding | undefined {
+		for (
+			let current: Node | null | undefined = node;
+			current;
+			current = current.parent
+		) {
+			const scope = this.byNode.get(current)
+			if (scope && name in scope.bindings) return scope.bindings[name]
+		}
+		return this.root.bindings[name]
+	}
+
 	private inScope(node: Node, visit: () => void): void {
 		const parentScope = this.scope
 		this.scope = createScope(node, parentScope)
+		this.byNode.set(node, this.scope)
 		visit()
 		this.close()
 		this.scope = parentScope

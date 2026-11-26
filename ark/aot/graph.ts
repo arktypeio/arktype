@@ -20,34 +20,39 @@ import type { DateType } from "arktype/internal/variants/date.ts"
 import type { NumberType } from "arktype/internal/variants/number.ts"
 import type { ObjectType } from "arktype/internal/variants/object.ts"
 import type { StringType } from "arktype/internal/variants/string.ts"
-import type {
-	ArrowFunctionExpression,
-	CallExpression,
-	Class,
-	ClassElement,
-	Function,
-	FunctionBody,
-	ImportDeclaration,
-	ImportSpecifier,
-	MemberExpression,
-	NewExpression,
-	Node,
-	ObjectPropertyKind,
-	ParamPattern,
-	TSInterfaceDeclaration,
-	TaggedTemplateExpression,
-	ThisExpression,
-	TSIntersectionType,
-	TSSignature,
-	TSTupleElement,
-	TSType,
-	TSTypeAnnotation,
-	TSTypeQuery,
-	TSTypeReference,
-	TSTypeParameter,
-	TSTypeAliasDeclaration,
-	Span,
-	VariableDeclarator
+import {
+	visitorKeys,
+	type ArrowFunctionExpression,
+	type CallExpression,
+	type Class,
+	type ClassElement,
+	type Function,
+	type FunctionBody,
+	type ImportDeclaration,
+	type ImportSpecifier,
+	type JSXOpeningElement,
+	type MemberExpression,
+	type NewExpression,
+	type Node,
+	type ObjectPropertyKind,
+	type ParamPattern,
+	type TSFunctionType,
+	type TSInterfaceDeclaration,
+	type TSInterfaceHeritage,
+	type TSMethodSignature,
+	type TaggedTemplateExpression,
+	type ThisExpression,
+	type TSIntersectionType,
+	type TSSignature,
+	type TSTupleElement,
+	type TSType,
+	type TSTypeAnnotation,
+	type TSTypeQuery,
+	type TSTypeReference,
+	type TSTypeParameter,
+	type TSTypeAliasDeclaration,
+	type Span,
+	type VariableDeclarator
 } from "oxc-parser"
 import { dirname, join } from "node:path"
 import { isArkValue } from "./builtins.ts"
@@ -442,10 +447,12 @@ const opaque: KindBits = kinds.data | kinds.opaque
 
 const opaqueBits: KindBits = kinds.opaque | kinds.opaqueHolder
 
+const opaqueValueBits: KindBits = opaqueBits | kinds.returnsOpaque
+
 // a literal holding a Type passed to a parameter is a holder
 const holderOf = (held: KindBits): KindBits =>
-	held & ~(kinds.data | opaqueBits) ? kinds.data | kinds.holder
-	: held & opaqueBits ? opaque
+	held & ~(kinds.data | opaqueValueBits) ? kinds.data | kinds.holder
+	: held & opaqueValueBits ? opaque
 	: kinds.data
 
 const unsureOf = (kind: KindBits): KindBits =>
@@ -454,8 +461,8 @@ const unsureOf = (kind: KindBits): KindBits =>
 	: 0
 
 const lostOf = (kind: KindBits): KindBits =>
-	kind & ~(kinds.data | opaqueBits) ? unsure
-	: kind & opaqueBits ? opaque
+	kind & ~(kinds.data | opaqueValueBits) ? unsure
+	: kind & opaqueValueBits ? opaque
 	: kinds.data
 
 // e.g. `User` in `_unref(User)`, as Vue compiles a script setup binding its template reads
@@ -1122,6 +1129,14 @@ export class ModuleGraph {
 		SourceModule,
 		Record<string, LocalType | null>
 	>()
+	private exportedTypesByModule = new WeakMap<
+		SourceModule,
+		Map<string, ExportedType>
+	>()
+	private declaredTypeKinds = new Map<
+		LocalType,
+		Map<string, KindBits | undefined>
+	>()
 	// a helper's parameters as one call passes them
 	// the .d.ts beside each JS module, or null where its build wrote none
 	private declarationsById: Record<string, SourceModule | null> =
@@ -1212,6 +1227,8 @@ export class ModuleGraph {
 				)
 			}
 		}
+		this.exportedTypesByModule = new WeakMap()
+		this.declaredTypeKinds.clear()
 		return forgotten
 	}
 
@@ -1886,7 +1903,9 @@ export class ModuleGraph {
 				param.type === "AssignmentPattern" ? param.left : param,
 				module,
 				kindOfKey
-			) ?? this.declaredParamKindOf(fn, index, module, kindOfKey)
+			) ??
+			this.declaredParamKindOf(fn, index, module, kindOfKey) ??
+			this.jsxCallbackParamKindOf(fn, index, module, kindOfKey)
 		let result = 0
 		for (const call of calls ?? [undefined]) {
 			result |= this.patternKindOf(
@@ -2026,23 +2045,41 @@ export class ModuleGraph {
 
 	private typeKindOf(
 		type: TSType | TSTypeAnnotation,
-		context: Node,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey,
-		depth = 0
+		depth = 0,
+		typeArgs?: TypeArgs,
+		state: TypeEvalState = newTypeEvalState()
 	): KindBits | undefined {
+		if (state.aborted || ++state.steps > maxTypeSteps) {
+			state.aborted = true
+			return
+		}
 		const union = (
 			types: (TSType | TSTypeAnnotation | null)[],
 			depth: number
-		) => this.unionKindOf(types, context, module, kindOfKey, depth)
+		) =>
+			this.unionKindOf(
+				types,
+				context,
+				module,
+				kindOfKey,
+				depth,
+				typeArgs,
+				state
+			)
 		switch (type.type) {
 			case "TSTypeAnnotation":
+			case "TSParenthesizedType":
 				return this.typeKindOf(
 					type.typeAnnotation,
 					context,
 					module,
 					kindOfKey,
-					depth
+					depth,
+					typeArgs,
+					state
 				)
 			case "TSAnyKeyword":
 				return
@@ -2052,8 +2089,20 @@ export class ModuleGraph {
 				return depth < 2 ? undefined : kinds.data
 			case "TSUnionType":
 				return union(type.types, depth)
+			case "TSConditionalType":
+				return hasInferType(type.extendsType) ? undefined : (
+						union([type.trueType, type.falseType], depth)
+					)
 			case "TSIntersectionType":
-				return this.intersectionKindOf(type, context, module, kindOfKey, depth)
+				return this.intersectionKindOf(
+					type,
+					context,
+					module,
+					kindOfKey,
+					depth,
+					typeArgs,
+					state
+				)
 			case "TSArrayType":
 				return union([type.elementType], depth + 1)
 			// e.g. `readonly ArkError[]`, whose elements are as `ArkError[]`'s
@@ -2064,18 +2113,32 @@ export class ModuleGraph {
 							context,
 							module,
 							kindOfKey,
-							depth
+							depth,
+							typeArgs,
+							state
 						)
 					:	kinds.data
 			// e.g. data for `(typeof names)[number]`, but not `Parameters<typeof f>[0]`
 			case "TSIndexedAccessType": {
-				const object = type.objectType
+				const object =
+					type.objectType.type === "TSParenthesizedType" ?
+						type.objectType.typeAnnotation
+					:	type.objectType
 				if (
 					object.type !== "TSTypeQuery" &&
+					object.type !== "TSIndexedAccessType" &&
 					(object.type !== "TSTypeReference" || object.typeArguments)
 				)
 					return
-				const kind = this.typeKindOf(object, context, module, kindOfKey, depth)
+				const kind = this.typeKindOf(
+					object,
+					context,
+					module,
+					kindOfKey,
+					depth,
+					typeArgs,
+					state
+				)
 				return kind === undefined || isArk(kind) ?
 						undefined
 					:	memberKindOf(kind, undefined)
@@ -2086,10 +2149,13 @@ export class ModuleGraph {
 					context,
 					module,
 					kindOfKey,
-					depth
+					depth,
+					typeArgs,
+					state
 				)
 			case "TSTypeQuery":
-				return this.queryKindOf(type, module, kindOfKey)
+				state.queried = true
+				return this.queryKindOf(type, context, module, kindOfKey)
 			case "TSTupleType":
 				return union(type.elementTypes.map(tupleElementTypeOf), depth + 1)
 			// e.g. data for `() => void`, a function returning a Type for
@@ -2098,12 +2164,18 @@ export class ModuleGraph {
 			// `codec: { era: string; parse: () => unknown }` is still opaque
 			case "TSFunctionType":
 			case "TSConstructorType": {
+				const fnContext =
+					type.typeParameters?.params.length ?
+						{ node: type, parent: context }
+					:	context
 				const returned = this.typeKindOf(
 					type.returnType,
-					context,
+					fnContext,
 					module,
 					kindOfKey,
-					depth + 1
+					depth + 1,
+					typeArgs,
+					state
 				)
 				if (returned === undefined) return
 				const fn = functionKindOf(returned)
@@ -2114,7 +2186,15 @@ export class ModuleGraph {
 				)
 			}
 			case "TSTypeReference":
-				return this.referenceKindOf(type, context, module, kindOfKey, depth)
+				return this.referenceKindOf(
+					type,
+					context,
+					module,
+					kindOfKey,
+					depth,
+					typeArgs,
+					state
+				)
 			case "TSLiteralType":
 			case "TSTemplateLiteralType":
 				return kinds.data
@@ -2124,49 +2204,72 @@ export class ModuleGraph {
 	}
 
 	private unionKindOf(
-		types: (TSType | TSTypeAnnotation | null)[],
-		context: Node,
+		types: readonly (TSType | TSTypeAnnotation | null)[],
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey,
-		depth: number
+		depth: number,
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
-		return types.reduce<KindBits | undefined>((result, t) => {
-			const kind =
-				t ? this.typeKindOf(t, context, module, kindOfKey, depth) : kinds.data
-			return result === undefined || kind === undefined ?
-					undefined
-				:	result | kind
-		}, kinds.data)
+		let result: KindBits = kinds.data
+		for (const t of types) {
+			if (!t) continue
+			const kind = this.typeKindOf(
+				t,
+				context,
+				module,
+				kindOfKey,
+				depth,
+				typeArgs,
+				state
+			)
+			if (kind === undefined) return
+			result |= kind
+		}
+		return result
 	}
 
 	// e.g. `typeof def & { in: unknown }`, a Type only if some part says so
 	private intersectionKindOf(
 		type: TSIntersectionType,
-		context: Node,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey,
-		depth: number
+		depth: number,
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
-		const parts = type.types.map(t =>
-			this.typeKindOf(t, context, module, kindOfKey, depth)
-		)
+		const parts: (KindBits | undefined)[] = []
+		for (const t of type.types) {
+			parts.push(
+				this.typeKindOf(t, context, module, kindOfKey, depth, typeArgs, state)
+			)
+			if (state.aborted) return
+		}
 		const declared = parts.filter(
 			kind =>
 				kind !== undefined && !(kind & (kinds.unknown | kinds.opaque | arkBits))
 		)
-		return (
-				declared.length &&
-					parts.every(
-						kind => kind === undefined || !(kind & (kinds.unknown | arkBits))
-					)
-			) ?
-				declared.reduce<KindBits>((result, kind) => result | kind!, 0)
-			:	this.unionKindOf(type.types, context, module, kindOfKey, depth)
+		if (
+			declared.length &&
+			parts.every(
+				kind => kind === undefined || !(kind & (kinds.unknown | arkBits))
+			)
+		)
+			return declared.reduce<KindBits>((result, kind) => result | kind!, 0)
+		let result: KindBits = kinds.data
+		for (const kind of parts) {
+			if (kind === undefined) return
+			result |= kind
+		}
+		return result
 	}
 
 	// e.g. `typeof names`, or `typeof User.infer`, data whatever `User` is
 	private queryKindOf(
 		type: TSTypeQuery,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): KindBits | undefined {
@@ -2177,7 +2280,7 @@ export class ModuleGraph {
 			root = root.left
 		}
 		if (root.type !== "Identifier") return
-		const queried = this.queriedOf(root.name, module, kindOfKey)
+		const queried = this.queriedOf(root.name, context, module, kindOfKey)
 		if (!queried) return
 		let [kind, value] = queried
 		for (const name of names) {
@@ -2205,81 +2308,238 @@ export class ModuleGraph {
 	// local or imported alias, or a container holding what its arguments say
 	private referenceKindOf(
 		type: TSTypeReference,
-		context: Node,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey,
-		depth: number
+		depth: number,
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
 		const name = type.typeName
 		let root = name
 		while (root.type === "TSQualifiedName") root = root.left
 		if (root.type !== "Identifier") return
+		return this.namedTypeKindOf(
+			root.name,
+			name.type === "TSQualifiedName" && name.left === root ? name.right.name
+			: name.type === "Identifier" ? undefined
+			: null,
+			type.typeArguments?.params,
+			context,
+			module,
+			kindOfKey,
+			depth,
+			typeArgs,
+			state
+		)
+	}
+
+	// qualified: undefined for bare `Foo`, string for `NS.Foo`, null for deeper
+	private namedTypeKindOf(
+		rootName: string,
+		qualified: string | undefined | null,
+		argNodes: readonly TSType[] | undefined,
+		context: TypeContext,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number,
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
+	): KindBits | undefined {
 		// e.g. `T` in `<T extends Type>(t: T) => ...`
-		const parameter = typeParameterOf(context, root.name)
-		if (parameter) {
-			return parameter.constraint ?
-					this.typeKindOf(
-						parameter.constraint,
-						context,
-						module,
-						kindOfKey,
-						depth
-					)
-				:	undefined
+		if (qualified === undefined) {
+			const parameter = typeParameterOf(context, rootName)
+			if (parameter) {
+				if (typeArgs?.has(parameter)) return typeArgs.get(parameter)
+				return parameter.constraint ?
+						this.typeKindOf(
+							parameter.constraint,
+							context,
+							module,
+							kindOfKey,
+							depth,
+							typeArgs,
+							state
+						)
+					:	undefined
+			}
 		}
-		const imported = importedNameOf(module, root.name)
+		const imported = importedNameOf(module, rootName)
 		if (imported) {
 			const [specifier, importedName] = imported
 			if (localSpecifier.test(specifier)) {
 				// e.g. `T.Options` for `import type * as T from "./types.ts"`
 				const exportName =
-					name.type === "Identifier" ? importedName
-					: (
-						name.type === "TSQualifiedName" &&
-						importedName === "*" &&
-						name.left === root
-					) ?
-						name.right.name
-					:	undefined
+					qualified === undefined ? importedName
+					: typeof qualified === "string" && importedName === "*" ? qualified
+					: undefined
 				return exportName === undefined ? undefined : (
-						(this.exportedTypeKindOf(
+						this.exportedTypeKindOf(
 							specifier,
 							exportName,
 							context,
 							module,
 							kindOfKey,
-							depth
-						) ?? undefined)
+							depth,
+							argNodes,
+							module,
+							typeArgs,
+							state
+						)
 					)
 			}
 			const isArkTypeName =
-				name.type === "TSQualifiedName" ?
-					importedName === "*" ?
-						name.right.name in arkTypeNames
-					:	importedName === "type" && name.right.name === "Any"
+				qualified !== undefined ?
+					typeof qualified === "string" &&
+					(importedName === "*" ?
+						qualified in arkTypeNames
+					:	importedName === "type" && qualified === "Any")
 				:	importedName in arkTypeNames
 			if (!arkTypesSpecifier.test(specifier) || !isArkTypeName)
 				return kinds.data
 			return arkTypeKindOf(
-				name.type === "TSQualifiedName" ? name.right.name : importedName
+				typeof qualified === "string" ? qualified : importedName
 			)
 		}
-		const local = this.localTypeOf(module, root.name)
-		if (local)
-			return this.declaredTypeKindOf(local, context, module, kindOfKey, depth)
-		const args = type.typeArguments?.params ?? []
+		if (qualified === undefined) {
+			const local = this.localTypeOf(module, rootName)
+			if (local) {
+				return this.declaredTypeKindOf(
+					local,
+					context,
+					module,
+					kindOfKey,
+					depth,
+					argNodes,
+					module,
+					typeArgs,
+					state
+				)
+			}
+		}
+		const args = argNodes ?? []
 		// e.g. `Awaited<unknown>`, which is what its argument is
-		if (name.type !== "Identifier" || !(root.name in containerTypes))
-			return this.unionKindOf(args, context, module, kindOfKey, depth + 1)
+		if (qualified !== undefined || !(rootName in containerTypes)) {
+			return this.unionKindOf(
+				args,
+				context,
+				module,
+				kindOfKey,
+				depth + 1,
+				typeArgs,
+				state
+			)
+		}
 		// e.g. `Record<string, unknown>`, holding what its arguments say,
 		// as a type literal holds its members
 		let held: KindBits = kinds.data
 		for (const arg of args) {
 			held |=
-				this.typeKindOf(arg, context, module, kindOfKey, depth + 1) ??
-				kinds.opaqueHolder
+				this.typeKindOf(
+					arg,
+					context,
+					module,
+					kindOfKey,
+					depth + 1,
+					typeArgs,
+					state
+				) ?? kinds.opaqueHolder
+			if (state.aborted) return
 		}
 		return held
+	}
+
+	private heritageKindOf(
+		heritage: TSInterfaceHeritage,
+		context: TypeContext,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number,
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
+	): KindBits | undefined {
+		const expr = heritage.expression
+		if (expr.type === "Identifier") {
+			return this.namedTypeKindOf(
+				expr.name,
+				undefined,
+				heritage.typeArguments?.params,
+				context,
+				module,
+				kindOfKey,
+				depth,
+				typeArgs,
+				state
+			)
+		}
+		if (expr.type === "MemberExpression" && !expr.computed) {
+			const root = expr.object
+			const property = expr.property
+			if (root.type === "Identifier" && property.type === "Identifier") {
+				return this.namedTypeKindOf(
+					root.name,
+					property.name,
+					heritage.typeArguments?.params,
+					context,
+					module,
+					kindOfKey,
+					depth,
+					typeArgs,
+					state
+				)
+			}
+		}
+	}
+
+	private bindTypeArgs(
+		params: readonly TSTypeParameter[] | undefined,
+		argNodes: readonly TSType[] | undefined,
+		argContext: TypeContext,
+		argModule: SourceModule,
+		declContext: TypeContext,
+		declModule: SourceModule,
+		kindOfKey: KindOfKey,
+		depth: number,
+		callerTypeArgs: TypeArgs | undefined,
+		topLevel: boolean,
+		state: TypeEvalState
+	): TypeArgs | undefined {
+		if (!params?.length) return topLevel ? undefined : callerTypeArgs
+		let bound: Map<TSTypeParameter, KindBits | undefined> | undefined
+		const ensureBound = () =>
+			(bound ??= new Map(topLevel ? undefined : callerTypeArgs))
+		for (let i = 0; i < params.length; i++) {
+			const param = params[i]
+			if (argNodes?.[i]) {
+				ensureBound().set(
+					param,
+					this.typeKindOf(
+						argNodes[i],
+						argContext,
+						argModule,
+						kindOfKey,
+						depth,
+						callerTypeArgs,
+						state
+					)
+				)
+			} else if (param.default) {
+				ensureBound().set(
+					param,
+					this.typeKindOf(
+						param.default,
+						declContext,
+						declModule,
+						kindOfKey,
+						depth,
+						bound ?? (topLevel ? undefined : callerTypeArgs),
+						state
+					)
+				)
+			}
+			if (state.aborted) return
+		}
+		return bound ?? (topLevel ? undefined : callerTypeArgs)
 	}
 
 	// what a `typeof` names, with its value where a const or an export
@@ -2287,10 +2547,11 @@ export class ModuleGraph {
 	// module's scopes don't bind
 	private queriedOf(
 		name: string,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): [kind: KindBits, value: Located | undefined] | undefined {
-		const binding = module.scopes.root.bindings[name]
+		const binding = module.scopes.bindingIn(contextNodeOf(context), name)
 		const target =
 			binding ?
 				binding.kind === "import" ?
@@ -2374,18 +2635,60 @@ export class ModuleGraph {
 	// `unknown` may hold one, which reads off it are as off a parameter
 	private signaturesKindOf(
 		signatures: TSSignature[],
-		context: Node,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey,
-		depth: number
+		depth: number,
+		typeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits {
 		let result: KindBits = kinds.data
 		for (const signature of signatures) {
+			if (state.aborted) return result
+			if (
+				signature.type === "TSMethodSignature" ||
+				signature.type === "TSCallSignatureDeclaration" ||
+				signature.type === "TSConstructSignatureDeclaration"
+			) {
+				const sigContext =
+					signature.typeParameters?.params.length ?
+						{ node: signature, parent: context }
+					:	context
+				const returned =
+					signature.returnType ?
+						this.typeKindOf(
+							signature.returnType,
+							sigContext,
+							module,
+							kindOfKey,
+							depth + 2,
+							typeArgs,
+							state
+						)
+					:	undefined
+				if (returned === undefined) result |= kinds.opaqueHolder
+				else {
+					const fn = functionKindOf(returned)
+					result |=
+						signature.type !== "TSMethodSignature" && depth === 0 ? fn
+						: fn & ~kinds.data ? kinds.opaqueHolder
+						: kinds.data
+				}
+				continue
+			}
 			const annotation =
 				"typeAnnotation" in signature ? signature.typeAnnotation : null
 			result |=
 				(annotation &&
-					this.typeKindOf(annotation, context, module, kindOfKey, depth + 1)) ??
+					this.typeKindOf(
+						annotation,
+						context,
+						module,
+						kindOfKey,
+						depth + 1,
+						typeArgs,
+						state
+					)) ??
 				kinds.opaqueHolder
 		}
 		return result
@@ -2393,49 +2696,212 @@ export class ModuleGraph {
 
 	private declaredTypeKindOf(
 		declaration: LocalType,
-		context: Node,
+		context: TypeContext,
 		module: SourceModule,
 		kindOfKey: KindOfKey,
-		depth: number
+		depth: number,
+		argNodes: readonly TSType[] | undefined,
+		argModule: SourceModule | undefined,
+		callerTypeArgs: TypeArgs | undefined,
+		state: TypeEvalState
 	): KindBits | undefined {
-		if (this.resolving.has(declaration)) return kinds.data
-		this.resolving.add(declaration)
+		if (this.resolving.has(declaration)) {
+			const activeDepth = state.active.get(declaration)
+			state.minCycle = Math.min(
+				state.minCycle,
+				activeDepth === undefined ? -1 : activeDepth
+			)
+			return kinds.data
+		}
+		if (state.recursion >= maxTypeRecursion) {
+			state.aborted = true
+			return
+		}
+		state.recursion++
+		const topLevel = isTopLevelType(declaration)
 		try {
-			return declaration.type === "TSInterfaceDeclaration" ?
-					this.signaturesKindOf(
+			const params = declaration.typeParameters?.params
+			const boundArgs = this.bindTypeArgs(
+				params,
+				argNodes,
+				context,
+				argModule ?? module,
+				declaration,
+				module,
+				kindOfKey,
+				depth,
+				callerTypeArgs,
+				topLevel,
+				state
+			)
+			if (state.aborted) return
+			let cacheKey: string | undefined
+			let byKey: Map<string, KindBits | undefined> | undefined
+			if (topLevel) {
+				cacheKey = typeCacheKeyOf(depth, params, boundArgs)
+				byKey = this.declaredTypeKinds.get(declaration)
+				if (byKey?.has(cacheKey)) return byKey.get(cacheKey)
+			}
+			const myDepth = state.active.size
+			const outerMinCycle = state.minCycle
+			const outerQueried = state.queried
+			state.minCycle = Infinity
+			state.queried = false
+			this.resolving.add(declaration)
+			state.active.set(declaration, myDepth)
+			let result: KindBits | undefined
+			try {
+				if (declaration.type === "TSInterfaceDeclaration") {
+					result = this.signaturesKindOf(
 						declaration.body.body,
-						context,
+						declaration,
 						module,
 						kindOfKey,
-						depth
+						depth,
+						boundArgs,
+						state
 					)
-				:	this.typeKindOf(
+					for (const heritage of declaration.extends ?? []) {
+						if (state.aborted) return
+						result |=
+							this.heritageKindOf(
+								heritage,
+								declaration,
+								module,
+								kindOfKey,
+								depth,
+								boundArgs,
+								state
+							) ?? kinds.opaqueHolder
+					}
+				} else {
+					result = this.typeKindOf(
 						declaration.typeAnnotation,
 						declaration,
 						module,
 						kindOfKey,
-						depth
+						depth,
+						boundArgs,
+						state
 					)
+				}
+			} finally {
+				this.resolving.delete(declaration)
+				state.active.delete(declaration)
+			}
+			const selfContained = state.minCycle >= myDepth
+			const queried = state.queried
+			state.minCycle = Math.min(
+				outerMinCycle,
+				selfContained ? Infinity : state.minCycle
+			)
+			state.queried = outerQueried || queried
+			if (
+				topLevel &&
+				cacheKey !== undefined &&
+				selfContained &&
+				!state.aborted &&
+				(!queried || kindOfKey === this.finalKindOfKey)
+			) {
+				if (!byKey) {
+					byKey = new Map()
+					this.declaredTypeKinds.set(declaration, byKey)
+				}
+				byKey.set(cacheKey, result)
+			}
+			return state.aborted ? undefined : result
 		} finally {
-			this.resolving.delete(declaration)
+			state.recursion--
 		}
 	}
 
-	// null where the module exports no type by the name
 	private exportedTypeKindOf(
 		specifier: string,
 		name: string,
-		context: Node,
+		context: TypeContext,
 		importer: SourceModule,
 		kindOfKey: KindOfKey,
 		depth: number,
-		seen: Set<string> = new Set()
-	): KindBits | undefined | null {
-		if (!localSpecifier.test(specifier)) {
-			return arkTypesSpecifier.test(specifier) && name in arkTypeNames ?
-					arkTypeKindOf(name)
-				:	kinds.data
+		argNodes: readonly TSType[] | undefined,
+		argModule: SourceModule | undefined,
+		callerTypeArgs: TypeArgs | undefined,
+		state: TypeEvalState
+	): KindBits | undefined {
+		const resolved = this.resolveExportedType(specifier, name, importer, true)
+		if (resolved.kind === "local") {
+			return this.declaredTypeKindOf(
+				resolved.declaration,
+				context,
+				resolved.module,
+				kindOfKey,
+				depth,
+				argNodes,
+				argModule,
+				callerTypeArgs,
+				state
+			)
 		}
+		return resolved.kind === "kind" ? resolved.value : undefined
+	}
+
+	private exportedLocalTypeOf(
+		specifier: string,
+		name: string,
+		importer: SourceModule
+	): [LocalType, SourceModule] | undefined {
+		const resolved = this.resolveExportedType(specifier, name, importer, false)
+		return resolved.kind === "local" ?
+				[resolved.declaration, resolved.module]
+			:	undefined
+	}
+
+	private resolveExportedType(
+		specifier: string,
+		name: string,
+		importer: SourceModule,
+		localOnly: boolean,
+		seen?: Set<string>
+	): ExportedType {
+		if (localOnly && !localSpecifier.test(specifier)) {
+			return {
+				kind: "kind",
+				value:
+					arkTypesSpecifier.test(specifier) && name in arkTypeNames ?
+						arkTypeKindOf(name)
+					:	kinds.data
+			}
+		}
+		if (!localOnly && arkTypesSpecifier.test(specifier))
+			return { kind: "opaque" }
+		const cacheKey = `${localOnly ? "1" : "0"}\0${specifier}\0${name}`
+		let bySpec = this.exportedTypesByModule.get(importer)
+		const cached = bySpec?.get(cacheKey)
+		if (cached) return cached
+		const isRoot = !seen
+		const result = this.findExportedType(
+			specifier,
+			name,
+			importer,
+			localOnly,
+			seen ?? new Set()
+		)
+		if (isRoot) {
+			if (!bySpec) {
+				bySpec = new Map()
+				this.exportedTypesByModule.set(importer, bySpec)
+			}
+			bySpec.set(cacheKey, result)
+		}
+		return result
+	}
+
+	private findExportedType(
+		specifier: string,
+		name: string,
+		importer: SourceModule,
+		localOnly: boolean,
+		seen: Set<string>
+	): ExportedType {
 		// a type carries no value, so a host asks no bundler to resolve it
 		const resolved = this.resolve(specifier, importer, () => false)
 		// a JS module's types are in the .d.ts beside it
@@ -2443,19 +2909,9 @@ export class ModuleGraph {
 			resolved instanceof SourceModule ?
 				(this.declarationsOf(resolved) ?? resolved)
 			:	resolved
-		if (!(target instanceof SourceModule)) return
-		if (seen.has(target.id)) return null
+		if (!(target instanceof SourceModule)) return { kind: "opaque" }
+		if (seen.has(target.id)) return { kind: "missing" }
 		seen.add(target.id)
-		const fromTarget = (specifier: string, name: string) =>
-			this.exportedTypeKindOf(
-				specifier,
-				name,
-				context,
-				target,
-				kindOfKey,
-				depth,
-				seen
-			)
 		for (const statement of target.program.body) {
 			if (statement.type === "ExportNamedDeclaration") {
 				const declaration = statement.declaration
@@ -2463,44 +2919,592 @@ export class ModuleGraph {
 					(declaration?.type === "TSInterfaceDeclaration" ||
 						declaration?.type === "TSTypeAliasDeclaration") &&
 					declaration.id.name === name
-				) {
-					return this.declaredTypeKindOf(
-						declaration,
-						context,
-						target,
-						kindOfKey,
-						depth
-					)
-				}
+				)
+					return { kind: "local", declaration, module: target }
 				for (const exported of statement.specifiers) {
 					if (exportNameOf(exported.exported) !== name) continue
 					const localName = exportNameOf(exported.local)
-					if (statement.source)
-						return fromTarget(statement.source.value, localName)
-					const local = this.localTypeOf(target, localName)
-					if (local) {
-						return this.declaredTypeKindOf(
-							local,
-							context,
+					if (statement.source) {
+						return this.resolveExportedType(
+							statement.source.value,
+							localName,
 							target,
-							kindOfKey,
-							depth
+							localOnly,
+							seen
 						)
 					}
+					const local = this.localTypeOf(target, localName)
+					if (local)
+						return { kind: "local", declaration: local, module: target }
 					const imported = importedNameOf(target, localName)
 					return imported && imported[1] !== "*" ?
-							fromTarget(...imported)
-						:	undefined
+							this.resolveExportedType(
+								imported[0],
+								imported[1],
+								target,
+								localOnly,
+								seen
+							)
+						:	{ kind: "opaque" }
 				}
 			} else if (
 				statement.type === "ExportAllDeclaration" &&
 				!statement.exported
 			) {
-				const kind = fromTarget(statement.source.value, name)
-				if (kind !== null) return kind
+				const found = this.resolveExportedType(
+					statement.source.value,
+					name,
+					target,
+					localOnly,
+					seen
+				)
+				if (found.kind !== "missing") return found
 			}
 		}
-		return null
+		return { kind: "missing" }
+	}
+
+	// e.g. `item` in `<SearchableSelect.Root items={opts} getSearchFields={item => [item.label]} />`
+	// or `<SearchableSelect.EachItem<Opt>>{({ item }) => item.label}</SearchableSelect.EachItem>`
+	private jsxCallbackParamKindOf(
+		fn: FunctionNode,
+		index: number,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits | undefined {
+		let [operand, container] = operatorOf(fn)
+		while (
+			(container?.type === "ConditionalExpression" &&
+				(container.consequent === operand ||
+					container.alternate === operand)) ||
+			(container?.type === "LogicalExpression" && container.right === operand)
+		)
+			[operand, container] = operatorOf(container)
+		if (container?.type !== "JSXExpressionContainer") return
+		const parent = container.parent
+		let opening: JSXOpeningElement | undefined
+		let propName: string | undefined
+		if (
+			parent?.type === "JSXAttribute" &&
+			parent.name.type === "JSXIdentifier" &&
+			parent.parent?.type === "JSXOpeningElement"
+		) {
+			opening = parent.parent
+			propName = parent.name.name
+		} else if (parent?.type === "JSXElement") {
+			opening = parent.openingElement
+			propName = "children"
+		}
+		if (!opening || !propName) return
+		const component = this.jsxComponentOf(opening.name, module, kindOfKey)
+		if (!component) return
+		const [compFn, compModule] = component
+		const propsParam = this.componentPropsParamOf(compFn, compModule)
+		if (!propsParam) return
+		const [propsNode, propsContext, propsModule] = propsParam
+		const typeParams = compFn.typeParameters?.params ?? []
+		const compTypeArgs = new Map<TSTypeParameter, KindBits | undefined>()
+		const explicitArgs = opening.typeArguments?.params ?? []
+		for (let i = 0; i < typeParams.length; i++) {
+			if (explicitArgs[i]) {
+				compTypeArgs.set(
+					typeParams[i],
+					this.typeKindOf(explicitArgs[i], opening, module, kindOfKey, 0)
+				)
+			}
+		}
+		const unbound = new Set(
+			typeParams.filter(param => !compTypeArgs.has(param))
+		)
+		if (unbound.size) {
+			const hasUnsafeSpread = opening.attributes.some(
+				attr =>
+					attr.type === "JSXSpreadAttribute" &&
+					this.transfer(attr.argument, module, kindOfKey) !== kinds.data
+			)
+			if (!hasUnsafeSpread) {
+				const inferred = new Map<TSTypeParameter, KindBits>()
+				for (const attr of opening.attributes) {
+					if (
+						attr.type !== "JSXAttribute" ||
+						attr.name.type !== "JSXIdentifier" ||
+						attr.name.name === propName
+					)
+						continue
+					const attrKind =
+						!attr.value || attr.value.type === "Literal" ? kinds.data
+						: (
+							attr.value.type === "JSXExpressionContainer" &&
+							attr.value.expression.type !== "JSXEmptyExpression"
+						) ?
+							this.transfer(attr.value.expression, module, kindOfKey)
+						:	kinds.data
+					const entries = this.propTypesOf(
+						propsNode,
+						attr.name.name,
+						propsContext,
+						propsModule,
+						compTypeArgs,
+						undefined,
+						kindOfKey,
+						new Set()
+					)
+					if (!entries) continue
+					for (const entry of entries) {
+						if (entry.type.type === "TSMethodSignature") continue
+						collectInferredTypeParams(
+							entry.type,
+							attrKind,
+							entry.context,
+							unbound,
+							entry.paramAliases,
+							inferred
+						)
+					}
+				}
+				for (const [param, kind] of inferred) compTypeArgs.set(param, kind)
+			}
+		}
+		const entries = this.propTypesOf(
+			propsNode,
+			propName,
+			propsContext,
+			propsModule,
+			compTypeArgs,
+			undefined,
+			kindOfKey,
+			new Set()
+		)
+		if (!entries?.length) return
+		let result: KindBits = 0
+		let matched = false
+		for (const entry of entries) {
+			const callables = callableBranchesOf(entry.type)
+			if (!callables) return
+			for (const callable of callables) {
+				const paramType = paramTypeAt(callable, index)
+				if (!paramType) return
+				const callContext =
+					callable.typeParameters?.params.length ?
+						{ node: callable, parent: entry.context }
+					:	entry.context
+				const kind = this.typeKindOf(
+					paramType,
+					callContext,
+					entry.module,
+					kindOfKey,
+					0,
+					entry.typeArgs
+				)
+				if (kind === undefined) return
+				result |= kind
+				matched = true
+			}
+		}
+		return matched ? result : undefined
+	}
+
+	private componentPropsParamOf(
+		compFn: FunctionNode,
+		compModule: SourceModule
+	): [type: TSType, context: Node, module: SourceModule] | undefined {
+		const param = runtimeParamsOf(compFn)[0]
+		const target = param?.type === "AssignmentPattern" ? param.left : param
+		if (target && "typeAnnotation" in target && target.typeAnnotation)
+			return [target.typeAnnotation.typeAnnotation, compFn, compModule]
+		const declarations = this.declarationsOf(compModule)
+		if (!declarations) return
+		const name = exportedFunctionNameOf(compFn, compModule)
+		if (name === undefined) return
+		const declParam = declaredParamsOf(declarations, name)?.[0]
+		const declTarget =
+			declParam?.type === "AssignmentPattern" ? declParam.left : declParam
+		if (
+			declTarget &&
+			"typeAnnotation" in declTarget &&
+			declTarget.typeAnnotation
+		) {
+			return [
+				declTarget.typeAnnotation.typeAnnotation,
+				declTarget,
+				declarations
+			]
+		}
+	}
+
+	private jsxComponentOf(
+		name: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): [FunctionNode, SourceModule] | undefined {
+		const props: string[] = []
+		let root = name
+		while (root.type === "JSXMemberExpression") {
+			props.unshift(root.property.name)
+			root = root.object
+		}
+		if (root.type !== "JSXIdentifier" || /^[a-z]/.test(root.name)) return
+		const binding = module.scopes.byId.get(root)?.binding
+		if (!binding) return
+		if (!props.length) return this.componentFunctionOfBinding(binding, module)
+		let target: ImportTarget =
+			binding.kind === "import" ?
+				this.importOf(binding, module)
+			:	{ kind: "binding", module, binding, name: binding.name }
+		for (const prop of props) {
+			if (target.kind === "namespace")
+				target = this.exportOf(target.module, prop)
+			else if (target.kind === "binding" || target.kind === "expression") {
+				const literal = this.targetLiteralOf(target, kindOfKey, new Set())
+				const value = literal && this.valueIn(literal, prop)
+				if (!value) return
+				const vNode = unwrapChain(value.node)
+				if (vNode.type === "Identifier") {
+					const vb = value.module.scopes.byId.get(vNode)?.binding
+					if (!vb) return
+					target =
+						vb.kind === "import" ?
+							this.importOf(vb, value.module)
+						:	{
+								kind: "binding",
+								module: value.module,
+								binding: vb,
+								name: vb.name
+							}
+				} else
+					target = { kind: "expression", module: value.module, node: vNode }
+			} else return
+		}
+		return (
+			target.kind === "binding" ?
+				this.componentFunctionOfBinding(target.binding, target.module)
+			: target.kind === "expression" ?
+				this.componentFunctionOfNode(target.node, target.module)
+			:	undefined
+		)
+	}
+
+	private componentFunctionOfBinding(
+		binding: Binding,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		const direct = this.boundFunctionOf(binding, module)
+		if (direct) return direct
+		if (binding.kind === "import") {
+			const target = this.importOf(binding, module)
+			return (
+				target.kind === "binding" ?
+					this.componentFunctionOfBinding(target.binding, target.module)
+				: target.kind === "expression" ?
+					this.componentFunctionOfNode(target.node, target.module)
+				:	undefined
+			)
+		}
+		if (
+			!binding.writes.length &&
+			binding.declaration.type === "VariableDeclarator" &&
+			binding.declaration.init
+		)
+			return this.componentFunctionOfNode(binding.declaration.init, module)
+	}
+
+	private componentFunctionOfNode(
+		node: Node,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		const unwrapped = namedFunctionOf(unwrapChain(node), module)
+		if (isFunctionNode(unwrapped)) return [unwrapped, module]
+		// e.g. `React.memo(Comp)` or `forwardRef((props, ref) => ...)`
+		if (
+			unwrapped.type === "CallExpression" &&
+			unwrapped.arguments.length >= 1 &&
+			unwrapped.arguments[0].type !== "SpreadElement"
+		) {
+			const callee = unwrapChain(unwrapped.callee)
+			const calleeName =
+				callee.type === "Identifier" ? callee.name
+				: callee.type === "MemberExpression" ? memberNameOf(callee)
+				: undefined
+			if (calleeName === "memo" || calleeName === "forwardRef") {
+				const arg = unwrapChain(unwrapped.arguments[0])
+				if (arg.type === "Identifier") {
+					const binding = module.scopes.byId.get(arg)?.binding
+					return binding && this.componentFunctionOfBinding(binding, module)
+				}
+				return this.componentFunctionOfNode(arg, module)
+			}
+		}
+	}
+
+	private propTypesOf(
+		type: TSType,
+		propName: string,
+		context: TypeContext,
+		module: SourceModule,
+		typeArgs: TypeArgs | undefined,
+		paramAliases: ReadonlyMap<TSTypeParameter, TSTypeParameter> | undefined,
+		kindOfKey: KindOfKey,
+		seen: Set<Node>
+	): PropTypeEntry[] | undefined {
+		switch (type.type) {
+			case "TSParenthesizedType":
+				return this.propTypesOf(
+					type.typeAnnotation,
+					propName,
+					context,
+					module,
+					typeArgs,
+					paramAliases,
+					kindOfKey,
+					seen
+				)
+			case "TSAnyKeyword":
+				return
+			case "TSTypeLiteral":
+				return this.signaturePropTypesOf(
+					type.members,
+					propName,
+					context,
+					module,
+					typeArgs,
+					paramAliases
+				)
+			case "TSIntersectionType": {
+				const result: PropTypeEntry[] = []
+				for (const part of type.types) {
+					if (part.type === "TSAnyKeyword") return
+					const entries = this.propTypesOf(
+						part,
+						propName,
+						context,
+						module,
+						typeArgs,
+						paramAliases,
+						kindOfKey,
+						seen
+					)
+					if (entries) result.push(...entries)
+				}
+				return result
+			}
+			case "TSUnionType": {
+				const result: PropTypeEntry[] = []
+				for (const part of type.types) {
+					if (part.type === "TSAnyKeyword") return
+					const entries = this.propTypesOf(
+						part,
+						propName,
+						context,
+						module,
+						typeArgs,
+						paramAliases,
+						kindOfKey,
+						seen
+					)
+					if (entries) result.push(...entries)
+				}
+				return result
+			}
+			case "TSTypeReference": {
+				const name = type.typeName
+				let root = name
+				while (root.type === "TSQualifiedName") root = root.left
+				if (root.type !== "Identifier") return []
+				const qualified =
+					name.type === "TSQualifiedName" && name.left === root ?
+						name.right.name
+					: name.type === "Identifier" ? undefined
+					: null
+				const utility =
+					qualified === undefined ? root.name
+					: typeof qualified === "string" && root.name === "React" ? qualified
+					: undefined
+				const args = type.typeArguments?.params ?? []
+				if (
+					utility &&
+					args[0] &&
+					(utility === "PropsWithChildren" ||
+						utility === "Partial" ||
+						utility === "Required" ||
+						utility === "Readonly" ||
+						utility === "NonNullable" ||
+						utility === "Pick" ||
+						utility === "Omit")
+				) {
+					if (
+						utility === "Omit" &&
+						args[1] &&
+						matchesKeyLiteral(args[1], propName) === true
+					)
+						return []
+					if (
+						utility === "Pick" &&
+						args[1] &&
+						matchesKeyLiteral(args[1], propName) === false
+					)
+						return []
+					return this.propTypesOf(
+						args[0],
+						propName,
+						context,
+						module,
+						typeArgs,
+						paramAliases,
+						kindOfKey,
+						seen
+					)
+				}
+				let resolved: [LocalType, SourceModule] | undefined
+				const imported = importedNameOf(module, root.name)
+				if (imported) {
+					const [specifier, importedName] = imported
+					const exportName =
+						qualified === undefined ? importedName
+						: typeof qualified === "string" && importedName === "*" ? qualified
+						: undefined
+					if (exportName !== undefined)
+						resolved = this.exportedLocalTypeOf(specifier, exportName, module)
+				} else if (qualified === undefined) {
+					const local = this.localTypeOf(module, root.name)
+					if (local) resolved = [local, module]
+				}
+				if (!resolved) return []
+				const [decl, declModule] = resolved
+				if (seen.has(decl)) return []
+				const declParams = decl.typeParameters?.params ?? []
+				const boundArgs = this.bindTypeArgs(
+					declParams,
+					args,
+					context,
+					module,
+					decl,
+					declModule,
+					kindOfKey,
+					0,
+					typeArgs,
+					isTopLevelType(decl),
+					newTypeEvalState()
+				)
+				let nextAliasesMap: Map<TSTypeParameter, TSTypeParameter> | undefined
+				for (let i = 0; i < declParams.length; i++) {
+					const arg = args[i]
+					if (
+						arg?.type === "TSTypeReference" &&
+						arg.typeName.type === "Identifier" &&
+						!arg.typeArguments
+					) {
+						const outer = typeParameterOf(context, arg.typeName.name)
+						if (outer) {
+							const rootParam = paramAliases?.get(outer) ?? outer
+							if (!typeArgs?.has(rootParam)) {
+								nextAliasesMap ??= new Map(paramAliases)
+								nextAliasesMap.set(declParams[i], rootParam)
+							}
+						}
+					}
+				}
+				const nextAliases = nextAliasesMap ?? paramAliases
+				seen.add(decl)
+				try {
+					if (decl.type === "TSTypeAliasDeclaration") {
+						return this.propTypesOf(
+							decl.typeAnnotation,
+							propName,
+							decl,
+							declModule,
+							boundArgs,
+							nextAliases,
+							kindOfKey,
+							seen
+						)
+					}
+					const own = this.signaturePropTypesOf(
+						decl.body.body,
+						propName,
+						decl,
+						declModule,
+						boundArgs,
+						nextAliases
+					)
+					if (!own) return
+					const result = [...own]
+					for (const heritage of decl.extends ?? []) {
+						const expr = heritage.expression
+						const typeName =
+							expr.type === "Identifier" ? expr
+							: (
+								expr.type === "MemberExpression" &&
+								!expr.computed &&
+								expr.object.type === "Identifier" &&
+								expr.property.type === "Identifier"
+							) ?
+								({
+									type: "TSQualifiedName",
+									left: expr.object,
+									right: expr.property,
+									start: expr.start,
+									end: expr.end
+								} as const)
+							:	undefined
+						if (!typeName) continue
+						const baseRef: TSTypeReference = {
+							type: "TSTypeReference",
+							typeName,
+							typeArguments: heritage.typeArguments,
+							start: heritage.start,
+							end: heritage.end
+						}
+						const baseEntries = this.propTypesOf(
+							baseRef,
+							propName,
+							decl,
+							declModule,
+							boundArgs,
+							nextAliases,
+							kindOfKey,
+							seen
+						)
+						if (baseEntries) result.push(...baseEntries)
+					}
+					return result
+				} finally {
+					seen.delete(decl)
+				}
+			}
+			default:
+				return []
+		}
+	}
+
+	private signaturePropTypesOf(
+		signatures: TSSignature[],
+		propName: string,
+		context: TypeContext,
+		module: SourceModule,
+		typeArgs: TypeArgs | undefined,
+		paramAliases: ReadonlyMap<TSTypeParameter, TSTypeParameter> | undefined
+	): PropTypeEntry[] | undefined {
+		for (const sig of signatures) {
+			if (
+				sig.type !== "TSPropertySignature" &&
+				sig.type !== "TSMethodSignature"
+			)
+				continue
+			if (keyNameOf(sig) !== propName) continue
+			if (sig.type === "TSMethodSignature")
+				return [{ type: sig, context, module, typeArgs, paramAliases }]
+			if (!sig.typeAnnotation) return
+			return [
+				{
+					type: sig.typeAnnotation.typeAnnotation,
+					context,
+					module,
+					typeArgs,
+					paramAliases
+				}
+			]
+		}
+		return []
 	}
 
 	// e.g. `type Schemas = { user: Type }`, unless the module declares two
@@ -3845,13 +4849,17 @@ export class ModuleGraph {
 		if (typeof read === "string" && read in inferenceMembers) return
 		// a validator prints its expression as its string
 		if (read === "toString" && !lacked.has(read)) read = "expression"
-		const object = objects.find(object => isOnlyType(kindOf(object)))
+		// every Type and standalone validator is callable (`typeof === "function"`)
+		const candidates = objects.filter(
+			object => !isProvenNotFunction(object, module)
+		)
+		const object = candidates.find(object => isOnlyType(kindOf(object)))
 		// e.g. `t.or`, `${t}` or `Object.keys(t)`, where `t` may be a Type
 		const unsure =
 			!object &&
 			(node.type === "MemberExpression" || typeof read === "string" ?
-				objects.find(object => isUnsureRead(read, kindOf(object), lacked))
-			:	objects.find(object => kindOf(object) & kinds.type))
+				candidates.find(object => isUnsureRead(read, kindOf(object), lacked))
+			:	candidates.find(object => kindOf(object) & kinds.type))
 		if (unsure) return [read as string, unsure, true]
 		return (
 				object &&
@@ -5471,15 +6479,43 @@ export const writeOf = (target: Node): Node => {
 	return writeOf(parent)
 }
 
+type TypeContext = Node | { node: Node; parent: TypeContext }
+
+const contextNodeOf = (context: TypeContext): Node =>
+	"node" in context ? contextNodeOf(context.parent) : context
+
+const hasInferType = (node: Node): boolean => {
+	if (node.type === "TSInferType") return true
+	for (const k of visitorKeys[node.type]) {
+		const child = (node as never)[k] as Node | (Node | null)[] | null
+		if (!child) continue
+		if (Array.isArray(child)) {
+			for (const item of child) if (item && hasInferType(item)) return true
+		} else if (hasInferType(child)) return true
+	}
+	return false
+}
+
 const typeParameterOf = (
-	node: Node | null | undefined,
+	context: TypeContext | null | undefined,
 	name: string
-): TSTypeParameter | undefined =>
-	!node ? undefined : (
-		("typeParameters" in node &&
-			node.typeParameters?.params.find(param => param.name.name === name)) ||
-		typeParameterOf(node.parent, name)
+): TSTypeParameter | undefined => {
+	if (!context) return
+	if ("node" in context) {
+		return (
+			("typeParameters" in context.node &&
+				context.node.typeParameters?.params.find(
+					param => param.name.name === name
+				)) ||
+			typeParameterOf(context.parent, name)
+		)
+	}
+	return (
+		("typeParameters" in context &&
+			context.typeParameters?.params.find(param => param.name.name === name)) ||
+		typeParameterOf(context.parent, name)
 	)
+}
 
 const castOf = (node: Node): Node | undefined => {
 	for (; isTransparent(node); node = node.expression) {
@@ -5507,6 +6543,473 @@ const arkTypeKindOf = (name: string): KindBits =>
 	name === "Scope" || name === "Generic" ? unsure | kinds.otherArk : unsure
 
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
+
+type TypeArgs = ReadonlyMap<TSTypeParameter, KindBits | undefined>
+
+type ExportedType =
+	| { kind: "local"; declaration: LocalType; module: SourceModule }
+	| { kind: "kind"; value: KindBits }
+	| { kind: "opaque" }
+	| { kind: "missing" }
+
+type TypeEvalState = {
+	steps: number
+	recursion: number
+	active: Map<LocalType, number>
+	minCycle: number
+	queried: boolean
+	aborted: boolean
+}
+
+const maxTypeSteps = 1024
+const maxTypeRecursion = 24
+
+const newTypeEvalState = (): TypeEvalState => ({
+	steps: 0,
+	recursion: 0,
+	active: new Map(),
+	minCycle: Infinity,
+	queried: false,
+	aborted: false
+})
+
+const isTopLevelType = (declaration: LocalType): boolean =>
+	declaration.parent?.type === "Program" ||
+	(declaration.parent?.type === "ExportNamedDeclaration" &&
+		declaration.parent.parent?.type === "Program")
+
+const typeCacheKeyOf = (
+	depth: number,
+	params: readonly TSTypeParameter[] | undefined,
+	boundArgs: TypeArgs | undefined
+): string => {
+	const clamped = depth < 2 ? depth : 2
+	if (!params?.length) return String(clamped)
+	let key = `${clamped}|`
+	for (let i = 0; i < params.length; i++) {
+		if (i) key += ","
+		const param = params[i]
+		if (!boundArgs?.has(param)) key += "-"
+		else {
+			const val = boundArgs.get(param)
+			key += val === undefined ? "u" : val
+		}
+	}
+	return key
+}
+
+type PropTypeEntry = {
+	type: TSType | TSMethodSignature
+	context: TypeContext
+	module: SourceModule
+	typeArgs: TypeArgs | undefined
+	paramAliases: ReadonlyMap<TSTypeParameter, TSTypeParameter> | undefined
+}
+
+const nonFunctionTypeofs: Record<string, 1> = Object.setPrototypeOf(
+	{
+		object: 1,
+		string: 1,
+		number: 1,
+		boolean: 1,
+		bigint: 1,
+		symbol: 1,
+		undefined: 1
+	},
+	null
+)
+
+// e.g. `issue` inside `if (typeof issue === "object" && ...)`, which cannot
+// hold a Type or standalone validator since both are callable functions
+const isProvenNotFunction = (node: Node, module: SourceModule): boolean => {
+	const id = unwrapChain(node)
+	if (id.type !== "Identifier") return false
+	const binding = module.scopes.byId.get(id)?.binding
+	if (!binding || binding.writes.length) return false
+	let child: Node = id
+	for (let parent = id.parent; parent; child = parent, parent = parent.parent) {
+		if (isFunctionNode(parent) || parent.type === "ClassBody") break
+		if (parent.type === "LogicalExpression" && parent.right === child) {
+			if (
+				parent.operator === "&&" &&
+				testProvesNotFunction(parent.left, true, binding, module)
+			)
+				return true
+			if (
+				parent.operator === "||" &&
+				testProvesNotFunction(parent.left, false, binding, module)
+			)
+				return true
+		} else if (parent.type === "ConditionalExpression") {
+			if (
+				parent.consequent === child &&
+				testProvesNotFunction(parent.test, true, binding, module)
+			)
+				return true
+			if (
+				parent.alternate === child &&
+				testProvesNotFunction(parent.test, false, binding, module)
+			)
+				return true
+		} else if (parent.type === "IfStatement") {
+			if (
+				parent.consequent === child &&
+				testProvesNotFunction(parent.test, true, binding, module)
+			)
+				return true
+			if (
+				parent.alternate === child &&
+				testProvesNotFunction(parent.test, false, binding, module)
+			)
+				return true
+		} else if (
+			parent.type === "BlockStatement" ||
+			parent.type === "SwitchCase" ||
+			parent.type === "Program"
+		) {
+			const list =
+				parent.type === "SwitchCase" ? parent.consequent : parent.body
+			const index = list.indexOf(child as never)
+			for (let i = index - 1; i >= 0; i--) {
+				const stmt = list[i]
+				if (stmt.type !== "IfStatement") continue
+				const cExits = alwaysExits(stmt.consequent)
+				const aExits = stmt.alternate ? alwaysExits(stmt.alternate) : false
+				if (
+					cExits &&
+					!aExits &&
+					testProvesNotFunction(stmt.test, false, binding, module)
+				)
+					return true
+				if (
+					aExits &&
+					!cExits &&
+					testProvesNotFunction(stmt.test, true, binding, module)
+				)
+					return true
+			}
+			if (parent.type === "Program") break
+		}
+	}
+	return false
+}
+
+const alwaysExits = (node: Node): boolean => {
+	switch (node.type) {
+		case "ReturnStatement":
+		case "ThrowStatement":
+		case "ContinueStatement":
+		case "BreakStatement":
+			return true
+		case "BlockStatement":
+			return node.body.some(alwaysExits)
+		case "IfStatement":
+			return (
+				!!node.alternate &&
+				alwaysExits(node.consequent) &&
+				alwaysExits(node.alternate)
+			)
+		default:
+			return false
+	}
+}
+
+const isBoundId = (
+	node: Node,
+	binding: Binding,
+	module: SourceModule
+): boolean => {
+	const unwrapped = unwrapExpression(node)
+	return (
+		unwrapped.type === "Identifier" &&
+		module.scopes.byId.get(unwrapped)?.binding === binding
+	)
+}
+
+const isNullishLiteral = (node: Node, module: SourceModule): boolean => {
+	const unwrapped = unwrapExpression(node)
+	return (
+		(unwrapped.type === "Literal" && unwrapped.value === null) ||
+		(unwrapped.type === "Identifier" &&
+			unwrapped.name === "undefined" &&
+			!module.scopes.byId.get(unwrapped)?.binding)
+	)
+}
+
+const testProvesNotFunction = (
+	node: Node,
+	expectTruthy: boolean,
+	binding: Binding,
+	module: SourceModule
+): boolean => {
+	const test = unwrapExpression(node)
+	if (test.type === "UnaryExpression" && test.operator === "!")
+		return testProvesNotFunction(test.argument, !expectTruthy, binding, module)
+	if (test.type === "LogicalExpression") {
+		if (test.operator === "&&") {
+			return expectTruthy ?
+					testProvesNotFunction(test.left, true, binding, module) ||
+						testProvesNotFunction(test.right, true, binding, module)
+				:	testProvesNotFunction(test.left, false, binding, module) &&
+						testProvesNotFunction(test.right, false, binding, module)
+		}
+		if (test.operator === "||") {
+			return expectTruthy ?
+					testProvesNotFunction(test.left, true, binding, module) &&
+						testProvesNotFunction(test.right, true, binding, module)
+				:	testProvesNotFunction(test.left, false, binding, module) ||
+						testProvesNotFunction(test.right, false, binding, module)
+		}
+	}
+	if (!expectTruthy && isBoundId(test, binding, module)) return true
+	if (
+		test.type === "BinaryExpression" &&
+		(test.operator === "===" ||
+			test.operator === "==" ||
+			test.operator === "!==" ||
+			test.operator === "!=")
+	) {
+		const isEq = test.operator === "===" || test.operator === "=="
+		const holdsEq = expectTruthy ? isEq : !isEq
+		const checkTypeof = (a: Node, b: Node): boolean => {
+			const ua = unwrapExpression(a)
+			const ub = unwrapExpression(b)
+			if (
+				ua.type === "UnaryExpression" &&
+				ua.operator === "typeof" &&
+				isBoundId(ua.argument, binding, module) &&
+				ub.type === "Literal" &&
+				typeof ub.value === "string"
+			) {
+				return holdsEq ?
+						ub.value in nonFunctionTypeofs
+					:	ub.value === "function"
+			}
+			return false
+		}
+		if (
+			checkTypeof(test.left, test.right) ||
+			checkTypeof(test.right, test.left)
+		)
+			return true
+		if (
+			holdsEq &&
+			((isBoundId(test.left, binding, module) &&
+				isNullishLiteral(test.right, module)) ||
+				(isBoundId(test.right, binding, module) &&
+					isNullishLiteral(test.left, module)))
+		)
+			return true
+	}
+	if (
+		expectTruthy &&
+		test.type === "CallExpression" &&
+		test.arguments.length >= 1
+	) {
+		const callee = unwrapChain(test.callee)
+		if (
+			callee.type === "MemberExpression" &&
+			memberNameOf(callee) === "isArray"
+		) {
+			const obj = unwrapChain(callee.object)
+			if (
+				obj.type === "Identifier" &&
+				obj.name === "Array" &&
+				!module.scopes.byId.get(obj)?.binding &&
+				isBoundId(test.arguments[0], binding, module)
+			)
+				return true
+		}
+	}
+	return false
+}
+
+const iterableTypeNames: Record<string, 1> = Object.setPrototypeOf(
+	{
+		Array: 1,
+		ReadonlyArray: 1,
+		ArrayLike: 1,
+		Iterable: 1,
+		Set: 1,
+		ReadonlySet: 1
+	},
+	null
+)
+
+const collectInferredTypeParams = (
+	type: TSType,
+	attrKind: KindBits,
+	context: TypeContext,
+	unbound: ReadonlySet<TSTypeParameter>,
+	paramAliases: ReadonlyMap<TSTypeParameter, TSTypeParameter> | undefined,
+	inferred: Map<TSTypeParameter, KindBits>
+): void => {
+	switch (type.type) {
+		case "TSParenthesizedType":
+			return collectInferredTypeParams(
+				type.typeAnnotation,
+				attrKind,
+				context,
+				unbound,
+				paramAliases,
+				inferred
+			)
+		case "TSTypeOperator":
+			if (type.operator === "readonly") {
+				collectInferredTypeParams(
+					type.typeAnnotation,
+					attrKind,
+					context,
+					unbound,
+					paramAliases,
+					inferred
+				)
+			}
+			return
+		case "TSUnionType":
+		case "TSIntersectionType":
+			for (const part of type.types) {
+				if (
+					part.type === "TSNeverKeyword" ||
+					part.type === "TSUndefinedKeyword" ||
+					part.type === "TSNullKeyword"
+				)
+					continue
+				collectInferredTypeParams(
+					part,
+					attrKind,
+					context,
+					unbound,
+					paramAliases,
+					inferred
+				)
+			}
+			return
+		case "TSArrayType":
+			return collectInferredTypeParams(
+				type.elementType,
+				memberKindOf(attrKind, undefined),
+				context,
+				unbound,
+				paramAliases,
+				inferred
+			)
+		case "TSTupleType": {
+			const elemKind = memberKindOf(attrKind, undefined)
+			for (const elem of type.elementTypes) {
+				collectInferredTypeParams(
+					tupleElementTypeOf(elem),
+					elemKind,
+					context,
+					unbound,
+					paramAliases,
+					inferred
+				)
+			}
+			return
+		}
+		case "TSTypeReference": {
+			const name = type.typeName
+			if (name.type === "Identifier" && !type.typeArguments) {
+				const param = typeParameterOf(context, name.name)
+				const rootParam = param && (paramAliases?.get(param) ?? param)
+				if (rootParam && unbound.has(rootParam)) {
+					inferred.set(rootParam, (inferred.get(rootParam) ?? 0) | attrKind)
+					return
+				}
+			}
+			const args = type.typeArguments?.params
+			if (!args?.length) return
+			const nextKind =
+				name.type === "Identifier" && name.name in iterableTypeNames ?
+					memberKindOf(attrKind, undefined)
+				:	lostOf(attrKind)
+			for (const arg of args) {
+				collectInferredTypeParams(
+					arg,
+					nextKind,
+					context,
+					unbound,
+					paramAliases,
+					inferred
+				)
+			}
+			return
+		}
+		// do not infer covariant type arguments from callback parameter positions
+		case "TSFunctionType":
+		case "TSConstructorType":
+			return
+	}
+}
+
+const callableBranchesOf = (
+	type: TSType | TSMethodSignature
+): (TSFunctionType | TSMethodSignature)[] | undefined => {
+	if (type.type === "TSMethodSignature" || type.type === "TSFunctionType")
+		return [type]
+	if (type.type === "TSParenthesizedType")
+		return callableBranchesOf(type.typeAnnotation)
+	if (
+		type.type === "TSUndefinedKeyword" ||
+		type.type === "TSNullKeyword" ||
+		type.type === "TSNeverKeyword"
+	)
+		return []
+	if (type.type === "TSUnionType") {
+		const result: (TSFunctionType | TSMethodSignature)[] = []
+		for (const part of type.types) {
+			const branches = callableBranchesOf(part)
+			if (!branches) return
+			result.push(...branches)
+		}
+		return result
+	}
+}
+
+const paramTypeAt = (
+	callable: TSFunctionType | TSMethodSignature,
+	index: number
+): TSType | undefined => {
+	const params = callable.params.filter(
+		(param, i) =>
+			!(i === 0 && param.type === "Identifier" && param.name === "this")
+	)
+	const param = params[index]
+	if (param) {
+		const target = param.type === "AssignmentPattern" ? param.left : param
+		if (target.type === "RestElement") {
+			const restType = target.typeAnnotation?.typeAnnotation
+			return restType?.type === "TSArrayType" ? restType.elementType : undefined
+		}
+		return "typeAnnotation" in target ?
+				target.typeAnnotation?.typeAnnotation
+			:	undefined
+	}
+	const last = params[params.length - 1]
+	if (last?.type === "RestElement") {
+		const restType = last.typeAnnotation?.typeAnnotation
+		return restType?.type === "TSArrayType" ? restType.elementType : undefined
+	}
+}
+
+// true if every literal key in `type` includes `name`, false if none does,
+// undefined if `type` is not a string literal or union of string literals
+const matchesKeyLiteral = (type: TSType, name: string): boolean | undefined => {
+	if (type.type === "TSParenthesizedType")
+		return matchesKeyLiteral(type.typeAnnotation, name)
+	if (type.type === "TSLiteralType" && type.literal.type === "Literal")
+		return String(type.literal.value) === name
+	if (type.type === "TSUnionType") {
+		let matched = false
+		for (const part of type.types) {
+			const hit = matchesKeyLiteral(part, name)
+			if (hit === undefined) return
+			if (hit) matched = true
+		}
+		return matched
+	}
+}
 
 // globals holding what their arguments describe, rather than being it
 const containerTypes: Record<string, 1> = Object.setPrototypeOf(
