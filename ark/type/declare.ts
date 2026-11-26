@@ -21,7 +21,12 @@ import type {
 	ThunkCast
 } from "./parser/definition.ts"
 import type { MetaKey } from "./parser/objectLiteral.ts"
-import type { OptionalPropertyDefinition } from "./parser/property.ts"
+import type {
+	DefaultablePropertyTuple,
+	isDefaultable,
+	OptionalPropertyDefinition,
+	PossibleDefaultableStringDefinition
+} from "./parser/property.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
@@ -174,7 +179,7 @@ type validateArrayInference<
 	ctx extends DeclareContext
 > =
 	declaredObjectOf<declared, ctx> extends infer declared extends array ?
-		isElementwise<def, declared> extends true ?
+		isElementwise<def, declared, ctx> extends true ?
 			{
 				[i in keyof declared]: i extends keyof def ?
 					validateInference<def[i], declared[i], $, args, ctx>
@@ -187,11 +192,24 @@ type validateArrayInference<
 // each is required on both sides. an optional element's declared value includes
 // `undefined` that its definition doesn't, and whether it is optional at all is
 // lost comparing values, while a variadic element maps to every index past the
-// fixed ones and a spread shifts those after it, so either is checked as a whole
-type isElementwise<def extends array, declared extends array> =
+// fixed ones and a spread shifts those after it, so either is checked as a whole.
+// so is a default on the input side, where its element is optional, and since
+// only parsing tells whether a string has one, any string with an `=`
+type isElementwise<
+	def extends array,
+	declared extends array,
+	ctx extends DeclareContext
+> =
 	number extends declared["length"] ? false
 	: declared["length"] extends Required<declared>["length"] ?
-		[Extract<def[number], "..." | OptionalPropertyDefinition>] extends [never] ?
+		[
+			Extract<
+				def[number],
+				| "..."
+				| (ctx["side"] extends "in" ? PossibleOptionalValue
+				  :	OptionalPropertyDefinition)
+			>
+		] extends [never] ?
 			true
 		:	false
 	:	false
@@ -278,12 +296,45 @@ type validateDeclaredKeys<
 	:	declared[k]
 } & (ctx["assignable"] extends true ?
 	validateAssignableOptionalKeys<def, declared, $, args, ctx>
+: ctx["side"] extends "in" ?
+	{
+		[k in optionalKeyOf<declared> &
+			string as declaredInputOptionalKeySuggestion<
+			k,
+			def
+		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+	}
 :	{
 		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
 			k,
 			def
 		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
-	})
+	}) &
+	validateRequiredKeyValues<def, declared, $, args, ctx>
+
+// a key declared required can't be defined as optional, which the check of
+// its value misses: `"number?"` infers `number`, and so does the input of
+// `"number = 1"`. testing every value for that as it is checked costs enough
+// that only a definition with a value that could be optional pays it, here,
+// where the mismatch is intersected with the key's
+type validateRequiredKeyValues<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	[Extract<def[keyof def], PossibleOptionalValue>] extends [never] ? unknown
+	:	{
+			[k in requiredKeyOf<declared> & keyof def as isOptionalValue<
+				def[k],
+				$,
+				args,
+				ctx
+			> extends true ?
+				k
+			:	never]: optionalValueMismatch<def[k], k, declared, $, args, ctx>
+		}
 
 // a key declared optional may be left out, or written required or optional,
 // and either way its value may be narrower than the one declared
@@ -329,12 +380,15 @@ type validateEscapedDeclaredKeys<
 	[k in requiredKeyOf<declared> as declaredKey<k>]: declaredKey<k> extends (
 		keyof def
 	) ?
-		validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
+		isOptionalValue<def[declaredKey<k>], $, args, ctx> extends true ?
+			optionalValueMismatch<def[declaredKey<k>], k, declared, $, args, ctx>
+		:	validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
 	:	declared[k]
 } & {
 	// an escaped key can only be optional through its value
 	[k in optionalKeyOf<declared> & string as k extends MetaKey ? declaredKey<k>
-	:	declaredOptionalKeySuggestion<k, def>]: k extends MetaKey ?
+	: ctx["side"] extends "in" ? declaredInputOptionalKeySuggestion<k, def>
+	: declaredOptionalKeySuggestion<k, def>]: k extends MetaKey ?
 		declaredEscapedOptionalValueSuggestion<def, k, declared, $, args, ctx>
 	:	declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
 }
@@ -354,6 +408,47 @@ type declaredOptionalKeySuggestion<k extends string, def> =
 		:	`${k}?`
 	:	`${k}?`
 
+// on the input side, a key with a default is optional. whether a string has
+// one is only known parsing it, which costs too much to do for a key's name,
+// so a key keeps its name for any string with an `=` and its value is rejected
+// if that isn't a default
+type declaredInputOptionalKeySuggestion<k extends string, def> =
+	k extends keyof def ?
+		def[k] extends PossibleOptionalValue ?
+			k
+		:	`${k}?`
+	:	`${k}?`
+
+// a definition that may make its key optional. a string with an `=` only does
+// if it parses as a default: `"number >= 3"` and `"'a=b'"` don't
+type PossibleOptionalValue =
+	| OptionalPropertyDefinition
+	| DefaultablePropertyTuple
+	| PossibleDefaultableStringDefinition
+
+type isOptionalValue<def, $, args, ctx extends DeclareContext> =
+	def extends OptionalPropertyDefinition ? true
+	: ctx["side"] extends "in" ? isDefaultable<def, $, args>
+	: false
+
+// what a required key is compared with where its definition makes it optional
+type optionalValueMismatch<
+	valueDef,
+	k extends keyof declared,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext,
+	t = inferDefinition<valueDef, $, args>
+> = show<
+	declarationMismatch<
+		{
+			[_ in k]?: ctx["side"] extends distill.Side ? distill<t, ctx["side"]> : t
+		},
+		{ [_ in k]: declared[k] }
+	>
+>
+
 type declaredEscapedOptionalValueSuggestion<
 	def,
 	k extends keyof declared & MetaKey,
@@ -362,7 +457,7 @@ type declaredEscapedOptionalValueSuggestion<
 	args,
 	ctx extends DeclareContext
 > =
-	def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
+	isOptionalValue<def[declaredKey<k> & keyof def], $, args, ctx> extends true ?
 		validateInference<
 			def[declaredKey<k> & keyof def],
 			declaredOptionalValue<
@@ -387,7 +482,7 @@ type declaredOptionalValueSuggestion<
 	ctx extends DeclareContext
 > =
 	k extends keyof def ?
-		def[k] extends OptionalPropertyDefinition ?
+		isOptionalValue<def[k], $, args, ctx> extends true ?
 			validateInference<
 				def[k],
 				declaredOptionalValue<declared, k, def[k], $, args>,
@@ -395,6 +490,9 @@ type declaredOptionalValueSuggestion<
 				args,
 				ctx
 			>
+		: // the input side kept this key's name for a string that isn't a default
+		[ctx["side"], def[k]] extends ["in", PossibleDefaultableStringDefinition] ?
+			OptionalPropertyDefinition
 		:	declared[k]
 	: `${k}?` extends keyof def ?
 		validateInference<

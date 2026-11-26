@@ -78,6 +78,29 @@ contextualize(() => {
 		).type.errors(`declared: [string, number?]; inferred: [string]`)
 	})
 
+	it("default in on optional element", () => {
+		type Expected = [string, number?]
+		const T = declare<Expected, { side: "in" }>().type(["string", "number = 5"])
+		attest<Expected>(T.inferIn)
+		attest(T.assert(["a"])).equals(["a", 5])
+	})
+
+	it("default in on required element", () => {
+		attest(
+			declare<[string, number], { side: "in" }>().type(
+				// @ts-expect-error
+				["string", "number = 5"]
+			)
+		).type.errors(`declared: [string, number]; inferred: [string, number?]`)
+	})
+
+	it("tuple in a union", () => {
+		attest(
+			// @ts-expect-error
+			declare<string | [number]>().type(["number"])
+		).type.errors(`declared: string | [number]; inferred: [number]`)
+	})
+
 	it("variadic element", () => {
 		type Expected = [string, ...number[]]
 		const T = declare<Expected>().type(["string", "...", "number[]"])
@@ -462,6 +485,15 @@ contextualize(() => {
 		).type.errors("not assignable to type 'OptionalPropertyDefinition'")
 	})
 
+	it("required escaped meta key written optional", () => {
+		attest(() =>
+			declare<{ "@": string }>().type({
+				// @ts-expect-error
+				"\\@": "string?"
+			})
+		).type.errors(`declared: { "@": string; }; inferred: { "@"?: string; }`)
+	})
+
 	it("meta and undeclared key behavior", () => {
 		type Expected = { name: string }
 		const T = declare<Expected>().type({
@@ -554,6 +586,91 @@ contextualize(() => {
 		).type.errors("declared: number; inferred: string")
 	})
 
+	it("default in", () => {
+		type Expected = { a?: number }
+		const T = declare<Expected, { side: "in" }>().type({ a: "number = 1" })
+		attest<(In: Expected) => Out<{ a: number }>>(T.t)
+		attest(T.assert({})).equals({ a: 1 })
+	})
+
+	it("default in mismatch", () => {
+		attest(() =>
+			declare<{ a?: number }, { side: "in" }>().type({
+				// @ts-expect-error
+				a: "string = 'x'"
+			})
+		).type.errors("declared: number; inferred: string")
+	})
+
+	it("default without side in", () => {
+		attest(() =>
+			declare<{ a?: number }>().type({
+				// @ts-expect-error
+				a: "number = 1"
+			})
+		).type.errors(`'a' does not exist`)
+	})
+
+	it("default in as a tuple", () => {
+		type Expected = { a?: number }
+		const T = declare<Expected, { side: "in" }>().type({
+			a: ["number", "=", 1]
+		})
+		attest<(In: Expected) => Out<{ a: number }>>(T.t)
+		attest(T.assert({})).equals({ a: 1 })
+	})
+
+	it("comparator in", () => {
+		attest(() =>
+			declare<{ a?: string }, { side: "in" }>().type({
+				// @ts-expect-error
+				a: "number >= 3"
+			})
+		).type.errors("not assignable to type 'OptionalPropertyDefinition'")
+		attest(() =>
+			declare<{ a?: number }, { side: "in" }>().type({
+				// @ts-expect-error
+				a: "number == 3"
+			})
+		).type.errors("not assignable to type 'OptionalPropertyDefinition'")
+	})
+
+	it("quoted = in", () => {
+		type Expected = { a?: string }
+		const T = declare<Expected, { side: "in" }>().type({
+			a: "string = 'a=b'"
+		})
+		attest<(In: Expected) => Out<{ a: string }>>(T.t)
+		attest(T.assert({})).equals({ a: "a=b" })
+		attest(() =>
+			declare<Expected, { side: "in" }>().type({
+				// @ts-expect-error
+				a: "'a=b'"
+			})
+		).type.errors("not assignable to type 'OptionalPropertyDefinition'")
+	})
+
+	it("default in on required key", () => {
+		attest(() =>
+			declare<{ a: number }, { side: "in" }>().type({
+				// @ts-expect-error
+				a: "number = 1"
+			})
+		).type.errors("declared: { a: number; }; inferred: { a?: number; }")
+		attest(() =>
+			declare<{ a: number }, { side: "in" }>().type({
+				// @ts-expect-error
+				a: ["number", "=", 1]
+			})
+		).type.errors("declared: { a: number; }; inferred: { a?: number; }")
+	})
+
+	it("default out on required key", () => {
+		type Expected = { a: number }
+		const T = declare<Expected, { side: "out" }>().type({ a: "number = 1" })
+		attest<(In: { a?: number }) => Out<Expected>>(T.t)
+	})
+
 	it("morph out", () => {
 		type Expected = { a: number; b?: number }
 		const T = declare<Expected, { side: "out" }>().type({
@@ -596,6 +713,15 @@ contextualize(() => {
 				f: "number?"
 			})
 		).type.errors("declared: string; inferred: number")
+	})
+
+	it("value-optional on required key", () => {
+		attest(() =>
+			type.declare<{ f: string }>().type({
+				// @ts-expect-error
+				f: "string?"
+			})
+		).type.errors("declared: { f: string; }; inferred: { f?: string; }")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1537
@@ -708,6 +834,15 @@ contextualize(() => {
 					"id?": "string"
 				})
 			).type.errors(`'"id?"' does not exist`)
+		})
+
+		it("required key with an optional value", () => {
+			attest(() =>
+				declare<Expected, { assignable: true }>().type({
+					// @ts-expect-error
+					id: "string?"
+				})
+			).type.errors("declared: { id: string; }; inferred: { id?: string; }")
 		})
 
 		it("wider", () => {
