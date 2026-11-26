@@ -2707,6 +2707,7 @@ export const pruneDiscriminant = (
 		typeof path[0] !== "number" &&
 		discriminantBranch.is("intersection") &&
 		discriminantBranch.structure &&
+		!discriminantBranch.inner.predicate &&
 		!discriminantBranch.structure.undeclared &&
 		!discriminantBranch.structure.index &&
 		!discriminantBranch.structure.sequence &&
@@ -2766,6 +2767,10 @@ export const pruneDiscriminant = (
 
 				// pruning a union's branches narrows it, e.g. string | number to number
 				if (node.is("union")) return false
+
+				// a predicate implies no basis, so pruning its basis or constraints
+				// could let an overlapping case intersect and run it against an invalid value
+				if (node.is("intersection") && node.inner.predicate) return false
 
 				if (node.is("domain") && node.domain === "object")
 					// if we've already checked a path at least as long as the current one,

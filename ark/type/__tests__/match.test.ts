@@ -1328,4 +1328,37 @@ contextualize(() => {
 		attest<0>(handle({ kind: "k0", v0: 0 })).equals(0)
 		attest<39>(handle({ kind: "k39", v39: 39 })).equals(39)
 	})
+
+	it("keeps domain check beside predicates when pruning discriminants", () => {
+		const m = match
+			.case(
+				type("string").narrow(s => s.length > 1),
+				s => s
+			)
+			.case("number", n => n)
+			.case("null | 'x'", v => v)
+			.default(() => 0)
+
+		attest(m("x")).equals("x")
+		attest(m("xy")).equals("xy")
+		attest(m(null)).equals(null)
+		attest(m(42)).equals(42)
+		attest(m("y")).equals(0)
+		attest(m(true)).equals(0)
+		attest(m({})).equals(0)
+
+		const objMatch = match
+			.case(
+				type({ a: "'foo'" }).narrow(o => o.a.length === 3),
+				() => "foo"
+			)
+			.case({ a: "'bar'" }, () => "bar")
+			.case(type("null").or({ a: "'foo'", b: "1" }), () => "fallback")
+			.default(() => "default")
+
+		attest(objMatch({ a: "foo" })).equals("foo")
+		attest(objMatch({ a: "bar" })).equals("bar")
+		attest(objMatch(null)).equals("fallback")
+		attest(objMatch({ a: "baz" })).equals("default")
+	})
 })

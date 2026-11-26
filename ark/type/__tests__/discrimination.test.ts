@@ -1501,4 +1501,39 @@ nested.z must be removed`)
 			}
 		}
 	})
+
+	it("keeps basis beside predicates when pruning discriminants", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({
+				a: $.type("string").narrow(s => s.length > 1),
+				b: "1"
+			})
+				.or({ a: "number" })
+				.or({ a: "null | 'x'", b: "1" })
+
+			for (let pass = 0; pass < 3; pass++) {
+				attest(T.allows({ a: "xy", b: 1 })).equals(true)
+				attest(T.allows({ a: "x", b: 1 })).equals(true)
+				attest(T.allows({ a: null, b: 1 })).equals(true)
+				attest(T.allows({ a: 42 })).equals(true)
+				attest(T.allows({ a: "y", b: 1 })).equals(false)
+				attest(T.allows({ a: "xy", b: 2 })).equals(false)
+				attest(T.allows({ a: true, b: 1 })).equals(false)
+			}
+
+			const Obj = $.type({ a: "'foo'" })
+				.narrow(o => o.a.length === 3)
+				.or({ a: "'bar'" })
+				.or($.type("null").or({ a: "'foo'", b: "1" }))
+
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Obj.allows({ a: "foo" })).equals(true)
+				attest(Obj.allows({ a: "bar" })).equals(true)
+				attest(Obj.allows(null)).equals(true)
+				attest(Obj.allows({ a: "baz" })).equals(false)
+				attest(Obj.allows(42)).equals(false)
+			}
+		}
+	})
 })
