@@ -95,6 +95,8 @@ interface Deferred extends DeferredShell {
 	$: InternalScope
 	/** what builds its nodes until it's read */
 	resolve: (() => BaseRoot) | undefined
+	/** the node it built, where it was frozen before it could become one */
+	node?: BaseRoot
 }
 
 const deferred = new WeakMap<object, Deferred>()
@@ -119,6 +121,17 @@ const settle = (self: BaseRoot, d: Deferred): BaseRoot => {
 	}
 	const created = lastCreated
 	d.resolve = undefined
+	// frozen, it takes no key of a node's, so it's called and read as what it built
+	if (!Object.isExtensible(self)) {
+		d.node = node
+		const cache = d.c as BaseRoot["c"]
+		cache.self = node
+		cache.rootApply = (data, onFail) => node(data, undefined, onFail as never)
+		// which is what reaches its key next
+		if (d.$.nodesByKey.get(d.facts.key) === self)
+			d.$.nodesByKey.set(d.facts.key, node)
+		return node.$.fin(node)
+	}
 	createNode({
 		id: node.id,
 		kind: node.kind,
@@ -144,7 +157,11 @@ const settle = (self: BaseRoot, d: Deferred): BaseRoot => {
 
 const settled = (self: any): any => {
 	const d = deferred.get(self)
-	return d?.resolve ? settle(self, d) : self
+	return (
+		!d ? self
+		: d.resolve ? settle(self, d)
+		: (d.node ?? self)
+	)
 }
 
 // keywords changing no data, by what they check
@@ -1360,11 +1377,25 @@ for (const k of [
 	}
 }
 
+// what a Type frozen before it was read reads of the node it built: a method is
+// bound to the node, since it's called on the Type, and what a getter returns is
+// the node's already
+const through = (node: BaseRoot, k: PropertyKey): unknown => {
+	const value: unknown = Reflect.get(node, k)
+	if (typeof value !== "function" || k === "constructor") return value
+	for (let o = Object.getPrototypeOf(node); o; o = Object.getPrototypeOf(o)) {
+		const held = Object.getOwnPropertyDescriptor(o, k)
+		if (held) return held.value ? value.bind(node) : value
+	}
+	return value
+}
+
 const shellProto = new Proxy(Object.create(proto), {
 	get: (target, k, receiver) => {
+		const d = deferred.get(receiver)
+		if (d?.node) return through(d.node, k)
 		// while it's becoming a node
-		if (!deferred.get(receiver)?.resolve)
-			return Reflect.get(target, k, receiver)
+		if (!d?.resolve) return Reflect.get(target, k, receiver)
 		// a method's memo on it is only a read of what it's bound to
 		if (k === "pipe") {
 			return Object.assign(
@@ -1381,6 +1412,8 @@ const shellProto = new Proxy(Object.create(proto), {
 		return receiver[k]
 	},
 	set: (_, k, v, receiver) => {
+		// frozen, it takes no key
+		if (!Object.isExtensible(receiver)) return false
 		settled(receiver)
 		return Reflect.set(receiver, k, v)
 	},
@@ -1388,11 +1421,19 @@ const shellProto = new Proxy(Object.create(proto), {
 	has: (target, k) => k in target || k in intrinsic.object
 })
 
+// what a key already defines, unless it's been frozen: that's left to what froze it
+const sharedAt = ($: InternalScope, key: string): BaseRoot | undefined => {
+	const existing = $.nodesByKey.get(key)
+	return existing && Object.isExtensible(existing) ?
+			(existing as never)
+		:	undefined
+}
+
 // equal definitions' one Type, as their nodes would make it. A kind and comma
 // start each node's key, and nothing a definition is scanned to does
 const defer = (facts: Facts, $: InternalScope, resolve: () => BaseRoot) => {
-	const existing = $.nodesByKey.get(facts.key)
-	if (existing) return existing as never
+	const existing = sharedAt($, facts.key)
+	if (existing) return existing
 	const { fn, c } = deferredCallable()
 	const self = fn as BaseRoot
 	Object.setPrototypeOf(self, shellProto)
@@ -1511,7 +1552,7 @@ export const deferDefinition = (
 		// it's few and cached, so it's parsed from then on
 		return (
 			!facts || facts.defaults ? undefined
-			: lastCreated ? ($.nodesByKey.get(facts.key) as never)
+			: lastCreated ? sharedAt($, facts.key)
 			: defer(facts, $, () => $.parseDef(def))
 		)
 	}

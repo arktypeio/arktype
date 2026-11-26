@@ -393,9 +393,10 @@ export const inPlaceTransforms: InPlaceTransforms = {
 		root.c.unbound = undefined
 		if (!writesInPlaceAsConfigured(root)) return root
 		if (!root.c.applyInPlace) precompileInPlace(root, unbound)
-		return Object.assign(Object.create(root), {
-			tApply: root.c.applyInPlace,
-			tTransform: root.c.transformInPlace
+		// defined, since a frozen root's own can't be assigned over
+		return Object.create(root, {
+			tApply: { value: root.c.applyInPlace },
+			tTransform: { value: root.c.transformInPlace }
 		})
 	},
 	runtimeOf: (root, runtime) =>

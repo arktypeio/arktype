@@ -111,19 +111,17 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		saysOf(this.meta, morph)
 	)
 
-	private _traversedMorphs: array<Morph | BaseRoot> | undefined
-
 	// a configured message or label is its output's errors' too: the node a
 	// morph pipes to isn't a child, so configuring the morph doesn't reach it
 	get travMorphs(): array<Morph | BaseRoot> {
-		if (this._traversedMorphs) return this._traversedMorphs
+		if (this.c.travMorphs) return this.c.travMorphs
 		const { message, label } = this.meta
 		if (message === undefined && label === undefined)
-			return (this._traversedMorphs = this.morphs)
+			return (this.c.travMorphs = this.morphs)
 		const meta: TypeMeta.MappableInput.Internal = {}
 		if (message !== undefined) meta.message = message
 		if (label !== undefined) meta.label = label
-		return (this._traversedMorphs = this.morphs.map((morph, i) =>
+		return (this.c.travMorphs = this.morphs.map((morph, i) =>
 			i && hasArkKind(morph, "root") ? morph.configure(meta) : morph
 		))
 	}
@@ -138,10 +136,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return this.morphs.length > 1 && hasArkKind(last, "root") ? last : undefined
 	}
 
-	private _otherRefs: readonly BaseNode[] | undefined
-
 	override get otherRefs(): readonly BaseNode[] {
-		if (this._otherRefs) return this._otherRefs
+		if (this.c.otherRefs) return this.c.otherRefs
 		const refs: BaseNode[] = []
 		// a configured message's copy is what traversal pipes to
 		const morphs = this.travMorphs
@@ -151,7 +147,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			refs.push(morph)
 			if (morphs[i] !== morph) refs.push(morphs[i] as BaseRoot)
 		}
-		return (this._otherRefs = refs)
+		return (this.c.otherRefs = refs)
 	}
 
 	get topMorphs(): array<Morph> {

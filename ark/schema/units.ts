@@ -157,13 +157,7 @@ export const precompileInPlace = (
 	const declared: [node: BaseNode, kinds: TraversalKind[]][] = []
 	const kindsByNode = new Map<BaseNode, TraversalKind[]>()
 	// a node a morph pipes to, whose traversals pipe reads from it
-	const shapes = new Map<
-		BaseNode,
-		{
-			tApply?: TraverseApply | undefined
-			tTransform?: TraverseTransform | undefined
-		}
-	>()
+	const shapes = new Map<BaseNode, object>()
 	const include = (node: BaseNode): void => {
 		if (link.byId[node.id]) return
 		for (const reference of referencesThroughAliases([
@@ -209,7 +203,7 @@ export const precompileInPlace = (
 				return super.ref(value)
 			include(value)
 			let shape = shapes.get(value)
-			if (!shape) shapes.set(value, (shape = Object.create(value) as {}))
+			if (!shape) shapes.set(value, (shape = Object.create(value) as object))
 			return super.ref(shape)
 		}
 	}
@@ -246,9 +240,12 @@ export const precompileInPlace = (
 		if (transform !== -1)
 			node.c.transformInPlace = traversals[i][transform] as never
 	}
+	// defined, since a frozen node's own can't be assigned over
 	for (const [node, shape] of shapes) {
-		shape.tApply = node.c.applyInPlace
-		shape.tTransform = node.c.transformInPlace
+		Object.defineProperties(shape, {
+			tApply: { value: node.c.applyInPlace },
+			tTransform: { value: node.c.transformInPlace }
+		})
 	}
 }
 
@@ -268,6 +265,8 @@ const bindUnit = (
 		}
 		// if node has already been bound to another scope or anonymous type, don't rebind it
 		if (node.unitFn && (!owningScope || node.$ !== owningScope)) continue
+		// nor a frozen Type, which checks as it has while what holds it compiles
+		if (Object.isFrozen(node)) continue
 		const [tAllows, tApply, tTransform] = compiledTraversals[i]
 		if (node.c.preJit) {
 			node.allows = node.c.preJit

@@ -149,10 +149,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _unitBranches: (Unit.Node | Morph.Node)[] | undefined
 	get unitBranches(): (Unit.Node | Morph.Node)[] {
 		// only a morph's input can be a unit where it isn't one itself
-		return (this._unitBranches ??= this.branches.filter(
+		return (this.c.unitBranches ??= this.branches.filter(
 			(n): n is Unit.Node | Morph.Node =>
 				n.is("unit") || (n.is("morph") && n._in.is("unit"))
 		))
@@ -161,38 +160,31 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	private _disc: Discriminant | null | undefined
 	get discriminant(): Discriminant | null {
-		if (this._disc === undefined) {
+		if (this.c.disc === undefined) {
 			// null while discriminating, which can read this union's references
-			this._disc = null
-			this._disc = this.discriminate()
+			this.c.disc = null
+			this.c.disc = this.discriminate()
 		}
-		return this._disc
+		return this.c.disc
 	}
 
-	/** `discCases`, once read */
-	private _discCases: DiscriminantCases | undefined
 	/** the cases of its discriminant, by the serialized value each branch is discriminated by */
 	get discCases(): DiscriminantCases {
-		return (this._discCases ??= casesOf(this.discriminant!))
+		return (this.c.discCases ??= casesOf(this.discriminant!))
 	}
 
-	/** `missLists`, once read */
-	private _missLists: boolean | undefined
 	/** whether a miss of its own value lists its branches: if one is described, as an indiscriminable union's does */
 	get missLists(): boolean {
-		return (this._missLists ??=
+		return (this.c.missLists ??=
 			!isAuthored(this) &&
 			this.discriminant!.path.length === 0 &&
 			this.branches.some(isAuthored))
 	}
 
-	/** `discDesc`, once read */
-	private _discDesc: string | undefined
 	/** the description of what its discriminant expects */
 	get discDesc(): string {
-		return (this._discDesc ??=
+		return (this.c.discDesc ??=
 			isAuthored(this) ? this.meta.description! : describeCases(this.discCases))
 	}
 
@@ -209,11 +201,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return isAuthored(this) ? [] : this.discriminant!.path
 	}
 
-	/** `discMeta`, once read */
-	private _discMeta: ArkEnv.meta | undefined
 	/** the meta its discriminant's errors are written with: at a key, expected and actual describe the object around it */
 	get discMeta(): ArkEnv.meta {
-		return (this._discMeta ??= metaAtDiscriminant(
+		return (this.c.discMeta ??= metaAtDiscriminant(
 			this.meta,
 			this.missPath,
 			this.branches
@@ -263,8 +253,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	/** `joined`, once read */
-	private _joined: ReadonlySet<BaseRoot> | undefined
 	/**
 	 * the branches whose only transform is deleting undeclared keys, each
 	 * allowing data another allows and would delete other keys of. Data more
@@ -272,7 +260,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	 * decides what it becomes
 	 */
 	get joined(): ReadonlySet<BaseRoot> {
-		return (this._joined ??= joinedOf(this))
+		return (this.c.joined ??= joinedOf(this))
 	}
 
 	/** whether data more than one branch allows is transformed by each of them */
@@ -395,10 +383,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
 	// built once, as a node's is, so its errors share a builder
 	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
-		return (this._missContexts ??= [false, true].map(
+		return (this.c.missContexts ??= [false, true].map(
 			(absent): omit<DiscriminantErrorContext, "data"> => ({
 				code: "discriminant",
 				...this.discCases,

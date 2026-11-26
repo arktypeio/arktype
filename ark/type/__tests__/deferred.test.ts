@@ -864,6 +864,169 @@ for (const bad of [{ tit: "x" }, { e: "x" }, { "": "x" }]) {
 		attest(isUnread(type({ valid: "0 < number < 5 = 3" }))).equals(true)
 	})
 
+	describe("a Type that's frozen", () => {
+		const fixes: Record<string, (t: object) => unknown> = {
+			freeze: Object.freeze,
+			seal: Object.seal,
+			preventExtensions: Object.preventExtensions
+		}
+
+		it("leaves a later equal definition a Type of its own", () => {
+			for (const [name, fix] of Object.entries(fixes)) {
+				const frozen: type.Any = anyType({ [name]: "string" })
+				fix(frozen)
+				const later: type.Any = anyType({ [name]: "string" })
+				attest(later === frozen).equals(false)
+				attest(Object.isExtensible(later)).equals(true)
+				attest(later({ [name]: "a" })).equals({ [name]: "a" })
+				attest(later({ [name]: 1 }).toString()).equals(
+					`${name} must be a string`
+				)
+				// once the frozen one is read, the Type it built is what's defined
+				attest(frozen.equals(later)).equals(true)
+				attest(anyType({ [name]: "string" }) === later).equals(true)
+			}
+		})
+
+		it("leaves a string defined after it a Type of its own", () => {
+			attest(
+				printed(`Object.freeze(type("string"))
+const later = type("string")
+console.log(Object.isExtensible(later), later("a"), later(1).toString(), later("b"))`)
+			).snap(`true a must be a string b
+`)
+		})
+
+		it("before it's read is called and read as what it built", () => {
+			for (const [name, fix] of Object.entries(fixes)) {
+				const key = `cold${name}`
+				const t = anyType({ [key]: "string", "n?": "number.integer > 0" })
+				fix(t)
+				attest(isUnread(t)).equals(true)
+				// uncompiled, then compiled
+				for (let i = 0; i < 3; i++) {
+					attest(t({ [key]: "a", n: 1 })).equals({ [key]: "a", n: 1 })
+					attest(t({ [key]: "a", n: 0 }).toString()).equals(
+						"n must be positive"
+					)
+					attest(t.allows({ [key]: "a" })).equals(true)
+					attest(t.allows({ [key]: 1 })).equals(false)
+				}
+				attest(t.expression).equals(`{ ${key}: string, n?: number % 1 > 0 }`)
+				attest(t.array().expression).equals(`${t.expression}[]`)
+				attest(t.keyof().expression).equals(`"${key}" | "n"`)
+				attest(t.assert({ [key]: "a" })).equals({ [key]: "a" })
+				// a function's own keys, as an unread Type's are
+				attest(Object.keys(t)).equals([])
+				attest(isUnread(t)).equals(true)
+				attest(messageOf(() => ((t as any).added = 1))).equals(
+					"'set' on proxy: trap returned falsish for property 'added'"
+				)
+			}
+		})
+
+		it("before it's read is held as the Type it built", () => {
+			const frozen = Object.freeze(type({ heldCold: "string.trim" }))
+			const held = type({ held: frozen })
+			const holders = [
+				held,
+				type.or(frozen, "undefined"),
+				type({ box: "unknown" })
+					.pipe(o => o.box)
+					.to(frozen),
+				type.Record("string", frozen)
+			]
+			for (const holder of holders) {
+				attest(
+					holder.internal.references.every(node => Object.isExtensible(node))
+				).equals(true)
+			}
+			for (let i = 0; i < 3; i++) {
+				attest(held({ held: { heldCold: " a " } })).equals({
+					held: { heldCold: "a" }
+				})
+				attest(held({ held: { heldCold: 1 } }).toString()).equals(
+					"held.heldCold must be a string"
+				)
+			}
+		})
+
+		it("after it's read checks as it did, cold and once it would compile", () => {
+			const uses: Record<string, (t: type.Any) => void> = {
+				read: t => void t.expression,
+				called: t => void t({ warm: "a" }),
+				compiled: t => {
+					for (let i = 0; i < 3; i++) t.allows({ warm: "a" })
+				}
+			}
+			for (const [name, use] of Object.entries(uses)) {
+				const t = type({ warm: "string", [name]: "number = 1" })
+				use(t)
+				Object.freeze(t)
+				for (let i = 0; i < 3; i++) {
+					attest(t({ warm: "a" })).equals({ warm: "a", [name]: 1 })
+					attest(t({ warm: 1 }).toString()).equals("warm must be a string")
+					attest(t.allows({ warm: "a" })).equals(true)
+					attest(t.allows({})).equals(false)
+				}
+				// what compiled before it was frozen is still what it checks with
+				attest(t.precompilation !== undefined).equals(name === "compiled")
+				const again = type({ warm: "string", [name]: "number = 1" })
+				attest(Object.isExtensible(again)).equals(true)
+				attest(again({ warm: "a" })).equals({ warm: "a", [name]: 1 })
+			}
+		})
+
+		it("derives what it's first asked for once it's frozen", () => {
+			const union = type.or(
+				{ kind: "'circle'", r: "number" },
+				{ kind: "'square'", side: "number" },
+				type("string.trim").to("string > 0")
+			)
+			void union.expression
+			Object.freeze(union)
+			for (let i = 0; i < 3; i++) {
+				attest(union({ kind: "square", side: 1 })).equals({
+					kind: "square",
+					side: 1
+				})
+				attest(union(" a ")).equals("a")
+				attest(union({ kind: "line" }).toString()).equals(
+					'kind must be "circle" or "square"'
+				)
+			}
+			attest(union["~standard"].validate(" b ")).equals({ value: "b" })
+			const list = type({ next: "string", "rest?": "this" })
+			void list.expression
+			Object.freeze(list)
+			attest(list({ next: "a", rest: { next: 1 } }).toString()).equals(
+				"rest.next must be a string"
+			)
+			attest(list.keyof().expression).equals('"next" | "rest"')
+		})
+
+		it("is left unbound by what compiles holding it", () => {
+			const frozen = type({ part: "string.trim" })
+			void frozen.expression
+			Object.freeze(frozen)
+			// past where it would have compiled, so nothing says it's still to
+			for (let i = 0; i < 3; i++)
+				attest(frozen({ part: " c " })).equals({ part: "c" })
+			// what's piped to it reads its traversals from it, so compiles them
+			const piped = type({ box: "unknown" })
+				.pipe(o => o.box)
+				.to(frozen)
+			for (let i = 0; i < 3; i++) {
+				attest(piped({ box: { part: " a " } })).equals({ part: "a" })
+				attest(piped({ box: { part: 1 } }).toString()).equals(
+					"part must be a string"
+				)
+			}
+			attest(piped.precompilation !== undefined).equals(true)
+			attest(frozen.precompilation).equals(undefined)
+		})
+	})
+
 	describe("onUndeclaredKey cache isolation", () => {
 		it("does not collide when loose union is created before strict union", () => {
 			attest(

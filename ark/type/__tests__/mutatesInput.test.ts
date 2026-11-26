@@ -250,6 +250,27 @@ contextualize(() => {
 		attest(input).snap({ v: { x: 1, y: 2, z: 3 }, w: 1 })
 	})
 
+	it("writes through a Type that's frozen", () => {
+		// compiled through allows, so its first call compiles what it writes with
+		const Frozen = guarded.type({
+			name: "string.trim",
+			role: "string = 'user'"
+		})
+		for (let i = 0; i < 3; i++) Frozen.allows({ name: "a" })
+		Object.freeze(Frozen)
+		const input = { name: " a " }
+		attest(Frozen(input) as object).is(input)
+		attest(input as object).snap({ name: "a", role: "user" })
+		// and piped to, where a morph reads its traversals from it
+		const Piped = always.type("unknown").pipe(data => data, Frozen)
+		for (let i = 0; i < 3; i++) {
+			const piped = { name: " b " }
+			attest(Piped(piped) as object).is(piped)
+			attest(piped as object).equals({ name: "b", role: "user" })
+			attest(Piped({ name: 1 }).toString()).equals("name must be a string")
+		}
+	})
+
 	it("throws without arktype/mutatesInput", () => {
 		const installed = $ark.inPlace!
 		delete $ark.inPlace

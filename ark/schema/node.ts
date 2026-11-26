@@ -34,6 +34,7 @@ import {
 	type dict,
 	type listable,
 	type mutable,
+	type omit,
 	type requireKeys,
 	returnsReports
 } from "@ark/util"
@@ -50,8 +51,14 @@ import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
+import type {
+	Discriminant,
+	DiscriminantCases,
+	DiscriminantErrorContext
+} from "./roots/union.ts"
 import type { BaseScope } from "./scope.ts"
 import { canJit, tryJit, type NodeCompiler } from "./shared/compile.ts"
+import type { StandardSchemaV1 } from "./shared/standardSchema.ts"
 import type {
 	ArkEnv,
 	BaseNodeDeclaration,
@@ -246,6 +253,21 @@ class NodeCache {
 	/** the `allows` a Type has while it defers compiling until it's used */
 	preJit: BaseNode["allows"] | undefined
 	isReusableLeaf: boolean | undefined
+	// what a root derives, here rather than on it since a Type can be frozen
+	standard: StandardSchemaV1.ArkTypeProps | undefined
+	keyof: BaseRoot | undefined
+	errorCtx: object | undefined
+	resolution: BaseRoot | undefined
+	travMorphs: array<Morph | BaseRoot> | undefined
+	otherRefs: readonly BaseNode[] | undefined
+	unitBranches: (Unit.Node | Morph.Node)[] | undefined
+	disc: Discriminant | null | undefined
+	discCases: DiscriminantCases | undefined
+	missLists: boolean | undefined
+	discDesc: string | undefined
+	discMeta: ArkEnv.meta | undefined
+	joined: ReadonlySet<BaseRoot> | undefined
+	missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
 	declare applyInPlace?: TraverseApply
@@ -816,11 +838,12 @@ export abstract class BaseNode<
 	}
 
 	deferJit(): void {
-		if (this.c.preJit) return
+		// a frozen Type keeps the allows it has
+		if (this.c.preJit || Object.isFrozen(this)) return
 		const allows = (this.c.preJit = this.allows)
 		// keeps what compiled, as a detached reference can call this after
 		let compiled: BaseNode["allows"] | undefined
-		this.allows = data => {
+		const deferring: BaseNode["allows"] = data => {
 			if (compiled !== undefined) return compiled(data)
 			if (this.c.preJit) {
 				if (this.checksUncompiled) {
@@ -829,8 +852,10 @@ export abstract class BaseNode<
 				}
 				this.$.jit(this)
 			}
-			return (compiled = this.allows)(data)
+			// frozen since, it's still this, so it checks as it did
+			return (compiled = this.allows === deferring ? allows : this.allows)(data)
 		}
+		this.allows = deferring
 	}
 
 	initRootApply(): RootApply {

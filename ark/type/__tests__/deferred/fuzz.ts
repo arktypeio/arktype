@@ -888,7 +888,9 @@ const firstReads = [
 	"assert",
 	"in",
 	"equals",
-	"keys"
+	"keys",
+	"freeze",
+	"seal"
 ]
 
 const fixedData = [

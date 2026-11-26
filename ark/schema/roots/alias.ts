@@ -109,10 +109,9 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	private readonly registration = registrationOf(this.reference)
 	// Allows bounds only aliases referencing their definition while it's parsed
 	closes = true
-	private _resolution: BaseRoot | undefined
 
 	get resolution(): BaseRoot {
-		if (this._resolution) return this._resolution
+		if (this.c.resolution) return this.c.resolution
 		if (resolvingAliases.includes(this)) {
 			const names = resolvingAliases.map(aliasNameOf)
 			const cycle = names.slice(names.lastIndexOf(aliasNameOf(this)))
@@ -133,7 +132,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			if (resolution.is("alias")) resolution = resolution.resolution
 			if (this.resolve) resolution.c.isAliasResolution = true
 			if (this.resolve ? isFinal : this.$.resolved)
-				this._resolution = resolution
+				this.c.resolution = resolution
 		} finally {
 			resolvingAliases.pop()
 			inProgress.resolutions--

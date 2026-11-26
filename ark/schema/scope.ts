@@ -976,8 +976,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	/** parses a definition in this scope to a node */
 	parseDef(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
+		// its node, which a Type frozen before it was read isn't
 		if (hasArkKind(def, "root") && isInstanceOf(def, BaseRoot))
-			return this.bindRef(def)
+			return this.bindRef(def.internal)
 
 		const ctxInputOrNode = this.preparseOwn(def, opts)
 		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)
@@ -1042,19 +1043,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	jit(node: BaseNode): void {
-		tryJit(() =>
-			precompileRoot(
-				node,
-				node.hasAlias ?
-					referencesThroughAliases(node.references)
-				:	node.references
+		// a frozen Type can't be bound to what compiles, so checks as it has
+		if (!Object.isFrozen(node)) {
+			tryJit(() =>
+				precompileRoot(
+					node,
+					node.hasAlias ?
+						referencesThroughAliases(node.references)
+					:	node.references
+				)
 			)
-		)
-		// compiling binds what it checked before, unless the host refused
-		if (node.c.preJit) {
-			node.allows = node.c.preJit
-			node.c.preJit = undefined
+			// compiling binds what it checked before, unless the host refused
+			if (node.c.preJit) node.allows = node.c.preJit
 		}
+		node.c.preJit = undefined
 	}
 
 	protected abstract preparseOwn(

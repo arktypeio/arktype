@@ -226,7 +226,10 @@ const firstReads: Record<string, (t: type.Any) => unknown> = {
 	assert: t => t.assert({}),
 	in: t => t.in,
 	equals: t => t.equals(type.raw("string")),
-	keys: t => Object.keys(t)
+	keys: t => Object.keys(t),
+	// which reads nothing, so what it's then asked is of a Type that can't change
+	freeze: t => void Object.freeze(t),
+	seal: t => void Object.seal(t)
 }
 
 // what holds an alias orders a union's branches by the number the alias is
