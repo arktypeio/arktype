@@ -1069,7 +1069,7 @@ const readValue = (js: CombinatorCompiler, node: BaseRoot): string =>
 			"aliasedValue",
 			readChecker(js, node),
 			js.ref(node),
-			`${(node.entersAlias ? 1 : 0) | (node.tfsById ? 2 : 0)}`
+			`${(node.entersAlias ? 1 : 0) | (node.tfs && node.tfsById ? 2 : 0)}`
 		)
 	:	readChecker(js, node)
 

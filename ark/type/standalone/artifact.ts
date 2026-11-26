@@ -3582,7 +3582,7 @@ return namespace`
 	// what a node reading its ctx is told apart by
 	writeShapeFlags(node: BaseRoot, unit: RootUnit): string {
 		const entries = shapeFlags.flatMap(flag =>
-			flag !== "allowsCtx" && node[flag] ? [`${flag}: true`] : []
+			flag !== "allowsCtx" && holdsFlag(node, flag) ? [`${flag}: true`] : []
 		)
 		if (node.hasAlias) {
 			entries.unshift(
@@ -3615,7 +3615,7 @@ return namespace`
 				)},`
 			:	""
 		const flags = shapeFlags.flatMap(flag =>
-			node[flag] ? [`\n\t${flag}: true,`] : []
+			holdsFlag(node, flag) ? [`\n\t${flag}: true,`] : []
 		)
 		// read past allows only by a cycle or a ctx-reading predicate
 		const traverses = node.hasAlias || node.allowsCtx || node.checksCtx
@@ -4016,6 +4016,15 @@ const shapeFlags = [
 	"checksCtx",
 	"reportsPred"
 ] as const
+
+// whether a node's shape is written holding a flag. That its transform's
+// keyed by id is whether an alias resolves to it, which a node equal to it,
+// written as the same unit, may differ in: only a transform reads it, so it's
+// left out where there's none and the two are written alike
+const holdsFlag = (
+	node: BaseRoot,
+	flag: (typeof shapeFlags)[number]
+): boolean => (flag === "tfsById" ? node.tfs && node.tfsById : node[flag])
 
 const isAny = (): boolean => true
 
