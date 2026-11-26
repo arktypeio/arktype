@@ -102,14 +102,21 @@ type addCasesToContext<
 	cases extends unknown[]
 > =
 	cases extends Morph[] ?
-		ctx.from<{
-			$: ctx["$"]
-			input: ctx["input"]
-			cases: [...ctx["cases"], ...cases]
-			checked: ctx["checked"]
-			key: ctx["key"]
-			pipedIn: ctx["pipedIn"]
-		}>
+		// an object type's properties are instantiated when read, so each of
+		// these would otherwise defer to the previous context's, one level per
+		// case, until a default reads them all at once. checking them here
+		// resolves each step's from the last's. $, input and key are read
+		// resolving each case's argument
+		ctx["cases"] | ctx["checked"] | ctx["pipedIn"] extends unknown ?
+			ctx.from<{
+				$: ctx["$"]
+				input: ctx["input"]
+				cases: [...ctx["cases"], ...cases]
+				checked: ctx["checked"]
+				key: ctx["key"]
+				pipedIn: ctx["pipedIn"]
+			}>
+		:	never
 	:	never
 
 type addDefaultToContext<
