@@ -3,6 +3,8 @@ import {
 	BaseRoot,
 	finalizeExport,
 	GenericRoot,
+	hasArkKind,
+	RootModule,
 	type BaseParseOptions,
 	type Morph,
 	type NodeSelector,
@@ -17,7 +19,8 @@ import {
 	type Constructor,
 	type anyOrNever,
 	type array,
-	type conform
+	type conform,
+	type Dict
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
 import type { AmbientKey } from "./config.ts"
@@ -376,7 +379,24 @@ export class InternalTypeParser extends Callable<
 			}
 			for (const k in typeAttachments) defineLazily(this, k, resolve)
 		}
+		// a scope's own ambient replaces those attachments, so it's bound as they are
+		if ($.scopeConfig?.ambient !== undefined)
+			defineLazily(this, "keywords", () => bindKeywords($.ambient, $))
 	}
+}
+
+/** what an ambient holds, each bound to `$` once it's read */
+const bindKeywords = (keywords: Dict, $: InternalScope): object => {
+	const bound = hasArkKind(keywords, "module") ? new RootModule({}) : {}
+	const resolve = (k: string) => {
+		const keyword = keywords[k]
+		if (hasArkKind(keyword, "module")) return bindKeywords(keyword, $)
+		const resolution = $.bindKw(keyword as BaseRoot | GenericRoot)
+		// a resolved scope has already compiled the nodes bound before it
+		return $.resolved ? finalizeExport($, resolution) : resolution
+	}
+	for (const k of Object.keys(keywords)) defineLazily(bound, k, resolve)
+	return bound
 }
 
 export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>

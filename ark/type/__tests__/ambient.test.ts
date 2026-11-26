@@ -343,6 +343,33 @@ contextualize(() => {
 			)
 		})
 
+		it("binds $.type.keywords to the scope", () => {
+			const Box = generic("t")({ box: "t" })
+			const $ = scope(
+				{ local: "'local'" },
+				{ ambient: { num: type.number, Box, text: keywords.string } }
+			)
+
+			const withLocal = $.type.keywords.num.or("local")
+			attest<number | "local">(withLocal.infer)
+			attest(withLocal.expression).snap('number | "local"')
+
+			const boxed = $.type.keywords.Box("local")
+			attest<{ box: "local" }>(boxed.infer)
+			attest(boxed.expression).snap('{ box: "local" }')
+
+			const nested = $.type.keywords.text.email.or("num")
+			attest<string | number>(nested.infer)
+			attest(nested("nope").toString()).snap("must be an email address")
+
+			// @ts-expect-error
+			attest(() => $.type.keywords.num.or("string")).throwsAndHasTypeError(
+				writeUnresolvableMessage("string")
+			)
+			// the entry passed is still bound to the scope it came from
+			attest(type.number.or("string").expression).snap("number | string")
+		})
+
 		it("supports spreading a Module alongside custom entries", () => {
 			const $ = scope(
 				{
