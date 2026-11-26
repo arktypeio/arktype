@@ -359,6 +359,24 @@ other must be a string`)
 		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
 	})
 
+	it("invalid unit key for index definition", () => {
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[1]": "string"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("1"))
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"['a' | d'2000']": "string"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("'a' | d'2000'"))
+		attest(type({ "['a' | 'b']": "string" }).expression).snap(
+			"{ a: string, b: string }"
+		)
+	})
+
 	it("does not allow invalid key type error as value", () => {
 		attest(() =>
 			type({

@@ -12,7 +12,7 @@ import {
 	type Prop,
 	type Structure,
 	type TypeMeta,
-	type writeInvalidPropertyKeyMessage
+	writeInvalidPropertyKeyMessage
 } from "@ark/schema"
 import {
 	append,
@@ -155,6 +155,13 @@ export const parseObjectLiteral = (
 
 		const signature = ctx.$.parseOwn(parsedEntryKey.normalized, ctx)
 
+		// each unit becomes a named prop, so only a string or symbol can be one
+		if (signature.branches.some(isNonKeyUnit)) {
+			throwParseError(
+				writeInvalidPropertyKeyMessage(parsedEntryKey.normalized as string)
+			)
+		}
+
 		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
 
 		if (normalized.index)
@@ -182,6 +189,11 @@ export const parseObjectLiteral = (
 
 	return meta === undefined ? node : node.configure(meta)
 }
+
+const isNonKeyUnit = (branch: BaseRoot): boolean =>
+	branch.is("unit") &&
+	typeof branch.unit !== "string" &&
+	typeof branch.unit !== "symbol"
 
 const objectDomains = new WeakMap<BaseScope, Domain.Node>()
 
