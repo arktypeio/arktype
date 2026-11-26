@@ -1,7 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
+import { fromHere } from "@ark/fs"
 import {
 	$ark,
 	configureAfterTypeMessage,
+	removedCloneMessage,
+	writeConfigureAfterTypeMessage,
 	writeMissingImportMessage,
 	rootSchema,
 	type StandardSchemaV1
@@ -9,7 +12,11 @@ import {
 import { configure, messageIn, scope, type } from "arktype"
 import "arktype/errors"
 import { en } from "arktype/locales/en"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 import { withConfig } from "./locales/withConfig.ts"
+
+const execFileAsync = promisify(execFile)
 
 // each issue's message, as a Standard Schema consumer reads it
 const standardMessagesOf = (T: type.Any, data: unknown) =>
@@ -1005,6 +1012,96 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		type("string")
 		attest(() => configure({ numberAllowsNaN: true })).throws(
 			configureAfterTypeMessage
+		)
+	})
+
+	it("configure after a type names the first Type that froze config", async function () {
+		this.timeout(30_000)
+		const errorAfter = async (setup: string): Promise<string> => {
+			const { stdout } = await execFileAsync(
+				process.execPath,
+				[
+					"--conditions",
+					"ark-ts",
+					"--input-type=module",
+					"-e",
+					`import { configure, scope, type } from "arktype"\n${setup}\ntry { configure({ numberAllowsNaN: true }) } catch (e) { console.log(e.message) }`
+				],
+				{ cwd: fromHere(".."), encoding: "utf8" }
+			)
+			return stdout.trimEnd()
+		}
+
+		const [deferred, scoped, truncated, { stdout: gcStdout }] =
+			await Promise.all([
+				errorAfter(`type({ firstUserName: "string", firstUserAge: "number" })`),
+				errorAfter(`scope({ Account: { accountId: "string" } }).export()`),
+				errorAfter(
+					`type({ veryLongPropertyNameOne: "string", veryLongPropertyNameTwo: "number", veryLongPropertyNameThree: "boolean" })`
+				),
+				// if the deferred first Type is GC'd before configure(), fall back cleanly
+				// without leaking internal deferred cache keys
+				execFileAsync(
+					process.execPath,
+					[
+						"--expose-gc",
+						"--conditions",
+						"ark-ts",
+						"--input-type=module",
+						"-e",
+						`import { configure, type } from "arktype"
+const create = () => new WeakRef(type({ gcOnlyKeyOne: "string", gcOnlyKeyTwo: "number" }))
+const ref = create()
+for (let i = 0; i < 20 && ref.deref(); i++) {
+	await new Promise(r => setTimeout(r, 0))
+	global.gc()
+	await new Promise(r => setTimeout(r, 0))
+}
+try {
+	configure({ numberAllowsNaN: true })
+} catch (e) {
+	console.log(JSON.stringify({ collected: !ref.deref(), message: e.message }))
+}`
+					],
+					{ cwd: fromHere(".."), encoding: "utf8" }
+				)
+			])
+
+		attest(deferred).equals(
+			writeConfigureAfterTypeMessage(
+				"{ firstUserAge: number, firstUserName: string }"
+			)
+		)
+		attest(scoped).equals(
+			writeConfigureAfterTypeMessage("Account ({ accountId: string })")
+		)
+		attest(truncated).snap(
+			"configure() must be called before any Type is created, so import the module calling it before any module that creates one (first Type created: { veryLongPropertyNameOne: string, veryLongPropertyNameThree: boolean, veryLo...)"
+		)
+
+		const gcResult = JSON.parse(gcStdout.trimEnd()) as {
+			collected: boolean
+			message: string
+		}
+		attest(gcResult.collected).equals(true)
+		attest(gcResult.message).equals(configureAfterTypeMessage)
+	})
+
+	it("rejects removed 2.x clone option in configure() and scope()", () => {
+		attest(() =>
+			// @ts-expect-error
+			configure({ clone: false })
+		)
+			.throws(removedCloneMessage)
+			.type.errors(removedCloneMessage)
+		attest(() =>
+			// @ts-expect-error
+			configure({ clone: true })
+		)
+			.throws(removedCloneMessage)
+			.type.errors(removedCloneMessage)
+		attest(() => scope({}, { clone: false } as never)).throws(
+			removedCloneMessage
 		)
 	})
 

@@ -16,6 +16,7 @@ import {
 	fromJsonSchema,
 	generic,
 	keywords,
+	lineOf,
 	match,
 	messageIn,
 	scope,
@@ -26,6 +27,7 @@ import {
 	type FromJsonSchema as FromJsonSchemaFn,
 	type inferFromJsonSchema,
 	type Locale,
+	type ReadableIssue,
 	type ScopeParser,
 	type validateFromJsonSchema
 } from "arktype"
@@ -124,7 +126,6 @@ export const FromJsonSchema = fromJsonSchema({
 })
 export const FromStandardSchema = fromJsonSchema(User)
 export const intersection = FromJsonSchema.and(User)
-
 // public values, methods, metadata, keywords, locales and helpers
 export const userMeta = User.meta
 export const userConfigure = User.configure
@@ -168,6 +169,9 @@ export const byAncestorPathFn = byAncestorPath
 export const flatByPathFn = flatByPath
 export const firstIssueFn = firstIssue
 export const flatMessagesByPathFn = flatMessagesByPath
+export const formatErrorLine = lineOf
+export const formatReadableIssue = (issue: ReadableIssue): string =>
+	lineOf(issue)
 export const enLocale = en
 export const deLocale = de
 export const i18nHelpers = {

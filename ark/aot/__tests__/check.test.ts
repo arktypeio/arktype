@@ -58,12 +58,12 @@ export const Kind = type.declare<{ kind: "a" } | { kind: "b" }>().type(A, "|", B
 
 	it("accepts reading a validator's errors by path", () => {
 		const root = writeFixture({
-			"main.ts": `import { byAncestorPath, byPath, flatByPath, flatMessagesByPath, messageIn, type } from "arktype"
+			"main.ts": `import { byAncestorPath, byPath, flatByPath, flatMessagesByPath, lineOf, messageIn, type } from "arktype"
 const User = type({ name: "string" })
 export const read = (data: unknown) => {
 	const out = User(data)
 	return out instanceof type.errors ?
-			[byPath(out), flatByPath(out), flatMessagesByPath(out), byAncestorPath(out)]
+			[byPath(out), flatByPath(out), flatMessagesByPath(out), byAncestorPath(out), out.issues.map(lineOf)]
 		:	out
 }
 export const translate = (data: unknown) => {

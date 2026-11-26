@@ -755,9 +755,13 @@ e must be an address
 						encoding: "utf8"
 					}
 				)
-				attest(thrownMessage(plain.stderr, configured, "ParseError: ")).equals(
-					configureAfterTypeMessage
-				)
+				const expectedFirst =
+					entry === "exportedFirst.ts" ? "bigint)" : "email ("
+				attest(
+					thrownMessage(plain.stderr, configured, "ParseError: ").startsWith(
+						`${configureAfterTypeMessage} (first Type created: ${expectedFirst}`
+					)
+				).equals(true)
 				const { stderr } = node(
 					[entry],
 					{ config: "config.ts", allowUnsafe: true },

@@ -1,5 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
-import { messageIn, scope, type, type ArkErrors, type Locale } from "arktype"
+import {
+	fromJsonSchema,
+	lineOf,
+	messageIn,
+	scope,
+	type,
+	type ArkErrors,
+	type Locale
+} from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 import { de } from "arktype/locales/de"
 import { en } from "arktype/locales/en"
@@ -504,5 +512,92 @@ b: muss ausgefüllt sein`)
 				deDescribed
 			)
 		).snap("a fehlt (muss ein x sein)")
+	})
+
+	it("uses authored descriptions for missing required properties", () => {
+		const T = type({
+			a: type("string").describe("ein Benutzername"),
+			b: type("string > 3").describe("ein Kürzel", "self"),
+			c: type("unknown").describe("eine Nutzlast"),
+			d: type("string").describe("ein Code").or("number"),
+			e: type("string").describe("ein Benutzername").label("Benutzername")
+		})
+		attest((T({}) as ArkErrors).summaryIn(de)).snap(
+			`a fehlt (muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein)
+b fehlt (muss ein Wert gemäß der Beschreibung „ein Kürzel“ sein)
+c fehlt (muss ein Wert gemäß der Beschreibung „eine Nutzlast“ sein)
+d fehlt (muss eine Zahl oder ein Wert gemäß der Beschreibung „ein Code“ sein)
+Benutzername fehlt (muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein)`
+		)
+		const deDescribed: Locale = { ...de, cite: text => text }
+		attest((T({}) as ArkErrors).summaryIn(deDescribed)).snap(
+			`a fehlt (muss ein Benutzername sein)
+b fehlt (muss ein Kürzel sein)
+c fehlt (muss eine Nutzlast sein)
+d fehlt (muss eine Zahl oder ein Code sein)
+Benutzername fehlt (muss ein Benutzername sein)`
+		)
+
+		// outer "self" description overrides a described basis
+		const Outer = type("string")
+			.describe("inner desc")
+			.moreThanLength(3)
+			.describe("outer desc", "self")
+		attest((type({ a: Outer })({}) as ArkErrors).summaryIn(de)).snap(
+			"a fehlt (muss ein Wert gemäß der Beschreibung „outer desc“ sein)"
+		)
+
+		// described recursive alias
+		const Rec = scope({
+			Node: { value: "string", next: ["Node", "@", "the next node"] }
+		}).export()
+		attest((Rec.Node({}) as ArkErrors).summaryIn(de)).snap(
+			`value fehlt (muss eine Zeichenkette sein)
+next fehlt (muss ein Wert gemäß der Beschreibung „the next node“ sein)`
+		)
+
+		// fromJsonSchema doc annotation piped through a morph stays structural
+		const PipedJson = type({
+			tax_exempt: fromJsonSchema({
+				type: "string",
+				enum: ["none", "exempt"],
+				description: "Doc text."
+			} as const).pipe(s => s)
+		})
+		attest((PipedJson({}) as ArkErrors).summary).snap(
+			'tax_exempt must be "exempt" or "none" (was missing)'
+		)
+		attest((PipedJson({}) as ArkErrors).summaryIn(de)).snap(
+			'tax_exempt fehlt (muss "exempt" oder "none" sein)'
+		)
+	})
+
+	it("formats individual errors with lineOf in the active locale", () => {
+		const T = type({
+			name: type("string").configure({ title: "Name" }),
+			price: type("number > 0").label("Stückpreis"),
+			note: type("string").message("Pflichtfeld"),
+			items: "number[]"
+		})
+		const input = { name: 1, price: 0, note: 1, items: ["x"] }
+		withConfig({ locale: de }, () => {
+			const out = T(input) as ArkErrors
+			attest(out.issues.map(lineOf).join("\n")).equals(out.summary)
+			attest(out.issues.map(lineOf)).snap([
+				"name („Name“) muss eine Zeichenkette sein",
+				"Stückpreis muss positiv sein",
+				"note: Pflichtfeld",
+				"items[0] muss eine Zahl sein"
+			])
+		})
+		// also with a dynamic locale function, even if the selected locale changes later
+		let active: Locale = de
+		withConfig({ locale: () => active }, () => {
+			const out = T(input) as ArkErrors
+			const issues = out.issues
+			const summary = out.summary
+			active = en
+			attest(issues.map(lineOf).join("\n")).equals(summary)
+		})
 	})
 })

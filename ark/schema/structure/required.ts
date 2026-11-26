@@ -13,7 +13,13 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import { composing, elided, isResolutionFinal } from "../shared/utils.ts"
+import {
+	authoredDescriptionOf,
+	composing,
+	describeBranches,
+	elided,
+	isResolutionFinal
+} from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Required {
@@ -39,9 +45,13 @@ export declare namespace Required {
 export type MissingValue =
 	| MissingBasis
 	// a value with no basis, such as unknown: "present" in English
-	| { readonly code: "intersection" }
+	| { readonly code: "intersection"; readonly meta?: ArkEnv.meta }
 	// branches in order; none is never
-	| { readonly code: "union"; readonly branches: readonly MissingValue[] }
+	| {
+			readonly code: "union"
+			readonly branches: readonly MissingValue[]
+			readonly meta?: ArkEnv.meta
+	  }
 
 export type MissingBasis =
 	| errorCtx<"domain">
@@ -78,7 +88,7 @@ export class RequiredNode extends BaseProp<"required"> {
 	get errorCtx(): NodeErrorContextInput<"required"> {
 		return (this._errorCtx ??= Object.freeze({
 			code: "required",
-			missingValueDescription: this.value.brief,
+			missingValueDescription: missingDescriptionOf(this.value),
 			missing: missingValueOf(this.value),
 			valueMeta: this.value.meta,
 			meta: this.meta
@@ -106,27 +116,65 @@ export const Required = {
 
 const unknownValue: MissingValue = Object.freeze({ code: "intersection" })
 
-// the walk of brief, keeping each basis's context
-const missingValueOf = (value: BaseRoot): MissingValue => {
-	if (value.is("union")) {
-		return Object.freeze({
-			code: "union",
-			branches: Object.freeze(value.branches.map(missingValueOf))
-		})
-	}
+// what a missing required property expects in English: a user-authored
+// description on the value (or its branches) before falling back to brief
+const missingDescriptionOf = (value: BaseRoot): string => {
+	const authored = authoredDescriptionOf(value.meta)
+	if (authored !== undefined) return authored
+	if (value.is("union"))
+		return value.distribute(missingDescriptionOf, describeBranches)
 	if (value.is("intersection"))
-		return value.basis ? missingValueOf(value.basis) : unknownValue
+		return value.basis ? missingDescriptionOf(value.basis) : "present"
 	if (value.is("morph")) {
-		return value._in.meta.description === undefined ?
+		return (
+				value._in.meta.description !== undefined &&
+					value._in.meta.expected === undefined
+			) ?
+				value._in.meta.description
+			:	missingDescriptionOf(value._in)
+	}
+	if (value.is("alias")) {
+		return isResolutionFinal() ?
+				missingDescriptionOf(value.resolution)
+			:	"an object"
+	}
+	return value.brief
+}
+
+// the walk of brief, keeping each basis's context and any authored description
+const missingValueOf = (value: BaseRoot): MissingValue => {
+	const authored = authoredDescriptionOf(value.meta)
+	if (value.is("union")) {
+		const branches = Object.freeze(value.branches.map(missingValueOf))
+		return Object.freeze(
+			authored !== undefined ?
+				{ code: "union", branches, meta: value.meta }
+			:	{ code: "union", branches }
+		)
+	}
+	if (value.is("intersection")) {
+		if (authored !== undefined)
+			return Object.freeze({ code: "intersection", meta: value.meta })
+		return value.basis ? missingValueOf(value.basis) : unknownValue
+	}
+	if (value.is("morph")) {
+		if (authored !== undefined)
+			return Object.freeze({ code: "morph", meta: value.meta })
+		return (
+				value._in.meta.description === undefined ||
+					value._in.meta.expected !== undefined
+			) ?
 				missingValueOf(value._in)
 			:	Object.freeze({ code: "morph", meta: value._in.meta })
 	}
 	if (value.is("alias")) {
+		if (authored !== undefined)
+			return Object.freeze({ code: "intersection", meta: value.meta })
 		return missingValueOf(
 			isResolutionFinal() ? value.resolution : $ark.kw.object
 		)
 	}
-	if (value.is("unit") && value.domain === "object")
+	if (value.is("unit") && value.domain === "object" && authored === undefined)
 		return missingValueOf($ark.kw.object)
 	return Object.freeze((value as nodeOfKind<BasisKind>).errorCtx)
 }

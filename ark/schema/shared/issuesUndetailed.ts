@@ -7,6 +7,7 @@ import type {
 	FailureContext,
 	FailureSite,
 	MissingText,
+	ReadableIssue,
 	SiteContext
 } from "./issues.ts"
 import { bracketsKeys } from "./issueFeatures.ts"
@@ -97,10 +98,12 @@ export const pathOf = (issue: {
 export const messageOf = (): string => "is invalid"
 
 // an issue's line of a summary: that it's invalid, after its path
-export const lineOf = (issue: ArkIssue): string => {
+const issueLineOf = (issue: ReadableIssue): string => {
 	const at = pathOf(issue)
 	return (at && at + " ") + (issue.message ?? "is invalid")
 }
+
+export { issueLineOf as lineOf }
 
 // no message is configured where none is written, so none is noted as its code's
 export const isCustomIssue = (): boolean => false

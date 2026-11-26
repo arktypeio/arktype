@@ -21,6 +21,7 @@ import {
 import type { ArkEnv } from "./declare.ts"
 import { labeledPathOf } from "./issues.ts"
 import { labelSharedBy } from "./listed.ts"
+import { authoredDescriptionOf } from "./utils.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 
@@ -268,6 +269,8 @@ export const describeMissing = (
 	missing: MissingValue,
 	locale: Locale.Resolved
 ): string => {
+	const authored = authoredDescriptionOf(missing.meta)
+	if (authored !== undefined) return locale.cite(authored)
 	if (missing.code === "intersection") return locale.nouns.unknown
 	if (missing.code !== "union") return describeBasis(missing, locale)
 	if (missing.branches.length === 0) return locale.nouns.never
@@ -282,6 +285,7 @@ const describeEachMissing = (
 ): string[] => {
 	if (
 		missing.code !== "union" ||
+		authoredDescriptionOf(missing.meta) !== undefined ||
 		missing.branches.length === 0 ||
 		isBooleanPair(missing.branches)
 	)

@@ -65,6 +65,19 @@ const told: Record<string, string> = {
 		show(type({ p: type("string").pipe(s => type({ k: AsDefault })(JSON.parse(s))) }), { p: '{"k":1}' })
 		show(type({ p: type("string").pipe(s => type({ k: Enter })(JSON.parse(s))) }), { p: '{"k":1}' })
 		show(type({ p: type("string.json.parse").to({ k: Enter }) }), { p: '{"k":1}' })
+	`,
+	"uses an authored description when a required property is missing": `
+		const Thing = type({
+			a: type("string").describe("foo"),
+			b: ["string", "@", "bar"],
+			c: type("string > 3").describe("a username"),
+			d: type("string | number").describe("an id"),
+			e: type("unknown").describe("any payload"),
+			f: type("string").describe("a username").label("Username"),
+			g: type("string").describe("a username").message("Enter a username"),
+			h: "string.email"
+		})
+		show(Thing, {}, { a: 1, b: 2, c: "x", d: true, e: 1, f: 1, g: 1, h: "bad" })
 	`
 }
 

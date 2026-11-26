@@ -171,7 +171,7 @@ var Issues =
 				get summary() {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + lineOf(issue)
+						summary += (summary && "\n") + issueLineOf(issue)
 					return summary
 				}
 				summaryIn(locale) {
@@ -223,7 +223,7 @@ var Issues =
 				get summary() {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + lineOf(issue)
+						summary += (summary && "\n") + issueLineOf(issue)
 					return summary
 				}
 				summaryIn(locale) {
@@ -257,7 +257,8 @@ var Issues =
 		class extends (findsOnRead ? UnreadIssues : ReadIssues) {
 			get summary() {
 				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				for (const issue of this._)
+					summary += (summary && "\n") + issueLineOf(issue)
 				return summary
 			}
 		}
@@ -322,7 +323,7 @@ var pathOf = issue => {
 	}
 	return path
 }
-var lineOf = issue => {
+var issueLineOf = issue => {
 	const message = (issue.message ??= messageOf(issue))
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")

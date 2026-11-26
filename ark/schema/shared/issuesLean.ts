@@ -7,6 +7,7 @@ import type {
 	FailureSite,
 	IssueJson,
 	MissingText,
+	ReadableIssue,
 	SiteContext
 } from "./issues.ts"
 import {
@@ -164,7 +165,7 @@ const Issues: new () => Issues = (
 			}
 
 			get summary(): string {
-				return this._.map(lineOf).join("\n")
+				return this._.map(issueLineOf).join("\n")
 			}
 
 			summaryIn(locale?: unknown): string {
@@ -196,7 +197,7 @@ const Issues: new () => Issues = (
 	: readsSummary ?
 		class extends ReadIssues {
 			get summary(): string {
-				return this._.map(lineOf).join("\n")
+				return this._.map(issueLineOf).join("\n")
 			}
 		}
 	:	ReadIssues) as never
@@ -393,14 +394,16 @@ export const pathOf = (issue: {
 }
 
 // an issue's line of a summary, as issues.ts's lineOf
-export const lineOf = (issue: ArkIssue): string => {
+const issueLineOf = (issue: ReadableIssue): string => {
 	const message = (issue.message ??= messageOf(issue))
 	// as issues.ts's, joined where every key is an identifier
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
-		listsUnions && issue._l !== undefined ? issue._l
-		: labelsValues && issue._n !== undefined ? labeledPathOf(issue) + message
+		listsUnions && (issue as ArkIssue)._l !== undefined ?
+			(issue as ArkIssue)._l!
+		: labelsValues && (issue as ArkIssue)._n !== undefined ?
+			labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
@@ -415,9 +418,11 @@ export const lineOf = (issue: ArkIssue): string => {
 	)
 }
 
+export { issueLineOf as lineOf }
+
 // an undeclared key's site says what's expected, as issues.ts's messageOf
 export const messageOf = (issue: {
-	readonly code?: ArkErrorCode
+	readonly code?: ArkErrorCode | undefined
 	readonly expected?: string | undefined
 }): string =>
 	issue.expected !== undefined ?

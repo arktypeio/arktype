@@ -39,6 +39,7 @@ import {
 	isCustomIssue,
 	labeledIssue,
 	labeledPathOf,
+	lineOf as issueLineOf,
 	pathOf,
 	issueAt,
 	messageOf,
@@ -46,6 +47,7 @@ import {
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
+	type ReadableIssue,
 	type SiteContext,
 	type SiteFailureContext,
 	type UnionSite
@@ -952,11 +954,19 @@ export const suppliedText = (
 	slot: "expected" | "actual" | "message"
 ): string | undefined => inputOf(error)?.[slot]
 
+// records the locale an error was written in when it differs from its config's
+// (e.g. a function locale or summaryIn), so lineOf(error) formats it identically
+const writtenLocales = new WeakMap<ArkError, Locale.Resolved>()
+
+const writtenLocaleOf = (error: ArkError): Locale.Resolved =>
+	writtenLocales.get(error) ?? configOf(error).locale
+
 const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
 	locale: Locale.Resolved
 ): void => {
+	if (locale !== config.locale) writtenLocales.set(error, locale)
 	const code = error.code
 	if (code === "union") {
 		writeAtPaths(error, config, locale)
@@ -1167,7 +1177,7 @@ export const configuredMessageOf = (
 
 // a written error's line of a summary: its message alone at the root or
 // where it lists its errors, and after its path anywhere else
-const lineOf = (error: ArkError, locale: Locale.Resolved): string => {
+const errorLineOf = (error: ArkError, locale: Locale.Resolved): string => {
 	if (error.path.length === 0) return error.message
 	const listed = (error as ArkIssue)._l
 	if (listed !== undefined) return listed
@@ -1213,6 +1223,7 @@ const writeAtPaths = (
 	config: ResolvedConfig,
 	locale: Locale.Resolved
 ): void => {
+	if (locale !== config.locale) writtenLocales.set(error, locale)
 	error.propString ??= stringifyPath(error.path)
 	const bases = basesByUnion.get(error)
 	if (bases && error.expected === undefined) {
@@ -1498,7 +1509,7 @@ const summarize = (
 ): string => {
 	let result = ""
 	for (let i = 0; i < issues.length; i++)
-		result += (i ? "\n" : "") + lineOf(issues[i], locale)
+		result += (i ? "\n" : "") + errorLineOf(issues[i], locale)
 	return result
 }
 
@@ -1540,6 +1551,17 @@ export const serializableErrors = (issues: ArkError[]): readonly ArkError[] =>
  */
 export const firstIssue = (errors: ArkErrors): ArkError =>
 	errors._first ?? errors.issues[0]
+
+export type { ReadableIssue } from "./issues.ts"
+
+/**
+ * Formats a single error as its line in `errors.summary`, e.g.
+ * `name must be a string` or `name: Enter a name`.
+ */
+export const lineOf = (error: ReadableIssue): string =>
+	isArkError(error as ArkIssue) ?
+		errorLineOf(error as ArkError, writtenLocaleOf(error as ArkError))
+	:	issueLineOf(error)
 
 // read from errorReaders.ts, which arktype/runtime exports alone
 export {
@@ -1672,6 +1694,11 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 
 export const configureAfterTypeMessage =
 	"configure() must be called before any Type is created, so import the module calling it before any module that creates one"
+
+export const writeConfigureAfterTypeMessage = (firstType?: string): string =>
+	firstType ?
+		`${configureAfterTypeMessage} (first Type created: ${firstType})`
+	:	configureAfterTypeMessage
 
 export const unrenderedLocaleMessage =
 	'import "arktype/i18n" to write errors in locales other than en'

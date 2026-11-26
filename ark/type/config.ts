@@ -5,6 +5,7 @@ import type { Locale } from "./locale.ts"
 import {
 	configureSchema,
 	type ArkSchemaConfig,
+	type removedCloneMessage,
 	type writeUnknownConfigOptionMessage
 } from "@ark/schema/config"
 import type { anyOrNever, ErrorMessage, noSuggest } from "@ark/util"
@@ -35,7 +36,8 @@ export const configure: <config extends ArkConfig>(
 
 type validateConfig<config> = {
 	[k in keyof config]: k extends keyof ArkConfig ? config[k]
-	:	ErrorMessage<writeUnknownConfigOptionMessage<k & string>>
+	: k extends "clone" ? ErrorMessage<typeof removedCloneMessage>
+	: ErrorMessage<writeUnknownConfigOptionMessage<k & string>>
 }
 
 /** what strings resolve against: ArkEnv's $ if a program declares one, else Ark */

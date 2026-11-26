@@ -224,6 +224,25 @@ export type DescribeBranchesOptions = {
 // what 2.x's slot says where a cast or JavaScript still passes it
 export const removedProblemMessage = "problem was removed in 3.0; write message"
 
+export const removedCloneMessage =
+	"clone was removed in 3.0; remove it, or set mutatesInput to write into the input"
+
+// a user-authored description on a value, distinct from a built-in keyword's
+// phrase or a node whose `expected` explicitly overrides its description
+// (e.g. fromJsonSchema description annotations)
+export const authoredDescriptionOf = (
+	meta:
+		| {
+				readonly description?: string
+				readonly expected?: unknown
+				readonly keyword?: string
+		  }
+		| undefined
+): string | undefined =>
+	meta?.keyword === undefined && meta?.expected === undefined ?
+		meta?.description
+	:	undefined
+
 export const describeBranches = (
 	descriptions: readonly string[],
 	opts?: DescribeBranchesOptions

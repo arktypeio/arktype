@@ -1,8 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	ArkErrors,
+	firstIssue,
 	flatByPath,
 	flatMessagesByPath,
+	lineOf,
 	messageIn,
 	rootSchema,
 	schemaScope,
@@ -313,6 +315,71 @@ n must be at least 2`)
 		attest(flatMessagesByPath(errors)).snap({
 			n: ["must be even", "must be at least 2"]
 		})
+	})
+
+	it("lineOf matches each line of summary", () => {
+		const root = rootSchema("string")
+		const rootOut = root(5) as ArkErrors
+		attest(lineOf(firstIssue(rootOut))).equals(rootOut.summary)
+		attest(lineOf(rootOut.issues[0])).snap("must be a string")
+
+		const sym = Symbol("k")
+		const nested = rootSchema({
+			domain: "object",
+			required: [
+				{ key: "name", value: "string" },
+				{ key: "first-name", value: "string" },
+				{ key: sym, value: "string" },
+				{
+					key: "custom",
+					value: { domain: "string", meta: { message: "Enter a value" } }
+				},
+				{
+					key: "labeled",
+					value: { domain: "number", meta: { label: "Amount" } }
+				},
+				{
+					key: "nested",
+					value: {
+						domain: "object",
+						required: [
+							{
+								key: "price",
+								value: { domain: "number", meta: { label: "Unit price" } }
+							}
+						]
+					}
+				},
+				{
+					key: "items",
+					value: {
+						proto: Array,
+						sequence: {
+							domain: "object",
+							required: [{ key: "id", value: "number" }]
+						}
+					}
+				}
+			]
+		})
+		const out = nested({
+			"first-name": 1,
+			[sym]: 2,
+			custom: 3,
+			labeled: "x",
+			nested: { price: "y" },
+			items: [{ id: "z" }]
+		}) as ArkErrors
+		attest(out.issues.map(lineOf).join("\n")).equals(out.summary)
+		attest(out.issues.map(lineOf)).snap([
+			"custom: Enter a value",
+			'["first-name"] must be a string',
+			"items[0].id must be a number",
+			"Amount must be a number",
+			"name must be a string (was missing)",
+			"nested: Unit price must be a number",
+			"[Symbol(k)] must be a string"
+		])
 	})
 
 	it("throws ParseError when a non-object locale is passed to summaryIn or messageIn", () => {

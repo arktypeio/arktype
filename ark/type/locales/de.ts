@@ -1,5 +1,6 @@
 import {
 	actualAtPathOf,
+	authoredDescriptionOf,
 	describeCause,
 	describeMissing,
 	groupByPath,
@@ -499,7 +500,10 @@ export const de: Locale.Complete = {
 		expected: (e, locale) => describeMissing(e.missing, locale),
 		actual: absent,
 		message: (e, locale) =>
-			e.missing.code === "intersection" ?
+			(
+				e.missing.code === "intersection" &&
+				authoredDescriptionOf(e.missing.meta) === undefined
+			) ?
 				"fehlt"
 			:	`fehlt (muss ${describeMissing(e.missing, locale)} sein)`
 	},

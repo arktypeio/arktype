@@ -484,5 +484,77 @@ a must be a number (was missing)`)
 				}
 			])
 		})
+
+		// https://github.com/arktypeio/arktype/issues/1789
+		it("uses a value's authored description when missing", () => {
+			const Thing = type({
+				a: type("string").describe("foo"),
+				b: ["string", "@", "bar"]
+			})
+			attest(Thing.array()([{}, { a: 1, b: 2 }]).toString()).snap(
+				`[0].a must be foo (was missing)
+[0].b must be bar (was missing)
+[1].a must be foo
+[1].b must be bar`
+			)
+
+			const Cases = type({
+				constrained: type("string > 3").describe("a username"),
+				selfConstrained: type("string > 3").describe("a handle", "self"),
+				union: type("string | number").describe("an id"),
+				selfUnion: type("string | number").describe("a key", "self"),
+				branchDescribed: type("string").describe("a code").or("number"),
+				unknown: type("unknown").describe("any payload"),
+				obj: type({ x: "number" }).describe("a point"),
+				keywordOverridden: type("string.email").describe("a work email"),
+				date: type("Date").describe("a birthday"),
+				morph: type("string")
+					.pipe(s => s.length)
+					.describe("a length"),
+				labeled: type("string").describe("a username").label("Username"),
+				messaged: type("string")
+					.describe("a username")
+					.message("Enter a username"),
+				// built-in keywords without user descriptions stay unchanged
+				email: "string.email",
+				int: "number.integer",
+				epoch: "number.epoch"
+			})
+			attest(Cases({}).toString()).snap(
+				`constrained must be a username (was missing)
+selfConstrained must be a handle (was missing)
+union must be an id (was missing)
+selfUnion must be a key (was missing)
+branchDescribed must be a number or a code (was missing)
+unknown must be any payload (was missing)
+obj must be a point (was missing)
+keywordOverridden must be a work email (was missing)
+date must be a birthday (was missing)
+morph must be a length (was missing)
+Username must be a username (was missing)
+messaged: Enter a username
+email must be a string (was missing)
+int must be a number (was missing)
+epoch must be a number (was missing)`
+			)
+
+			// outer "self" description overrides a described basis
+			const Outer = type("string")
+				.describe("inner desc")
+				.moreThanLength(3)
+				.describe("outer desc", "self")
+			attest(type({ a: Outer })({}).toString()).snap(
+				"a must be outer desc (was missing)"
+			)
+
+			// described recursive alias
+			const Rec = scope({
+				Node: { value: "string", next: ["Node", "@", "the next node"] }
+			}).export()
+			attest(Rec.Node({}).toString()).snap(
+				`value must be a string (was missing)
+next must be the next node (was missing)`
+			)
+		})
 	})
 })

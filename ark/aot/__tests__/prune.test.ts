@@ -2583,6 +2583,122 @@ email: pattern,minLength|["first-name"]: domain|items[0].id: divisor|items[1].id
 			attest(run(written)).equals(runPlain(files))
 		})
 
+		it("formats each error line with lineOf as arktype does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { firstIssue, lineOf, type } from "arktype"
+import * as ark from "arktype"
+
+const Root = type("string")
+const Order = type({
+	name: type("string").describe("a customer name"),
+	"first-name": "string",
+	note: type("string").message("Enter a note"),
+	price: type("number > 0").label("Unit price"),
+	billing: {
+		price: type("number > 0").label("Unit price")
+	},
+	items: type({
+		id: "number % 2",
+		price: type("number > 0").label("Unit price")
+	}).array(),
+	branch: type({ a: "string" }).or({ b: "number" })
+})
+
+const rootOut = Root(1)
+if (rootOut instanceof type.errors)
+	console.log(lineOf(firstIssue(rootOut)) === rootOut.summary, lineOf(rootOut.issues[0]))
+
+const out = Order({
+	"first-name": 1,
+	note: 2,
+	price: 0,
+	billing: { price: 0 },
+	items: [{ id: 3, price: 0 }],
+	branch: {}
+})
+if (out instanceof type.errors) {
+	const lines = out.issues.map(ark.lineOf)
+	console.log(lines.join("\\n") === out.summary)
+	console.log(lines.join("\\n"))
+}
+`
+				},
+				tempPath("prunedLineOf")
+			)
+			const written = await bundle(
+				{ preset: undefined },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(written)).snap(`true must be a string
+true
+name must be a customer name (was missing)
+["first-name"] must be a string
+note: Enter a note
+Unit price must be positive
+billing: Unit price must be positive
+items[0].id must be even
+items[0]: Unit price must be positive
+branch.a must be a string or branch.b must be a number
+`)
+			// identical to dynamic arktype
+			attest(run(written)).equals(runPlain(files))
+
+			// also matches under smallest preset (issuesLean + checkers)
+			const smallestWritten = await bundle(
+				{ preset: "smallest" },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(smallestWritten)).equals(run(written))
+		})
+
+		it("formats each error line with lineOf under reduced error modes", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { firstIssue, lineOf, type } from "arktype"
+import * as ark from "arktype"
+
+const Root = type("string")
+const Order = type({
+	price: type("number > 0").label("Unit price"),
+	name: type("string").describe("a customer name")
+})
+
+const rootOut = Root(1)
+if (rootOut instanceof type.errors)
+	console.log(lineOf(firstIssue(rootOut)) === rootOut.summary, lineOf(rootOut.issues[0]))
+
+const out = Order({ price: 0 })
+if (out instanceof type.errors) {
+	const lines = out.issues.map(ark.lineOf)
+	console.log(lines.join("\\n") === out.summary)
+	console.log(lines.join("\\n"))
+}
+`
+				},
+				tempPath("prunedLineOfReduced")
+			)
+			// errors: "first" formats the first issue identically to summary
+			const firstWritten = await bundle(
+				{ preset: undefined, errors: "first" },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(firstWritten)).snap(`true must be a string
+true
+Unit price must be positive
+`)
+
+			// errors: "none" formats the undetailed issue identically to summary
+			const noneWritten = await bundle(
+				{ preset: undefined, errors: "none" },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(noneWritten)).snap(`true is invalid
+true
+is invalid
+`)
+		})
+
 		it("builds a regex from a pattern known only at runtime as arktype does", async () => {
 			const files = writeFixture(
 				{

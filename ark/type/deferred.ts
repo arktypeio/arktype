@@ -9,6 +9,7 @@ import {
 	isNode,
 	lastCreated,
 	printSelfAsThis,
+	recordFirstType,
 	type DeferredShell,
 	type GenericRoot,
 	type IntersectionNode
@@ -1077,6 +1078,11 @@ const defer = (facts: Facts, $: InternalScope, resolve: () => BaseRoot) => {
 	Object.setPrototypeOf(self, shellProto)
 	deferred.set(self, { facts, fn, c, $, resolve })
 	$.nodesByKey.set(facts.key, self)
+	// fixes the global config, as parsing a definition would
+	if (!$ark.cfg) {
+		void $.cfg
+		recordFirstType(self, true)
+	}
 	return self as never
 }
 
@@ -1097,8 +1103,6 @@ const canDefer = ($: InternalScope) => {
 	// jitless changes only whether it compiles
 	for (const k in $ark.config)
 		if (k !== "exactOptionalPropertyTypes" && k !== "jitless") return false
-	// fixes the global config, as parsing a definition would
-	void $.cfg
 	return true
 }
 

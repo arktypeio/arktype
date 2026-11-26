@@ -1,4 +1,8 @@
-import { configureAfterTypeMessage, rootSchema, schemaScope } from "@ark/schema"
+import {
+	rootSchema,
+	schemaScope,
+	writeConfigureAfterTypeMessage
+} from "@ark/schema"
 import { configure, scope, type } from "arktype"
 import { strictEqual, throws } from "node:assert/strict"
 import { cases } from "./util.ts"
@@ -47,11 +51,14 @@ cases({
 		strictEqual(type.keywords.string.email.description, "a configured email")
 	},
 	configureAfterType: () => {
+		const expected = writeConfigureAfterTypeMessage(
+			"number | Infinity | -Infinity"
+		)
 		throws(() => configure({ numberAllowsInfinity: false }), {
-			message: configureAfterTypeMessage
+			message: expected
 		})
 		throws(() => configure({ onFail: () => {} }), {
-			message: configureAfterTypeMessage
+			message: expected
 		})
 	},
 	reconfigureUnchanged: () => {
@@ -72,7 +79,9 @@ cases({
 					...configOf(),
 					divisor: { actual: (data: unknown) => `${data}, not even` }
 				}),
-			{ message: configureAfterTypeMessage }
+			{
+				message: writeConfigureAfterTypeMessage("number | Infinity | -Infinity")
+			}
 		)
 	},
 	returnsWhatWasPassed: () => {

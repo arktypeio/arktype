@@ -4,6 +4,7 @@ import {
 	defineValue,
 	isPlainObjectOrArray
 } from "@ark/util"
+import { whileBootstrapping } from "./config.ts"
 import {
 	bootstrapRootScope,
 	node,
@@ -105,7 +106,9 @@ const bootstrapIntrinsic = () => {
 	// jsonObject's expression asks for object.json, which is this scope's
 	// jsonObject, so resolving it here would build the scope a second time
 	const exportJson = cached(() =>
-		whileResolvingAmbient("object.json", exportJsonScope)
+		whileBootstrapping(() =>
+			whileResolvingAmbient("object.json", exportJsonScope)
+		)
 	)
 	for (const k of jsonIntrinsicNames)
 		defineLazily(intrinsic, k, () => exportJson()[k])
@@ -143,11 +146,13 @@ export const bootstrap = (): void => {
 	bootstrappedWithEngine = $ark.sets !== undefined
 	defineValue($ark, "kw", undefined)
 	try {
-		bootstrapRootScope()
-		Object.defineProperties(
-			intrinsicTarget,
-			Object.getOwnPropertyDescriptors(bootstrapIntrinsic())
-		)
+		whileBootstrapping(() => {
+			bootstrapRootScope()
+			Object.defineProperties(
+				intrinsicTarget,
+				Object.getOwnPropertyDescriptors(bootstrapIntrinsic())
+			)
+		})
 	} catch (e) {
 		bootstrapped = false
 		bootstrapOnRead()

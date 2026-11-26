@@ -406,7 +406,7 @@ const Issues: IssuesClass = (
 				get summary(): string {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + lineOf(issue)
+						summary += (summary && "\n") + issueLineOf(issue)
 					return summary
 				}
 
@@ -482,7 +482,7 @@ const Issues: IssuesClass = (
 				get summary(): string {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + lineOf(issue)
+						summary += (summary && "\n") + issueLineOf(issue)
 					return summary
 				}
 
@@ -523,7 +523,8 @@ const Issues: IssuesClass = (
 		)) as typeof ReadIssues) {
 			get summary(): string {
 				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				for (const issue of this._)
+					summary += (summary && "\n") + issueLineOf(issue)
 				return summary
 			}
 		}
@@ -785,24 +786,26 @@ export const pathOf = (issue: {
 	return path
 }
 
-/**
- * @internal an issue's line of a summary: its message after its path, one
- * configured or supplied as a sentence (isCustomIssue) after a colon. A union
- * listing its branches' issues names each one's path instead, and a labeled
- * one's message names its own value (labeledPathOf). Each flag is read in the
- * one expression returned: a bundler that inlines a flag as it prints folds
- * an expression it's in, and leaves a statement testing it, and a function
- * returning it, as they are. A listed issue's message is set as it's created
- */
-export const lineOf = (issue: ArkIssue): string => {
+/** an issue `lineOf` can format: an `ArkError`, standalone `ArkIssue`, or `PathedIssue` */
+export interface ReadableIssue {
+	readonly path: readonly PropertyKey[]
+	message?: string | undefined
+	readonly code?: ArkErrorCode | undefined
+	readonly expected?: string | undefined
+}
+
+// named apart from errors.ts's lineOf, which keeps the runtime name lineOf
+const issueLineOf = (issue: ReadableIssue): string => {
 	const message = (issue.message ??= messageOf(issue))
 	// every key of a build holding neither an index nor a key to bracket is an
 	// identifier, so its path is its keys joined, and it holds no pathOf
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
-		listsUnions && issue._l !== undefined ? issue._l
-		: labelsValues && issue._n !== undefined ? labeledPathOf(issue) + message
+		listsUnions && (issue as ArkIssue)._l !== undefined ?
+			(issue as ArkIssue)._l!
+		: labelsValues && (issue as ArkIssue)._n !== undefined ?
+			labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
@@ -817,11 +820,17 @@ export const lineOf = (issue: ArkIssue): string => {
 	)
 }
 
+/**
+ * Formats an error as its line in `errors.summary`, e.g.
+ * `name must be a string` or `name: Enter a name`.
+ */
+export { issueLineOf as lineOf }
+
 // what an issue says where no message is configured for it, naming no path.
 // An undeclared key's site says what's expected. Only a missing key's says
 // what the value was, since writing any other value would ship a printer
 export const messageOf = (issue: {
-	readonly code?: ArkErrorCode
+	readonly code?: ArkErrorCode | undefined
 	readonly expected?: string | undefined
 }): string =>
 	issue.expected !== undefined ?

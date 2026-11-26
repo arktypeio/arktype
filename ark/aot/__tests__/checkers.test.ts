@@ -711,7 +711,7 @@ bare must be valid according to isLong
 missing must be valid according to isLong
 named must be a string (was missing)
 anonymous must be a string (was missing)
-described must be a string (was missing)
+described must be long (was missing)
 configured: too short
 bare must be present (was missing)
 `

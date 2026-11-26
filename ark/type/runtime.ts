@@ -126,6 +126,7 @@ export {
 	holdsOnlyIndices,
 	keepOwn,
 	InternalTraversal,
+	lineOf,
 	listedIssue,
 	matchesRepeated,
 	mergeTransformed,
@@ -162,7 +163,8 @@ export {
 	writeUnionJsonSchema,
 	writeUnitActual,
 	writeUnitMessage,
-	type ArkError
+	type ArkError,
+	type ReadableIssue
 } from "arktype/schema/runtime"
 export {
 	baseNameOf,

@@ -27,6 +27,8 @@ import {
 import {
 	assertNoProblemConfig,
 	mergeConfigs,
+	recordFirstType,
+	removedCloneMessage,
 	resolveGlobalConfig,
 	type ArkSchemaConfig,
 	type ResolvedConfig
@@ -351,6 +353,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				throwParseError(writeGlobalOnlyConfigMessage(k))
 		}
 		assertNoProblemConfig(config as ArkSchemaConfig | undefined)
+		if (config && "clone" in config) throwParseError(removedCloneMessage)
 		if (config?.ambient !== undefined) validateAmbientConfig(config.ambient)
 
 		const aliasEntries = Object.entries(def).map(entry =>
@@ -682,9 +685,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 						delete member.resolution
 					}
 				}
-				return node.topAlias ?
+				const resolved =
+					node.topAlias ?
 						this.resolvePending(name, (this.res[name] = withId(node, ctx.id)))
 					:	this.resolveContext(name, ctx, node)
+				if ($ark.cfg && !$ark.cfgFrozenBy && !inProgress.definitions)
+					recordFirstType(resolved, undefined, name)
+				return resolved
 			})
 		} catch (e) {
 			// a deferred check failed; reparsing would reuse checked nodes
@@ -936,7 +943,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			input = { ...input, unit: 0 } as never
 
 		bootstrap()
-		return this.bindRef(
+		const result = this.bindRef(
 			parseNode({
 				kind,
 				def: input as NodeInput,
@@ -945,7 +952,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 				alias: opts.alias,
 				reduced: opts.reduced
 			})
-		) as never
+		)
+		if (
+			$ark.cfg &&
+			!$ark.cfgFrozenBy &&
+			!inProgress.definitions &&
+			!inProgress.resolutions &&
+			hasArkKind(result, "root")
+		)
+			recordFirstType(result)
+		return result as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -1004,10 +1020,26 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		// resolving aliases can throw, so they resolve on definition
 		if (node.hasAlias) resolveReachedAliases(node)
-		if (node.unitFn || !jit) return node
+		if (node.unitFn || !jit) {
+			if (
+				$ark.cfg &&
+				!$ark.cfgFrozenBy &&
+				!inProgress.definitions &&
+				!inProgress.resolutions
+			)
+				recordFirstType(node)
+			return node
+		}
 		bindPrecompiledUnits?.([node])
-		if (node.unitFn || !canJit(this.cfg)) return node
-		node.deferJit()
+		const canCompile = !node.unitFn && canJit(this.cfg)
+		if (
+			$ark.cfg &&
+			!$ark.cfgFrozenBy &&
+			!inProgress.definitions &&
+			!inProgress.resolutions
+		)
+			recordFirstType(node)
+		if (canCompile) node.deferJit()
 		return node
 	}
 

@@ -2766,15 +2766,15 @@ export const translators = [ark.messageIn]`)
 
 		it("functions of errors arktype/runtime exports", () => {
 			attest(
-				diagnosticsOf(`import { type, flatMessagesByPath, type ArkErrors } from "arktype"
+				diagnosticsOf(`import { type, flatMessagesByPath, lineOf, type ArkErrors } from "arktype"
 import * as ark from "arktype"
 const User = type({ name: "string" })
-export const report = (errors: ArkErrors) => flatMessagesByPath(errors)
+export const report = (errors: ArkErrors) => [flatMessagesByPath(errors), errors.issues.map(lineOf)]
 export const check = (data: unknown) => {
 	const out = User(data)
 	return out instanceof type.errors ? ark.byPath(out) : out
 }
-export const readers = [ark.flatByPath, ark.byAncestorPath]`)
+export const readers = [ark.flatByPath, ark.byAncestorPath, ark.lineOf]`)
 			).equals([])
 		})
 

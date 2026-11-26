@@ -116,6 +116,7 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 		firstIssue: 1,
 		flatByPath: 1,
 		flatMessagesByPath: 1,
+		lineOf: 1,
 		ParseError: 1,
 		regex: 1,
 		Traversal: 1,
