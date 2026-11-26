@@ -539,6 +539,38 @@ contextualize(() => {
 			)
 		})
 
+		it("shadows all of an ambient submodule with a submodule of its name", () => {
+			const ambientSub = scope({
+				shared: "'ambient'",
+				ambientOnly: "'ambient'"
+			}).export()
+			const localSub = scope({ shared: "'local'" }).export()
+
+			const $ = scope(
+				{ sub: localSub, a: "sub.shared" },
+				{ ambient: { sub: ambientSub } }
+			)
+
+			attest<"local">($.export().a.infer)
+			attest($.export().a.expression).snap('"local"')
+			// @ts-expect-error
+			attest(() => $.type("sub.ambientOnly")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.ambientOnly")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.ambientOnly | 1")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.ambientOnly")
+			)
+
+			// unshadowed, the ambient submodule resolves both
+			const unshadowed = scope(
+				{ a: "sub.ambientOnly" },
+				{ ambient: { sub: ambientSub } }
+			)
+			attest<"ambient">(unshadowed.export().a.infer)
+			attest(unshadowed.export().a.expression).snap('"ambient"')
+		})
+
 		it("supports Scope.module and type.module with ambient config", () => {
 			const m1 = Scope.module({ Foo: "'a'" }, { ambient: {} })
 			attest<"a">(m1.Foo.infer)

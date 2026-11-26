@@ -579,6 +579,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			(this._lazy && maybeResolveExport(this._lazy, name)) ??
 			maybeResolveSubalias(this.aliases, name)
 		if (resolution) return resolution
+		// an alias shadows the keyword of its name, including what only the
+		// keyword's submodule holds
+		const dotIndex = name.indexOf(".")
+		if (dotIndex !== -1 && hasOwn(this.aliases, name.slice(0, dotIndex))) return
 		const keyword = maybeResolveSubalias(this.ambient, name)
 		return keyword && (this.res[name] = this.bindKw(keyword))
 	}

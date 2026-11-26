@@ -415,6 +415,22 @@ contextualize.each(
 			).completions({ "a.b.c.d.e.f.g.": ["a.b.c.d.e.f.g.alias"] })
 		})
 
+		it("a submodule shadows all of a keyword's of its name", () => {
+			const $ = scope({
+				string: scope({ id: "'id'" }).export(),
+				a: "string.id"
+			})
+
+			attest<"id">($.export().a.infer)
+			attest($.export().a.expression).snap('"id"')
+			// @ts-expect-error
+			attest(() => $.type("string.email")).throwsAndHasTypeError(
+				writeUnresolvableMessage("string.email")
+			)
+			// other keywords' submodules still resolve
+			attest($.type("number.integer").expression).snap("number % 1")
+		})
+
 		it("a keyword read through a scope's aliases resolves as through arktype", () => {
 			// a keyword module's member read before arktype resolves the keyword
 			// resolves it in the module's own scope; writing its expression there
