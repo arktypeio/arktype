@@ -83,7 +83,7 @@ contextualize(() => {
 		const T = type(["string", "number", "string", "string[]"])
 		const data: typeof T.infer = ["foo", 5, "boo", []]
 		attest(T(data)).equals(data)
-		attest(T(["hello"]).toString()).snap("must be exactly length 4")
+		attest(T(["hello"]).toString()).snap("must be exactly 4 items")
 	})
 
 	it("branches", () => {
@@ -634,8 +634,8 @@ d must be a number`)
 			{
 				code: "minLength",
 				path: ["password"],
-				expected: "at least length 8",
-				message: "must be at least length 8"
+				expected: "at least 8 characters",
+				message: "must be at least 8 characters"
 			},
 			{
 				code: "pattern",

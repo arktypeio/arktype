@@ -1028,7 +1028,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			password: "ez123"
 		})
 
-		attest(out.toString()).snap("password must be at least length 8")
+		attest(out.toString()).snap("password must be at least 8 characters")
 	})
 
 	it("docs message example", () => {
@@ -1041,9 +1041,9 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const out1 = User("ez123")
 		attest(out1.toString()).snap("a string isn't an object")
 		// but `.configure` only applies shallowly, so the nested error isn't changed!
-		// ArkErrors: password must be at least length 8
+		// ArkErrors: password must be at least 8 characters
 		const out2 = User({ password: "ez123" })
-		attest(out2.toString()).snap("password must be at least length 8")
+		attest(out2.toString()).snap("password must be at least 8 characters")
 	})
 
 	describe("select", () => {

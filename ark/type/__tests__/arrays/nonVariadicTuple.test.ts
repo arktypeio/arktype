@@ -41,10 +41,10 @@ contextualize(() => {
 [1] must be a number`)
 		// too short
 		attest(T.allows([""])).equals(false)
-		attest(T([""]).toString()).snap("must be exactly length 2")
+		attest(T([""]).toString()).snap("must be exactly 2 items")
 		// too long
 		attest(T.allows(["", 0, 1])).equals(false)
-		attest(T(["", 0, 1]).toString()).snap("must be exactly length 2")
+		attest(T(["", 0, 1]).toString()).snap("must be exactly 2 items")
 		// non-array
 		attest(
 			T.allows({
@@ -89,7 +89,7 @@ contextualize(() => {
 		attest(T([])).equals([])
 		attest(T(["foo"])).equals(["foo"])
 		attest(T([5]).toString()).snap("[0] must be a string")
-		attest(T(["foo", "bar"]).toString()).snap("must be at most length 1")
+		attest(T(["foo", "bar"]).toString()).snap("must be at most 1 item")
 	})
 
 	it("optional element without exactOptionalPropertyTypes", () => {

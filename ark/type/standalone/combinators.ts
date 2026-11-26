@@ -985,10 +985,19 @@ const ruleCheckOf = (kind: RuleKind, rule: number): runtime.Check =>
 		runtime.integerCheck
 	:	(runtime[kind] as (rule: number) => runtime.Check)(rule)
 
+const arrayLengthDescriptionOf = (kind: RuleKind, rule: number): string =>
+	kind === "maxLength" ? `at most ${rule} item${rule === 1 ? "" : "s"}`
+	: rule === 1 ? "non-empty"
+	: `at least ${rule} items`
+
 // each refinement's rule in kinds order, if each is an inclusive bound or divisor
 const rulesOf = (
 	refinements: readonly BaseNode[],
-	kinds: readonly RuleKind[]
+	kinds: readonly RuleKind[],
+	describe: (kind: RuleKind, rule: number) => string | undefined = (
+		kind,
+		rule
+	) => ruleCheckOf(kind, rule).description
 ): (number | undefined)[] | undefined => {
 	const rules: (number | undefined)[] = kinds.map(() => undefined)
 	let i = 0
@@ -1006,7 +1015,7 @@ const rulesOf = (
 			!site ||
 			site.message !== undefined ||
 			site.code !== kinds[i] ||
-			site.description !== ruleCheckOf(kinds[i], rule).description
+			site.description !== describe(kinds[i], rule)
 		)
 			return
 		rules[i++] = rule
@@ -1039,7 +1048,7 @@ const writeShape = (
 		const failing = element.hasAlias || element.hasMorph
 		const rules =
 			(!element.tfs || failing) &&
-			rulesOf(preStruct, ["maxLength", "minLength"])
+			rulesOf(preStruct, ["maxLength", "minLength"], arrayLengthDescriptionOf)
 		if (rules) {
 			return element.tfs ?
 					writeCall(

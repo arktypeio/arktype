@@ -11,15 +11,23 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import { assertLengthRule, type LengthBoundableData } from "./range.ts"
+import {
+	assertLengthRule,
+	formatBoundCount,
+	type BoundUnit,
+	type BoundUnitInput,
+	type LengthBoundableData
+} from "./range.ts"
 
 export declare namespace NotEqualLength {
 	export interface Inner {
 		readonly rule: number
+		readonly unit?: BoundUnit
 	}
 
 	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: number
+		readonly unit?: BoundUnitInput
 	}
 
 	export type Schema = ExpandedSchema | number
@@ -46,12 +54,16 @@ const implementation: nodeImplementationOf<NotEqualLength.Declaration> =
 		kind: "notEqualLength",
 		bareKey: "rule",
 		keys: {
-			rule: {}
+			rule: {},
+			unit: {
+				unserialized: true
+			}
 		},
 		ownErr: true,
 		stacks: true,
 		defaults: {
-			description: node => `other than length ${node.rule}`
+			description: node =>
+				`other than ${formatBoundCount(node.rule, node.unit, `length ${node.rule}`)}`
 		}
 	})
 

@@ -65,7 +65,7 @@ contextualize(() => {
 
 			attest(T({ code: "123456" })).snap({ code: "123456" })
 			attest(T({ code: "foo" }).toString()).snap(
-				"code must be exactly length 6"
+				"code must be exactly 6 characters"
 			)
 		})
 
@@ -473,14 +473,14 @@ contextualize(() => {
 			attest<string>(T.infer)
 			attest(T.json).snap({ domain: "string", notEqualLength: [3] })
 			attest(T("ab")).equals("ab")
-			attest(T("abc").toString()).snap("must be other than length 3")
+			attest(T("abc").toString()).snap("must be other than 3 characters")
 		})
 
 		it("array length", () => {
 			const T = type("string[] != 2")
 			attest<string[]>(T.infer)
 			attest(T.expression).snap("string[] != 2")
-			attest(T(["a", "b"]).toString()).snap("must be other than length 2")
+			attest(T(["a", "b"]).toString()).snap("must be other than 2 items")
 		})
 
 		it("zero length is non-empty", () => {
@@ -1045,5 +1045,96 @@ contextualize(() => {
 		const five = type("5 <= number < 10").and("0 < number <= 5")
 
 		attest(five.expression).equals("5")
+	})
+
+	describe("bound units", () => {
+		it("uses characters for strings and items for arrays across comparators", () => {
+			attest(type("string > 5")("abc").toString()).snap(
+				"must be at least 6 characters"
+			)
+			attest(type("string <= 1")("ab").toString()).snap(
+				"must be at most 1 character"
+			)
+			attest(type("string == 1")("ab").toString()).snap(
+				"must be exactly 1 character"
+			)
+			attest(type("string != 1")("a").toString()).snap(
+				"must be other than 1 character"
+			)
+			attest(type("string > 0")("").toString()).snap("must be non-empty")
+			attest(type("string == 0")("a").toString()).snap("must be empty")
+
+			attest(type("string[] > 5")(["a"]).toString()).snap(
+				"must be at least 6 items"
+			)
+			attest(type("string[] <= 1")(["a", "b"]).toString()).snap(
+				"must be at most 1 item"
+			)
+			attest(type("string[] == 1")(["a", "b"]).toString()).snap(
+				"must be exactly 1 item"
+			)
+			attest(type("string[] != 1")(["a"]).toString()).snap(
+				"must be other than 1 item"
+			)
+			attest(type("string[] > 0")([]).toString()).snap("must be non-empty")
+			attest(type("string[] == 0")(["a"]).toString()).snap("must be empty")
+		})
+
+		it("keeps bound units in domain-discriminated unions", () => {
+			const StringOrNumber = type("string > 5 | number")
+			attest(StringOrNumber("abc").toString()).snap(
+				"must be at least 6 characters"
+			)
+			const ArrayOrNumber = type("string[] >= 3 | number")
+			attest(ArrayOrNumber(["a"]).toString()).snap("must be at least 3 items")
+		})
+
+		it("accepts custom units on fluent bound methods", () => {
+			const Delay = type.number
+				.moreThan({ rule: 5, unit: "second" })
+				.atMost({ rule: 60, unit: "second" })
+			attest(Delay(3).toString()).snap("must be more than 5 seconds")
+			attest(Delay(90).toString()).snap("must be at most 60 seconds")
+
+			const Entries = type.string
+				.array()
+				.atLeastLength({
+					rule: 2,
+					unit: { singular: "entry", plural: "entries" }
+				})
+				.atMostLength({
+					rule: 5,
+					unit: { singular: "entry", plural: "entries" }
+				})
+			attest(Entries(["a"]).toString()).snap("must be at least 2 entries")
+			attest(Entries(["a", "b", "c", "d", "e", "f"]).toString()).snap(
+				"must be at most 5 entries"
+			)
+		})
+
+		it("names the unit in actual when text replaces the bound's", () => {
+			const Password = type("string >= 8").describe("a strong password")
+			const pwErr = Password("x") as type.errors
+			attest(pwErr.issues[0].actual).snap("1 character")
+			const emptyErr = Password("") as type.errors
+			attest(emptyErr.issues[0].actual).snap("0 characters")
+			const Pair = type("string[] == 2").configure({ expected: "a pair" })
+			const pairErr = Pair(["a"]) as type.errors
+			attest(pairErr.issues[0].actual).snap("1 item")
+		})
+
+		it("exposes unit on configured description writers", () => {
+			const $ = scope(
+				{ s: "string >= 4", a: "string[] >= 4" },
+				{
+					minLength: {
+						description: node =>
+							`minimum ${node.rule} ${node.unit?.plural ?? "units"}`
+					}
+				}
+			).export()
+			attest($.s("a").toString()).snap("must be minimum 4 characters")
+			attest($.a(["a"]).toString()).snap("must be minimum 4 items")
+		})
 	})
 })

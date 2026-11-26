@@ -2,6 +2,7 @@ import {
 	$ark,
 	constraintInputOf,
 	Disjoint,
+	sameBoundUnit,
 	type After,
 	type BaseRange,
 	type Before,
@@ -37,7 +38,13 @@ const excludeFromBound = (
 				bound
 			:	ctx.$.node(
 					bound.kind,
-					constraintInputOf(bound.kind, { rule: bound.rule, exclusive: true })
+					constraintInputOf(bound.kind, {
+						rule: bound.rule,
+						exclusive: true,
+						...("unit" in bound.inner && bound.inner.unit ?
+							{ unit: bound.inner.unit }
+						:	{})
+					})
 				)
 		: value > bound.numRule === (bound.limitKind === "upper") ? bound
 		: null) as never
@@ -157,7 +164,12 @@ export const maxLength: setImplementationOf<MaxLength.Declaration> = {
 		minLength: (max, min, ctx) =>
 			max.overlapsRange(min) ?
 				max.overlapIsUnit(min) ?
-					ctx.$.node("exactLength", { rule: max.rule })
+					ctx.$.node("exactLength", {
+						rule: max.rule,
+						...(max.unit && sameBoundUnit(max.unit, min.unit) ?
+							{ unit: max.unit }
+						:	{})
+					})
 				:	null
 			:	Disjoint.init("range", max, min),
 		notEqualLength: excludeFromBound

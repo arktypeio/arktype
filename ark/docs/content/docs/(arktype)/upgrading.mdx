@@ -248,7 +248,7 @@ A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain arra
 ```ts
 const T = type({ name: "string > 1" })
 
-// [{ message: "must be at least length 2", path: ["name"], ... }]
+// [{ message: "must be at least 2 characters", path: ["name"], ... }]
 // before: "name must be at least length 2 (was 1)"
 T["~standard"].validate({ name: "x" })
 ```

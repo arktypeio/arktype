@@ -514,11 +514,15 @@ c ⟦custom line⟧ Enter c`)
 					const errorsOf = () =>
 						type("(string >= 3) | (string <= 0)")("a") as ArkErrors
 					const errors = errorsOf()
-					attest(errors.toString()).snap("must be empty or at least length 3")
+					attest(errors.toString()).snap(
+						"must be empty or at least 3 characters"
+					)
 					locale = xx
 					calls = 0
 					// errors keep the locale their first read selected
-					attest(errors.toString()).snap("must be empty or at least length 3")
+					attest(errors.toString()).snap(
+						"must be empty or at least 3 characters"
+					)
 					attest(calls).equals(0)
 					const localized = errorsOf()
 					attest(localized.toString()).snap(
@@ -527,7 +531,7 @@ c ⟦custom line⟧ Enter c`)
 					// once for the errors, which their children share
 					attest(calls).equals(1)
 					attest(localized.summaryIn(en)).snap(
-						"must be empty or at least length 3"
+						"must be empty or at least 3 characters"
 					)
 					attest(calls).equals(1)
 				}

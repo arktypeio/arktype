@@ -21,6 +21,7 @@ import type { MinLength } from "./refinements/minLength.ts"
 import type { NotEqual } from "./refinements/notEqual.ts"
 import type { NotEqualLength } from "./refinements/notEqualLength.ts"
 import type { Pattern } from "./refinements/pattern.ts"
+import { normalizeBoundUnit } from "./refinements/unit.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -154,6 +155,8 @@ export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
 	if (kind === "notEqual" && typeof input.rule === "string")
 		return { ...input, rule: tryParseDate(input.rule, true) } as never
 	if (kind === "pattern" && !input.flags) delete input.flags
+	if (input.unit !== undefined)
+		input.unit = normalizeBoundUnit(input.unit as never)
 	if (!exclusive) return input as never
 	return (
 		kind === "minLength" ? { ...input, rule: input.rule + 1 }

@@ -106,6 +106,8 @@ export const writeLengthActual: ActualWriter<
 > = (data, e) =>
 	e.meta?.description === undefined && e.meta?.expected === undefined ?
 		`${data.length}`
+	: e.unit ?
+		`${data.length} ${data.length === 1 ? e.unit.singular : e.unit.plural}`
 	:	`length ${data.length}`
 
 export const writeProtoActual: ActualWriter<"proto"> = data => {

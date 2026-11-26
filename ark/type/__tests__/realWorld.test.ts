@@ -99,7 +99,7 @@ contextualize(() => {
 		})
 
 		attest(out.toString()).snap(`email must be an email address
-tags must be at least length 3`)
+tags must be at least 3 items`)
 	})
 
 	it("multiple refinement errors", () => {
@@ -127,7 +127,7 @@ tags must be at least length 3`)
 		const out = Schema(data)
 
 		attest(out.toString()).snap(`email must be an email address
-tags must be at least length 3
+tags must be at least 3 items
 score must be non-negative
 date must be a Date
 nospace must be matched by ^\\S*$
@@ -178,7 +178,7 @@ extra must be a string or null (was missing)`)
 			key: "  This is too long  "
 		})
 
-		attest(outWithMorph.toString()).snap("key must be at most length 4")
+		attest(outWithMorph.toString()).snap("key must be at most 4 characters")
 
 		const withoutMorph = type({
 			key: type("3<=string<=4")
@@ -188,7 +188,7 @@ extra must be a string or null (was missing)`)
 			key: "  This is too long  "
 		})
 
-		attest(outWithoutMorph.toString()).snap("key must be at most length 4")
+		attest(outWithoutMorph.toString()).snap("key must be at most 4 characters")
 	})
 
 	it("cross scope reference", () => {
@@ -357,7 +357,7 @@ extra must be a string or null (was missing)`)
 			first_name: "Bob"
 		})
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
-			"first_name must be at most length 3"
+			"first_name must be at most 3 characters"
 		)
 
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(

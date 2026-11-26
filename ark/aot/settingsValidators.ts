@@ -501,7 +501,7 @@ var moreThan = (
 ) => check("min", description, data => data > rule)
 var minLength = (
 	rule,
-	description = rule === 1 ? "non-empty" : `at least length ${rule}`
+	description = rule === 1 ? "non-empty" : `at least ${rule} characters`
 ) => check("minLength", description, data => data.length >= rule)
 var divisor = (
 	rule,
@@ -1337,7 +1337,7 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("1vfc2j508amzo4", () =>
+				const validator0 = interned("1mcb6h116bis7p", () =>
 					create1q5hta0h0lh5t(intersectiona1747b08zjj0x, "1706xit1")
 				)
 				return validator0
@@ -1347,7 +1347,7 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("inq2he0srsmw8", () =>
+				const validator0 = interned("1hqn4ug1cd7wzx", () =>
 					create1q5hta0h0lh5t(intersection84g0ee1bxihyt, "1y1ytoj0")
 				)
 				return validator0
@@ -1357,7 +1357,7 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("73gcco1k0mhoe", () =>
+				const validator0 = interned("t1n5oq076bblq", () =>
 					create1q5hta0h0lh5t(intersection1j4pd4n1jwocfa, "12jiwy81")
 				)
 				return validator0

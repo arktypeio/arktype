@@ -7,7 +7,10 @@ import {
 import { $ark } from "../shared/registry.ts"
 import {
 	BaseRange,
+	formatBoundCount,
 	type BaseRangeInner,
+	type BoundUnit,
+	type BoundUnitInput,
 	type LengthBoundableData,
 	type UnknownExpandedRangeSchema
 } from "./range.ts"
@@ -15,10 +18,12 @@ import {
 export declare namespace MaxLength {
 	export interface Inner extends BaseRangeInner {
 		rule: number
+		unit?: BoundUnit
 	}
 
 	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
 		rule: number
+		unit?: BoundUnitInput
 	}
 
 	export type Schema = ExpandedSchema | number
@@ -43,10 +48,14 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 		bareKey: "rule",
 		ownErr: true,
 		keys: {
-			rule: {}
+			rule: {},
+			unit: {
+				unserialized: true
+			}
 		},
 		defaults: {
-			description: node => `at most length ${node.rule}`
+			description: node =>
+				`at most ${formatBoundCount(node.rule, node.unit, `length ${node.rule}`)}`
 		}
 	})
 

@@ -101,7 +101,7 @@ contextualize(() => {
 
 		attest<[string, number]>(T.t)
 		attest(T.expression).snap("[string, number]")
-		attest(T(["foo"]).toString()).snap("must be exactly length 2")
+		attest(T(["foo"]).toString()).snap("must be exactly 2 items")
 	})
 
 	it("tuple keeps array methods", () => {
