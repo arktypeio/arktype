@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import type { DomainNode } from "@ark/schema"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 contextualize(() => {
 	contextualize.each(
@@ -85,6 +85,20 @@ contextualize(() => {
 			})
 		}
 	)
+
+	it("selects from every node a pipe passes through", () => {
+		const Inner = type({ a: "string" })
+		const Middle = type("string.json.parse").pipe(Inner, o => o)
+		const Last = type("string.json.parse").pipe(o => o, Inner)
+		attest(Middle.select("required")).snap([{ key: "a", value: "string" }])
+		attest(Last.select("required")).snap([{ key: "a", value: "string" }])
+	})
+
+	it("selects from a cyclic node piped through", () => {
+		const Cyclic = scope({ N: { a: "string", "b?": "N" } }).export().N
+		const Middle = type("string.json.parse").pipe(Cyclic, o => o)
+		attest(Middle.select("required")).snap([{ key: "a", value: "string" }])
+	})
 
 	it("docs select config example", () => {
 		const SelectivelyConfigured = type({

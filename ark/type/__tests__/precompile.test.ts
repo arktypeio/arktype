@@ -426,6 +426,22 @@ contextualize(() => {
 		).snap("next.precompiledValue must be a string")
 	})
 
+	it("misses a type piping through a cyclic type", async () => {
+		const piped = () =>
+			scope({})
+				.type("string.json.parse")
+				.pipe(
+					scope({ pipedCycle: { a: "string", "b?": "pipedCycle" } }).export()
+						.pipedCycle,
+					o => o
+				)
+		const units = await precompileUnits([piped()])
+		attest(units).equals({})
+		attest(piped()('{ "a": "x", "b": { "a": 1 } }').toString()).snap(
+			"b.a must be a string"
+		)
+	})
+
 	it("a definition resolving aliases leaves a union's cases until it's used", () => {
 		const { Tree } = scope({ Tree: { id: "string", "next?": "Tree" } }).export()
 		const T = type({ kind: "'a'", tree: Tree }).or({

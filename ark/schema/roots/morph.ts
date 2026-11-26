@@ -94,9 +94,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	head: BaseRoot | undefined =
 		hasArkKind(this.morphs[0], "root") ? this.morphs[0] : undefined
 	/** the node its pipeline ends with, besides its head: the one its output is piped to */
-	tail: BaseRoot | undefined = this.includePiped(
-		this.morphs[this.morphs.length - 1]
-	)
+	tail: BaseRoot | undefined = this.includePiped()
 	/** what its head pipes to: its morphs and the nodes they pipe to */
 	piped: array<Morph | BaseRoot> =
 		this.head ? this.morphs.slice(1) : this.morphs
@@ -122,21 +120,30 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		))
 	}
 
-	// the node a morph pipes to isn't a child, so its aliases are included here
-	private includePiped(
-		last: Morph | BaseRoot | undefined
-	): BaseRoot | undefined {
-		if (this.morphs.length === 1 || !hasArkKind(last, "root")) return
-		this.hasAlias ||= last.hasAlias
-		return last
+	// the nodes a morph pipes to aren't children, so their aliases are included here
+	private includePiped(): BaseRoot | undefined {
+		for (let i = 1; i < this.morphs.length; i++) {
+			const morph = this.morphs[i]
+			if (hasArkKind(morph, "root")) this.hasAlias ||= morph.hasAlias
+		}
+		const last = this.morphs[this.morphs.length - 1]
+		return this.morphs.length > 1 && hasArkKind(last, "root") ? last : undefined
 	}
 
+	private _otherRefs: readonly BaseNode[] | undefined
+
 	override get otherRefs(): readonly BaseNode[] {
-		if (!this.tail) return []
+		if (this._otherRefs) return this._otherRefs
+		const refs: BaseNode[] = []
 		// a configured message's copy is what traversal pipes to
 		const morphs = this.travMorphs
-		const traversed = morphs[morphs.length - 1] as BaseRoot
-		return traversed === this.tail ? [this.tail] : [this.tail, traversed]
+		for (let i = 1; i < this.morphs.length; i++) {
+			const morph = this.morphs[i]
+			if (!hasArkKind(morph, "root")) continue
+			refs.push(morph)
+			if (morphs[i] !== morph) refs.push(morphs[i] as BaseRoot)
+		}
+		return (this._otherRefs = refs)
 	}
 
 	get topMorphs(): array<Morph> {
