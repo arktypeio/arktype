@@ -852,6 +852,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 						: hasArkKind(def, "module") ? bindModule(def, this)
 						: this.maybeResolve(name)!
 				}
+				// a private alias nothing exported references is checked as an
+				// exported one is, rather than only where a reference reaches it
+				for (const name in this.aliases) {
+					if (
+						!hasOwn(this._exports, name) &&
+						!hasArkKind(this.aliases[name], "module")
+					)
+						this.maybeResolve(name)
+				}
 			} catch (e) {
 				// so a later call throws the same error
 				this._exports = undefined

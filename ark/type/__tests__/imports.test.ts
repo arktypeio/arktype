@@ -292,4 +292,25 @@ contextualize(() => {
 		attest(types.foo.expression).snap("[string][]")
 		attest(types.foo.expression).equals(Expected.expression)
 	})
+
+	it("errors on an invalid private alias nothing exported references", () => {
+		attest(() =>
+			scope({
+				a: "string",
+				// @ts-expect-error
+				"#b": "strng"
+			}).export()
+		).throwsAndHasTypeError("'strng' is unresolvable")
+		attest(() =>
+			scope({
+				a: "string",
+				// @ts-expect-error
+				"#b<t>": "t | #a"
+			}).export()
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("a"))
+		// a valid one is still left out of what's exported
+		attest(Object.keys(scope({ a: "string", "#b": "a[]" }).export())).equals([
+			"a"
+		])
+	})
 })
