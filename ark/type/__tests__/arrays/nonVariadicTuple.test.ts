@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import { requiredPostOptionalMessage } from "arktype/internal/parser/tupleLiteral.ts"
 
 contextualize(() => {
 	it("empty", () => {
@@ -116,6 +117,17 @@ contextualize(() => {
 		const Expected = type([["string", "?"]])
 		attest<typeof Expected>(T)
 		attest(T.expression).equals(Expected.expression)
+	})
+
+	it("required element after an optional or defaultable one", () => {
+		// @ts-expect-error
+		attest(() => type(["string", "number?", "boolean"])).throwsAndHasTypeError(
+			requiredPostOptionalMessage
+		)
+		// @ts-expect-error
+		attest(() => type(["number = 0", "string"])).throwsAndHasTypeError(
+			requiredPostOptionalMessage
+		)
 	})
 
 	it("optional object tuple", () => {

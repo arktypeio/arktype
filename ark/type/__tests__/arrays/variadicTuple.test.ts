@@ -91,6 +91,17 @@ contextualize(() => {
 		)
 	})
 
+	it("errors on optional or defaultable following variadic", () => {
+		attest(() =>
+			// @ts-expect-error
+			type(["...", "string[]", "number?"])
+		).throwsAndHasTypeError(optionalOrDefaultableAfterVariadicMessage)
+		attest(() =>
+			// @ts-expect-error
+			type(["number?", "...", "string[]", "boolean = false"])
+		).throwsAndHasTypeError(optionalOrDefaultableAfterVariadicMessage)
+	})
+
 	it("errors on postfix following optional", () => {
 		attest(() =>
 			// @ts-expect-error
