@@ -193,6 +193,28 @@ contextualize(() => {
 				writeMalformedNumericLiteralMessage("-0", "number")
 			)
 		})
+
+		it("exponent or radix notation", () => {
+			// @ts-expect-error
+			attest(() => type("1e3")).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("1e3", "number")
+			)
+			// @ts-expect-error
+			attest(() => type("0x10")).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10", "number")
+			)
+			attest(() => type("number < 1e3")).throws(
+				writeMalformedNumericLiteralMessage("1e3", "number")
+			)
+		})
+
+		it("integer past the precision of a number", () => {
+			// @ts-expect-error
+			attest(() => type("9007199254740993")).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("9007199254740993", "number")
+			)
+			attest<9007199254740991>(type("9007199254740991").infer)
+		})
 	})
 
 	describe("bigint", () => {
@@ -235,6 +257,13 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type("-0n")).throwsAndHasTypeError(
 				writeMalformedNumericLiteralMessage("-0n", "bigint")
+			)
+		})
+
+		it("radix notation", () => {
+			// @ts-expect-error
+			attest(() => type("0x10n")).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10n", "bigint")
 			)
 		})
 	})
