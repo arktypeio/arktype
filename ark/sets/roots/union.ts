@@ -1387,7 +1387,13 @@ export const pruneDiscriminant = (
 				// safe to cast here as index nodes are never discriminants
 				const propString = optionallyChainPropString(ctx.path as PropertyKey[])
 
-				if (!discriminantCtx.pathStr.startsWith(propString)) return false
+				// a key whose name begins the discriminant's, like data and dataType,
+				// isn't on its path
+				if (
+					propString !== discriminantCtx.pathStr &&
+					!discriminantCtx.pathStr.startsWith(`${propString}?.`)
+				)
+					return false
 
 				// pruning a union's branches narrows it, e.g. string | number to number
 				if (node.is("union")) return false

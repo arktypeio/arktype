@@ -836,6 +836,36 @@ contextualize(() => {
 		)
 	})
 
+	it("doesn't prune a key whose name begins the discriminant's", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ data: "object", dataType: "'x'" }).or({
+				data: "object",
+				dataType: "'y'",
+				y: "number"
+			})
+			// uncompiled, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				attest(T.allows({ data: 5, dataType: "x" })).equals(false)
+				attest(T.allows({ data: {}, dataType: "x" })).equals(true)
+			}
+			attest(T({ data: 5, dataType: "x" }).toString()).snap(
+				"data must be an object"
+			)
+
+			const Structured = $.type({ data: { a: "string" }, dataType: "'x'" }).or({
+				data: { a: "string" },
+				dataType: "'y'",
+				y: "number"
+			})
+			for (let pass = 0; pass < 2; pass++)
+				attest(Structured.allows({ data: null, dataType: "x" })).equals(false)
+			attest(Structured({ data: 5, dataType: "x" }).toString()).snap(
+				"data must be an object"
+			)
+		}
+	})
+
 	it("number case includes NaN and Infinity", () => {
 		const $ = scope({})
 		const T = $.type({ a: "number.NaN | number.Infinity | 'x'" })
