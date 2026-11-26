@@ -339,7 +339,7 @@ from: Enter an email.
 			// the RegExp of what's checked without the message is arktype's own,
 			// so both Types read one checker, neither a function passed it
 			attest(checkers.match(/"Enter an email\."/g)?.length).equals(1)
-			attest(checkers.match(/@\[/g)?.length).equals(1)
+			attest(checkers.match(/@\(\?:\[/g)?.length).equals(1)
 		})
 
 		it("is said over the one checker of a keyword, whatever each Type says of it", async () => {

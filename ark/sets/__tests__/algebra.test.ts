@@ -64,7 +64,9 @@ contextualize(() => {
 					key: "email",
 					value: {
 						domain: "string",
-						pattern: ["^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$"],
+						pattern: [
+							"^[\\w%'+-]+(?:\\.[\\w%'+-]+)*@(?:[\\dA-Za-z](?:[\\dA-Za-z-]*[\\dA-Za-z])?\\.)+[A-Za-z]{2,}$"
+						],
 						meta: { format: "email" }
 					}
 				},

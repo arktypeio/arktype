@@ -340,7 +340,8 @@ contextualize(() => {
 				email: {
 					type: "string",
 					format: "email",
-					pattern: "^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$"
+					pattern:
+						"^[\\w%'+-]+(?:\\.[\\w%'+-]+)*@(?:[\\dA-Za-z](?:[\\dA-Za-z-]*[\\dA-Za-z])?\\.)+[A-Za-z]{2,}$"
 				},
 				age: { type: "number", minimum: 18 }
 			},

@@ -399,12 +399,15 @@ export declare namespace stringDate {
 
 const email = () =>
 	regexStringNode(
-		// considered https://colinhacks.com/essays/reasonable-email-regex but it includes a lookahead
-		// which breaks some integrations e.g. fast-check
-
-		// regex based on:
-		// https://www.regular-expressions.info/email.html
-		/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
+		// an address as people type one, as Zod's default and HTML's
+		// input[type=email] accept, between the two: a local part of letters,
+		// digits and _%'+- in dot-separated runs (so no leading, trailing or
+		// doubled dot, which HTML allows), then a domain of labels that start and
+		// end with a letter or digit (as HTML, unlike Zod, requires) and a TLD of
+		// two or more letters (which HTML doesn't require). Quoted local parts,
+		// IP literals and non-ASCII are rejected, as both reject them. Written
+		// without a lookahead, which fast-check can't generate from
+		/^[\w%'+-]+(?:\.[\w%'+-]+)*@(?:[\dA-Za-z](?:[\dA-Za-z-]*[\dA-Za-z])?\.)+[A-Za-z]{2,}$/,
 		"string.email",
 		{ format: "email" }
 	)

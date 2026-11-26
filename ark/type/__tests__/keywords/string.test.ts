@@ -68,6 +68,36 @@ contextualize(() => {
 		attest(Email("shawn@email").toString()).equals("must be an email address")
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1762
+	it("email accepts a local part's apostrophe, plus and percent", () => {
+		const Email = type("string.email")
+		attest(
+			[
+				"o'brien@example.com",
+				"first.last+tag@mail.example.co.uk",
+				"user%host@example.com",
+				"under_score@sub-domain.example.org"
+			].filter(s => !Email.allows(s))
+		).equals([])
+	})
+
+	it("email rejects a local part's leading, trailing or doubled dot", () => {
+		const Email = type("string.email")
+		attest(
+			["a..b@c.com", ".a@c.com", "a.@c.com"].filter(s => Email.allows(s))
+		).equals([])
+	})
+
+	it("email rejects an empty domain label or one a hyphen starts or ends", () => {
+		const Email = type("string.email")
+		attest(
+			["a@-c.com", "a@c-.com", "a@c..com", "a@.c.com"].filter(s =>
+				Email.allows(s)
+			)
+		).equals([])
+		attest(Email.allows("a@xn--bcher-kva.de")).equals(true)
+	})
+
 	it("credit card", () => {
 		const validCC = "5489582921773376"
 		attest(keywords.string.creditCard(validCC)).equals(validCC)
