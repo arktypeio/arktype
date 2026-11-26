@@ -1388,8 +1388,10 @@ export const discriminantJsonOf = (node: Union.Node): JsonStructure | null =>
 export const pruneDiscriminant = (
 	discriminantBranch: BaseRoot,
 	discriminantCtx: DiscriminantLocation
-): BaseRoot | null =>
-	discriminantBranch.transform(
+): BaseRoot | null => {
+	// the basis of the intersection last visited, if a predicate narrows it
+	let narrowedBasis: BaseNode | null = null
+	return discriminantBranch.transform(
 		(nodeKind, inner) => {
 			if (nodeKind === "unit") return null
 			// a discriminant's typeof check doesn't exclude NaN or Infinity
@@ -1413,6 +1415,15 @@ export const pruneDiscriminant = (
 					!discriminantCtx.pathStr.startsWith(`${propString}?.`)
 				)
 					return false
+
+				// a predicate implies no basis and is only called with what its own
+				// allows, so its intersection keeps it. Pruned, a unit the case's
+				// union relates it to, like the null of a branch that is "a" | null,
+				// would be passed to it. A basis is the first child of its intersection
+				const isNarrowedBasis = node === narrowedBasis
+				narrowedBasis =
+					node.is("intersection") && node.inner.predicate ? node.basis : null
+				if (isNarrowedBasis) return false
 
 				// pruning a union's branches narrows it, e.g. string | number to number
 				if (node.is("union")) return false
@@ -1440,6 +1451,7 @@ export const pruneDiscriminant = (
 			}
 		}
 	)
+}
 
 // a unit its domain holds nothing else of
 const isDomainUnit = (node: BaseNode): boolean =>
