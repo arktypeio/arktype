@@ -319,6 +319,47 @@ contextualize(() => {
 			attest<"a">(exported.export().a.infer)
 			attest(exported.export().a.expression).snap('"a"')
 		})
+
+		it("neither resolves nor completes a private key of an ambient's submodule", () => {
+			const base = scope({ Foo: "'a'", "box<t>": ["t"] })
+			const $ = scope(
+				{},
+				{
+					ambient: {
+						sub: base.import(),
+						outer: scope({ sub: base.import() }).export()
+					}
+				}
+			)
+
+			// @ts-expect-error
+			attest(() => $.type("sub.Foo")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.Foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.Foo | null")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.Foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("outer.sub.Foo")).throwsAndHasTypeError(
+				writeUnresolvableMessage("outer.sub.Foo")
+			)
+			// @ts-expect-error
+			attest(() => $.type("sub.box<string>")).throwsAndHasTypeError(
+				writeUnresolvableMessage("sub.box")
+			)
+			// @ts-expect-error
+			attest(() => $.type("outer.sub.")).throwsAndHasTypeError(
+				writeUnresolvableMessage("outer.sub.")
+			)
+
+			const exported = scope(
+				{ a: "sub.Foo" },
+				{ ambient: { sub: base.export() } }
+			)
+			attest<"a">(exported.export().a.infer)
+			attest(exported.export().a.expression).snap('"a"')
+		})
 	})
 
 	describe("plain record ambient", () => {

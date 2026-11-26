@@ -181,6 +181,36 @@ contextualize.each(
 				writeMissingSubmoduleAccessMessage("mod")
 			)
 		})
+
+		it("a submodule's private keys", () => {
+			const utilities = scope({ id: "'id'", "box<t>": ["t"] })
+			// imported, each alias is a key spreading it makes private
+			const $ = scope({ imported: utilities.import() })
+
+			// @ts-expect-error
+			attest(() => $.type("imported.id")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.id")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.id[] | null")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.id")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.box<string>")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.box")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.")
+			)
+
+			const exported = scope({ exported: utilities.export() })
+			attest<"id">(exported.type("exported.id").infer)
+			// @ts-expect-error
+			attest(() => exported.type("exported.")).completions({
+				"exported.": ["exported.box", "exported.id"]
+			})
+		})
 	}
 )
 

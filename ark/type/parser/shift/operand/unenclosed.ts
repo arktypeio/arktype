@@ -6,8 +6,8 @@ import {
 	type GenericRoot,
 	type PrivateDeclaration,
 	type arkKind,
+	type exportedNameOf,
 	type genericParamNames,
-	type resolvableReferenceIn,
 	type writeNonSubmoduleDotMessage
 } from "@ark/schema"
 import {
@@ -323,7 +323,9 @@ type validReferenceFromToken<
 	submodulePath extends string[]
 > = Extract<
 	submodulePath["length"] extends 0 ? BaseCompletions<$, args>
-	:	resolvableReferenceIn<$>,
+	:	// a submodule's private keys aren't read through it, and its root is
+		// what its own name references
+		Exclude<exportedNameOf<$>, "root">,
 	`${token}${string}`
 >
 
