@@ -203,9 +203,24 @@ type validateObjectInference<
 	args,
 	ctx extends DeclareContext
 > = show<
-	validateObjectKeys<def, declaredObjectOf<declared, ctx>, $, args, ctx> &
+	validateObjectMembers<def, declaredObjectOf<declared, ctx>, $, args, ctx> &
 		DeclaredObjectSettings
 >
+
+// an object is assignable to a union where it is to one of its members, so
+// each is checked on its own
+type validateObjectMembers<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	ctx["assignable"] extends true ?
+		declared extends unknown ?
+			validateObjectKeys<def, declared, $, args, ctx>
+		:	never
+	:	validateObjectKeys<def, declared, $, args, ctx>
 
 // an object is assignable to `T | undefined` exactly where it is to `T`
 type declaredObjectOf<declared, ctx extends DeclareContext> =

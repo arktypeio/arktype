@@ -745,6 +745,38 @@ contextualize(() => {
 			)
 		})
 
+		describe("union", () => {
+			type Union = { kind: "a"; a: string } | { kind: "b"; b: number }
+
+			it("member", () => {
+				const T = declare<Union, { assignable: true }>().type({
+					kind: "'a'",
+					a: "string"
+				})
+				attest<{ kind: "a"; a: string }>(T.t)
+			})
+
+			it("no matching member", () => {
+				attest(() =>
+					declare<Union, { assignable: true }>().type({
+						// @ts-expect-error
+						kind: "'c'",
+						a: "string"
+					})
+				).type.errors(`declared: "a"; inferred: "c"`)
+			})
+
+			it("without assignable", () => {
+				attest(() =>
+					declare<Union>().type({
+						// @ts-expect-error
+						kind: "'a'",
+						a: "string"
+					})
+				).type.errors(`declared: "a" | "b"; inferred: "a"`)
+			})
+		})
+
 		it("index signature", () => {
 			type Vendor = { name: string; tags?: string[] } & Record<string, unknown>
 			const T = declare<
