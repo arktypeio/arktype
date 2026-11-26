@@ -11,6 +11,7 @@ import {
 } from "@ark/schema"
 import {
 	flattenConstraints,
+	flattenInner,
 	intersectConstraints,
 	sortSiblings
 } from "../constraint.ts"
@@ -39,7 +40,8 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 			pipe: false
 		}) as nodeOfKind<"intersection" | Intersection.BasisKind>,
 	intersections: {
-		intersection: (l, r, ctx) => intersectIntersections(l.inner, r.inner, ctx),
+		intersection: (l, r, ctx) =>
+			intersectIntersections(l.inner, r.inner, ctx, flattenInner),
 		...defineRightwardIntersections("intersection", (l, r, ctx) => {
 			// if l is unknown, return r
 			if (l.children.length === 0) return r
@@ -93,7 +95,8 @@ export const constrainIntersection = (
 const intersectIntersections = (
 	l: Intersection.Inner,
 	r: Intersection.Inner,
-	ctx: IntersectionContext
+	ctx: IntersectionContext,
+	flatten = flattenConstraints
 ): BaseRoot | Disjoint => {
 	const baseInner: Intersection.Inner.mutable = {}
 
@@ -116,8 +119,8 @@ const intersectIntersections = (
 	return intersectConstraints({
 		kind: "intersection",
 		baseInner,
-		l: flattenConstraints(l),
-		r: flattenConstraints(r),
+		l: flatten(l),
+		r: flatten(r),
 		roots: [],
 		ctx
 	})

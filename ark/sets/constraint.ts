@@ -81,7 +81,11 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 		return result as never
 	}
 	let matched = false
+	const headKey = (head as BaseProp).key
 	for (let i = 0; i < s.l.length; i++) {
+		// props meet only at the same key
+		const key = (s.l[i] as BaseProp).key
+		if (key !== headKey && key !== undefined && headKey !== undefined) continue
 		const result: BaseNode | Disjoint | null = intersectOrPipeNodes(
 			s.l[i],
 			head,
@@ -158,6 +162,17 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 		)
 
 	return result
+}
+
+const flattenedByInner = new WeakMap<object, BaseConstraint[]>()
+
+// a node's inner never changes, so its constraints are ordered once. Each
+// intersection takes a copy to work through
+export const flattenInner = (inner: object): BaseConstraint[] => {
+	let flattened = flattenedByInner.get(inner)
+	if (!flattened)
+		flattenedByInner.set(inner, (flattened = flattenConstraints(inner)))
+	return [...flattened]
 }
 
 export const sortSiblings = <node extends BaseNode>(

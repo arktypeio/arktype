@@ -15,6 +15,7 @@ import {
 import { throwParseError, type Key } from "@ark/util"
 import {
 	flattenConstraints,
+	flattenInner,
 	intersectConstraints,
 	sortSiblings
 } from "../constraint.ts"
@@ -77,14 +78,19 @@ const resolvedRoot = (node: BaseRoot): BaseRoot =>
 const propertyOf = (key: Key): Key =>
 	typeof key === "symbol" ? key : String(key)
 
+const allowedKeys = new WeakMap<Structure.Node, BaseRoot>()
+
 // a sequence declares its indices, and "reject" checks only string keys
-const allowedKeysOf = (node: Structure.Node): BaseRoot => {
-	let keys = node.keyof()
-	if (node.sequence)
-		keys = keys.rawOr($ark.kw.nonNegativeIntegerString.internal)
-	return node.undeclared === "reject" ?
-			keys.rawOr($ark.kw.symbol.internal)
-		:	keys
+export const allowedKeysOf = (node: Structure.Node): BaseRoot => {
+	let keys = allowedKeys.get(node)
+	if (!keys) {
+		keys = node.keyof()
+		if (node.sequence)
+			keys = keys.rawOr($ark.kw.nonNegativeIntegerString.internal)
+		if (node.undeclared === "reject") keys = keys.rawOr($ark.kw.symbol.internal)
+		allowedKeys.set(node, keys)
+	}
+	return keys
 }
 
 // how many leading indices are checked one by one for a bound
@@ -247,9 +253,19 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			const childIntersectionResult = intersectConstraints({
 				kind: "structure",
 				baseInner,
-				l: flattenConstraints(lInner),
+				// an inner the other side didn't narrow is its node's
+				l:
+					r.handlesUndeclared ?
+						flattenConstraints(lInner)
+					:	flattenInner(l.inner),
 				// l's derived props precede r's constraints to meet them as l operands
-				r: [...lDerived, ...flattenConstraints(rInner), ...rDerived],
+				r: [
+					...lDerived,
+					...(l.handlesUndeclared ?
+						flattenConstraints(rInner)
+					:	flattenInner(r.inner)),
+					...rDerived
+				],
 				roots,
 				ctx
 			})
