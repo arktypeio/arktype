@@ -6,7 +6,7 @@ import {
 	writeUnresolvableMessage,
 	type UnionNode
 } from "@ark/schema"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
@@ -367,6 +367,73 @@ s must be a string or undefined`)
 	it("orders strings holding $ and digits by code unit", () => {
 		const T = type("'$2' | '$10' | '$ark.fn$9' | '$ark.fn$10'")
 		attest(T.expression).snap('"$10" | "$2" | "$ark.fn$10" | "$ark.fn$9"')
+	})
+
+	it("orders cyclic types by when they were defined", () => {
+		// an alias's id counts those of its name, so three defined in turn can be
+		// counted8, counted9 and counted10, the last before the others as text
+		const k = () =>
+			scope({ counted: { a: "counted", k: "true" } }).export().counted
+		let K = k()
+		while (!/\D9*8$/.test(K.internal.id)) K = k()
+		const L = scope({ counted: { a: "counted", l: "true" } }).export().counted
+		const R = scope({ counted: { a: "counted", r: "true" } }).export().counted
+		const ids = [K, L, R].map(T => T.internal.id)
+		attest(ids.map(id => id.length - ids[0].length)).equals([0, 0, 1])
+
+		const T = L.array().or(R.array())
+		attest(T.expression).snap(
+			"{ a: $counted, l: true }[] | { a: $counted, r: true }[]"
+		)
+		attest(R.array().or(L.array()).expression).equals(T.expression)
+
+		// an intersection's operands
+		const intersected = {
+			required: [
+				{ key: "a", value: `$ark.${ids[1]}&${ids[2]}` },
+				{ key: "l", value: { unit: true } },
+				{ key: "r", value: { unit: true } }
+			],
+			domain: "object"
+		}
+		attest(L.and(R).json).equals(intersected)
+		attest(R.and(L).json).equals(intersected)
+
+		// intersections sharing their first operand
+		const Nested = type({ v: K.and(R) }).or({ v: K.and(L) })
+		attest(Nested.expression).snap(
+			"{ v: { a: $counted&$counted, k: true, l: true } } | { v: { a: $counted&$counted, k: true, r: true } }"
+		)
+
+		// a name that is another's and a digit follows it, however many of
+		// either were defined: as text, numbered3 is after numbered2_3
+		const numbered = () => {
+			const types = scope({
+				numbered: { a: "numbered", l: "true" },
+				numbered2: { a: "numbered2", r: "true" }
+			}).export()
+			return types.numbered.array().or(types.numbered2.array()).expression
+		}
+		const first = numbered()
+		attest(first).snap(
+			"{ a: $numbered, l: true }[] | { a: $numbered2, r: true }[]"
+		)
+		numbered()
+		attest(numbered()).equals(first)
+
+		// a name's own digits aren't a counter
+		const named = scope({
+			named15: { a: "named15", l: "true" },
+			named9: { a: "named9", r: "true" }
+		}).export()
+		attest(named.named9.array().or(named.named15.array()).expression).snap(
+			"{ a: $named15, l: true }[] | { a: $named9, r: true }[]"
+		)
+
+		// a string that reads as a reference is still ordered by code unit
+		attest(type("'$ark.counted9' | '$ark.counted10'").expression).snap(
+			'"$ark.counted10" | "$ark.counted9"'
+		)
 	})
 
 	describe("objects alike but for one key", () => {

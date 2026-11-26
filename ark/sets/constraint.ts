@@ -204,25 +204,38 @@ const compareAliases = (l: Alias.Node, r: Alias.Node): number => {
 	return lOperands.length - rOperands.length || compareHashes(l.hash, r.hash)
 }
 
-// a registered name's counter compares as a number, so names order as registered
+// a counter compares as a number: a registered name's, so names order as
+// registered, and an id's, so the types aliases name order as defined. As
+// text, type10 is before type9
 const compareHashes = (l: string, r: string): number => {
 	if (l.includes("$ark")) {
 		let i = 0
 		while (i < l.length && l[i] === r[i]) i++
-		const counted = countedName.exec(l.slice(0, i))
-		if (counted) {
-			const lDigits = counted[1].length + l.slice(i).search(nonDigit)
-			const rDigits = counted[1].length + r.slice(i).search(nonDigit)
-			if (lDigits && rDigits && lDigits !== rDigits) return lDigits - rDigits
+		const reference = sharedReference.exec(l.slice(0, i))
+		if (reference) {
+			l = padCounters(l.slice(reference.index))
+			r = padCounters(r.slice(reference.index))
 		}
 	}
 	return l < r ? -1 : 1
 }
 
-// a registered name and its counter's digits so far, like `"$ark.fn$1`
-const countedName = /[^\\]"\$ark\d*\.[\w$]*\$(\d*)$/
+// a reference up to where two hashes differ in it, like `"$ark.fn$1` or
+// `"$ark.type8&type1`, its quote unescaped
+const sharedReference = /[^\\]"\$ark\d*\.[\w$&<=>]*$/
 
-const nonDigit = /\D|$/
+// padded to one length, counters compare as text as they do as numbers
+export const padCounters = (reference: string): string =>
+	reference.replace(counter, padCounter)
+
+// the digits after a `$`, or those ending an id: a name's own, like a1's in
+// a1_3, aren't one
+const counter = /\$\d+|\d+(?![\w$])/g
+
+const padCounter = (digits: string): string =>
+	digits[0] === "$" ?
+		`$${digits.slice(1).padStart(16, "0")}`
+	:	digits.padStart(16, "0")
 
 const compareKeys = (l: Key, r: Key): number =>
 	typeof l === "symbol" ?

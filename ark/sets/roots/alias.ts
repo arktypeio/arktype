@@ -11,6 +11,7 @@ import {
 	defineRightwardIntersections,
 	type setImplementationOf
 } from "../implement.ts"
+import { padCounters } from "../constraint.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
 
 const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
@@ -51,7 +52,11 @@ const operate = (
 		if (!operandsByIdentity[identity]?.is("alias"))
 			operandsByIdentity[identity] = operand
 	}
-	const identities = Object.keys(operandsByIdentity).sort()
+	// by the number an id ends in, so they order as defined: as text, type10
+	// is before type9
+	const identities = Object.keys(operandsByIdentity).sort((l, r) =>
+		padCounters(l) < padCounters(r) ? -1 : 1
+	)
 	if (identities.length === 1) return operandsByIdentity[identities[0]]
 	const operands = identities.map(identity => operandsByIdentity[identity])
 	return ctx.$.lazilyResolve(
