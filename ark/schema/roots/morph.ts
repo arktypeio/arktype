@@ -110,6 +110,11 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	says: (Says | undefined)[] = this.morphs.map(morph =>
 		saysOf(this.meta, morph)
 	)
+	// each such morph as tTransform calls it, made once
+	saying: (Morph | undefined)[] = this.says.map((says, i) => {
+		const morph = this.morphs[i] as Fn
+		return says && ((In, at) => morph(In, at, says))
+	})
 
 	// a configured message or label is its output's errors' too: the node a
 	// morph pipes to isn't a child, so configuring the morph doesn't reach it
@@ -271,12 +276,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 					outer = ctx.lbl
 					ctx.lbl = label
 				}
-				const says = this.says[i]
-				morphed = callMorph(
-					ctx,
-					says === undefined ? morph : (In, at) => (morph as Fn)(In, at, says),
-					result
-				)
+				morphed = callMorph(ctx, this.saying[i] ?? morph, result)
 				if (label !== undefined) ctx.lbl = outer
 			}
 			if (morphed instanceof ArkErrors) {
