@@ -508,6 +508,19 @@ contextualize(() => {
 				.type.errors("Default value true must be assignable to number")
 		})
 
+		it("incorrect default type for a branded or piped base", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "string#id = 5" }))
+				.throws.snap("ParseError: Default for foo must be a string")
+				.type.errors("Default value 5 must be assignable to string#id")
+			// @ts-expect-error
+			attest(() => type({ foo: "string.trim |> string.lower = 5" }))
+				.throws.snap("ParseError: Default for foo must be a string")
+				.type.errors(
+					"Default value 5 must be assignable to string.trim |> string.lower"
+				)
+		})
+
 		it("non-literal", () => {
 			attest(() =>
 				// @ts-expect-error
