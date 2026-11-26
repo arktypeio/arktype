@@ -103,7 +103,9 @@ export class Scanner<peek extends string = string> {
 		while (this.peek) {
 			if (this.peek === Backslash) {
 				this.shift()
-				if (condition(this, shifted)) shifted += this.shift()
+				// a backslash ending the input escapes nothing, so it's kept as written
+				if (!this.peek) shifted += Backslash
+				else if (condition(this, shifted)) shifted += this.shift()
 				else if (this.peek === Backslash)
 					shifted += `${escapeEscape}${this.shift()}`
 				else if (escapeEscape === "") shifted += this.shiftControlEscape()
