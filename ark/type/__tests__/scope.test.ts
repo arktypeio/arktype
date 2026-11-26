@@ -7,7 +7,7 @@ import {
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { generic, scope, type, type Module, type Scope } from "arktype"
+import { generic, Hkt, scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 import { keywordModule } from "arktype/internal/scope.ts"
@@ -843,5 +843,229 @@ b.c.c must be an object (was missing)`)
 		attest(reservedMod.infer("ok")).equals("ok")
 		attest(reservedMod.inferIn(42)).equals(42)
 		attest(reservedMod.internal(true)).equals(true)
+	})
+
+	it("preserves contextual parameter inference for unannotated tuple morphs and predicates (#1624)", () => {
+		const $ = scope({
+			Base: { text: "string" },
+			bug: ["Base", "=>", d => d],
+			derived: { item: "bug" },
+			transformed: ["Base", "=>", d => ({ ...d, len: d.text.length })],
+			withCtx: [
+				"Base",
+				"=>",
+				(d, ctx) => (d.text.length > 0 ? d : ctx.error("empty"))
+			],
+			chained: [["Base", "=>", d => d.text], "|>", "string > 0"],
+			explicit: ["Base", "=>", (d: { text: string }) => d],
+			ignoresParam: ["Base", "=>", () => ({ n: 1 })],
+			nested: {
+				upper: ["Base", "=>", d => d.text.toUpperCase()]
+			},
+			narrowed: ["Base", ":", (d): d is { text: "hi" } => d.text === "hi"],
+			helper: () => $.type("bug")
+		})
+		const m = $.export()
+
+		attest<{ text: string }>(m.bug.infer)
+		attest<{ text: string }>(m.bug.inferIn)
+		attest<{ item: { text: string } }>(m.derived.infer)
+		attest<{ text: string; len: number }>(m.transformed.infer)
+		attest<{ text: string }>(m.withCtx.infer)
+		attest<string>(m.chained.infer)
+		attest<{ text: string }>(m.chained.inferIn)
+		attest<{ text: string }>(m.explicit.infer)
+		attest<{ n: number }>(m.ignoresParam.infer)
+		attest<{ upper: string }>(m.nested.infer)
+		attest<{ text: "hi" }>(m.narrowed.infer)
+		attest<{ text: string }>(m.helper.infer)
+
+		attest(m.bug({ text: "x" })).equals({ text: "x" })
+		attest(m.derived({ item: { text: "x" } })).equals({ item: { text: "x" } })
+		attest(m.transformed({ text: "abc" })).equals({ text: "abc", len: 3 })
+		attest(m.withCtx({ text: "ok" })).equals({ text: "ok" })
+		attest(m.withCtx({ text: "" }).toString()).snap("must be empty")
+		attest(m.chained({ text: "ok" })).equals("ok")
+		attest(m.nested({ upper: { text: "hi" } })).equals({ upper: "HI" })
+		attest(m.narrowed({ text: "hi" })).equals({ text: "hi" })
+		attest(m.helper({ text: "z" })).equals({ text: "z" })
+
+		// nested object morph and type-guard predicate inside type()
+		const Inline = type({
+			a: [{ text: "string" }, "=>", d => d],
+			b: [{ text: "string" }, ":", (d): d is { text: "ok" } => d.text === "ok"]
+		})
+		attest<{ a: { text: string }; b: { text: "ok" } }>(Inline.infer)
+		attest(Inline({ a: { text: "x" }, b: { text: "ok" } })).equals({
+			a: { text: "x" },
+			b: { text: "ok" }
+		})
+	})
+
+	it("preserves contextual parameter inference for tuple morphs in cyclic, generic, and compound scopes (#1624)", () => {
+		type CyclicNode = {
+			value: string
+			next?: CyclicNode
+		}
+		const cyclic = scope({
+			Node: { value: "string", "next?": "Node" },
+			getVal: ["Node", "=>", n => n.value],
+			identity: ["Node", "=>", n => n]
+		}).export()
+
+		attest<string>(cyclic.getVal.infer)
+		attest<CyclicNode>(cyclic.identity.infer)
+		attest(cyclic.getVal({ value: "root", next: { value: "leaf" } })).equals(
+			"root"
+		)
+		attest(cyclic.identity({ value: "root" })).equals({ value: "root" })
+
+		const sub = type.module({ foo: "number" })
+		const compound = scope({
+			"#priv": { x: "number" },
+			sub,
+			Base: { text: "string", p: "priv", f: "sub.foo" },
+			"box<t extends Base>": { value: "t" },
+			fromBase: ["Base", "=>", d => ({ text: d.text, sum: d.p.x + d.f })],
+			fromBox: ["box<Base>", "=>", b => b.value.text],
+			A: { a: "string" },
+			B: { b: "number" },
+			fromUnion: ["A | B", "=>", d => ("a" in d ? d.a : String(d.b))],
+			fromIntersection: ["A & B", "=>", d => `${d.a}:${d.b}`]
+		}).export()
+
+		attest<{ text: string; sum: number }>(compound.fromBase.infer)
+		attest<string>(compound.fromBox.infer)
+		attest<string>(compound.fromUnion.infer)
+		attest<string>(compound.fromIntersection.infer)
+
+		const withAmbient = scope(
+			{
+				Base: { a: "myStr" },
+				bug: ["Base", "=>", d => d.a]
+			},
+			{ ambient: { myStr: type.string } }
+		).export()
+		attest<string>(withAmbient.bug.infer)
+
+		attest(() =>
+			scope({
+				Base: { text: "string" },
+				// @ts-expect-error
+				bad: ["NonExistent", "=>", d => d]
+			}).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("NonExistent"))
+	})
+
+	it("handles instanceof, ===, meta/default operands, Hkt generics, and escaped quotes in tuple morphs (#1624)", () => {
+		// Blocker 1: ES classes, non-callable built-in constructors, recursive classes
+		class SimpleClass {
+			x = 1
+		}
+		class RecClass {
+			val = "ok"
+			next?: RecClass
+		}
+		const tClass = type([["instanceof", SimpleClass], "=>", f => f.x])
+		const tMap = type([["instanceof", Map], "=>", m => m.size])
+		const tSet = type([["instanceof", Set], "=>", s => s.size])
+		const tBytes = type([["instanceof", Uint8Array], "=>", b => b.byteLength])
+		const tUrl = type([["instanceof", URL], "=>", u => u.href])
+		const sRec = scope({
+			R: ["instanceof", RecClass],
+			m: ["R", "=>", r => r.val],
+			p: ["R", ":", (r): r is RecClass => r.val.length > 0]
+		}).export()
+
+		attest<number>(tClass.infer)
+		attest<number>(tMap.infer)
+		attest<number>(tSet.infer)
+		attest<number>(tBytes.infer)
+		attest<string>(tUrl.infer)
+		attest<string>(sRec.m.infer)
+		attest<RecClass>(sRec.p.infer)
+		attest(tClass(new SimpleClass())).equals(1)
+		attest(tMap(new Map([["a", 1]]))).equals(1)
+		attest(tBytes(new Uint8Array(4))).equals(4)
+		attest(sRec.m(new RecClass())).equals("ok")
+
+		// Blocker 2: non-definition operands (===, @, =, object @) with recursive values
+		type RecVal = { name: string; self?: RecVal }
+		const recObj: RecVal = { name: "loop" }
+		recObj.self = recObj
+		const sNonDef = scope({
+			Base: { text: "string" },
+			BaseWithMeta: {
+				"@": { description: "base", examples: [recObj] },
+				text: "string",
+				tag: ["string", "=", () => "default"]
+			},
+			mUnit: [["===", recObj], "=>", r => r.name],
+			mMeta: [
+				["Base", "@", { description: "base", examples: [recObj] }],
+				"=>",
+				d => d.text
+			],
+			mObjMeta: ["BaseWithMeta", "=>", d => `${d.text}:${d.tag}`]
+		}).export()
+
+		attest<string>(sNonDef.mUnit.infer)
+		attest<string>(sNonDef.mMeta.infer)
+		attest<string>(sNonDef.mObjMeta.infer)
+		attest(sNonDef.mUnit(recObj)).equals("loop")
+		attest(sNonDef.mMeta({ text: "hi" })).equals("hi")
+		attest(sNonDef.mObjMeta({ text: "hi" })).equals("hi:default")
+
+		// Blocker 3: custom Hkt generic in scope()
+		type Boxed<t> = { boxed: t }
+		class BoxHkt extends Hkt {
+			declare body: Boxed<this[0]>
+		}
+		const boxHkt = generic("t")(args => type({ boxed: args.t }), BoxHkt)
+		const sHkt = scope({
+			box: boxHkt,
+			Base: { text: "string" },
+			m: ["box<Base>", "=>", b => b.boxed.text]
+		}).export()
+
+		attest<string>(sHkt.m.infer)
+		attest(sHkt.m({ boxed: { text: "ok" } })).equals("ok")
+
+		// Blocker 4: backslash-escaped quotes and slashes before scope aliases
+		const sEsc = scope({
+			Base: { text: "string" },
+			mSingle: [
+				"'a\\'' | Base | 'c'",
+				"=>",
+				d => (typeof d === "string" ? d : d.text)
+			],
+			mDouble: [
+				'"a\\"" | Base | "c"',
+				"=>",
+				d => (typeof d === "string" ? d : d.text)
+			],
+			mRegex: [
+				"/a\\/b/ | Base",
+				"=>",
+				d => (typeof d === "string" ? d : d.text)
+			],
+			mSlashBeforeQuote: [
+				"'a\\\\' | Base",
+				"=>",
+				d => (typeof d === "string" ? d : d.text)
+			]
+		}).export()
+
+		attest<string>(sEsc.mSingle.infer)
+		attest<string>(sEsc.mDouble.infer)
+		attest<string>(sEsc.mRegex.infer)
+		attest<string>(sEsc.mSlashBeforeQuote.infer)
+		attest(sEsc.mSingle({ text: "x" })).equals("x")
+		attest(sEsc.mSingle("a'")).equals("a'")
+		attest(sEsc.mDouble({ text: "y" })).equals("y")
+		attest(sEsc.mRegex("a/b")).equals("a/b")
+		attest(sEsc.mRegex({ text: "z" })).equals("z")
+		attest(sEsc.mSlashBeforeQuote("a\\")).equals("a\\")
+		attest(sEsc.mSlashBeforeQuote({ text: "w" })).equals("w")
 	})
 })
