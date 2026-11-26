@@ -1322,6 +1322,95 @@ Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } & is
 Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
 	})
 
+	it("a morph on another branch of a key's union leaves what the branches share", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Parsed = $.type({ n: "string.numeric.parse | number" })
+			// each allows { n: number } and neither transforms it, so the one
+			// allowing more is the union
+			const T = $.type({ n: "number" }).or(Parsed)
+			attest(T.equals(Parsed)).equals(true)
+			attest(Parsed.or({ n: "number" }).equals(Parsed)).equals(true)
+			for (let call = 0; call < 3; call++) {
+				attest(T({ n: 1 })).equals({ n: 1 })
+				attest(T({ n: "2" })).equals({ n: 2 })
+				attest(T({ n: "two" }).toString()).equals(
+					"n must be a well-formed numeric string"
+				)
+			}
+		}
+	})
+
+	it("a union is determinate however its branches were grouped", () => {
+		const measure = (s: string) => s.length
+		const Zero = type({ n: "0" })
+		const Measured = type({ n: ["string", "=>", measure] })
+		const T = Zero.or(Zero).or(Measured)
+		attest(T.expression).snap("{ n: (In: string) => Out<unknown> | 0 }")
+		attest(Zero.or(Zero.or(Measured)).equals(T)).equals(true)
+
+		const double = (n: number) => n * 2
+		const Doubled = type({ n: ["number", "=>", double] })
+		const Missing = type({ n: "undefined" }).or({ "n?": "undefined" })
+		attest(
+			Doubled.or({ n: "undefined" }).or({ "n?": "undefined" }).expression
+		).snap("{ n?: (In: number) => Out<unknown> | undefined }")
+		attest(
+			Doubled.or({ n: "undefined" })
+				.or({ "n?": "undefined" })
+				.equals(Doubled.or(Missing))
+		).equals(true)
+	})
+
+	it("branches alike only at a case's value are checked as they are", () => {
+		const measure = (s: string) => s.length
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// pruned of k, the first would transform what the second allows
+			const T = $.type({
+				k: [["'long'", "=>", measure], "|", "'a'"],
+				y: "string"
+			})
+				.or({ k: "'a'", z: "1" })
+				.or({ k: "'c'" })
+			for (let call = 0; call < 3; call++) {
+				attest(T({ k: "a", y: "", z: 1 })).equals({ k: "a", y: "", z: 1 })
+				attest(T({ k: "a", z: 1 })).equals({ k: "a", z: 1 })
+				attest(T({ k: "long", y: "" })).equals({ k: 4, y: "" })
+				attest(T({ k: "c" })).equals({ k: "c" })
+				attest(T({ k: "a" }).toString()).equals(
+					"y must be a string or z must be 1"
+				)
+			}
+		}
+	})
+
+	it("a morph applying to some of what branches share is indeterminate", () => {
+		const measure = (s: string) => s.length
+		const Measured = type({ n: [["string", "=>", measure], "|", "0"] })
+		const Either = type({ n: "string | 0" })
+		attest(() => Either.or(Measured)).throws(
+			writeIndiscriminableMorphMessage(Either.expression, Measured.expression)
+		)
+		// a default is given to data the other branch allows without its key
+		const Defaulted = type({
+			n: [["string", "=>", measure], "|", "0"],
+			unit: "string = 'px'"
+		})
+		const Zero = type({ n: "0" })
+		attest(() => Zero.or(Defaulted)).throws(
+			writeIndiscriminableMorphMessage(Defaulted.expression, Zero.expression)
+		)
+		// and a branch deleting undeclared keys deletes those of data the other keeps
+		const Stripped = type({
+			n: [["string", "=>", measure], "|", "0"],
+			"+": "delete"
+		})
+		attest(() => Zero.or(Stripped)).throws(
+			writeIndiscriminableMorphMessage(Zero.expression, Stripped.expression)
+		)
+	})
+
 	it("multiple chained pipes", () => {
 		const T = type("string.trim").to("string.lower")
 

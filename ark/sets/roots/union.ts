@@ -12,6 +12,7 @@ import {
 	isIoFinal,
 	isResolutionFinal,
 	queueUnchecked,
+	reachesDefault,
 	type BaseNode,
 	type BaseRange,
 	type BaseRoot,
@@ -660,8 +661,13 @@ const resolveCase = (
 
 	// the discriminant is all that tells a branch reaching the case through a
 	// key it doesn't read from the case's own, so pruned of it, one that
-	// transforms would overlap the other. They stay as the union has them
-	if (reachedByUnreadKey && resolvedEntries?.some(entry => entry.branch.tfs)) {
+	// transforms would overlap the other. Nor would branches alike only at the
+	// case's value be alike pruned of it. They stay as the union has them
+	if (
+		resolvedEntries?.some(entry => entry.branch.tfs) &&
+		(reachedByUnreadKey ||
+			(!ctx.node.ordered && !staysDeterminate(resolvedEntries)))
+	) {
 		resolvedEntries = resolvedEntries.map(({ originalIndex }) => ({
 			originalIndex,
 			branch: ctx.node.branches[originalIndex]
@@ -1617,6 +1623,20 @@ const assertDeterminateOverlap = (
 		if (!l.tfs && !r.tfs) return false
 	} else if (!l.alters && !r.alters) return false
 
+	return (
+		joinedIfDeterminate(l, r) ??
+		throwParseError(
+			writeIndiscriminableMorphMessage(l.expression, r.expression)
+		)
+	)
+}
+
+// whether branches that transform are joined, or null if data both allow could
+// leave either as it wouldn't the other
+const joinedIfDeterminate = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): boolean | null => {
 	if (
 		arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
 		(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
@@ -1629,9 +1649,45 @@ const assertDeterminateOverlap = (
 
 	if (l.deletesOnly && r.deletesOnly) return true
 
-	return throwParseError(
-		writeIndiscriminableMorphMessage(l.expression, r.expression)
-	)
+	if (!l.hasAlias && !r.hasAlias && alikeWhereOverlapping(l, r)) return false
+
+	return null
+}
+
+// whether narrowing each to the input both allow leaves one Type: a transform
+// one applies only to data the other rejects, like a morph on another branch of
+// a key's union, does nothing to what they share. A default is given to data
+// lacking its key even where the other rejects the key, which narrowed to it
+// would drop the default
+const alikeWhereOverlapping = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): boolean => {
+	if (reachesDefault(l) || reachesDefault(r)) return false
+	const overlap = intersectNodesRoot(l._in, r._in, l.$)
+	if (overlap instanceof Disjoint) return false
+	const lOverlap = intersectNodesRoot(l, overlap, l.$)
+	if (lOverlap instanceof Disjoint) return false
+	const rOverlap = intersectNodesRoot(r, overlap, l.$)
+	return !(rOverlap instanceof Disjoint) && lOverlap.equals(rOverlap)
+}
+
+// whether a case's branches, pruned of what told the data they share apart from
+// what only one transforms, are still found to do the same to it
+const staysDeterminate = (entries: readonly BranchEntry[]): boolean => {
+	for (let i = 0; i < entries.length - 1; i++) {
+		const l = entries[i].branch as Union.ChildNode
+		for (let j = i + 1; j < entries.length; j++) {
+			const r = entries[j].branch as Union.ChildNode
+			if (
+				(l.tfs || r.tfs) &&
+				!(intersectNodesRoot(l._in, r._in, l.$) instanceof Disjoint) &&
+				joinedIfDeterminate(l, r) === null
+			)
+				return false
+		}
+	}
+	return true
 }
 
 const transformingAliasRefsOf = (node: BaseRoot): FlatRef[] =>
