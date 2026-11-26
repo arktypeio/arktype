@@ -347,6 +347,27 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 		).snap("An unordered union of a type i\nAn unordered union of a type i\n")
 	})
 
+	it("a default of undefined throws at its call where a default replaces undefined", () => {
+		attest(
+			printed(`configure({ exactOptionalPropertyTypes: false })
+for (const define of [
+	() => type({ a: ["'x' | undefined", "=", undefined] }),
+	() => type({ a: type("'x' | undefined").default(undefined) })
+]) {
+	try {
+		define()
+	} catch (e) {
+		console.log(e.message)
+	}
+}`)
+		).snap(`Default for a must be "x"
+Default for a must be "x"
+`)
+		attest(anyType({ a: ["'x' | undefined", "=", undefined] })({})).equals({
+			a: undefined
+		})
+	})
+
 	// as written here, each is what parsing the pair gives where nothing read either first
 	it("equal definitions are one Type, as their nodes make them", () => {
 		const same: [unknown, unknown][] = [

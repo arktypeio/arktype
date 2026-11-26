@@ -173,6 +173,8 @@ const regexLiteral = /^\/(?:[^\n/\\]|\\.)+\/$/
 const record = /^Record<string, (.+)>$/
 
 const fits = (value: unknown, facts: Facts): boolean => {
+	// without exactOptionalPropertyTypes a default replaces undefined, so can't be it
+	if (value === undefined) return false
 	if (facts.values) return facts.values.includes(value)
 	if (typeof value === "string") {
 		return (
