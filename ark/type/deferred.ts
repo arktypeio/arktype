@@ -199,6 +199,10 @@ const branded = /^([.a-z]+)#\w[\w!]*$/
 const range = /^(?:(0|-?[1-9]\d*) (<=?) )?(\S.*) ([<>]=?) (0|-?[1-9]\d*)$/
 const defaulted = /^(.+) = ('[^'\\]*'|0|-?[1-9]\d*|true|false)$/
 const regexLiteral = /^\/(?:[^\n/\\]|\\.)+\/$/
+
+// an integer of more digits than a number holds throws parsing, as it would
+// be another number than the one written
+const writesAsParsed = (integer: string) => `${+integer}` === integer
 const record = /^Record<string, (.+)>$/
 
 const fits = (value: unknown, facts: Facts): boolean => {
@@ -319,6 +323,8 @@ const scanRange = (def: string): Facts | undefined => {
 	const m = range.exec(def)
 	if (!m) return
 	const [, left, leftOp, word, op, right] = m
+	// a limit too long for a number to hold as it's written throws parsing
+	if (!writesAsParsed(right) || (left && !writesAsParsed(left))) return
 	const of =
 		word === "string" || word === "number" || word === "number.integer" ?
 			scanTerm(word)
@@ -595,6 +601,7 @@ const scanUncached = (def: string): Facts | undefined => {
 			: raw === "true" ? true
 			: raw === "false" ? false
 			: +raw
+		if (typeof value === "number" && !writesAsParsed(raw)) return
 		if (!base || !fits(value, base)) return
 		return {
 			key: defaultKey(base, value),

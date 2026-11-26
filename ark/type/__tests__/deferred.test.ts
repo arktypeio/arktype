@@ -101,6 +101,10 @@ contextualize(() => {
 			"Record<string, strin>",
 			{ a: "strin" },
 			{ a: "string = 5" },
+			// more digits than a number holds, so another number than written
+			{ a: "number = 9007199254740993" },
+			{ a: "number < 9007199254740993" },
+			{ a: "9007199254740993 < number < 9007199254740995" },
 			{ a: ["string", "=", 5] },
 			{ "a?": "string = 'x'" },
 			{ a: "string", "a?": "string" },
