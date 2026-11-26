@@ -1392,7 +1392,9 @@ export abstract class BaseNode<
 		})
 
 		let transformedInner =
-			ctx.selected && !ctx.selected.includes(this) ?
+			// a node with a selected node's id is that node, as an unread Type built to
+			// a node that already existed is
+			ctx.selected && !ctx.selected.some(node => node.id === this.id) ?
 				innerWithMeta
 			:	mapper(this.kind, innerWithMeta, ctx)
 

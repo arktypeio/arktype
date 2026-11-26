@@ -638,6 +638,27 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 		attest(anyType(def).expression).equals(type.raw(def).expression)
 	})
 
+	it("a description reaches a Type built to a node that already existed", () => {
+		// a union that's only a string is the node `string` is, held as another object
+		const twin = type.or("string", /a/)
+		const described = twin.atLeastLength(2).or(/b/).describe("x")
+		attest(described.json).snap({
+			branches: [
+				{
+					domain: { domain: "string", meta: "x" },
+					minLength: { rule: 2, meta: "x" },
+					meta: "x"
+				},
+				{
+					domain: { domain: "string", meta: "x" },
+					pattern: [{ rule: "b", meta: "x" }],
+					meta: "x"
+				}
+			],
+			meta: "x"
+		})
+	})
+
 	it("a definition changed after its call isn't read", () => {
 		const def = { late: "string" }
 		const t = anyType(def)
