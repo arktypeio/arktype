@@ -186,6 +186,19 @@ console.log(Object.hasOwn(t, "kind"), t({}).limit)`)
 		).snap("5,1,2 false\nfalse 0\n")
 	})
 
+	it("a narrow of a morph checks a unit its output holds at its call", () => {
+		attest(
+			printed(`const seen = []
+const sees = s => (seen.push(s), true)
+const to = type("string.trim").to(type.or("'seen'", "string.date.iso"))
+console.log(Object.hasOwn(to, "kind"), seen.length)
+const narrowed = to.narrow(sees)
+console.log(seen.join(), Object.hasOwn(type("string.trim").to("string.date.iso").narrow(sees), "kind"))`)
+		).snap(`false 0
+seen false
+`)
+	})
+
 	it("a union with a unit calls what it narrows at its call", () => {
 		const seen: unknown[] = []
 		const narrowed = type("string").narrow(s => {

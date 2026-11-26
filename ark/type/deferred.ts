@@ -1095,7 +1095,13 @@ const deferredMethods: Dict<
 			: r instanceof RegExp ? regexFacts(r)
 			: deferred.get(r)?.facts
 		return facts.key === "string.trim" && refinesString(to) ?
-				{ key: `(string.trim>${to.key})`, domains: stringBits, pure: false }
+				{
+					key: `(string.trim>${to.key})`,
+					domains: stringBits,
+					pure: false,
+					// a narrow of a morph is of its output
+					units: to.units
+				}
 			:	undefined
 	},
 	onUndeclaredKey: ({ facts }, [rule]) =>
