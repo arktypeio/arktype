@@ -286,7 +286,8 @@ export const aliasedMember = ((checker: Checker, id: string): Checker => {
 
 // a structure read by Allows alone, as a root is, where a narrow's read after it
 export const holdingAlias = ((checker: Checker): Checker => {
-	const node = { tAllows: allowsReadingCtx(checker) } as never
+	// its scope's config is what continues data past the depth an Allows tracks
+	const node = { tAllows: allowsReadingCtx(checker), $: runtimeScope } as never
 	checker.a = data =>
 		allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig)
 	return checker

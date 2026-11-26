@@ -2198,5 +2198,31 @@ console.log(validator.allows(cyclic), validator(cyclic) === cyclic, validator.al
 			)
 			attest(runPlain(root)).equals("true true false\n")
 		})
+
+		it("fails data where a filter is asked of a cycle whose keys transform", async () => {
+			const root = fixture(
+				"cyclic-filter",
+				`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+// asked before its keys' morphs run, so of a structure that transforms
+const Comment = type({ text: "string.trim", "reply?": "this" }).filter(comment => comment.text !== "")
+print(Comment({ text: 1 }))
+print(Comment({ text: " a ", reply: { text: 1 } }))
+print(Comment({ text: "" }))
+print(Comment({ text: " a ", reply: { text: " b " } }))
+${repaying}
+`
+			)
+			const checkers = await bundle(root, smallest)
+			attest(checkers.includes("holdingAlias(")).equals(true)
+			// as arktype prints them
+			attest(behaviorOf(checkers)).equals(`text must be a string
+reply.text must be a string
+must be valid according to an anonymous predicate
+{"text":"a","reply":{"text":"b"}}
+`)
+		})
 	})
 })
