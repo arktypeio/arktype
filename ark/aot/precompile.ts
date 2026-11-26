@@ -105,6 +105,7 @@ import {
 	type Rule
 } from "./diagnostics.ts"
 import { chainOf, DynamicValue } from "./dynamic.ts"
+import { resolveDroppedNarrowDiagnostics } from "./droppedNarrow.ts"
 import { declaredNameOf } from "./holeNames.ts"
 import {
 	bakeAt,
@@ -5869,6 +5870,7 @@ export class Precompiler {
 			const candidate = candidatesBySite.get(site)
 			return !!candidate && !!this.heldParamOf(candidate.state)
 		}
+		const seenDropped = new Set<string>()
 		return {
 			sites: sites
 				.filter(
@@ -5877,9 +5879,15 @@ export class Precompiler {
 				)
 				.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics
-				.filter(
-					diagnostic => diagnostic.file !== module.id || !isQuiet(diagnostic)
-				)
+				.filter(diagnostic => {
+					if (diagnostic.file === module.id && isQuiet(diagnostic)) return false
+					if (diagnostic.rule === "dropped-narrow") {
+						const key = `${diagnostic.file}:${diagnostic.start}:${diagnostic.end}:${diagnostic.message}`
+						if (seenDropped.has(key)) return false
+						seenDropped.add(key)
+					}
+					return true
+				})
 				.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(module.id)
 		}
@@ -7201,6 +7209,15 @@ export class Precompiler {
 					// arktype throws it too, so it fails with runtime: "arktype" as well
 					this.allowUnsafe ? hint : withAllowUnsafe(hint),
 					this.allowUnsafe ? "warning" : "error"
+				)
+			)
+		}
+		if (!site.parseError && candidate.state.droppedNarrows.length) {
+			result.push(
+				...resolveDroppedNarrowDiagnostics(
+					candidate.state,
+					module,
+					this.diagnostic.bind(this)
 				)
 			)
 		}
@@ -8597,7 +8614,12 @@ export class Precompiler {
 			reasons,
 			hint:
 				rule === "syntax" ? undefined
-				: this.mode === "cache" && rule !== "copies" && rule !== "parse" ?
+				: (
+					this.mode === "cache" &&
+					rule !== "copies" &&
+					rule !== "parse" &&
+					rule !== "dropped-narrow"
+				) ?
 					cacheHint
 				:	(hint ?? hintsByRule[rule]) || undefined
 		}

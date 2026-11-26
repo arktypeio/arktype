@@ -16,6 +16,24 @@ import {
 import { ModuleScopes, walk } from "./scope.ts"
 import { markedStrategyOf, strategyMarker } from "./strategies.ts"
 
+export const allowDropNarrowMarker = "@ark-allow-drop-narrow"
+
+export interface DropNarrowSuppressions {
+	// AST nodes preceded by `// @ark-allow-drop-narrow`
+	nodes: Node[]
+	// 1-based line numbers of the token after a leading `// @ark-allow-drop-narrow`
+	leadingLines: Set<number>
+	// 1-based line numbers of a trailing `// @ark-allow-drop-narrow` on a line with code
+	trailingLines: Set<number>
+}
+
+const emptyLineSet = new Set<number>()
+const emptySuppressions: DropNarrowSuppressions = {
+	nodes: [],
+	leadingLines: emptyLineSet,
+	trailingLines: emptyLineSet
+}
+
 export class SourceModule {
 	id: string
 	// the id as messages print it
@@ -31,6 +49,8 @@ export class SourceModule {
 	// nodes a `// @ark-strategy <name>` comment leads, with the name
 	strategyMarks: StrategyMark[]
 	strayStrategyMarkers: Comment[] = []
+	// `// @ark-allow-drop-narrow` suppressions in this module
+	allowDropNarrows: DropNarrowSuppressions
 	private lineStarts: number[] | undefined
 	// where a tool that transpiled the source before the build maps its lines
 	private mappings: SourceMapMappings | undefined
@@ -65,6 +85,15 @@ export class SourceModule {
 					markedStrategyOf
 				).map(([node, name, comment]) => ({ node, name, comment }))
 			:	[]
+		this.allowDropNarrows =
+			source.includes(allowDropNarrowMarker) ?
+				dropNarrowSuppressionsOf(
+					this.program,
+					source,
+					result.comments,
+					offset => this.lineAndColumnOf(offset)[0]
+				)
+			:	emptySuppressions
 	}
 
 	lineAndColumnOf(offset: number): [line: number, column: number] {
@@ -217,6 +246,47 @@ const markedBy = <read>(
 		else strays.push(comment)
 	}
 	return result
+}
+
+const dropNarrowSuppressionsOf = (
+	program: Program,
+	source: string,
+	comments: Comment[],
+	lineOf: (offset: number) => number
+): DropNarrowSuppressions => {
+	const nodes: Node[] = []
+	const leadingLines = new Set<number>()
+	const trailingLines = new Set<number>()
+	const whitespace = /\s*/y
+	for (let i = 0; i < comments.length; i++) {
+		const comment = comments[i]
+		if (
+			comment.type !== "Line" ||
+			comment.value.trim().split(/\s/, 1)[0] !== allowDropNarrowMarker
+		)
+			continue
+		const lineStart = source.lastIndexOf("\n", comment.start - 1) + 1
+		if (source.slice(lineStart, comment.start).trim().length > 0) {
+			trailingLines.add(lineOf(comment.start))
+			continue
+		}
+		let start = comment.end
+		for (let j = i + 1; ; j++) {
+			whitespace.lastIndex = start
+			start += whitespace.exec(source)![0].length
+			if (comments[j]?.start !== start) break
+			start = comments[j].end
+		}
+		let marked: Node | undefined
+		walk(program, node => {
+			if (marked) return false
+			if (node.start === start && node.type !== "Program") marked = node
+			return !marked && node.start <= start && start < node.end
+		})
+		if (marked) nodes.push(marked)
+		else if (source[start] === ".") leadingLines.add(lineOf(start))
+	}
+	return { nodes, leadingLines, trailingLines }
 }
 
 const computeLineStarts = (source: string): number[] => {

@@ -10,6 +10,9 @@ import {
 } from "./host.ts"
 import type { Rule } from "./diagnostics.ts"
 
+export const droppedNarrowHint =
+	"Derive from the base properties and apply .narrow() to the result, or put // @ark-allow-drop-narrow on the line before it if dropping it is intended."
+
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`The config module ${path} can't be read. Name a module that exists as the build's config.`
 
@@ -272,7 +275,8 @@ export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	unsupported:
 		"Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 	parse: "Fix the definition, which throws the same ParseError at runtime.",
-	copies: copiesHint
+	copies: copiesHint,
+	"dropped-narrow": droppedNarrowHint
 }
 
 export const codecsImportHint =
