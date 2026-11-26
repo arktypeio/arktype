@@ -139,8 +139,17 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 			:	`(${this.expression})`
 	}
 
+	// a description you wrote, as a unit's or a proto's, but not a keyword's
+	// like string.uuid's, whose missing key is a string, nor one its own
+	// error doesn't say, as fromJsonSchema's has expected beside it
 	get brief(): string {
-		return domainDescriptions[this.domain]
+		return (
+				this.meta.description !== undefined &&
+					this.meta.keyword === undefined &&
+					this.meta.expected === undefined
+			) ?
+				this.meta.description
+			:	domainDescriptions[this.domain]
 	}
 }
 

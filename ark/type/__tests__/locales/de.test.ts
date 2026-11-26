@@ -136,6 +136,10 @@ contextualize(() => {
 			"required units ← {}": 'a fehlt (muss 1n; "x"; "y" oder 1,5 sein)',
 			"required described unit ← {}":
 				"a fehlt (muss ein Wert gemäß der Beschreibung „ein x“ sein)",
+			"required described string ← {}":
+				"a fehlt (muss ein Wert gemäß der Beschreibung „ein x“ sein)",
+			"required string described beside expected ← {}":
+				"a fehlt (muss eine Zeichenkette sein)",
 			"required instanceOf ← {}": "a fehlt (muss eine Instanz von Foo sein)",
 			"required string.uuid | number ← {}":
 				"a fehlt (muss eine Zahl oder eine Zeichenkette sein)",

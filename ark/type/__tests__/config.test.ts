@@ -272,6 +272,52 @@ other: must be text`)
 		attest(out.issues[0].code).equals("required")
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1789
+	it("a missing key says its value's description", () => {
+		const Thing = type({
+			a: type("string").describe("foo"),
+			b: ["string", "@", "bar"]
+		})
+		attest(Thing.array()([{}, { a: 1, b: 2 }]).toString())
+			.snap(`[0].a must be foo (was missing)
+[0].b must be bar (was missing)
+[1].a must be foo
+[1].b must be bar`)
+	})
+
+	it("a missing key names a described branch as its value's error does", () => {
+		const T = type({
+			a: type("string > 5").describe("a long string").or("number")
+		})
+		attest(T({}).toString()).snap(
+			"a must be a number or a long string (was missing)"
+		)
+		attest(T({ a: true }).toString()).snap(
+			"a must be a number or a long string"
+		)
+	})
+
+	it("a missing key says its basis where expected is what its value's error says", () => {
+		// as fromJsonSchema keeps a schema's description
+		const T = type({
+			name: type("string").configure({
+				description: "The user's name.",
+				expected: "a string"
+			})
+		})
+		attest(T({}).toString()).snap("name must be a string (was missing)")
+		attest(T({ name: 1 }).toString()).snap("name must be a string")
+	})
+
+	it("a missing keyword's key says its basis unless it's described", () => {
+		attest(type({ id: "string.uuid" })({}).toString()).snap(
+			"id must be a string (was missing)"
+		)
+		attest(
+			type({ id: type("string.uuid").describe("an ID") })({}).toString()
+		).snap("id must be an ID (was missing)")
+	})
+
 	it("message is configure({ message }), a missing key's included", () => {
 		const T = type({ name: type("string >= 1").message("Name is required") })
 		attest(T.expression).snap("{ name: string >= 1 }")

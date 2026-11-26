@@ -152,9 +152,15 @@ export const en: Locale.Complete = {
 	},
 	...enInfo,
 	cite: text => text,
-	// a domain is named by its noun whatever its meta, as DomainNode's brief does
+	// a domain is named by its noun unless you described it, as DomainNode's brief is
 	basis: (basis, locale) =>
-		basis.code === "domain" ? locale.nouns[basis.domain]
+		(
+			basis.code === "domain" &&
+			(basis.meta.description === undefined ||
+				basis.meta.keyword !== undefined ||
+				basis.meta.expected !== undefined)
+		) ?
+			locale.nouns[basis.domain]
 		: basis.meta.description === undefined ?
 			nodeImplementationsByKind[basis.code].defaults.description(basis as never)
 		:	locale.cite(basis.meta.description),

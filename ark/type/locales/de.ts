@@ -316,9 +316,17 @@ export const de: Locale.Complete = {
 	date,
 	verbatim: text => text,
 	cite: text => `ein Wert gemäß der Beschreibung „${text}“`,
-	// a domain is named by its noun whatever its meta, as en names it
+	// a domain is named by its noun unless you described it, as en names it
 	basis: (basis, locale) => {
-		if (basis.code === "domain") return locale.nouns[basis.domain]
+		if (basis.code === "domain") {
+			return (
+					basis.meta.description === undefined ||
+						basis.meta.keyword !== undefined ||
+						basis.meta.expected !== undefined
+				) ?
+					locale.nouns[basis.domain]
+				:	locale.cite(basis.meta.description)
+		}
 		return (
 			writeKeywordExpected(basis, locale) ??
 			(basis.code === "morph" || basis.meta.description !== undefined ?
