@@ -97,13 +97,23 @@ export const pathOf = (issue: {
 // wherever an issue is, it says only that data is invalid
 export const messageOf = (): string => "is invalid"
 
+let formatArkError: ((error: ReadableIssue) => string | undefined) | undefined
+
+export const registerErrorLineFormatter = (
+	formatter: (error: ReadableIssue) => string | undefined
+): void => {
+	formatArkError = formatter
+}
+
 // an issue's line of a summary: that it's invalid, after its path
-const issueLineOf = (issue: ReadableIssue): string => {
+export const lineOf = (issue: ReadableIssue): string => {
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== undefined) return formatted
+	}
 	const at = pathOf(issue)
 	return (at && at + " ") + (issue.message ?? "is invalid")
 }
-
-export { issueLineOf as lineOf }
 
 // no message is configured where none is written, so none is noted as its code's
 export const isCustomIssue = (): boolean => false

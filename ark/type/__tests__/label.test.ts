@@ -8,6 +8,7 @@ import {
 	scope,
 	type
 } from "arktype"
+import { lineOf as runtimeLineOf } from "arktype/runtime"
 import "arktype/i18n"
 import { codec } from "arktype/codecs"
 import { de } from "arktype/locales/de"
@@ -252,6 +253,10 @@ Port must be at most 65535`
 				"Full name must be non-empty",
 				"Port must be at most 65535"
 			])
+			attest(lineOf).equals(runtimeLineOf)
+			attest(
+				out.issues.map(i => runtimeLineOf(JSON.parse(JSON.stringify(i))))
+			).equals(out.issues.map(lineOf))
 			const standard = Form["~standard"].validate({
 				name: "   ",
 				port: "99999"

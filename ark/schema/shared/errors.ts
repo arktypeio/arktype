@@ -39,15 +39,14 @@ import {
 	isCustomIssue,
 	labeledIssue,
 	labeledPathOf,
-	lineOf as issueLineOf,
 	pathOf,
 	issueAt,
 	messageOf,
+	registerErrorLineFormatter,
 	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
-	type ReadableIssue,
 	type SiteContext,
 	type SiteFailureContext,
 	type UnionSite
@@ -1552,16 +1551,13 @@ export const serializableErrors = (issues: ArkError[]): readonly ArkError[] =>
 export const firstIssue = (errors: ArkErrors): ArkError =>
 	errors._first ?? errors.issues[0]
 
-export type { ReadableIssue } from "./issues.ts"
-
-/**
- * Formats a single error as its line in `errors.summary`, e.g.
- * `name must be a string` or `name: Enter a name`.
- */
-export const lineOf = (error: ReadableIssue): string =>
+registerErrorLineFormatter(error =>
 	isArkError(error as ArkIssue) ?
 		errorLineOf(error as ArkError, writtenLocaleOf(error as ArkError))
-	:	issueLineOf(error)
+	:	undefined
+)
+
+export { lineOf, type ReadableIssue } from "./issues.ts"
 
 // read from errorReaders.ts, which arktype/runtime exports alone
 export {

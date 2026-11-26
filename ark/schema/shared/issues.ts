@@ -406,7 +406,7 @@ const Issues: IssuesClass = (
 				get summary(): string {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + issueLineOf(issue)
+						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
 
@@ -482,7 +482,7 @@ const Issues: IssuesClass = (
 				get summary(): string {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + issueLineOf(issue)
+						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
 
@@ -523,8 +523,7 @@ const Issues: IssuesClass = (
 		)) as typeof ReadIssues) {
 			get summary(): string {
 				let summary = ""
-				for (const issue of this._)
-					summary += (summary && "\n") + issueLineOf(issue)
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
@@ -789,34 +788,45 @@ export const pathOf = (issue: {
 /** an issue `lineOf` can format: an `ArkError`, standalone `ArkIssue`, or `PathedIssue` */
 export interface ReadableIssue {
 	readonly path: readonly PropertyKey[]
-	message?: string | undefined
+	readonly message?: string | undefined
 	readonly code?: ArkErrorCode | undefined
 	readonly expected?: string | undefined
 }
 
-// named apart from errors.ts's lineOf, which keeps the runtime name lineOf
-const issueLineOf = (issue: ReadableIssue): string => {
-	const message = (issue.message ??= messageOf(issue))
-	// every key of a build holding neither an index nor a key to bracket is an
-	// identifier, so its path is its keys joined, and it holds no pathOf
-	const path =
-		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
+let formatArkError: ((error: ReadableIssue) => string | undefined) | undefined
+
+/** @internal registered by errors.ts so arktype and arktype/runtime share one lineOf */
+export const registerErrorLineFormatter = (
+	formatter: (error: ReadableIssue) => string | undefined
+): void => {
+	formatArkError = formatter
+}
+
+const isLabeledIssue = (
+	issue: ReadableIssue,
+	message: string,
+	defaultMessage: string
+): boolean => {
+	if ((issue as ArkIssue)._n !== undefined) return true
+	// a JSON-round-tripped ArkError loses its non-enumerable _n note, keeping
+	// either meta/valueMeta.label (JSON.stringify(error)) or `<label> <default>`
+	// (ArkErrors.toJSON())
+	const meta =
+		issue.code === "required" ?
+			(issue as { valueMeta?: { label?: unknown; message?: unknown } })
+				.valueMeta
+		:	(issue as { meta?: { label?: unknown; message?: unknown } }).meta
+	if (
+		typeof meta?.label === "string" &&
+		meta.message === undefined &&
+		message.startsWith(meta.label + " ")
+	)
+		return true
 	return (
-		listsUnions && (issue as ArkIssue)._l !== undefined ?
-			(issue as ArkIssue)._l!
-		: labelsValues && (issue as ArkIssue)._n !== undefined ?
-			labeledPathOf(issue) + message
-		: path ?
-			path +
-			((
-				writesText &&
-				!(message === "is invalid" && issue.expected === "valid") &&
-				!message.startsWith(messageOf(issue))
-			) ?
-				": "
-			:	" ") +
-			message
-		:	message
+		(issue.expected !== undefined || issue.code === "required") &&
+		message.length > defaultMessage.length + 1 &&
+		(message.endsWith(" " + defaultMessage) ||
+			message.includes(" " + defaultMessage + " "))
 	)
 }
 
@@ -824,7 +834,35 @@ const issueLineOf = (issue: ReadableIssue): string => {
  * Formats an error as its line in `errors.summary`, e.g.
  * `name must be a string` or `name: Enter a name`.
  */
-export { issueLineOf as lineOf }
+export const lineOf = (issue: ReadableIssue): string => {
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== undefined) return formatted
+	}
+	const defaultMessage = messageOf(issue)
+	const message = issue.message ?? defaultMessage
+	// every key of a build holding neither an index nor a key to bracket is an
+	// identifier, so its path is its keys joined, and it holds no pathOf
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
+	return (
+		listsUnions && (issue as ArkIssue)._l !== undefined ?
+			(issue as ArkIssue)._l!
+		: labelsValues && isLabeledIssue(issue, message, defaultMessage) ?
+			labeledPathOf(issue) + message
+		: path ?
+			path +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(defaultMessage)
+			) ?
+				": "
+			:	" ") +
+			message
+		:	message
+	)
+}
 
 // what an issue says where no message is configured for it, naming no path.
 // An undeclared key's site says what's expected. Only a missing key's says
