@@ -39,7 +39,12 @@ interface Type<out t extends object = object, in out $ = {}>
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
 	:	Type<{ readonly [k in keyof t]: t[k] }, $>
 
-	keyof(): instantiateType<arkKeyOf<t>, $>
+	// t is read from the receiver: Type<object>'s keys are never, so returning
+	// arkKeyOf<t> would keep an array or Date Type, which TS relates to
+	// Type<object> structurally rather than by variance, from being assignable
+	keyof<self extends { t: object }>(
+		this: self
+	): instantiateType<arkKeyOf<self["t"]>, $>
 
 	/**
 	 * #### the Type at a key, or at a path of up to three keys
@@ -237,10 +242,12 @@ type typePropOf<o, $> =
 		:	never
 	:	never
 
-// an array's elements and methods aren't props at runtime, only keys
-// intersected onto it, e.g. type("string[]").and({ foo: "string" })
+// an array's elements and methods, like a Date's methods, aren't props at
+// runtime, only keys intersected onto it, e.g. type("string[]").and({ foo: "string" })
 type propKeyOf<o> =
-	o extends array ? Exclude<keyof o, keyof unknown[] | `${number}`> : keyof o
+	o extends array ? Exclude<keyof o, keyof unknown[] | `${number}`>
+	: o extends Date ? Exclude<keyof o, keyof Date>
+	: keyof o
 
 // checked whole, since a prop's value is one Type, whatever its branches
 type typeProp<o, k extends keyof o, $, v = propValueOf<o, k>> =

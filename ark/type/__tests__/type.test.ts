@@ -97,6 +97,22 @@ contextualize(() => {
 		)
 	})
 
+	it("array, tuple and Date Types are assignable to their base Types", () => {
+		const acceptObject = (t: Type<object>) => t
+
+		acceptObject(type("string[]"))
+		acceptObject(type(["string", "number"]))
+		acceptObject(type("Date"))
+		acceptObject(type({ a: "string" }))
+		type(["string", "number"]) satisfies Type<unknown[]>
+		type("Date") satisfies Type<unknown>
+
+		// @ts-expect-error
+		attest(() => acceptObject(type("string"))).type.errors(
+			"Type 'Type<string, {}>' is missing the following properties from type 'Type<object, {}>'"
+		)
+	})
+
 	// the negative cases of these assignability tests
 	// contribute a ton of instantiations and check time
 

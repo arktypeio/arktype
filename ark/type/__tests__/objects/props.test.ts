@@ -248,6 +248,12 @@ a must be a number (was missing)`)
 		])
 	})
 
+	it("a Date's methods aren't props", () => {
+		const T = type("Date")
+		attest<array<never>>(T.props)
+		attest(T.props).snap([])
+	})
+
 	it("base object", () => {
 		const T = type("object")
 
