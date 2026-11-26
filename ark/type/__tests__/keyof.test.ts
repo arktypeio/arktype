@@ -35,8 +35,13 @@ contextualize(() => {
 		attest<"a" | "b">(Partial.infer)
 		attest(Partial.json).equals(type("'a' | 'b'").json)
 
-		// type({}) infers as Type<object> (matching type("object")); an exact empty
-		// object type `{}` (e.g. from omit) still has keyof `never`
+		const Empty = type({})
+		attest(() => Empty.keyof()).throws(
+			writeUnsatisfiableExpressionError("keyof {}")
+		)
+		const emptyLiteralKeyof = () => Empty.keyof().infer
+		attest<() => never>(emptyLiteralKeyof)
+
 		const OmittedEmpty = type({ a: "string" }).omit("a")
 		attest(() => OmittedEmpty.keyof()).throws(
 			writeUnsatisfiableExpressionError("keyof {}")

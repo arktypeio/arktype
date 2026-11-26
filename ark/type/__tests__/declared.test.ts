@@ -302,6 +302,23 @@ contextualize(() => {
 		).type.errors(`declared: "bar" | "foo"; inferred: "baz" | "foo"`)
 	})
 
+	it("tuple literal against union declared type", () => {
+		attest(() =>
+			// @ts-expect-error
+			type.declare<string | [number]>().type(["number"])
+		).type.errors("declared: string | [number]; inferred: [number]")
+
+		attest(() =>
+			// @ts-expect-error
+			type.declare<[string] | [number]>().type(["number"])
+		).type.errors("declared: [string] | [number]; inferred: [number]")
+
+		const assignable = type
+			.declare<string | [number], { assignable: true }>()
+			.type(["number"])
+		attest<[number]>(assignable.t)
+	})
+
 	it("narrower", () => {
 		// @ts-expect-error
 		attest(() => declare<string>().type("'foo'")).type.errors(

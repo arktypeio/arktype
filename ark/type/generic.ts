@@ -51,7 +51,7 @@ export type validateGenericArg<arg, param extends GenericParamAst, $> =
 export type satisfiesGenericConstraint<t, constraint> =
 	[distill.In<t>] extends [constraint] ? true
 	: [distill.In<t>, distill.Out<t>] extends (
-		[distill.In<constraint>, constraint]
+		[distill.In<constraint>, distill.Out<constraint>]
 	) ?
 		true
 	:	false

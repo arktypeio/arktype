@@ -8,7 +8,14 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
-import { generic, scope, type, type Generic, type GenericAst } from "arktype"
+import {
+	generic,
+	scope,
+	type,
+	type Default,
+	type Generic,
+	type GenericAst
+} from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeParameterizedGenericKeyMessage } from "arktype/internal/scope.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
@@ -156,6 +163,14 @@ contextualize(() => {
 			attest(() => positiveToInteger("number")).throws(
 				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
 			)
+		})
+
+		it("defaulted property constraint accepts matching defaulted argument", () => {
+			const Boxed = generic(["t", { a: "string = 'x'" }])({ v: "t" })
+			const T = Boxed({ a: "string = 'x'" })
+
+			attest<{ v: { a: Default<string, "x"> } }>(T.t)
+			attest(T({ v: {} })).snap({ v: { a: "x" } })
 		})
 
 		it("unsatisfied parameter string", () => {

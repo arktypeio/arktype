@@ -190,8 +190,20 @@ type validateArrayInference<
 				show<declarationMismatch<inferDefinition<def, $, args>, declared>>
 			:	validateAssignableArrayBranch<def, branch, $, args, ctx>
 		:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
-	: declared extends array ? validateArrayBranch<def, declared, $, args, ctx>
-	: show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+	: [declared] extends [never] ?
+		show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+	: [declared] extends [infer d extends array] ?
+		true extends isUnion<d> ?
+			validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+		:	validateArrayBranch<def, d, $, args, ctx>
+	:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+
+type isUnion<t, full = t> =
+	t extends unknown ?
+		[full] extends [t] ?
+			false
+		:	true
+	:	never
 
 type validateAssignableArrayBranch<
 	def extends array,

@@ -48,10 +48,12 @@ interface Type<out t extends object = object, in out $ = {}>
 			$
 		>
 
-	keyof(): instantiateType<
-		exactEquals<t, object> extends true ? Key : arkKeyOf<t>,
-		$
-	>
+	// t is read from the receiver: Type<object>'s keys are never, so returning
+	// arkKeyOf<t> would keep an array or Date Type, which TS relates to
+	// Type<object> structurally rather than by variance, from being assignable
+	keyof<self extends { t: object }>(
+		this: self
+	): instantiateType<arkKeyOf<self["t"]>, $>
 
 	/**
 	 * #### the Type at a key, or at a path of up to three keys
