@@ -663,6 +663,36 @@ x must be a string`)
 		attest(testedOnFirstCall(true)).equals(expected)
 	})
 
+	it("a predicate throwing while the union is discriminated throws at each check", () => {
+		let throws = false
+		const T = type({ k: "'a'", a: "1" })
+			.or({ k: "'b'", a: "2" })
+			.or({
+				k: type("string").narrow(() => {
+					if (throws) throw new Error("boom")
+					return true
+				}),
+				z: "1"
+			})
+		// reducing the union calls the predicate too, so it's built first
+		attest(T.expression).snap(
+			'{ a: 1, k: "a" } | { a: 2, k: "b" } | { k: string & fn, z: 1 }'
+		)
+		throws = true
+		const results = [0, 1, 2].map(() => {
+			try {
+				T({ k: "a", a: 1 })
+				return "checked"
+			} catch (e) {
+				return (e as Error).message
+			}
+		})
+		// a Type's first check can run through its branches, undiscriminated
+		attest(results.slice(1)).equals(["boom", "boom"])
+		throws = false
+		attest(T({ k: "a", a: 1 })).snap({ k: "a", a: 1 })
+	})
+
 	it("equal units keep one branch however they're written", () => {
 		const units = (...branches: unknown[]) =>
 			type.schema(branches.map(unit => ({ unit })) as never).expression

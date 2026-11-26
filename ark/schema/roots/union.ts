@@ -164,7 +164,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (this.c.disc === undefined) {
 			// null while discriminating, which can read this union's references
 			this.c.disc = null
-			this.c.disc = this.discriminate()
+			try {
+				this.c.disc = this.discriminate()
+			} catch (e) {
+				// a predicate that threw while discriminating throws at each read,
+				// rather than leaving the union undiscriminated after the first
+				this.c.disc = undefined
+				throw e
+			}
 		}
 		return this.c.disc
 	}
