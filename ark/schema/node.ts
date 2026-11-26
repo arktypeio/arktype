@@ -121,7 +121,8 @@ import {
 	printSelfAsThis,
 	removedProblemMessage,
 	resolving,
-	withoutHoleNames
+	withoutHoleNames,
+	writeInvalidMetaMessage
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -1524,6 +1525,14 @@ export abstract class BaseNode<
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
+
+		// a cast or JavaScript can pass anything, which spreading would drop
+		if (
+			typeof meta !== "string" &&
+			typeof meta !== "function" &&
+			(typeof meta !== "object" || meta === null || Array.isArray(meta))
+		)
+			throwParseError(writeInvalidMetaMessage(printable(meta)))
 
 		// 2.x's slot, which a cast or JavaScript still passes
 		if (typeof meta === "object" && "problem" in meta)

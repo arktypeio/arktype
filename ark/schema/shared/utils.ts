@@ -224,6 +224,9 @@ export type DescribeBranchesOptions = {
 // what 2.x's slot says where a cast or JavaScript still passes it
 export const removedProblemMessage = "problem was removed in 3.0; write message"
 
+export const writeInvalidMetaMessage = (meta: string): string =>
+	`Meta must be a string, an object or a function (was ${meta})`
+
 export const describeBranches = (
 	descriptions: readonly string[],
 	opts?: DescribeBranchesOptions
