@@ -177,6 +177,175 @@ contextualize(() => {
 		attest<string>($.resolve("a").inferIn)
 	})
 
+	describe("functions typed from the scope", () => {
+		it("a morph of an alias takes its parameter from it", () => {
+			const types = scope({
+				Base: { text: "string" },
+				returned: ["Base", "=>", d => d],
+				annotated: ["Base", "=>", (d: { text: string }) => d],
+				ignored: ["Base", "=>", () => ({ n: 1 })]
+			}).export()
+
+			attest(types.returned.t).type.toString.snap(
+				"(In: { text: string }) => Out<{ text: string }>"
+			)
+			attest(types.annotated.t).type.toString.snap(
+				"(In: { text: string }) => Out<{ text: string }>"
+			)
+			attest(types.ignored.t).type.toString.snap(
+				"(In: { text: string }) => Out<{ n: number }>"
+			)
+			attest(types.returned({ text: "a" })).equals({ text: "a" })
+		})
+
+		it("a morph's parameter is typed from whatever its input resolves to", () => {
+			const types = scope({
+				Base: { text: "string" },
+				"#hidden": { n: "number" },
+				Linked: { value: "string", "next?": "Linked" },
+				Id: "string#id",
+				literal: [{ a: "string" }, "=>", d => d.a],
+				list: ["Base[]", "=>", l => l.length],
+				union: [
+					"Base | string",
+					"=>",
+					u => (typeof u === "string" ? u : u.text)
+				],
+				fromPrivate: ["hidden", "=>", h => h.n],
+				fromCyclic: ["Linked", "=>", l => l.next?.next?.value],
+				branded: ["Id", "=>", id => id],
+				defaulted: [{ count: "number = 0" }, "=>", d => d.count]
+			}).export()
+
+			attest(types.literal.t).type.toString.snap(
+				"(In: { a: string }) => Out<string>"
+			)
+			attest(types.list.t).type.toString.snap(
+				"(In: { text: string }[]) => Out<number>"
+			)
+			attest(types.union.t).type.toString.snap(
+				"(In: string | { text: string }) => Out<string>"
+			)
+			attest(types.fromPrivate.t).type.toString.snap(
+				"(In: { n: number }) => Out<number>"
+			)
+			attest(types.fromCyclic.t).type.toString.snap(`(In: {
+	value: string
+	next?: cyclic
+}) => Out<string | undefined>`)
+			attest(types.branded.t).type.toString.snap(
+				'(In: string) => Out<Brand<string, "id">>'
+			)
+			attest(types.defaulted.t).type.toString.snap(
+				"(In: { count?: number }) => Out<number>"
+			)
+		})
+
+		it("infers a morph within an alias and what refers to it", () => {
+			const types = scope({
+				Base: { text: "string" },
+				outer: { inner: ["Base", "=>", d => d.text.length] },
+				outers: "outer[]"
+			}).export()
+
+			attest(types.outer.t).type.toString.snap(
+				"{ inner: (In: { text: string }) => Out<number> }"
+			)
+			attest(types.outers.t).type.toString.snap(
+				"{ inner: (In: { text: string }) => Out<number> }[]"
+			)
+			attest(types.outers([{ inner: { text: "abc" } }])).equals([{ inner: 3 }])
+		})
+
+		it("a predicate beside a morph narrows as its function does", () => {
+			const types = scope({
+				Base: { text: "string" },
+				morphed: ["Base", "=>", d => d.text],
+				guarded: ["Base", ":", (d): d is { text: "ok" } => d.text === "ok"],
+				checked: [
+					"Base",
+					":",
+					(d, ctx) => d.text !== "" || ctx.mustBe("non-empty")
+				]
+			}).export()
+
+			attest<{ text: "ok" }>(types.guarded.t)
+			attest<{ text: string }>(types.checked.t)
+		})
+
+		it("infers a module's morph", () => {
+			const types = type.module({
+				Base: { text: "string" },
+				morphed: ["Base", "=>", d => d.text]
+			})
+
+			attest(types.morphed.t).type.toString.snap(
+				"(In: { text: string }) => Out<string>"
+			)
+		})
+
+		it("an invalid alias beside a morph is still an error", () => {
+			attest(() =>
+				scope({
+					Base: { text: "string" },
+					morphed: ["Base", "=>", d => d.text],
+					// @ts-expect-error
+					invalid: "strong"
+				}).export()
+			).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
+		})
+
+		// a function has one type, which it's given before the generic has
+		// arguments
+		it("a generic's morph is typed from its parameters' constraints", () => {
+			const types = scope({
+				"boxed<t>": [{ box: "t" }, "=>", b => b.box],
+				strings: "boxed<string>"
+			}).export()
+
+			attest(types.strings.t).type.toString.snap(
+				"(In: { box: string }) => Out<unknown>"
+			)
+		})
+
+		// TypeScript types every such function of a scope before it knows what
+		// any of them returns, so the output of one can't type another's
+		// parameter
+		it("a morph of another's output needs its parameter annotated", () => {
+			const types = scope({
+				Base: { text: "string" },
+				first: ["Base", "=>", d => d.text],
+				second: ["first", "=>", s => s],
+				annotated: ["first", "=>", (s: string) => s.length]
+			}).export()
+
+			attest(types.second.t).type.toString.snap("(In: never) => Out<any>")
+			attest(types.annotated.t).type.toString.snap(
+				"(In: { text: string }) => Out<number>"
+			)
+		})
+
+		// nor can its own input, which isn't known until the morph is
+		it("a cycle through a morph ends at it in the morph's input", () => {
+			const types = scope({
+				A: { "b?": "B", v: "string" },
+				B: ["A", "=>", a => a.v]
+			}).export()
+
+			attest(types.A.infer).type.toString.snap("{ b?: string; v: string }")
+			attest(types.A.inferIn).type.toString.snap(
+				"{ b?: { b?: never; v: string }; v: string }"
+			)
+			attest(types.B.t).type.toString.snap(
+				"(In: { b?: never; v: string }) => Out<string>"
+			)
+			attest(types.A({ v: "a", b: { v: "b", b: { v: "c" } } })).equals({
+				v: "a",
+				b: "b"
+			})
+		})
+	})
+
 	it("infers its own helpers", () => {
 		const $ = scope({
 			a: () => $.type("string"),

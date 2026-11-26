@@ -125,6 +125,16 @@ assertEquals<typeof types.List.infer.head.value, number>()
 // @ts-expect-error invalid keywords in a scope are type errors
 scope({ name: "strng" })
 
+// a morph's parameter is typed from the alias before it, which TS has to
+// infer the scope without the morph to do
+export const Morphs = scope({
+	Named: { name: "string" },
+	toName: ["Named", "=>", named => named.name]
+}).export()
+
+assertEquals<typeof Morphs.toName.inferIn, { name: string }>()
+assertEquals<typeof Morphs.toName.infer, string>()
+
 // infers each callback's parameter from the Types it pairs
 export const EpochMs = codec("number.integer", "Date", {
 	decode: n => new Date(n),

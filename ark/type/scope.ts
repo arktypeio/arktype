@@ -98,7 +98,7 @@ import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { BranchOperator } from "./parser/reduce/shared.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import type { parseString } from "./parser/string.ts"
-import type { TupleExpression } from "./parser/tupleExpressions.ts"
+import type { parseMorph, TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
 	type DefinitionParser,
@@ -233,18 +233,151 @@ export interface ArkScopeConfig<ambient = AmbientInput>
 }
 
 export interface ScopeParser {
-	<const def, const ambient>(
-		def: scope.validate<def, ambient>,
+	<const partial, const ambient, const def = partial>(
+		def: validateScopeArgument<def, ambient, partial>,
 		config?: ArkScopeConfig<ambient>
-	): Scope<scope.infer<def, ambient>>
+	): Scope<inferScopeArgument<def, ambient, partial>>
 
 	define: <const def>(def: scope.validate<def>) => def
 }
 
-export type ModuleParser = <const def, const ambient>(
-	def: scope.validate<def, ambient>,
+export type ModuleParser = <const partial, const ambient, const def = partial>(
+	def: validateScopeArgument<def, ambient, partial>,
 	config?: ArkScopeConfig<ambient>
-) => scope.infer<def, ambient> extends infer $ ? exportedModuleOf<$> : never
+) => inferScopeArgument<def, ambient, partial> extends infer $ ?
+	exportedModuleOf<$>
+:	never
+
+/**
+ * {@link scope.validate} as the type of a parameter, with the definition
+ * inferred as two type parameters.
+ *
+ * TypeScript can't infer a literal while it holds a function whose parameters
+ * it has yet to contextually type, like the morph of
+ * `["user", "=>", u => u.name]`. Until it has, what it knows of the definition
+ * is `partial`: each part it can infer through a mapped type, as written, and
+ * `unknown` for each such function. The definition is validated as `partial`,
+ * so `u` is typed from it, and wherever an alias resolves to an object, the type
+ * of `u` refers to it. Once a parameter has its type, TypeScript infers nothing
+ * more for a type parameter that type refers to. Were the scope inferred from
+ * that one, each function left to type would stay `unknown` in it and its morph
+ * `never`. `def` is the literal itself, inferred once every function has its
+ * type, and no parameter's type refers to it. Until then it is its default,
+ * `partial`.
+ *
+ * Each part of this is there for inference:
+ *
+ * - Both are inferred from the false branches, which are never the result.
+ * - `def` is a type parameter by itself there, without a constraint, which
+ *   leaves this type without one while `def` is generic. TypeScript would
+ *   otherwise contextually type a scope written inline from the constraint as
+ *   it infers from it, and for each literal in each alias that reads every
+ *   branch of the validator.
+ * - The validator is a property of an interface, indexed by a key that's
+ *   deferred while `def` is generic, so TypeScript can't infer `partial`
+ *   through it as well, which reads each of those branches again.
+ */
+type validateScopeArgument<def, ambient, partial> =
+	[def] extends [unknown] ?
+		ScopeArgument<partial, ambient>[def extends unknown ? "validated" : never]
+	: [def] extends [never] ? inferableDefinition<partial>
+	: def
+
+interface ScopeArgument<in out def, in out ambient> {
+	validated: scope.validate<def, ambient>
+}
+
+// TypeScript infers the argument of a mapped type around a function it has yet
+// to type, where a type parameter by itself gets nothing from the literal
+type inferableDefinition<def> =
+	[def] extends [anyOrNever] ? def
+	:	{ [k in keyof def]: inferableDefinition<def[k]> }
+
+// partial is def unless TypeScript had to contextually type a function in it.
+// A definition cast to any or never, as one built at runtime is, infers as
+// unknown does
+type inferScopeArgument<def, ambient, partial> =
+	[def] extends [anyOrNever] ? scope.infer<unknown, ambient>
+	: [partial] extends [def] ? scope.infer<def, ambient>
+	: inferBootstrapped<
+			contextualizeAliases<
+				bootstrapAliases<def, ambient>,
+				bootstrapAliases<partial, ambient>
+			>
+		>
+
+/**
+ * The aliases of a scope in which TypeScript contextually typed a function, as
+ * {@link inferBootstrapped} infers them. `$` holds each definition as written
+ * and `$partial` what TypeScript knew of it when it typed those functions,
+ * where a morph whose function had no type yet is never.
+ *
+ * A morph's parameter was typed from its input as `$partial` resolves it, so
+ * that's the input it's inferred with. Resolved in `$`, an input that reaches
+ * its own morph through a cycle would have to be inferred to learn whether
+ * it's a morph, which TypeScript reports as a type that refers to itself. In
+ * `$partial` the cycle ends at that morph, as does an input that is another
+ * such morph, neither having had a type the parameter could be given.
+ *
+ * Everything else is inferred in `$`. An alias without such a morph is left as
+ * it is, so that whatever refers to it, itself included, refers to one type. A
+ * generic's body is inferred once it has arguments, so one with such a morph
+ * is resolved in `$partial` as a whole.
+ */
+type contextualizeAliases<$, $partial> = {
+	[k in keyof $]: k extends keyof $partial ?
+		[$partial[k]] extends [$[k]] ? $[k]
+		: [$[k], $partial[k]] extends [Def<infer def>, Def<infer partial>] ?
+			// such a morph is most often the whole alias, inferred here rather
+			// than held in a definition to be inferred from again
+			partial extends readonly [unknown, "=>", infer untyped] ?
+				unknown extends untyped ?
+					parseMorph<def[0 & keyof def], def[2 & keyof def], $partial, {}>
+				:	contextualizeAlias<
+						$[k],
+						def,
+						contextualizeEach<def, partial, $partial>
+					>
+			:	contextualizeAlias<$[k], def, contextualizeEach<def, partial, $partial>>
+		: $[k] extends GenericAst<infer params, infer bodyDef, UnparsedScope> ?
+			[
+				contextualizeDefinition<
+					bodyDef,
+					$partial[k]["bodyDef" & keyof $partial[k]],
+					$partial
+				>
+			] extends [bodyDef] ?
+				$[k]
+			:	GenericAst<params, bodyDef, $partial>
+		:	$[k]
+	:	$[k]
+} & unknown
+
+// a definition mapped with no morph to replace is a copy of the one written.
+// The alias is kept as it was instead, so it's inferred as it would be in a
+// scope without such a function, down to the order its unions print in
+type contextualizeAlias<alias, def, contextualized> =
+	[contextualized] extends [def] ? alias : Def<contextualized>
+
+// partial is unknown where def is a function TypeScript contextually typed
+type contextualizeDefinition<def, partial, $> =
+	[partial] extends [def] ? def
+	: unknown extends partial ? def
+	: partial extends readonly [unknown, "=>", infer untyped] ?
+		unknown extends untyped ?
+			{
+				[inferred]: parseMorph<def[0 & keyof def], def[2 & keyof def], $, {}>
+			}
+		:	contextualizeEach<def, partial, $>
+	:	contextualizeEach<def, partial, $>
+
+type contextualizeEach<def, partial, $> = {
+	[k in keyof def]: contextualizeDefinition<
+		def[k],
+		partial[k & keyof partial],
+		$
+	>
+}
 
 export type bindThis<def> = { this: Def<def> }
 
