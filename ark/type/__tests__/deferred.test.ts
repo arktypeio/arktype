@@ -243,6 +243,15 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 			[{ a: "string" }, { "a?": "string" }],
 			[{ a: "string = 'x'" }, { a: "string = 'y'" }],
 			[{ "a,1b": "string" }, { a: "string", b: "string" }],
+			// a name starting with a digit isn't more of its length
+			[
+				{ "1a": "string", bbbbbbbbbb: "number" },
+				{ "a:string,10bbbbbbbbbb": "number" }
+			],
+			[
+				{ "1a": "string", bbbbbbbbbb: "number" },
+				{ "a:string,10:bbbbbbbbbb": "number" }
+			],
 			[
 				{ a: "string", b: "string" },
 				{ b: "string", a: "string" }

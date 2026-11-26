@@ -478,6 +478,10 @@ const scanUncached = (def: string): Facts | undefined => {
 	return scanAnd(def)
 }
 
+// its length says where a name ends, whatever it holds, and a colon where its
+// length does, since a name can start with a digit
+const sized = (name: string) => `${name.length}:${name}`
+
 const isPlainObject = (v: object) => {
 	const proto = Object.getPrototypeOf(v)
 	return proto === Object.prototype || proto === null
@@ -625,7 +629,7 @@ const walkLiteral = (
 		const name = key.normalized as string
 		if (names.includes(name)) return
 		// what replaces what held `this` is what a definition could then repeat
-		if (spreadThis?.includes(`${name.length}${name}`)) return
+		if (spreadThis?.includes(sized(name))) return
 		// what replaces a node's prop is what nodes spreading others could write
 		if (spreadNode?.structure!.byKey[name]) return
 		names.push(name)
@@ -664,8 +668,7 @@ const walkLiteral = (
 		)
 			return
 		if (!optional && of.values) (facts.tags ??= new Map()).set(name, of.values)
-		// its length says where a name ends, whatever it holds
-		const entry = `${name.length}${name}${
+		const entry = `${sized(name)}${
 			isTuple && v[1] === "=" ? `:${defaultKey(of, v[2])}`
 			: optional && !of.defaults ? `?${of.key}`
 			: `:${of.key}`
@@ -686,7 +689,7 @@ const walkLiteral = (
 		// where it spreads a literal, only the props it doesn't replace are what
 		// it holds, and its undeclared keys are its own
 		const spread = spreadOf.props!.map(([name, entry]) =>
-			names.includes(name) ? `${name.length}${name}~` : entry
+			names.includes(name) ? `${sized(name)}~` : entry
 		)
 		if (spreadOf.spread) spread.unshift(spreadOf.spread)
 		facts.spread = entries[entries.indexOf("")] = `...{${spread.join()}}`
