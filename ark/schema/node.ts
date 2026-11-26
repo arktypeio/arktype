@@ -1437,12 +1437,18 @@ export abstract class BaseNode<
 			meta: this.meta
 		})
 
+		// a node with a selected node's id is that node as another object, as an unread
+		// Type built to a node that already existed is and as one bound to another
+		// scope is. It's selected too unless the selector's predicate refuses it, as
+		// one asking for an object does
+		const selected =
+			!ctx.selected ||
+			ctx.selected.includes(this) ||
+			(ctx.selected.some(node => node.id === this.id) &&
+				(!ctx.selectedWhere || ctx.selectedWhere(this)))
+
 		let transformedInner =
-			// a node with a selected node's id is that node, as an unread Type built to
-			// a node that already existed is
-			ctx.selected && !ctx.selected.some(node => node.id === this.id) ?
-				innerWithMeta
-			:	mapper(this.kind, innerWithMeta, ctx)
+			selected ? mapper(this.kind, innerWithMeta, ctx) : innerWithMeta
 
 		if (transformedInner === null) return null
 
@@ -1593,7 +1599,8 @@ export abstract class BaseNode<
 		return this.$.fin(
 			this.transform(mapper, {
 				shouldTf,
-				selected
+				selected,
+				selectedWhere: normalized.where
 			}) as never
 		)
 	}
@@ -2148,6 +2155,8 @@ export type DeepNodeTransformOptions = {
 	/** whether the schema is already reduced, so it's parsed as is */
 	reduced?: boolean
 	selected?: readonly BaseNode[] | undefined
+	/** what chose `selected`, asked of a node held as another object than the one chosen */
+	selectedWhere?: GuardablePredicate<BaseNode> | undefined
 	names?: Record<string, string>
 }
 

@@ -100,6 +100,38 @@ contextualize(() => {
 		attest(Middle.select("required")).snap([{ key: "a", value: "string" }])
 	})
 
+	it("a predicate decides for a node held as two objects", () => {
+		const Target = type("string > 3")
+		const Inner = type({ x: Target })
+		const $ = scope({})
+		// Target as another scope binds it, which isn't the object Inner holds
+		const Bound = $.type(Target)
+		const Holder = $.type({ a: Bound, inner: Inner })
+		const descriptions = (t: typeof Holder) => [
+			t.get("a").meta.description,
+			t.get("inner", "x").meta.description
+		]
+		attest(
+			descriptions(
+				Holder.configure(
+					{ description: "picked" },
+					{ where: node => node === Target.internal }
+				)
+			)
+		).equals([undefined, "picked"])
+		attest(
+			descriptions(
+				Holder.configure(
+					{ description: "picked" },
+					{ where: node => node.expression === "string >= 4" }
+				)
+			)
+		).equals(["picked", "picked"])
+		attest(
+			descriptions(Holder.configure({ description: "picked" }, "intersection"))
+		).equals(["picked", "picked"])
+	})
+
 	it("docs select config example", () => {
 		const SelectivelyConfigured = type({
 			name: "string",
