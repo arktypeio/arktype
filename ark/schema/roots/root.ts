@@ -92,6 +92,7 @@ import type {
 	Structure,
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
+import type { Intersection } from "./intersection.ts"
 import type { Morph } from "./morph.ts"
 import type { Union } from "./union.ts"
 
@@ -379,16 +380,14 @@ export abstract class BaseRoot<
 	}
 
 	extract(r: unknown): BaseRoot {
-		const rNode = this.$.parseDef(r)
 		return this.$.schema(
-			this.branches.filter(branch => branch.extends(rNode))
+			filterBranches(this.branches, this.$.parseDef(r)).extracted
 		) as never
 	}
 
 	exclude(r: unknown): BaseRoot {
-		const rNode = this.$.parseDef(r)
 		return this.$.schema(
-			this.branches.filter(branch => !branch.extends(rNode))
+			filterBranches(this.branches, this.$.parseDef(r)).excluded
 		) as never
 	}
 
@@ -1036,6 +1035,176 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 		return branch.$.bindRef($ark.kw.emptyStructure)
 
 	return null
+}
+
+type FilteredBranches = {
+	extracted: Union.ChildNode[]
+	excluded: Union.ChildNode[]
+}
+
+// a union merges branches alike but for a range, one key's value or a morph's
+// input, so a branch is filtered as the branches that would merge to it are:
+// those extending r are extracted and the rest excluded. A branch nothing
+// merges to, like a basis, is still one or the other whole
+const filterBranches = (
+	branches: readonly Union.ChildNode[],
+	r: BaseRoot
+): FilteredBranches => {
+	const result: FilteredBranches = { extracted: [], excluded: [] }
+	for (const branch of branches) {
+		if (branch.extends(r)) result.extracted.push(branch)
+		else if (!branch.hasKindIn("intersection", "morph"))
+			result.excluded.push(branch)
+		else {
+			// each branch of r is extracted from what the last left
+			let excluded: Union.ChildNode[] = [branch]
+			for (const rBranch of r.branches) {
+				excluded = excluded.flatMap(piece => {
+					const split =
+						r.branches.length > 1 && piece.extends(rBranch) ?
+							{ extracted: [piece], excluded: [] }
+						:	splitBranch(piece, rBranch)
+					result.extracted.push(...split.extracted)
+					return split.excluded
+				})
+			}
+			result.excluded.push(...excluded)
+		}
+	}
+	return result
+}
+
+const unsplit = (branch: Union.ChildNode): FilteredBranches => ({
+	extracted: [],
+	excluded: [branch]
+})
+
+// what would merge to a branch that doesn't extend r, or, if none of that
+// extends r either, the branch as it is
+const splitBranch = (
+	branch: Union.ChildNode,
+	r: Union.ChildNode
+): FilteredBranches => {
+	const intervals = intervalsOf(branch)
+	if (intervals) {
+		const extracted = intervals.filter(interval => interval.extends(r))
+		return extracted.length ?
+				{
+					extracted,
+					excluded: intervals.filter(interval => !extracted.includes(interval))
+				}
+			:	unsplit(branch)
+	}
+	if (branch.is("morph")) {
+		// a morph extends what its input does, or a morph alike whose input its own extends
+		const rHead =
+			!r.is("morph") ? r
+			: branch.sameMorphs(r) && !r.declaredIn ? r.head
+			: undefined
+		if (!branch.head || branch.declaredIn || !rHead) return unsplit(branch)
+		const head = filterBranches(branch.head.branches, rHead)
+		if (!head.extracted.length || !head.excluded.length) return unsplit(branch)
+		const withHead = (branches: Union.ChildNode[]) =>
+			branch.$.node("morph", {
+				...branch.inner,
+				morphs: [branch.$.node("union", { branches }), ...branch.piped],
+				meta: branch.meta
+			})
+		const extracted = withHead(head.extracted)
+		return extracted.extends(r) ?
+				{
+					extracted: [...extracted.branches],
+					excluded: [...withHead(head.excluded).branches]
+				}
+			:	unsplit(branch)
+	}
+	if (!branch.is("intersection") || !r.is("intersection") || !r.structure)
+		return unsplit(branch)
+	let extracted = branch
+	const excluded: Union.ChildNode[] = []
+	for (const prop of branch.structure?.props ?? []) {
+		const rProp = r.structure.byKey[prop.key]
+		// as a union merges neither a default nor a value that could reach it
+		if (!rProp || prop.hasDef() || prop.value.hasAlias) continue
+		const value = filterBranches(prop.value.branches, rProp.value)
+		if (!value.extracted.length) return unsplit(branch)
+		if (!value.excluded.length) continue
+		// the values a key before this one excluded are already listed
+		excluded.push(...withPropValue(extracted, prop, value.excluded).branches)
+		extracted = withPropValue(extracted, prop, value.extracted)
+	}
+	return extracted !== branch && extracted.extends(r) ?
+			{ extracted: [extracted], excluded }
+		:	unsplit(branch)
+}
+
+// the ranges either side of each value a branch excludes, which a union of
+// them merges to it
+const intervalsOf = (branch: Union.ChildNode): Union.ChildNode[] | null => {
+	if (!branch.is("intersection")) return null
+	const excluded = branch.inner.notEqual ?? branch.inner.notEqualLength
+	// a bound rejects NaN and an invalid Date, which a basis allowing them keeps
+	if (
+		!excluded ||
+		branch.inner.domain?.numberAllowsNaN ||
+		branch.inner.proto?.dateAllowsInvalid
+	)
+		return null
+	const [lower, upper] =
+		excluded[0].kind === "notEqualLength" ?
+			(["minLength", "maxLength"] as const)
+		: excluded[0].rule instanceof Date ? (["after", "before"] as const)
+		: (["min", "max"] as const)
+	const boundAt = (kind: typeof lower | typeof upper, i: number) =>
+		branch.$.node(kind, {
+			...constraintInputOf(kind, { rule: excluded[i].rule, exclusive: true }),
+			meta: excluded[i].meta
+		} as never)
+	const intervals: Union.ChildNode[] = []
+	for (let i = 0; i <= excluded.length; i++) {
+		const inner: dict = {}
+		if (i > 0) inner[lower] = boundAt(lower, i - 1)
+		if (i < excluded.length) inner[upper] = boundAt(upper, i)
+		const interval = branch.intersect(
+			branch.$.node("intersection", inner, { reduced: true })
+		)
+		// consecutive lengths or Dates have nothing between them
+		if (interval instanceof Disjoint) continue
+		// an intersection's meta is neither operand's
+		intervals.push(
+			...(isEmptyObject(branch.meta) ? interval : (
+				interval.configure(branch.meta, "self")
+			)
+			).branches
+		)
+	}
+	return intervals
+}
+
+// an object keeps its structure, and so its kind, whatever a key's value narrows to
+const withPropValue = (
+	branch: Intersection.Node,
+	prop: Prop.Node,
+	branches: Union.ChildNode[]
+): Intersection.Node => {
+	const structure = branch.structure!
+	return branch.$.node("intersection", {
+		...branch.inner,
+		structure: branch.$.node("structure", {
+			...structure.inner,
+			[prop.kind]: structure[prop.kind]!.map(original =>
+				original.key === prop.key ?
+					branch.$.node(prop.kind, {
+						...prop.inner,
+						value: branch.$.node("union", { branches }),
+						meta: prop.meta
+					})
+				:	original
+			),
+			meta: structure.meta
+		}),
+		meta: branch.meta
+	}) as never
 }
 
 export type StructuralOperationBranchResultByName = {
