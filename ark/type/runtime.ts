@@ -170,6 +170,7 @@ export {
 	isIpv4,
 	isIpv6,
 	isIso8601,
+	isNonArray,
 	isNumericString,
 	isPlainObjectOrArray,
 	isUuid,

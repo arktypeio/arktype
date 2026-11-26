@@ -257,6 +257,38 @@ contextualize(() => {
 		)
 	})
 
+	it("validates annotation value types with ParseError", () => {
+		attest(() =>
+			parse({ type: "string", description: 123 as never })
+		).throws.snap("ParseError: #/description must be a string (was 123)")
+		attest(() =>
+			parse({ type: "string", title: { bad: true } as never })
+		).throws.snap('ParseError: #/title must be a string (was {"bad":true})')
+		attest(() =>
+			parse({ type: "string", examples: { a: 1 } as never })
+		).throws.snap('ParseError: #/examples must be an array (was {"a":1})')
+		attest(() =>
+			parse({ type: "string", deprecated: "yes" as never })
+		).throws.snap('ParseError: #/deprecated must be a boolean (was "yes")')
+		attest(() =>
+			parse({
+				type: "object",
+				properties: { a: { type: "string", description: null as never } }
+			})
+		).throws.snap(
+			"ParseError: #/properties/a/description must be a string (was null)"
+		)
+		// undefined optional annotations are treated as absent
+		attest(
+			parse({
+				type: "string",
+				title: undefined,
+				description: undefined,
+				examples: undefined
+			}).expression
+		).snap("string")
+	})
+
 	it("reads back the nullable its openapi-3.0 target writes", () => {
 		const schemas = [
 			["string", { unit: null }],

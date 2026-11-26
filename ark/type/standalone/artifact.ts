@@ -26,6 +26,7 @@ import {
 } from "@ark/schema/internal"
 
 import { writesInPlace } from "@ark/schema/mutatesInput"
+import { jsonSchemaPredicateKeywords } from "arksets/internal"
 import {
 	appendStringifiedKey,
 	arkKindOf,
@@ -3682,9 +3683,16 @@ return namespace`
 		}
 		if (typeof value === "function") {
 			const name = functionNameOf(value)
-			return Reflect.get(globalThis, name) === value ?
-					`globalThis[${JSON.stringify(name)}]`
-				:	throwParseError(writeUnprecompilableMessage(printable(value)))
+			if (Reflect.get(globalThis, name) === value)
+				return `globalThis[${JSON.stringify(name)}]`
+			const jsonSchemaFeature = jsonSchemaPredicateKeywords.get(value)
+			return throwParseError(
+				writeUnprecompilableMessage(
+					jsonSchemaFeature ?
+						`fromJsonSchema's ${jsonSchemaFeature}`
+					:	printable(value)
+				)
+			)
 		}
 		if (failureSites.has(value)) return this.emitSite(value)
 		// keys read only with `in`, so emitted without their props

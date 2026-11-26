@@ -93,8 +93,9 @@ contextualize(() => {
 		})
 
 		it("draft-07 items array next to prefixItems replaces it", () => {
-			// as the runtime reads it
+			// under draft-07, prefixItems is an unknown keyword so items array applies
 			const T = fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
 				type: "array",
 				prefixItems: [{ type: "string" }],
 				minItems: 1,

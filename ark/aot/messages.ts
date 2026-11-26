@@ -492,6 +492,10 @@ const textHints: [
 		"Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
 	],
 	[
+		/^fromJsonSchema's .+ can't be precompiled to a standalone validator$/,
+		`Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`
+	],
+	[
 		/writer, which reads each branch's errors/,
 		`A standalone validator keeps no union branch's errors. Configure the text as a string, or build with runtime: "arktype".`
 	]

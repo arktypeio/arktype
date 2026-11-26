@@ -160,19 +160,44 @@ export const C = /* @__PURE__ */ $ark#3(values)`)
 		})
 
 		it("fromJsonSchema", () => {
-			const source = `import { fromJsonSchema } from "arktype"
-const Name = fromJsonSchema({ type: "string", minLength: 1 })
-const User = fromJsonSchema({ type: "object", properties: { name: { type: "string" } } })
+			const ok = `import { fromJsonSchema } from "arktype"
+export const Name = fromJsonSchema({ type: "string", minLength: 1 })
+export const User = fromJsonSchema({
+	type: "object",
+	properties: { name: { type: "string" }, age: { type: "integer", minimum: 0 } },
+	required: ["name"]
+})
 // @ark-runtime
-const Island = fromJsonSchema({ type: "object", properties: { name: { type: "string" } } })`
-			attest(statusesOf(source)).snap([
-				"2:14 accepted string >= 1",
-				"3:14 accepted { name?: string } & isNonArray",
-				"5:16 island"
+export const Island = fromJsonSchema({ type: "array", uniqueItems: true })`
+			attest(statusesOf(ok)).snap([
+				"2:21 accepted string >= 1",
+				"3:21 accepted { name: string, age?: number % 1 >= 0 } & isNonArray",
+				"9:23 island"
 			])
-			// a JSON Schema object excludes arrays with a predicate of arktype's own
-			attest(precompile(source).diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:3:14  fromJsonSchema({ type: \"object\", properties: { name: { type… can't be precompiled yet\n  Function(isNonArray) can't be precompiled to a standalone validator\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			attest(precompile(ok).diagnostics).equals([])
+
+			const unsupported = `import { fromJsonSchema } from "arktype"
+export const Unique = fromJsonSchema({ type: "array", uniqueItems: true })
+export const NotNull = fromJsonSchema({ not: { type: "null" } })
+export const HasNum = fromJsonSchema({ type: "array", contains: { type: "number" } })
+export const Cond = fromJsonSchema({ if: { type: "number" }, then: { minimum: 0 } })
+export const Tenths = fromJsonSchema({ type: "number", multipleOf: 0.1 })`
+			attest(precompile(unsupported).diagnostics.map(renderDiagnostic)).snap([
+				`/main.ts:2:23  fromJsonSchema({ type: "array", uniqueItems: true }) can't be precompiled yet
+  fromJsonSchema's \`uniqueItems\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:3:24  fromJsonSchema({ not: { type: "null" } }) can't be precompiled yet
+  fromJsonSchema's \`not\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:4:23  fromJsonSchema({ type: "array", contains: { type: "number" … can't be precompiled yet
+  fromJsonSchema's \`contains\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:5:21  fromJsonSchema({ if: { type: "number" }, then: { minimum: 0… can't be precompiled yet
+  fromJsonSchema's \`if\`/\`then\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:6:23  fromJsonSchema({ type: "number", multipleOf: 0.1 }) can't be precompiled yet
+  fromJsonSchema's \`multipleOf\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`
 			])
 		})
 

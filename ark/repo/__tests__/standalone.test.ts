@@ -19,7 +19,15 @@ import {
 	writtenConfigMessage
 } from "@ark/schema/runtime"
 import { arkKindOf, flatMorph, hasDomain } from "@ark/util"
-import { ark, generic, match, scope, type, type Scope } from "arktype"
+import {
+	ark,
+	fromJsonSchema,
+	generic,
+	match,
+	scope,
+	type,
+	type Scope
+} from "arktype"
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
@@ -3786,5 +3794,49 @@ export default shared`).js
 		).equals([])
 		attest(/new Function|extends Function/.test(js)).equals(false)
 		attest(js.includes("initialRegistryContents")).equals(false)
+	})
+
+	it("precompiles fromJsonSchema object schemas with dynamic parity", async () => {
+		const User = fromJsonSchema({
+			type: "object",
+			properties: {
+				name: { type: "string", minLength: 1 },
+				age: { type: "integer", minimum: 0 }
+			},
+			required: ["name"]
+		})
+		const { User: standalone } = await load({ User })
+		const arrayWithName = Object.assign([], { name: "Ada" })
+		function Ada() {}
+		const cases: unknown[] = [
+			{ name: "Ada" },
+			{ name: "Ada", age: 36 },
+			{ name: "Ada", age: -1 },
+			{ name: "" },
+			{},
+			[],
+			arrayWithName,
+			() => {},
+			Ada,
+			null,
+			undefined,
+			"Ada",
+			42,
+			true
+		]
+		for (const input of cases) {
+			attest(standalone.allows(input)).equals(User.allows(input))
+			const dynamicOut = User(input)
+			const standaloneOut = standalone(input)
+			if (dynamicOut instanceof type.errors) {
+				attest(
+					hasDomain(standaloneOut, "object") && "summary" in standaloneOut
+				).equals(true)
+				attest((standaloneOut as any).summary).equals(dynamicOut.summary)
+			} else attest(standaloneOut).equals(dynamicOut)
+		}
+		// bundling a precompiled fromJsonSchema object pulls in no sets/ modules
+		const { modules } = bundle(precompileStandalone({ User }).code)
+		attest(modules.some(path => path.startsWith("sets/"))).equals(false)
 	})
 })

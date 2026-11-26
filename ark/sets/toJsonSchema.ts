@@ -34,13 +34,15 @@ import {
 	flatMorph,
 	hasOwn,
 	isEmptyObject,
+	isNonArray,
 	throwParseError,
 	type dict
 } from "@ark/util"
 
-// JSON Schema's object type, which excludes arrays and functions
-export const isNonArray = (data: object): boolean =>
-	typeof data !== "function" && !Array.isArray(data)
+export { isNonArray }
+
+// own-key presence predicates created by fromJsonSchema for Object.prototype keys
+export const ownKeyPredicates = /* @__PURE__ */ new WeakMap<Function, string>()
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** where in the Type the node being converted is, for its errors */
@@ -811,14 +813,24 @@ const reduceObjectJsonSchema = (
 		indexKeys.length === 1 &&
 		rejectsUndeclared &&
 		!schema.patternProperties &&
+		!indexes.anyString &&
 		ctx.target !== "openapi-3.0" &&
 		node.props.every(
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
-		)
+		) &&
+		(!indexes.protoProps ||
+			indexes.protoProps.every(([key]) => indexKeys[0].node.allows(key)))
 	) {
 		// every key must match the index, so its value applies to each one
 		schema.propertyNames = indexKeys[0].key
-		if (declaredValuesExtend(node, indexKeys[0].valueNode, ctx))
+		if (
+			declaredValuesExtend(
+				node,
+				indexKeys[0].valueNode,
+				ctx,
+				indexes.protoProps
+			)
+		)
 			schema.additionalProperties = indexKeys[0].value
 		// a declared key's value must be the index's too, which only a pattern
 		// every key matches checks
@@ -826,17 +838,27 @@ const reduceObjectJsonSchema = (
 		return schema
 	}
 
-	if (
-		schema.patternProperties?.[""] &&
-		Object.keys(schema.patternProperties).length === 1 &&
-		indexes.anyString &&
-		declaredValuesExtend(node, indexes.anyString, ctx)
-	) {
-		// with no other patterns, the index adds nothing declared keys don't
-		// already check, so it's written as additionalProperties, which OpenAPI
-		// 3.0 and structured outputs without patternProperties read
-		schema.additionalProperties = schema.patternProperties[""]
-		delete schema.patternProperties
+	if (indexes.anyString) {
+		if (
+			!schema.patternProperties &&
+			declaredValuesExtend(
+				node,
+				indexes.anyString.valueNode,
+				ctx,
+				indexes.protoProps
+			)
+		) {
+			// with no other patterns, the index adds nothing declared keys don't
+			// already check, so it's written as additionalProperties, which OpenAPI
+			// 3.0 and structured outputs without patternProperties read
+			schema.additionalProperties = indexes.anyString.value
+		} else if (ctx.target !== "openapi-3.0") {
+			defineValue(
+				(schema.patternProperties ??= {}),
+				"",
+				indexes.anyString.value
+			)
+		} else indexKeys.push(indexes.anyString)
 	}
 
 	if (rejectsUndeclared && !schema.additionalProperties)
@@ -859,12 +881,14 @@ const reduceObjectJsonSchema = (
 const declaredValuesExtend = (
 	node: Structure.Node,
 	value: BaseRoot,
-	ctx: JsonSchemaContext
+	ctx: JsonSchemaContext,
+	protoProps?: readonly [key: string, value: BaseRoot][]
 ): boolean =>
 	node.props.every(
 		prop =>
 			typeof prop.key === "symbol" || jsonValueOf(prop, ctx).extends(value)
-	)
+	) &&
+	(!protoProps || protoProps.every(([, v]) => v.extends(value)))
 
 const writeProps = (
 	node: Structure.Node,
@@ -956,14 +980,26 @@ const writeIndex = (
 		}
 
 		const pattern = keyPatternOf(keyIn, ctx)
+		const protoKey = pattern ? protoKeyOf(pattern) : undefined
 		if (
-			pattern !== undefined &&
-			// OpenAPI 3.0 has no patternProperties, only additionalProperties
-			(ctx.target !== "openapi-3.0" ||
-				(pattern === "" && declaredValuesExtend(node, indexValue, ctx)))
+			protoKey !== undefined &&
+			(!schema.properties || !hasOwn(schema.properties, protoKey))
 		) {
+			defineValue((schema.properties ??= {}), protoKey, valueJsonSchema)
+			;(indexes.protoProps ??= []).push([protoKey, indexValue])
+			continue
+		}
+		if (pattern === "" && !indexes.anyString) {
+			indexes.anyString = {
+				node: keyIn,
+				key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
+				value: valueJsonSchema,
+				valueNode: indexValue
+			}
+			continue
+		}
+		if (pattern !== undefined && ctx.target !== "openapi-3.0") {
 			defineValue((schema.patternProperties ??= {}), pattern, valueJsonSchema)
-			if (pattern === "") indexes.anyString = indexValue
 			continue
 		}
 
@@ -1029,8 +1065,18 @@ interface IndexKey {
 interface IndexWrites {
 	// keys no pattern matches exactly, for propertyNames or the fallbacks
 	keys: IndexKey[]
-	// the value of an index any string key matches, written as the pattern ""
-	anyString?: BaseRoot
+	// an index matching any string key (pattern ""), deferred until all indexes
+	// are visited so promoted Object.prototype keys are included in its check
+	anyString?: IndexKey
+	// Object.prototype keys promoted from ^key$ indexes to properties
+	protoProps?: [key: string, value: BaseRoot][]
+}
+
+const protoKeyPattern = /^\^([$A-Z_a-z][\w$]*)\$$/
+
+const protoKeyOf = (pattern: string): string | undefined => {
+	const match = protoKeyPattern.exec(pattern)
+	return match && match[1] in Object.prototype ? match[1] : undefined
 }
 
 // the pattern matching exactly the keys an index signature's key allows
@@ -1371,13 +1417,20 @@ const reduceJsonSchemaByKind: {
 				return ToJsonSchema.throwOperandError("structure", schema)
 		}
 	},
-	predicate: (node, base, ctx) =>
+	predicate: (node, base, ctx) => {
 		// JSON Schema's object type already excludes arrays and functions
-		node.predicate === isNonArray ?
-			base
-		:	ctx.fallback.predicate({
-				code: "predicate",
-				base,
-				predicate: node.predicate
-			})
+		if (node.predicate === isNonArray) return base
+		const ownKey = ownKeyPredicates.get(node.predicate)
+		if (ownKey !== undefined && base.type === "object") {
+			const obj = base as JsonSchema.Object
+			const required = (obj.required ??= [])
+			if (!required.includes(ownKey)) required.push(ownKey)
+			return obj
+		}
+		return ctx.fallback.predicate({
+			code: "predicate",
+			base,
+			predicate: node.predicate
+		})
+	}
 }

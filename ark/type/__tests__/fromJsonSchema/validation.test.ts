@@ -687,13 +687,48 @@ contextualize(() => {
 					type: "number",
 					minimum: 0,
 					// @ts-expect-error
-					exclusiveMinimum: true,
-					// @ts-expect-error
 					unevaluatedProperties: { type: "boolean" }
 				})
+			).type.errors.snap(
+				`Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`
+			)
+		})
+
+		it("draft-04 boolean exclusive bounds", () => {
+			attest(() =>
+				inferred({
+					type: "number",
+					minimum: 0,
+					exclusiveMinimum: true,
+					maximum: 10,
+					exclusiveMaximum: true
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					type: "number",
+					exclusiveMinimum: false,
+					exclusiveMaximum: false
+				})
+			).type.errors.is("")
+			attest<
+				[true, true],
+				[
+					isValid<{ minimum: any; exclusiveMinimum: true }>,
+					isValid<{ maximum: any; exclusiveMaximum: true }>
+				]
+			>()
+			attest(() =>
+				inferred({
+					type: "number",
+					// @ts-expect-error
+					exclusiveMinimum: true,
+					// @ts-expect-error
+					exclusiveMaximum: true
+				})
 			).type.errors
-				.snap(`Type 'true' is not assignable to type '"boolean exclusiveMinimum isn't supported by fromJsonSchema\u200b"'.
-Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`)
+				.snap(`Type 'true' is not assignable to type '"exclusiveMinimum can't be true without minimum\u200b"'.
+Type 'true' is not assignable to type '"exclusiveMaximum can't be true without maximum\u200b"'.`)
 		})
 
 		it("nullable", () => {

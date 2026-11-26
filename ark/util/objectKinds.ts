@@ -412,6 +412,10 @@ export const isPlainObjectOrArray = (o: object): boolean => {
 	return proto === Object.prototype || proto === null || Array.isArray(o)
 }
 
+/** JSON Schema's object type, which excludes arrays and functions */
+export const isNonArray = (data: object): boolean =>
+	typeof data !== "function" && !Array.isArray(data)
+
 export type normalizedKeyOf<t> =
 	keyof t extends infer k ?
 		k extends number ?

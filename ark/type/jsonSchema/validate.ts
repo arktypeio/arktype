@@ -142,10 +142,12 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 						schema[k]
 					:	ErrorMessage<writeUnsupportedKeywordMessage<k>>
 			  : k extends ExclusiveBoundKeyword ?
-					schema[k] extends boolean ?
-						ErrorMessage<writeUnsupportedKeywordMessage<`boolean ${k}`>>
-					: schema[k] extends number | boolean | undefined ? schema[k]
-					: number
+					validateExclusiveBound<
+						schema[k],
+						k extends "exclusiveMinimum" ? schema["minimum" & keyof schema]
+						:	schema["maximum" & keyof schema],
+						k
+					>
 			  : k extends "propertyNames" ? validatePropertyNames<schema[k], root>
 			  : schema[k])
 			| (undefined extends schema[k] ? undefined : never)
@@ -275,6 +277,20 @@ export type validateNullable<nullable, type> =
 		:	false
 	:	boolean
 
+export type validateExclusiveBound<
+	exclusive,
+	bound,
+	keyword extends ExclusiveBoundKeyword
+> =
+	[exclusive] extends [anyOrNever] ? exclusive
+	: [exclusive] extends [true] ?
+		[bound] extends [never] ?
+			ErrorMessage<writeExclusiveBoundRequiresBaseMessage<keyword>>
+		: [bound] extends [number] ? true
+		: ErrorMessage<writeExclusiveBoundRequiresBaseMessage<keyword>>
+	: exclusive extends number | boolean | undefined ? exclusive
+	: number | boolean
+
 export type validateRef<ref, root> =
 	ref extends LocalRef ?
 		resolveRef<ref, root> extends UnresolvedRef ?
@@ -398,7 +414,7 @@ export type UnsupportedKeyword =
 	| "unevaluatedItems"
 	| "unevaluatedProperties"
 
-/** a draft-04 boolean exclusive bound is unsupported */
+/** a draft-04 boolean exclusive bound applies to its sibling minimum/maximum */
 export type ExclusiveBoundKeyword = "exclusiveMinimum" | "exclusiveMaximum"
 
 export type BranchKeyword = "not" | "if" | "then" | "else"
@@ -829,3 +845,8 @@ export type writeUnsupportedKeywordMessage<keyword extends string> =
 
 export type NonNullableNullMessage =
 	"nullable can't be false beside a type that includes null"
+
+export type writeExclusiveBoundRequiresBaseMessage<
+	keyword extends ExclusiveBoundKeyword
+> =
+	`${keyword} can't be true without ${keyword extends "exclusiveMinimum" ? "minimum" : "maximum"}`

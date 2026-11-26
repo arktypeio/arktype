@@ -140,4 +140,42 @@ contextualize(() => {
 		const ConstObj = fromJsonSchema({ const: { a: 1 } })
 		attest(ConstObj.allows(Object.assign(() => {}, { a: 1 }))).equals(false)
 	})
+
+	it("round-trips Object.prototype keys in const, enum and required through toJsonSchema", () => {
+		const CtorConst = fromJsonSchema({ const: { constructor: 1 } })
+		const written = CtorConst.toJsonSchema()
+		attest(written).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { constructor: { type: "number", const: 1 } },
+			required: ["constructor"],
+			additionalProperties: false
+		})
+		const RoundTripped = fromJsonSchema(written)
+		attest(RoundTripped.equals(CtorConst)).equals(true)
+		attest(RoundTripped.allows({})).equals(false)
+		attest(RoundTripped.allows({ constructor: 1 })).equals(true)
+		attest(RoundTripped.allows({ constructor: Object })).equals(false)
+		attest(RoundTripped.allows({ constructor: 1, extra: 2 })).equals(false)
+
+		const oasWritten = CtorConst.toJsonSchema({ target: "openapi-3.0" })
+		attest(oasWritten).snap({
+			type: "object",
+			properties: { constructor: { type: "number", enum: [1] } },
+			required: ["constructor"],
+			additionalProperties: false
+		})
+		attest(fromJsonSchema(oasWritten).equals(CtorConst)).equals(true)
+
+		const EnumProto = fromJsonSchema({
+			enum: [{ constructor: 1 }, { toString: "x" }]
+		})
+		const enumWritten = EnumProto.toJsonSchema()
+		attest(fromJsonSchema(enumWritten).equals(EnumProto)).equals(true)
+
+		const protoPayload = JSON.parse('{"__proto__":{"a":1}}')
+		const ProtoConst = fromJsonSchema({ const: protoPayload })
+		const protoWritten = ProtoConst.toJsonSchema()
+		attest(fromJsonSchema(protoWritten).equals(ProtoConst)).equals(true)
+	})
 })

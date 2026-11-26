@@ -19,6 +19,7 @@ import {
 	hashOf,
 	hasOwn,
 	isArray,
+	isNonArray,
 	printable,
 	throwParseError,
 	WeakCache,
@@ -28,7 +29,7 @@ import {
 // installs the engine, which reduces nodes as they're parsed
 import "./engine.ts"
 import { intersectNodesRoot } from "./intersections.ts"
-import { isNonArray } from "./toJsonSchema.ts"
+import { ownKeyPredicates } from "./toJsonSchema.ts"
 
 interface ReadContext {
 	document: unknown
@@ -247,26 +248,27 @@ const resolveRef = (
 	pointer: string,
 	ctx: ReadContext
 ): RefTarget => {
+	const refPointer = `${pointer}/$ref`
 	if (ref === "#" || ref.startsWith("#/"))
-		return resolvePointer(ref, ref.slice(1), ctx.resource, ctx)
+		return resolvePointer(ref, ref.slice(1), ctx.resource, refPointer, ctx)
 	ctx.resourcesByUri ??= indexResources(ctx)
 	let uri: URL
 	try {
 		uri = new URL(ref, ctx.resource.uri)
 	} catch {
-		return throwParseError(writeUnresolvableRefMessage(ref))
+		return throwParseError(writeUnresolvableRefMessage(ref, refPointer))
 	}
 	const fragment = uri.hash.slice(1)
 	uri.hash = ""
 	const resource = ctx.resourcesByUri[uri.href]
 	if (!resource)
-		return throwParseError(writeUnsupportedRefMessage(ref, `${pointer}/$ref`))
+		return throwParseError(writeUnsupportedRefMessage(ref, refPointer))
 	if (fragment === "" || fragment[0] === "/")
-		return resolvePointer(ref, fragment, resource, ctx)
+		return resolvePointer(ref, fragment, resource, refPointer, ctx)
 	const anchored = ctx.resourcesByUri[`${uri.href}#${fragment}`]
 	return anchored ?
 			{ schema: anchored.schema, resource, fragment }
-		:	throwParseError(writeUnresolvableRefMessage(ref))
+		:	throwParseError(writeUnresolvableRefMessage(ref, refPointer))
 }
 
 // segments are percent-decoded, then unescaped (RFC 6901)
@@ -274,6 +276,7 @@ const resolvePointer = (
 	ref: string,
 	fragment: string,
 	from: Resource,
+	refPointer: string,
 	ctx: ReadContext
 ): RefTarget => {
 	let resource = from
@@ -286,23 +289,27 @@ const resolvePointer = (
 				if (id !== undefined)
 					resource = { schema: target, uri: resolveUri(id, resource.uri, ref) }
 			}
-			const key = decodePointerSegment(segment, ref)
+			const key = decodePointerSegment(segment, ref, refPointer)
 			return (
 					typeof target === "object" && target !== null && hasOwn(target, key)
 				) ?
 					(target as dict)[key]
-				:	throwParseError(writeUnresolvableRefMessage(ref))
+				:	throwParseError(writeUnresolvableRefMessage(ref, refPointer))
 		}, from.schema)
 	return { schema: target, resource, fragment }
 }
 
-const decodePointerSegment = (segment: string, ref: string): string => {
+const decodePointerSegment = (
+	segment: string,
+	ref: string,
+	refPointer: string
+): string => {
 	let decoded: string
 	try {
 		decoded = decodeURIComponent(segment)
 	} catch {
 		// a malformed escape like %ZZ names no key
-		return throwParseError(writeUnresolvableRefMessage(ref))
+		return throwParseError(writeUnresolvableRefMessage(ref, refPointer))
 	}
 	return decoded.replace(/~1/g, "/").replace(/~0/g, "~")
 }
@@ -448,16 +455,30 @@ const keywordReaders: KeywordReader[] = [
 	},
 	o => {
 		const constraints: RootSchema[] = []
-		if (o.minimum !== undefined) constraints.push({ min: o.minimum as number })
-		if (o.exclusiveMinimum !== undefined) {
+		if (o.minimum !== undefined) {
 			constraints.push({
-				min: { rule: o.exclusiveMinimum as number, exclusive: true }
+				min:
+					o.exclusiveMinimum === true ?
+						{ rule: o.minimum as number, exclusive: true }
+					:	(o.minimum as number)
 			})
 		}
-		if (o.maximum !== undefined) constraints.push({ max: o.maximum as number })
-		if (o.exclusiveMaximum !== undefined) {
+		if (typeof o.exclusiveMinimum === "number") {
 			constraints.push({
-				max: { rule: o.exclusiveMaximum as number, exclusive: true }
+				min: { rule: o.exclusiveMinimum, exclusive: true }
+			})
+		}
+		if (o.maximum !== undefined) {
+			constraints.push({
+				max:
+					o.exclusiveMaximum === true ?
+						{ rule: o.maximum as number, exclusive: true }
+					:	(o.maximum as number)
+			})
+		}
+		if (typeof o.exclusiveMaximum === "number") {
+			constraints.push({
+				max: { rule: o.exclusiveMaximum, exclusive: true }
 			})
 		}
 		if (o.multipleOf !== undefined) {
@@ -470,7 +491,8 @@ const keywordReaders: KeywordReader[] = [
 							opaque(
 								["multipleOf", divisor],
 								`a multiple of ${divisor}`,
-								isDecimalMultipleOf(divisor)
+								isDecimalMultipleOf(divisor),
+								"`multipleOf` keyword"
 							)
 						]
 					}
@@ -522,7 +544,8 @@ const keywordReaders: KeywordReader[] = [
 			:	opaqueRoot(
 					["oneOf", idsOf(branches)],
 					`exactly one of ${branches.map(expectedOf).join(", ")}`,
-					data => branches.filter(branch => branch.allows(data)).length === 1
+					data => branches.filter(branch => branch.allows(data)).length === 1,
+					"`oneOf` keyword"
 				)
 	},
 	(o, pointer, ctx) => {
@@ -535,7 +558,8 @@ const keywordReaders: KeywordReader[] = [
 		return opaqueRoot(
 			["not", negated.id],
 			`other than ${expectedOf(negated)}`,
-			data => !negated.allows(data)
+			data => !negated.allows(data),
+			"`not` keyword"
 		)
 	},
 	(o, pointer, ctx) => {
@@ -549,13 +573,19 @@ const keywordReaders: KeywordReader[] = [
 				read(o.else ?? true, `${pointer}/else`, ctx)
 			]
 		)
+		const ifFeature =
+			o.then !== undefined && o.else !== undefined ?
+				"`if`/`then`/`else` keyword"
+			: o.then !== undefined ? "`if`/`then` keyword"
+			: "`if`/`else` keyword"
 		return opaqueRoot(
 			["if", idsOf([condition, consequent, alternative])],
 			`${expectedOf(consequent)} if ${expectedOf(condition)}, else ${expectedOf(alternative)}`,
 			data =>
 				condition.allows(data) ?
 					consequent.allows(data)
-				:	alternative.allows(data)
+				:	alternative.allows(data),
+			ifFeature
 		)
 	}
 ]
@@ -566,6 +596,19 @@ const readArray = (
 	ctx: ReadContext
 ): RootSchema[] => {
 	const constraints: RootSchema[] = []
+	if (
+		o.prefixItems !== undefined &&
+		isArray(o.items) &&
+		!ctx.dialectBefore2019
+	) {
+		return throwParseError(
+			writeInvalidKeywordMessage(
+				`${pointer}/items`,
+				"a schema beside prefixItems",
+				o.items
+			)
+		)
+	}
 	// draft-07 lists a tuple's elements as items, followed by additionalItems
 	const elementsKey = isArray(o.items) ? "items" : "prefixItems"
 	const restKey = elementsKey === "items" ? "additionalItems" : "items"
@@ -590,7 +633,12 @@ const readArray = (
 	if (o.uniqueItems === true) {
 		constraints.push({
 			predicate: [
-				opaque(["uniqueItems"], "an array of unique items", hasUniqueItems)
+				opaque(
+					["uniqueItems"],
+					"an array of unique items",
+					hasUniqueItems,
+					"`uniqueItems` keyword"
+				)
 			]
 		})
 	}
@@ -614,7 +662,8 @@ const readArray = (
 					(data: array) => {
 						const count = data.filter(item => contained.allows(item)).length
 						return count >= min && count <= max
-					}
+					},
+					"`contains` keyword"
 				)
 			]
 		})
@@ -707,7 +756,8 @@ const readObject = (
 					(data: dict) =>
 						Object.keys(data).every(
 							k => isDeclared(k) || additional.allows(data[k])
-						)
+						),
+					"`additionalProperties` keyword"
 				)
 			)
 		}
@@ -741,7 +791,8 @@ const readKeyPredicates = (
 				opaque(
 					["propertyNames", names.id],
 					`an object whose keys are ${expectedOf(names)}`,
-					(data: dict) => Object.keys(data).every(k => names.allows(k))
+					(data: dict) => Object.keys(data).every(k => names.allows(k)),
+					"`propertyNames` keyword"
 				)
 			)
 		}
@@ -749,6 +800,11 @@ const readKeyPredicates = (
 	const min = (o.minProperties ?? 0) as number
 	const max = (o.maxProperties ?? Number.POSITIVE_INFINITY) as number
 	if (min !== 0 || max !== Number.POSITIVE_INFINITY) {
+		const countFeature =
+			min !== 0 && max !== Number.POSITIVE_INFINITY ?
+				"`minProperties`/`maxProperties` keyword"
+			: min !== 0 ? "`minProperties` keyword"
+			: "`maxProperties` keyword"
 		predicates.push(
 			opaque(
 				["properties", min, max],
@@ -756,7 +812,8 @@ const readKeyPredicates = (
 				(data: dict) => {
 					const count = Object.keys(data).length
 					return count >= min && count <= max
-				}
+				},
+				countFeature
 			)
 		)
 	}
@@ -776,7 +833,8 @@ const readKeyPredicates = (
 						`an object with ${dependency.join(", ")} if it has ${key}`,
 						(data: dict) =>
 							!hasOwn(data, key) ||
-							dependency.every(k => hasOwn(data, k as string))
+							dependency.every(k => hasOwn(data, k as string)),
+						`\`${keyword}\` keyword`
 					)
 				)
 			} else {
@@ -788,7 +846,8 @@ const readKeyPredicates = (
 					opaque(
 						["dependentSchemas", key, dependent.id],
 						`${expectedOf(dependent)} if it has ${key}`,
-						(data: dict) => !hasOwn(data, key) || dependent.allows(data)
+						(data: dict) => !hasOwn(data, key) || dependent.allows(data),
+						`\`${keyword}\` keyword`
 					)
 				)
 			}
@@ -896,11 +955,14 @@ const addPrototypeKeyConstraint = (
 		value
 	})
 	if (isRequired) {
-		target.predicate.push(
-			opaque(["ownKey", key], `an object with its own ${key}`, (data: dict) =>
-				hasOwn(data, key)
-			)
+		const pred = opaque(
+			["ownKey", key],
+			`an object with its own ${key}`,
+			(data: dict) => hasOwn(data, key),
+			`\`Object.prototype\` key \`${key}\``
 		)
+		ownKeyPredicates.set(pred.predicate, key)
+		target.predicate.push(pred)
 	}
 }
 
@@ -1006,15 +1068,24 @@ const constRoot = (
 // one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
 
+// human-readable JSON Schema feature for each opaque predicate, for AOT diagnostics
+export const jsonSchemaPredicateKeywords = /* @__PURE__ */ new WeakMap<
+	Function,
+	string
+>()
+
 const opaque = (
 	key: unknown[],
 	description: string,
-	predicate: Predicate<any>
-): NodeSchema<"predicate"> => {
+	predicate: Predicate<any>,
+	feature = `\`${String(key[0])}\` keyword`
+): { predicate: Predicate<any>; meta: { description: string } } => {
 	const cacheKey = JSON.stringify(key)
+	const existing = predicatesByKey.get(cacheKey)
+	if (existing) return { predicate: existing, meta: { description } }
+	jsonSchemaPredicateKeywords.set(predicate, feature)
 	return {
-		predicate:
-			predicatesByKey.get(cacheKey) ?? predicatesByKey.set(cacheKey, predicate),
+		predicate: predicatesByKey.set(cacheKey, predicate),
 		meta: { description }
 	}
 }
@@ -1022,9 +1093,10 @@ const opaque = (
 const opaqueRoot = (
 	key: unknown[],
 	description: string,
-	predicate: Predicate
+	predicate: Predicate,
+	feature?: string
 ): BaseRoot =>
-	jsonSchemaRoot({ predicate: [opaque(key, description, predicate)] })
+	jsonSchemaRoot({ predicate: [opaque(key, description, predicate, feature)] })
 
 const idsOf = (roots: readonly BaseRoot[]) => roots.map(root => root.id)
 
@@ -1299,6 +1371,10 @@ const typeNames: readonly unknown[] = [
 
 const keywordValues = {
 	number: ["a number", isNumber],
+	exclusiveBound: [
+		"a number or a boolean",
+		v => isNumber(v) || typeof v === "boolean"
+	],
 	divisor: ["a positive number", v => isNumber(v) && v > 0],
 	count: [
 		"a non-negative integer",
@@ -1344,13 +1420,17 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	type: "type",
 	enum: "array",
 	minimum: "number",
-	exclusiveMinimum: "number",
+	exclusiveMinimum: "exclusiveBound",
 	maximum: "number",
-	exclusiveMaximum: "number",
+	exclusiveMaximum: "exclusiveBound",
 	multipleOf: "divisor",
 	minLength: "count",
 	maxLength: "count",
 	pattern: "pattern",
+	title: "string",
+	description: "string",
+	deprecated: "boolean",
+	examples: "array",
 	format: "string",
 	prefixItems: "schemas",
 	items: "items",
@@ -1399,6 +1479,7 @@ const checkKeyword = (
 	pointer: string,
 	ctx: ReadContext
 ): void => {
+	if (o[k] === undefined) return
 	if (unsupportedKeywords.includes(k) && !ctx.dialectBefore2019)
 		throwParseError(writeUnsupportedKeywordMessage(`${pointer}/${k}`))
 	if (!hasOwn(keywordValueKinds, k)) return
@@ -1409,6 +1490,23 @@ const checkKeyword = (
 		)
 	}
 	if (k === "nullable") checkNullable(o, pointer)
+	else if (
+		k === "exclusiveMinimum" &&
+		o[k] === true &&
+		o.minimum === undefined
+	) {
+		throwParseError(
+			writeExclusiveBoundRequiresBaseMessage(`${pointer}/${k}`, "minimum")
+		)
+	} else if (
+		k === "exclusiveMaximum" &&
+		o[k] === true &&
+		o.maximum === undefined
+	) {
+		throwParseError(
+			writeExclusiveBoundRequiresBaseMessage(`${pointer}/${k}`, "maximum")
+		)
+	}
 }
 
 // reject the contradiction of nullable: false beside a type that includes null
@@ -1452,11 +1550,18 @@ export const writeUnsupportedRefMessage = (
 ): string =>
 	`${pointer} must reference a schema in its own document (was ${ref})`
 
-export const writeUnresolvableRefMessage = (ref: string): string =>
-	`$ref ${ref} doesn't resolve to a schema in its document`
+export const writeUnresolvableRefMessage = (
+	ref: string,
+	pointer: string
+): string => `${pointer} (${ref}) doesn't resolve to a schema in its document`
 
 export const writeNonNullableNullMessage = (pointer: string): string =>
 	`${pointer} can't be false beside a type that includes null`
+
+export const writeExclusiveBoundRequiresBaseMessage = (
+	pointer: string,
+	base: "minimum" | "maximum"
+): string => `${pointer} can't be true without ${base}`
 
 export const writeShallowCycleMessage = (
 	ref: string,

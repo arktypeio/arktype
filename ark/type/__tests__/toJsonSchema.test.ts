@@ -159,6 +159,74 @@ contextualize(() => {
 		})
 	})
 
+	it("promoted Object.prototype key alongside string and constrained indexes", () => {
+		// Blocker 1: OpenAPI 3.0 must not leak patternProperties when [string] narrows a promoted proto key
+		const T = type({ "[string]": "'a'", "[/^toString$/]": "string" })
+		attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws
+			.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
+{
+    code: "indexKey",
+    base: {
+        type: "object",
+        properties: {
+            toString: {
+                type: "string"
+            }
+        }
+    },
+    key: {
+        type: "string"
+    },
+    value: {
+        type: "string",
+        enum: [
+            "a"
+        ]
+    }
+}`)
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { toString: { type: "string" } },
+			patternProperties: { "": { type: "string", const: "a" } }
+		})
+		// compatible string index promotes cleanly to additionalProperties even in OpenAPI 3.0
+		const Compatible = type({ "[string]": "string", "[/^toString$/]": "'a'" })
+		attest(Compatible.toJsonSchema({ target: "openapi-3.0" })).snap({
+			type: "object",
+			properties: { toString: { type: "string", enum: ["a"] } },
+			additionalProperties: { type: "string" }
+		})
+
+		// Blocker 2 (false rejection): proto key "toString" does not match string >= 20
+		const DisjointKey = type({
+			"[/^toString$/]": "number",
+			"[string >= 20]": "string",
+			"+": "reject"
+		})
+		attest(DisjointKey.allows({ toString: 1 })).equals(true)
+		attest(() => DisjointKey.toJsonSchema()).throws(
+			'ToJsonSchemaError: Can\'t convert "indexKey" to JSON Schema'
+		)
+
+		// Blocker 2 (false acceptance): proto key matches string >= 1, so index value must also apply to it
+		const NarrowedProto = type({
+			"[/^toString$/]": "number",
+			"[string >= 1]": "string",
+			"+": "reject"
+		})
+		attest(NarrowedProto.allows({ toString: 1 })).equals(false)
+		attest(NarrowedProto.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { toString: { type: "number" } },
+			propertyNames: { type: "string", minLength: 1 },
+			patternProperties: { "": { type: "string" } }
+		})
+		const RoundTripped = fromJsonSchema(NarrowedProto.toJsonSchema())
+		attest(RoundTripped.allows({ toString: 1 })).equals(false)
+		attest(RoundTripped.allows({ a: "x" })).equals(true)
+		attest(RoundTripped.allows({ "": "x" })).equals(false)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1612
 	it("refs to a structure in a union", () => {
 		const Thing = type({ a: "string" }).or("null")

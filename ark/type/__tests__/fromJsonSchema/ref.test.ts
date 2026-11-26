@@ -175,13 +175,23 @@ contextualize(() => {
 			// @ts-expect-error
 			fromJsonSchema({ $ref: "#/$defs/missing", $defs: {} })
 		).throws.snap(
-			"ParseError: $ref #/$defs/missing doesn't resolve to a schema in its document"
+			"ParseError: #/$ref (#/$defs/missing) doesn't resolve to a schema in its document"
+		)
+		attest(() =>
+			fromJsonSchema({
+				type: "object",
+				// @ts-expect-error
+				properties: { user: { $ref: "#/$defs/missing" } },
+				$defs: {}
+			})
+		).throws.snap(
+			"ParseError: #/properties/user/$ref (#/$defs/missing) doesn't resolve to a schema in its document"
 		)
 		attest(() => fromJsonSchema({ $ref: "#missing" })).throws.snap(
-			"ParseError: $ref #missing doesn't resolve to a schema in its document"
+			"ParseError: #/$ref (#missing) doesn't resolve to a schema in its document"
 		)
 		attest(() => fromJsonSchema({ $ref: "http://[" })).throws.snap(
-			"ParseError: $ref http://[ doesn't resolve to a schema in its document"
+			"ParseError: #/$ref (http://[) doesn't resolve to a schema in its document"
 		)
 	})
 
@@ -197,7 +207,7 @@ contextualize(() => {
 			} as never).expression
 		).snap("string")
 		attest(() => fromJsonSchema({ $ref: "#/%ZZ" } as never)).throws.snap(
-			"ParseError: $ref #/%ZZ doesn't resolve to a schema in its document"
+			"ParseError: #/$ref (#/%ZZ) doesn't resolve to a schema in its document"
 		)
 	})
 
