@@ -1105,6 +1105,35 @@ contextualize(() => {
 			)
 		})
 
+		it("a default isn't checked against what no data reaches with it", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				// no data holds both a `c` of 1 and one of "a"
+				const L = $.type({ c: "1", b: "false = false" })
+				const R = $.type({ c: "'a' = 'a'", "b?": "0" })
+				// whichever is intersected first, though only R's keys meet `b` before `c`
+				attest(L.or("0").and(R.or("0")).expression).equals("0")
+				attest(R.or("0").and(L.or("0")).expression).equals("0")
+				attest(() => L.and(R)).throws(
+					'ParseError: Intersection at c of 1 and "a" results in an unsatisfiable type'
+				)
+				attest(() => R.and(L)).throws(
+					'ParseError: Intersection at c of "a" and 1 results in an unsatisfiable type'
+				)
+				// nor are two defaults that differ
+				const One = $.type({ z: "1", b: "number = 1" })
+				const Two = $.type({ "z?": "2", b: "number = 2" })
+				attest(One.or("0").and(Two.or("0")).expression).equals("0")
+				attest(Two.or("0").and(One.or("0")).expression).equals("0")
+
+				// data without `c` reaches both of these, so `b` can't default
+				const Open = $.type({ "c?": "1", b: "false = false" })
+				attest(() =>
+					Open.or("0").and($.type({ "c?": "'a'", "b?": "0" }))
+				).throws("ParseError: Default for b must be never")
+			}
+		})
+
 		it("an index signature checks the default of a key it matches", () => {
 			for (const jitless of [false, true]) {
 				const $ = scope({}, { jitless })

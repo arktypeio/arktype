@@ -4,6 +4,7 @@ import {
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
+	reachesDefault,
 	rootKinds,
 	uncheckedDiscards,
 	type BaseNode,
@@ -119,15 +120,18 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 	}) as never
 
 // no data reaches both of two Types whose inputs are disjoint, so they are
-// disjoint whatever morphs they hold. Morphs must be the same only for data
-// reaching both, but are compared wherever two meet, which can be at a key
-// intersected before the one the inputs are disjoint at
+// disjoint whatever morphs or defaults they hold. Morphs must be the same,
+// and a default one that what it meets allows, only for data reaching both,
+// but are compared wherever two meet, which can be at a key intersected
+// before the one the inputs are disjoint at
 const disjointInputsOf = (
 	l: BaseNode,
 	r: BaseNode,
 	ctx: IntersectionContext
 ): Disjoint | undefined => {
-	if (!l.hasMorph || !r.hasMorph || !l.isRoot() || !r.isRoot()) return
+	if (!l.isRoot() || !r.isRoot()) return
+	if (!(l.hasMorph && r.hasMorph) && !reachesDefault(l) && !reachesDefault(r))
+		return
 	const lIn = l._in
 	const rIn = r._in
 	if (lIn === l && rIn === r) return
