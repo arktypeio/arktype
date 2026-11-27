@@ -56,8 +56,23 @@ export const dropsReportKeys: WeakMap<Function, DroppedReportKeys> =
 
 export const functionNameOf = (fn: Function): string => fn.name
 
-export const constructorNameOf = (o: object): string | undefined =>
-	(o.constructor as Function | undefined)?.name
+export const constructorNameOf = (
+	o: object,
+	opts?: SerializationOptions
+): string | undefined => {
+	if (opts?.onAccessor) {
+		if (typeof o === "function")
+			return (o.constructor as Function | undefined)?.name
+		const proto = Object.getPrototypeOf(o)
+		if (proto === Object.prototype) return "Object"
+		if (proto === Array.prototype) return "Array"
+		if (proto === null) return undefined
+		const ownDesc = Object.getOwnPropertyDescriptor(o, "constructor")
+		if (ownDesc && !("value" in ownDesc))
+			return (proto.constructor as Function | undefined)?.name
+	}
+	return (o.constructor as Function | undefined)?.name
+}
 
 export const expressionOf = (o: object): string | undefined =>
 	"expression" in o && typeof o.expression === "string" ?

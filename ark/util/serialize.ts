@@ -73,25 +73,13 @@ export type PrintableOptions = {
 export const print = (data: unknown, opts?: PrintableOptions): void =>
 	console.log(printable(data, opts))
 
-const safeCtorNameOf = (o: object, opts?: SerializationOptions): string => {
-	if (opts?.onAccessor) {
-		const proto = Object.getPrototypeOf(o)
-		if (proto === Object.prototype || proto === null) return "Object"
-		if (isArray(o)) return "Array"
-		const ownDesc = Object.getOwnPropertyDescriptor(o, "constructor")
-		if (ownDesc && !("value" in ownDesc))
-			return constructorNameOf(proto) ?? "Object"
-	}
-	return constructorNameOf(o) ?? "Object"
-}
-
 export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":
 			const o = data as dict
 			const serializationOpts =
 				opts?.ownDataOnly ? ownDataPrintableOpts : printableOpts
-			const ctorName = safeCtorNameOf(o, serializationOpts)
+			const ctorName = constructorNameOf(o, serializationOpts) ?? "Object"
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
@@ -144,7 +132,7 @@ const stringifyUnquoted = (
 		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
 	}
 
-	const ctorName = safeCtorNameOf(value, opts)
+	const ctorName = constructorNameOf(value, opts) ?? "Object"
 
 	if (ctorName === "Object") {
 		const keyValues = ownEntriesOf(value, opts).map(([key, val]) => {
