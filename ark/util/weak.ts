@@ -24,6 +24,10 @@ export class WeakCache<v extends object> {
 		return value
 	}
 
+	delete(key: string): void {
+		this.refs.delete(key)
+	}
+
 	pin(key: string, value: v): v {
 		this.refs.set(key, { deref: () => value })
 		return value

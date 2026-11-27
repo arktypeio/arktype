@@ -213,6 +213,20 @@ contextualize(() => {
 				.type.errors("Default value true must be assignable to number")
 		})
 
+		it("unassignable default of an aliased type throws each time it's written", () => {
+			// object.json references an alias, so its default is checked once
+			// the definition resolves rather than as its node is created
+			for (let i = 0; i < 2; i++) {
+				attest(() =>
+					// @ts-expect-error
+					type({ a: "object.json = 5" })
+				).throws.snap("ParseError: Default for a must be an object")
+				attest(() => type([["object.json", "=", 5 as never]])).throws.snap(
+					"ParseError: Default must be an object"
+				)
+			}
+		})
+
 		it("unassignable default ignores onFail", () => {
 			for (const onFail of [(errors: type.errors) => errors.throw(), () => 5]) {
 				attest(() =>
