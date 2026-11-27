@@ -221,7 +221,10 @@ type distillArrayFromPrefix<
 		distillArrayFromPrefix<
 			tail,
 			side,
-			[side, head] extends ["in", Default] ? [...prefix, _distill<head, side>?]
+			// a default makes an element optional in its input, as it does a key,
+			// including a morph's
+			[side, isInferredDefault<head>] extends ["in", true] ?
+				[...prefix, _distill<head, side>?]
 			:	[...prefix, _distill<head, side>]
 		>
 	:	[...prefix, ...distillArrayFromPostfix<t, side, []>]

@@ -98,6 +98,15 @@ contextualize(() => {
 		attest(T.in.expression).snap("[number?]")
 	})
 
+	it("morph's input extracted as optional", () => {
+		const T = type(["string.trim = ''"])
+		attest<[string?]>(T.inferIn)
+		attest(T.in.expression).snap("[string?]")
+		attest(T([])).equals([""])
+		// as for a key
+		attest<{ a?: string }>(type({ a: "string.trim = ''" }).inferIn)
+	})
+
 	it("output extracted as required", () => {
 		const T = type(["number = 5"])
 		attest<[number]>(T.out.t)
