@@ -451,9 +451,9 @@ type _inferIntersection<l, r, piped extends boolean> =
 			:	// a commutative intersection between two morphs is a ParseError
 				never
 		: piped extends true ? (In: lIn) => To<r>
-		: (In: _inferIntersection<lIn, r, false>) => lOut
+		: morphFrom<_inferIntersection<lIn, r, false>, lOut>
 	: r extends InferredMorph<infer rIn, infer rOut> ?
-		(In: _inferIntersection<rIn, l, false>) => rOut
+		morphFrom<_inferIntersection<rIn, l, false>, rOut>
 	: // brand what the base intersects to, as distill.In reads the base back
 	l extends { readonly [brand]: [infer base, infer id] } ?
 		Brand<_inferIntersection<base, r, piped>, id>
@@ -465,6 +465,10 @@ type _inferIntersection<l, r, piped extends boolean> =
 			result
 		:	never
 	:	l & r
+
+// a morph whose input intersects to never can't be reached, so it's dropped
+// from a union as runtime drops it
+type morphFrom<i, o> = [i] extends [never] ? never : (In: i) => o
 
 interface MorphableIntersection<piped extends boolean>
 	extends Hkt<[unknown, unknown]> {

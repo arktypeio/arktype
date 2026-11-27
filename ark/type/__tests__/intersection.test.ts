@@ -133,6 +133,16 @@ contextualize(() => {
 		)
 	})
 
+	it("morph branch whose input intersects to never", () => {
+		// dropped, as a disjoint branch is at runtime
+		const T = type("(boolean | string.trim) & false")
+		attest<false>(T.t)
+		attest(T.expression).snap("false")
+		// one whose input does intersect is still a morph
+		const U = type("(boolean | string.trim) & 'a'")
+		attest(U.t).type.toString.snap('(In: "a") => To<string>')
+	})
+
 	it("left semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
