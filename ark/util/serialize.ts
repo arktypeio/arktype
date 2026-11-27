@@ -73,23 +73,35 @@ export type PrintableOptions = {
 export const print = (data: unknown, opts?: PrintableOptions): void =>
 	console.log(printable(data, opts))
 
+const safeCtorNameOf = (o: object, opts?: SerializationOptions): string => {
+	if (opts?.onAccessor) {
+		const proto = Object.getPrototypeOf(o)
+		if (proto === Object.prototype || proto === null) return "Object"
+		if (isArray(o)) return "Array"
+		const ownDesc = Object.getOwnPropertyDescriptor(o, "constructor")
+		if (ownDesc && !("value" in ownDesc))
+			return constructorNameOf(proto) ?? "Object"
+	}
+	return constructorNameOf(o) ?? "Object"
+}
+
 export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":
 			const o = data as dict
-			const ctorName = constructorNameOf(o) ?? "Object"
 			const serializationOpts =
 				opts?.ownDataOnly ? ownDataPrintableOpts : printableOpts
+			const ctorName = safeCtorNameOf(o, serializationOpts)
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
-						stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
+						stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts, [])
 					:	JSON.stringify(
 							_serialize(o, serializationOpts, []),
 							null,
 							opts?.indent
 						).replace(quotedMarkedValue, "$1")
-				:	stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
+				:	stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts, [])
 			)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
@@ -111,24 +123,28 @@ const stringifyUnquoted = (
 	value: unknown,
 	indent: number,
 	currentIndent: string,
-	opts: SerializationOptions
+	opts: SerializationOptions,
+	seen: unknown[]
 ): string => {
 	if (typeof value === "function") return printableOpts.onFunction(value)
 	if (typeof value === "symbol") return printableOpts.onSymbol(value)
 	if (typeof value !== "object" || value === null)
 		return serializePrimitive(value as never)
+	if (seen.includes(value))
+		return (opts.onCycle ?? printableOpts.onCycle)(value)
 
 	const nextIndent = currentIndent + " ".repeat(indent)
+	const nextSeen = [...seen, value]
 
 	if (isArray(value)) {
 		if (value.length === 0) return "[]"
 		const items = value
-			.map(item => stringifyUnquoted(item, indent, nextIndent, opts))
-			.join(",\n" + nextIndent)
+			.map(item => stringifyUnquoted(item, indent, nextIndent, opts, nextSeen))
+			.join(indent ? ",\n" + nextIndent : ", ")
 		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
 	}
 
-	const ctorName = constructorNameOf(value) ?? "Object"
+	const ctorName = safeCtorNameOf(value, opts)
 
 	if (ctorName === "Object") {
 		const keyValues = ownEntriesOf(value, opts).map(([key, val]) => {
@@ -136,7 +152,13 @@ const stringifyUnquoted = (
 				typeof key === "symbol" ? printableOpts.onSymbol(key)
 				: isDotAccessible(key) ? key
 				: JSON.stringify(key)
-			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent, opts)
+			const stringifiedValue = stringifyUnquoted(
+				val,
+				indent,
+				nextIndent,
+				opts,
+				nextSeen
+			)
 			return `${nextIndent}${stringifiedKey}: ${stringifiedValue}`
 		})
 

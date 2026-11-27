@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { flatMorph } from "@ark/util"
+import { flatMorph, hasOwn } from "@ark/util"
 
 contextualize(() => {
 	it("object", () => {
@@ -94,5 +94,21 @@ contextualize(() => {
 			bools: boolean[]
 			nums: (0 | 1)[]
 		}>(result).snap({ bools: [true, false], nums: [0, 1] })
+	})
+
+	it("handles __proto__ keys and Object.prototype group names safely", () => {
+		const src = JSON.parse(
+			'{"__proto__": {"isAdmin": true}, "a": 1}'
+		) as Record<string, unknown>
+		const mapped = flatMorph(src, (k, v) => [k, v]) as Record<string, unknown>
+		attest(hasOwn(mapped, "__proto__")).equals(true)
+		attest(mapped.isAdmin).equals(undefined)
+
+		const grouped = flatMorph({ x: 1, y: 2 }, (_k, v) => [
+			{ group: "toString" },
+			v
+		]) as Record<string, unknown>
+		attest(hasOwn(grouped, "toString")).equals(true)
+		attest(grouped["toString"] as unknown).equals([1, 2])
 	})
 })
