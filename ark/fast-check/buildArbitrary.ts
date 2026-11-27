@@ -1,3 +1,4 @@
+import { keywords } from "arktype"
 import type { NodeKind, nodeOfKind } from "arktype/schema"
 import {
 	defineValue,
@@ -87,9 +88,10 @@ export const buildArbitrary = (
 			if (
 				node.meta.keyword === "string.json.parse" ||
 				(!node.declaredIn &&
-					node.morphs.some(
-						m => typeof m === "function" && m.name === "parseJson"
-					))
+					node.head?.is("domain") &&
+					node.head.domain === "string" &&
+					node.morphs[1] ===
+						keywords.string.json.parse.internal.assertIs("morph").morphs[1])
 			)
 				return fc.json()
 			const input = node.declaredIn ?? node.head
@@ -237,7 +239,7 @@ const indexedValueOf = (
 	prop: nodeOfKind<"required" | "optional">
 ): nodeOfKind<NodeKind> => {
 	const matching = node.index?.filter(index => index.signature.allows(prop.key))
-	if (!matching?.length) return prop
+	if (!matching?.length) return prop.value as never
 	return matching.reduce(
 		(value, index) => value.intersect(index.value).toNeverIfDisjoint(),
 		prop.value

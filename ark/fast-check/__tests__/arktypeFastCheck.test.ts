@@ -743,6 +743,19 @@ contextualize(() => {
 
 			const PipedDate = type("string.date.parse").pipe(d => d.getTime())
 			assertProperty(arkToArbitrary(PipedDate), PipedDate)
+
+			const UserNamedParseJson = type("number").pipe(function parseJson(n) {
+				return n
+			})
+			assertProperty(arkToArbitrary(UserNamedParseJson), UserNamedParseJson)
+
+			const OptNever = type({ "a?": "never", b: "string" })
+			assertProperty(arkToArbitrary(OptNever), OptNever)
+
+			const UrlCaseInsensitive = type("string.url").and(
+				new RegExp("^HTTP:", "i")
+			)
+			assertProperty(arkToArbitrary(UrlCaseInsensitive), UrlCaseInsensitive)
 		})
 	})
 })

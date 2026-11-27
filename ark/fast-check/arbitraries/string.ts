@@ -37,8 +37,11 @@ export const buildStringArbitrary = (
 	const stringConstraints = getFastCheckStringConstraints(node.preStruct)
 	const keywordArbitrary = getKeywordStringArbitrary(node)
 	if (keywordArbitrary) {
-		const { minLength, maxLength, pattern, flags } = stringConstraints
-		const regex = pattern !== undefined ? new RegExp(pattern, flags) : undefined
+		const { minLength, maxLength, pattern, flags, originalRegex } =
+			stringConstraints
+		const regex =
+			originalRegex ??
+			(pattern !== undefined ? new RegExp(pattern, flags) : undefined)
 		return (
 				minLength !== undefined ||
 					maxLength !== undefined ||
