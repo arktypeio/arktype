@@ -591,7 +591,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 			// those of cold.ts: as each module wrote them where one function
 			// declares hot.ts's too, and as that function does where it doesn't
 			attest(await timesOf({ schemas: { "hot.ts": "fastest" } })).snap("1.6")
-			attest(await timesOf({ schemas: { "hot.ts": "smallest" } })).snap("1.3")
+			attest(await timesOf({ schemas: { "hot.ts": "smallest" } })).snap("1.2")
 			attest(
 				await timesOf({
 					schemas: { "hot.ts": "fastest", "cold.ts": "smallest" }

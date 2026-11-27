@@ -2056,7 +2056,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		}
 
 		it("sizes them where they're compiled for speed with optimize unset", async () => {
-			attest(await timesFrom({})).snap("1.3")
+			attest(await timesFrom({})).snap("1.2")
 		})
 
 		it("doesn't under the smallest preset, which writes them as checkers", async () => {

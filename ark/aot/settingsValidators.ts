@@ -75,12 +75,12 @@ var ReadIssues = class {
 	/** @internal */
 	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const stops =
+		const stops2 =
 			missing.length && !(key in data) ?
 				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
-		return stops
+		return stops2
 	}
 }
 var UnreadIssues = class {
@@ -111,12 +111,12 @@ var UnreadIssues = class {
 	}
 	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const stops =
+		const stops2 =
 			missing.length && !(key in data) ?
 				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
-		return stops
+		return stops2
 	}
 }
 var failsSite = (ctx, context, data) =>
@@ -161,12 +161,12 @@ var Issues =
 				}
 				_k(apply, data, key, ...missing) {
 					this._p.push(key)
-					const stops =
+					const stops2 =
 						missing.length && !(key in data) ?
 							this._e(data, "required", ...missing)
 						:	!apply(data[key], this)
 					this._p.pop()
-					return stops
+					return stops2
 				}
 				get summary() {
 					let summary = ""
@@ -213,12 +213,12 @@ var Issues =
 				}
 				_k(apply, data, key, ...missing) {
 					this._p.push(key)
-					const stops =
+					const stops2 =
 						missing.length && !(key in data) ?
 							this._e(data, "required", ...missing)
 						:	!apply(data[key], this)
 					this._p.pop()
-					return stops
+					return stops2
 				}
 				get summary() {
 					let summary = ""
@@ -386,29 +386,36 @@ var TransformErrors = class _TransformErrors {
 		return gathered
 	}
 }
-var writtenInPlace
+var copiedInPlace
+var deletableKeysOf = data => [
+	...Object.keys(data),
+	...Object.getOwnPropertySymbols(data)
+]
 var copyOf = data => {
 	if (isArray(data)) {
-		const copy = Array.prototype.slice.call(data)
+		const copy2 = Array.prototype.slice.call(data)
 		const keys = Object.keys(data)
 		return (
-				keys.length !== copy.length ||
-					keys[copy.length - 1] !== `${copy.length - 1}` ||
+				keys.length !== copy2.length ||
+					keys[copy2.length - 1] !== `${copy2.length - 1}` ||
 					Object.getOwnPropertySymbols(data).length
 			) ?
 				Object.defineProperties(
-					copy,
+					copy2,
 					Object.getOwnPropertyDescriptors({ ...data })
 				)
-			:	copy
+			:	copy2
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
+	if (copiedInPlace?.has(data)) return data
 	if (Object.prototype.toString.call(data) === "[object Object]")
 		return Object.setPrototypeOf({ ...data }, prototype)
-	if (writtenInPlace && !writtenInPlace.has(data))
-		writtenInPlace.set(data, Object.getOwnPropertyDescriptors(data))
-	return data
+	if (!copiedInPlace) return data
+	const copy = /* @__PURE__ */ Object.create(null)
+	for (const k of deletableKeysOf(data)) copy[k] = data[k]
+	copiedInPlace.set(copy, data)
+	return copy
 }
 
 // ark/schema/shared/traversal.ts
@@ -416,6 +423,10 @@ var errorsOf = ctx => (ctx._errors ??= ctx.createErrors())
 var receive = (ctx, data) => {
 	ctx.recv = data
 	ctx.recvAt = ctx.path.length
+}
+var transformsValid = ctx => ctx.branches.length === 0 && !ctx.chkOnly
+var transformedInApply = (ctx, result) => {
+	if (result instanceof TransformErrors) addMorphErrs(ctx, result)
 }
 var callContext
 var inContext = (context, run) => {
@@ -477,6 +488,10 @@ var arrayPathKeyOf = k =>
 	:	k
 
 // ark/type/checkers.ts
+var transformedBy = ({ t }, data, ctx) =>
+	!t ? data
+	: t.c ? t(data, ctx)
+	: t(data)
 var holdingMorphs = (t, held) => {
 	for (const checker of held) {
 		t.e ??= checker.t?.e
@@ -808,7 +823,20 @@ var freed = values => {
 }
 var readingValues = (t, held, withCtx) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	if (held.some(({ w }) => w)) t.e = applyMorphAt
 	return holdingMorphs(t, held)
+}
+var applyMorphAt = (ctx, checker, value, k) => {
+	ctx.path.push(k)
+	const passes =
+		(
+			transformsValid(ctx) &&
+			(checker.a ? checker.a(value, ctx) : checker(value))
+		) ?
+			(transformedInApply(ctx, transformedBy(checker, value, ctx)), true)
+		:	checker(value, ctx)
+	ctx.path.pop()
+	return !passes
 }
 var units = (
 	values,
