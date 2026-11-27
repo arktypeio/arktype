@@ -1070,4 +1070,10 @@ b.c.c must be an object (was missing)`)
 		attest(sEsc.mSlashBeforeQuote("a\\")).equals("a\\")
 		attest(sEsc.mSlashBeforeQuote({ text: "w" })).equals("w")
 	})
+
+	it("does not leak Object.prototype members from selective export or import", () => {
+		const $ = scope({ a: "string" })
+		attest(($.export as any)("toString").toString).equals(undefined)
+		attest(($.import as any)("toString")["#toString"]).equals(undefined)
+	})
 })

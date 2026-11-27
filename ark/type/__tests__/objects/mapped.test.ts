@@ -443,4 +443,22 @@ contextualize(() => {
 		attest<{ a: string } | { a: string; b: number }>(T.t)
 		attest(T.expression).snap("{ a: string }")
 	})
+
+	it("preserves Array prototype and empty tuple length on partial/required with props", () => {
+		const PartialArr = type("unknown[]").and({ tag: "string" }).partial("tag")
+		attest(PartialArr.expression).snap("{ tag?: string } & Array")
+		attest(PartialArr.allows({ tag: "x" })).equals(false)
+		attest(PartialArr.allows(Object.assign([], { tag: "x" }))).equals(true)
+
+		const RequiredArr = type("unknown[]").and({ "tag?": "string" }).required()
+		attest(RequiredArr.expression).snap("{ tag: string } & Array")
+		attest(RequiredArr.allows({ tag: "x" })).equals(false)
+		attest(RequiredArr.allows(Object.assign([], { tag: "x" }))).equals(true)
+
+		const PartialEmpty = type([]).and({ tag: "string" }).partial("tag")
+		attest(PartialEmpty.expression).snap("{ tag?: string } & []")
+		attest(PartialEmpty.allows({ tag: "x" })).equals(false)
+		attest(PartialEmpty.allows([1])).equals(false)
+		attest(PartialEmpty.allows(Object.assign([], { tag: "x" }))).equals(true)
+	})
 })

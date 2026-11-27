@@ -362,9 +362,25 @@ export abstract class BaseRoot<
 			// preserved rather than reduced to a new object
 			if (isHomomorphic && transformed.equals(structure)) return branch
 
+			const isArrayBranch =
+				isHomomorphic &&
+				(transformed.sequence ||
+					(branch.is("intersection") &&
+						branch.basis?.is("proto") &&
+						branch.basis.proto === Array))
+
 			return this.$.node("intersection", {
-				...(isHomomorphic && transformed.sequence ?
-					{ proto: this.$.node("proto", { proto: Array }) }
+				...(isArrayBranch ?
+					{
+						proto: this.$.node("proto", { proto: Array }),
+						...((
+							branch.is("intersection") &&
+							!transformed.sequence &&
+							branch.inner.exactLength?.rule === 0
+						) ?
+							{ exactLength: branch.inner.exactLength }
+						:	{})
+					}
 				:	{ domain: this.$.node("domain", { domain: "object" }) }),
 				structure: transformed
 			})
@@ -678,9 +694,9 @@ export abstract class BaseRoot<
 			this.transform(
 				(kind, inner) =>
 					kind === "structure" ? { ...inner, undeclared: rule } : inner,
-				deep ? undefined : (
-					{ shouldTf: node => !includes(structuralKinds, node.kind) }
-				)
+				deep ?
+					{ throughMorphs: true }
+				:	{ shouldTf: node => !includes(structuralKinds, node.kind) }
 			)
 		)
 	}

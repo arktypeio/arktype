@@ -909,7 +909,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return new RootModule(
 			flatMorph(namesToExport, (_, name) => [
 				name,
-				this._exports![name]
+				hasOwn(this._exports!, name) ? this._exports![name] : undefined
 			]) as never
 		) as never
 	}

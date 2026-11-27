@@ -1439,22 +1439,33 @@ const hasUniqueItems = (data: array): boolean => {
 	return true
 }
 
-const jsonEquals = (l: unknown, r: unknown): boolean => {
+const jsonEquals = (
+	l: unknown,
+	r: unknown,
+	seen?: Map<object, object>
+): boolean => {
 	if (l === r) return true
 	if (typeof l !== "object" || typeof r !== "object" || !l || !r) return false
-	if (isArray(l) || isArray(r)) {
+	if (seen?.has(l)) return seen.get(l) === r
+	seen ??= new Map()
+	seen.set(l, r)
+	try {
+		if (isArray(l) || isArray(r)) {
+			if (!isArray(l) || !isArray(r) || l.length !== r.length) return false
+			for (let i = 0; i < l.length; i++)
+				if (!jsonEquals(l[i], r[i], seen)) return false
+			return true
+		}
+		const lKeys = Object.keys(l)
 		return (
-			isArray(l) &&
-			isArray(r) &&
-			l.length === r.length &&
-			l.every((v, i) => jsonEquals(v, r[i]))
+			lKeys.length === Object.keys(r).length &&
+			lKeys.every(
+				k => hasOwn(r, k) && jsonEquals((l as dict)[k], (r as dict)[k], seen)
+			)
 		)
+	} finally {
+		seen.delete(l)
 	}
-	const lKeys = Object.keys(l)
-	return (
-		lKeys.length === Object.keys(r).length &&
-		lKeys.every(k => hasOwn(r, k) && jsonEquals((l as dict)[k], (r as dict)[k]))
-	)
 }
 
 export const isJsonSchemaObject = (value: unknown): value is object => {

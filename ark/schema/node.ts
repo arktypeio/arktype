@@ -1474,12 +1474,22 @@ export abstract class BaseNode<
 			// a morph's only child is the head of its pipeline
 			if (k === "morphs") {
 				const { head, piped } = this as {} as Morph.Node
-				const transformed = head?._tf(mapper, ctx)
-				if (transformed) return [k, [transformed, ...piped]]
+				const transformedHead = head?._tf(mapper, ctx)
+				const transformedPiped =
+					ctx.throughMorphs ?
+						piped.map(step =>
+							hasArkKind(step, "root") ?
+								(step._tf(mapper, ctx) ?? $ark.kw.unknown)
+							:	step
+						)
+					:	piped
+				if (transformedHead) return [k, [transformedHead, ...transformedPiped]]
 				// a pruned head accepts anything, so what it piped to isn't promoted
 				return [
 					k,
-					hasArkKind(piped[0], "root") ? [$ark.kw.unknown, ...piped] : piped
+					hasArkKind(transformedPiped[0], "root") ?
+						[$ark.kw.unknown, ...transformedPiped]
+					:	transformedPiped
 				]
 			}
 			const children = v as listable<BaseNode>
@@ -1560,10 +1570,14 @@ export abstract class BaseNode<
 				})) satisfies DeepNodeTransformation
 
 		if (normalized.boundary === "self") {
-			return this.$.node(
+			const configured = this.$.node(
 				this.kind,
 				mapper(this.kind, { ...this.inner, meta: this.meta }) as never
-			) as never
+			)
+			return (
+				this.isRoot() ?
+					this.$.fin(configured as never)
+				:	configured) as never
 		}
 
 		const rawSelected = this._select(normalized)
@@ -1571,14 +1585,16 @@ export abstract class BaseNode<
 
 		const shouldTf: ShouldTransformFn =
 			normalized.boundary === "child" ?
-				(node, ctx) => ctx.root.children.includes(node as never)
+				(node, ctx) =>
+					node === ctx.root || ctx.root.children.includes(node as never)
 			: normalized.boundary === "shallow" ? node => node.kind !== "structure"
 			: () => true
 
 		return this.$.fin(
 			this.transform(mapper, {
 				shouldTf,
-				selected
+				selected,
+				throughMorphs: normalized.boundary !== "shallow"
 			}) as never
 		)
 	}
@@ -2138,6 +2154,8 @@ export type DeepNodeTransformOptions = {
 	reduced?: boolean
 	selected?: readonly BaseNode[] | undefined
 	names?: Record<string, string>
+	/** whether to also transform root schemas piped after a morph */
+	throughMorphs?: boolean
 }
 
 export type ShouldTransformFn = (

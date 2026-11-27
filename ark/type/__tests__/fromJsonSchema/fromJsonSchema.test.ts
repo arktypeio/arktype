@@ -364,4 +364,24 @@ contextualize(() => {
 			"JSON Schema at #/const/self is circular"
 		)
 	})
+
+	it("handles circular objects and sparse arrays safely in uniqueItems", () => {
+		const Unique = fromJsonSchema({ type: "array", uniqueItems: true })
+		const a: Record<string, unknown> = {}
+		a.self = a
+		const b: Record<string, unknown> = {}
+		b.self = b
+		attest(Unique.allows([a, b])).equals(false)
+		const c: Record<string, unknown> = { x: 1 }
+		c.self = c
+		attest(Unique.allows([a, c])).equals(true)
+
+		// sparse vs dense arrays past canonicalJsonKey's 256-step budget
+		const sparse = Array(300).fill(0)
+		delete sparse[280]
+		const dense = Array(300).fill(0)
+		dense[280] = 999
+		attest(Unique.allows([sparse, dense])).equals(true)
+		attest(Unique.allows([dense, sparse])).equals(true)
+	})
 })

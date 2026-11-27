@@ -1478,6 +1478,53 @@ try {
 				attest((Plain.meta as any)[sym]).equals(undefined)
 				attest(SymOnly === Plain).equals(false)
 			})
+
+			it("configures child boundary, self boundary JIT, and deep morph output targets", () => {
+				const ChildDesc = type("string > 2").describe("CUSTOM", "child")
+				attest(ChildDesc.internal.children.map(c => c.description)).equals([
+					"CUSTOM",
+					"CUSTOM"
+				])
+				const ChildMin = type("string > 2").configure(
+					{ message: "CUSTOM" },
+					{ boundary: "child", kind: "minLength" }
+				)
+				attest(ChildMin("a").toString()).snap("CUSTOM")
+
+				// self and jsonSchema configure finalize root Types for JIT compilation
+				const SelfCfg = type("string > 2").configure(
+					{ description: "X" },
+					"self"
+				)
+				const JsonSchemaCfg = type("string > 2").configure({
+					jsonSchema: { format: "custom" }
+				})
+				SelfCfg("abc")
+				SelfCfg("a")
+				JsonSchemaCfg("abc")
+				JsonSchemaCfg("a")
+				attest(SelfCfg.precompilation).satisfies("string")
+				attest(JsonSchemaCfg.precompilation).satisfies("string")
+
+				// deep selector configure and onDeepUndeclaredKey reach piped .to(...) outputs
+				const Piped = type("string.json.parse").to({ a: "string > 2" })
+				const ConfiguredPiped = Piped.configure(
+					{ message: "TOO_SHORT" },
+					"minLength"
+				)
+				attest(ConfiguredPiped('{"a":"x"}').toString()).snap("a: TOO_SHORT")
+
+				const StrictJson = type("string.json.parse")
+					.to({ a: "string" })
+					.onDeepUndeclaredKey("reject")
+				attest(StrictJson('{"a":"ok","extra":1}').toString()).snap(
+					"extra must be removed"
+				)
+				const DeletedJson = type("string.json.parse")
+					.to({ a: "string" })
+					.onDeepUndeclaredKey("delete")
+				attest(DeletedJson('{"a":"ok","extra":1}')).equals({ a: "ok" })
+			})
 		})
 	})
 })
