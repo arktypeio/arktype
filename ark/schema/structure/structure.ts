@@ -635,6 +635,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		keys: array<BaseRoot | Key>
 	): Structure.Inner.mutable {
 		const result = makeRootAndArrayPropertiesMutable(this.inner)
+		delete result.sequence
 
 		const shouldKeep = (key: KeyOrKeyNode) => {
 			const matchesKey = keys.some(k => typeOrTermExtends(key, k))

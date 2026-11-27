@@ -281,6 +281,23 @@ contextualize(() => {
 }`)
 	})
 
+	it("empty tuple and unknown array", () => {
+		const Empty = type([]).partial()
+		attest<[]>(Empty.t)
+		attest(Empty.expression).snap("[]")
+		attest(Empty([])).equals([])
+		attest(Empty([1]).toString()).snap("must be empty")
+
+		const ParsedEmpty = type("Partial<[]>")
+		attest<[]>(ParsedEmpty.t)
+		attest(ParsedEmpty.expression).snap("[]")
+
+		const UnknownArr = type("unknown[]").partial()
+		attest<(unknown | undefined)[]>(UnknownArr.t)
+		attest(UnknownArr.expression).snap("Array")
+		attest(UnknownArr([1, "a"])).equals([1, "a"])
+	})
+
 	it("selective invalid key", () => {
 		const User = type({ name: "string" })
 		// @ts-expect-error

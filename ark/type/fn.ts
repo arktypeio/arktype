@@ -1,4 +1,4 @@
-import type { BaseRoot, IntersectionNode } from "@ark/schema"
+import type { BaseRoot } from "@ark/schema"
 import {
 	Callable,
 	functionNameOf,
@@ -90,7 +90,7 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 
 			const paramDefs = signature.slice(0, lastParamIndex + 1)
 
-			const paramTuple = $.parse(paramDefs).assertIs("intersection")
+			const paramTuple = $.parse(paramDefs)
 
 			let returnType: BaseRoot = $.intrinsic.unknown
 
@@ -140,10 +140,10 @@ export interface TypedFn<
 
 export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	raw: Fn
-	params: IntersectionNode
+	params: BaseRoot
 	returns: BaseRoot
 
-	constructor(raw: Fn, params: IntersectionNode, returns: BaseRoot) {
+	constructor(raw: Fn, params: BaseRoot, returns: BaseRoot) {
 		const typedName = `typed ${functionNameOf(raw)}`
 		const typed = {
 			// assign to a key with the expected name to force it to be created that way
@@ -164,7 +164,12 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	get expression(): string {
 		let argsExpression = this.params.expression
 		if (argsExpression === undefined) return argsExpression
-		if (
+		const isUnion =
+			typeof this.params.is === "function" ?
+				this.params.is("union")
+			:	hasTopLevelUnion(argsExpression)
+		if (isUnion) argsExpression = `...(${argsExpression})`
+		else if (
 			argsExpression[0] === "[" &&
 			argsExpression[argsExpression.length - 1] === "]"
 		)
@@ -174,6 +179,22 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 
 		return `(${argsExpression}) => ${this.returns?.expression ?? "unknown"}`
 	}
+}
+
+const hasTopLevelUnion = (expression: string): boolean => {
+	let depth = 0
+	let quote = ""
+	for (let i = 0; i < expression.length; i++) {
+		const ch = expression[i]
+		if (quote) {
+			if (ch === "\\") i++
+			else if (ch === quote) quote = ""
+		} else if (ch === '"' || ch === "'") quote = ch
+		else if (ch === "(" || ch === "[" || ch === "{") depth++
+		else if (ch === ")" || ch === "]" || ch === "}") depth--
+		else if (ch === "|" && depth === 0) return true
+	}
+	return false
 }
 
 type validateFnArgs<args, $> =

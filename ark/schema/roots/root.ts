@@ -570,7 +570,10 @@ export abstract class BaseRoot<
 			branch =>
 				this.$.node("morph", {
 					morphs:
-						branch.is("morph") ? [...branch.morphs, morph] : [branch, morph]
+						branch.is("morph") ? [...branch.morphs, morph] : [branch, morph],
+					...(branch.is("morph") && branch.declaredIn ?
+						{ declaredIn: branch.declaredIn }
+					:	{})
 				}),
 			branches => this.$.node("union", { branches })
 		)

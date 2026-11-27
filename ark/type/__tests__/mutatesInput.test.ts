@@ -250,6 +250,16 @@ contextualize(() => {
 		attest(input).snap({ v: { x: 1, y: 2, z: 3 }, w: 1 })
 	})
 
+	it("unwraps frozen deferred recursive Types in mutatesInput scopes", () => {
+		const FrozenNode = Object.freeze(type({ label: "string", "next?": "this" }))
+		const Wrapped = guarded.type({ node: FrozenNode })
+		const input = { node: { label: "a", next: { label: "b" } } }
+		attest(Wrapped(input)).equals(input)
+		attest(Wrapped({ node: { label: 1 } }).toString()).snap(
+			"node.label must be a string"
+		)
+	})
+
 	it("throws without arktype/mutatesInput", () => {
 		const installed = $ark.inPlace!
 		delete $ark.inPlace

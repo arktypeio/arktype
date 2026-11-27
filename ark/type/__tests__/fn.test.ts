@@ -547,6 +547,20 @@ contextualize(() => {
 			attest(join.expression).snap("(...string[]) => string")
 		})
 
+		it("variadic union of arrays", () => {
+			const count = type.fn(
+				"...",
+				"string[] | number[]"
+			)((...items) => items.length)
+
+			attest(count.expression).snap("(...(number[] | string[])) => unknown")
+			attest(count("a", "b")).equals(2)
+			attest(count(1, 2, 3)).equals(3)
+			attest(() => count(1, "a" as never)).throws.snap(
+				"TraversalError: [1] must be a number or [0] must be a string"
+			)
+		})
+
 		it("intro example", () => {
 			const safe = type.fn(
 				"string",

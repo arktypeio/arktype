@@ -621,6 +621,43 @@ contextualize(() => {
 				declare<Expected>().type({ name: "unknown" })
 			).type.errors("Property 'kind' is missing")
 		})
+
+		it("requires index signature when value type is narrower than unknown", () => {
+			const T = declare<Record<string, number>>().type({
+				"[string]": "number"
+			})
+			attest<Record<string, number>>(T.t)
+
+			attest(() =>
+				// @ts-expect-error
+				declare<Record<string, number>>().type({
+					a: "number"
+				})
+			).type.errors(`Property '"[string]"' is missing`)
+
+			attest(() =>
+				declare<Record<string, number>>().type({
+					// @ts-expect-error
+					"[string]": "string"
+				})
+			).type.errors("declared: number; inferred: string")
+
+			const Closed = declare<
+				Record<string, number>,
+				{ assignable: true }
+			>().type({
+				a: "number",
+				"+": "reject"
+			})
+			attest<{ a: number }>(Closed.t)
+
+			attest(() =>
+				// @ts-expect-error
+				declare<Record<string, number>, { assignable: true }>().type({
+					a: "number"
+				})
+			).type.errors(`Property '"[string]"' is missing`)
+		})
 	})
 
 	it("any", () => {

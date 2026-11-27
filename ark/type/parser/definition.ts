@@ -120,9 +120,9 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	switch (objectKind) {
 		case undefined:
 			if (hasArkKind(def, "root")) {
-				return isInstanceOf(def, BaseRoot) ? def : (
-						parseStandardSchema(def as never, ctx, true)
-					)
+				return isInstanceOf(def, BaseRoot) ?
+						def.internal
+					:	parseStandardSchema(def as never, ctx, true)
 			}
 			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			return parseObjectLiteral(def as Dict, ctx)

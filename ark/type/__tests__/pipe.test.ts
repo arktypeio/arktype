@@ -1990,6 +1990,20 @@ Item[1].Meta must be an object (was missing)`)
 		attest(m('{"a":"hi","b":{"a":1}}').toString()).snap("b.a must be a string")
 	})
 
+	it("preserves declaredIn when piping a morph with declaredIn", () => {
+		const DateTime = type("string.date.parse").pipe(d => d.getTime())
+		attest(DateTime.in.allows("2025-01-01")).equals(true)
+		attest(DateTime.in.allows("not-a-date")).equals(false)
+		attest(DateTime("2025-01-01T00:00:00.000Z")).equals(
+			Date.parse("2025-01-01T00:00:00.000Z")
+		)
+
+		const UrlHost = type("string.url.parse").pipe(u => u.hostname)
+		attest(UrlHost.in.allows("https://arktype.io")).equals(true)
+		attest(UrlHost.in.allows("not-a-url")).equals(false)
+		attest(UrlHost("https://arktype.io/docs")).equals("arktype.io")
+	})
+
 	it("rejects non-function, non-Type operands in .pipe() and .pipe.try()", () => {
 		attest(() =>
 			(type("string.trim") as any).pipe("string.integer.parse")

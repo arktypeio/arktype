@@ -372,7 +372,13 @@ type validateIndexedDeclaredKeys<
 		keyof def,
 		literalKey | `${literalKey & string}?` | MetaKey
 	>]: validateInference<def[k], declared[string & keyof declared], $, args, ctx>
-}
+} & (unknown extends declared[string & keyof declared] ? unknown
+	: "[string]" extends keyof def ? unknown
+	: ctx["assignable"] extends true ?
+		def extends { "+": "reject" | "delete" } ?
+			unknown
+		:	{ "[string]": declared[string & keyof declared] }
+	:	{ "[string]": declared[string & keyof declared] })
 
 type literalKeyOf<o> = keyof {
 	[k in keyof o as string extends k ? never

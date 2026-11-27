@@ -289,6 +289,17 @@ contextualize(() => {
 		)
 	})
 
+	it("unknown array", () => {
+		const UnknownArr = type("unknown[]").required()
+		attest<unknown[]>(UnknownArr.t)
+		attest(UnknownArr.expression).snap("Array")
+		attest(UnknownArr([1, "a"])).equals([1, "a"])
+
+		const Parsed = type("Required<unknown[]>")
+		attest<unknown[]>(Parsed.t)
+		attest(Parsed.expression).snap("Array")
+	})
+
 	it("selective invalid key", () => {
 		const Draft = type({ "title?": "string" })
 		// @ts-expect-error

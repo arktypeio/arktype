@@ -84,6 +84,8 @@ export interface GenericAst<
 	t: this
 }
 
+const openInstancesByGeneric = new WeakMap<object, number>()
+
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown
@@ -100,7 +102,6 @@ export class GenericRoot<
 	description: string
 	alias: string | undefined
 	private instantiations: Record<string, BaseRoot | NodeId> = {}
-	private openInstances = 0
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
@@ -124,7 +125,7 @@ export class GenericRoot<
 						!(isResolvable(arg) && isResolvable(this.constraints[i]))
 				)
 			) {
-				const depth = this.openInstances
+				const depth = openInstancesByGeneric.get(this) ?? 0
 				return this.arg$.lazilyResolve(
 					() => this.instantiate(key, argNodes, depth),
 					`${this.id}<${key}>`,
@@ -162,7 +163,7 @@ export class GenericRoot<
 	private instantiate(
 		key: string,
 		argNodes: GenericArgResolutions<any>,
-		depth = this.openInstances
+		depth = openInstancesByGeneric.get(this) ?? 0
 	): BaseRoot {
 		const instantiation = this.instantiations[key]
 		if (typeof instantiation === "string") {
@@ -181,7 +182,7 @@ export class GenericRoot<
 			return instantiation
 		}
 		this.checkArgs(argNodes)
-		const open = this.openInstances
+		const open = openInstancesByGeneric.get(this) ?? 0
 		if (
 			Math.max(open, depth) === maxOpenInstantiations ||
 			((open || depth) &&
@@ -197,7 +198,7 @@ export class GenericRoot<
 		const id = registerNodeId(this.alias ?? "generic")
 		const mark = $ark.reached?.mark()
 		this.instantiations[key] = id
-		this.openInstances = Math.max(open, depth) + 1
+		openInstancesByGeneric.set(this, Math.max(open, depth) + 1)
 		try {
 			const node =
 				this.defIsLazy() ?
@@ -214,7 +215,7 @@ export class GenericRoot<
 			delete this.instantiations[key]
 			throw e
 		} finally {
-			this.openInstances = open
+			openInstancesByGeneric.set(this, open)
 		}
 	}
 
@@ -252,7 +253,7 @@ export class GenericRoot<
 		name: name,
 		value: this[name]
 	): this[name] {
-		Object.defineProperty(this, name, { value })
+		if (Object.isExtensible(this)) Object.defineProperty(this, name, { value })
 		return value
 	}
 

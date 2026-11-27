@@ -64,6 +64,20 @@ contextualize(() => {
 			)
 	})
 
+	it("drops sequence constraints when picking or omitting props from an array intersection", () => {
+		const ArrWithProps = type
+			.raw(["string", "number"])
+			.and({ a: "string", b: "number" }) as any
+		const Picked = ArrWithProps.pick("a")
+		attest(Picked.expression).snap("{ a: string }")
+		attest(Picked({ a: "hi" })).equals({ a: "hi" })
+		attest(Picked({}).toString()).snap("a must be a string (was missing)")
+
+		const Omitted = ArrWithProps.omit("b")
+		attest(Omitted.expression).snap("{ a: string }")
+		attest(Omitted({ a: "hi" })).equals({ a: "hi" })
+	})
+
 	it("non-structure", () => {
 		// @ts-expect-error
 		attest(() => type("string").pick("length"))

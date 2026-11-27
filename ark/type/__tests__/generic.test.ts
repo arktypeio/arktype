@@ -1105,5 +1105,10 @@ contextualize(() => {
 		const OptReadonlyTuple = GReadonlyTuple(type(["string?"]).readonly())
 		attest<{ v: readonly [string?] }>(OptReadonlyTuple.t)
 		attest(OptReadonlyTuple({ v: [] })).equals({ v: [] })
+
+		// frozen generic supports lazy getters like .json and instantiation
+		const FrozenG = Object.freeze(generic("t")({ v: "t" }))
+		attest(FrozenG.json).equals(generic("t")({ v: "t" }).json)
+		attest(FrozenG("string")({ v: "ok" })).equals({ v: "ok" })
 	})
 })
