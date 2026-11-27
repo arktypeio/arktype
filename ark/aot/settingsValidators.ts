@@ -448,6 +448,7 @@ var copyOf = data => {
 	return copy
 }
 var setOwnValue = (out, k, value) => {
+	"use strict"
 	if (k in out && !hasOwn(out, k)) defineValue(out, k, value)
 	else out[k] = value
 }

@@ -1479,7 +1479,7 @@ try {
 				attest(SymOnly === Plain).equals(false)
 			})
 
-			it("configures child boundary, self boundary JIT, and deep morph output targets", () => {
+			it("configures child boundary and deep morph output targets", () => {
 				const ChildDesc = type("string > 2").describe("CUSTOM", "child")
 				attest(ChildDesc.internal.children.map(c => c.description)).equals([
 					"CUSTOM",
@@ -1490,21 +1490,6 @@ try {
 					{ boundary: "child", kind: "minLength" }
 				)
 				attest(ChildMin("a").toString()).snap("CUSTOM")
-
-				// self and jsonSchema configure finalize root Types for JIT compilation
-				const SelfCfg = type("string > 2").configure(
-					{ description: "X" },
-					"self"
-				)
-				const JsonSchemaCfg = type("string > 2").configure({
-					jsonSchema: { format: "custom" }
-				})
-				SelfCfg("abc")
-				SelfCfg("a")
-				JsonSchemaCfg("abc")
-				JsonSchemaCfg("a")
-				attest(SelfCfg.precompilation).satisfies("string")
-				attest(JsonSchemaCfg.precompilation).satisfies("string")
 
 				// deep selector configure and onDeepUndeclaredKey reach piped .to(...) outputs
 				const Piped = type("string.json.parse").to({ a: "string > 2" })
@@ -1524,6 +1509,22 @@ try {
 					.to({ a: "string" })
 					.onDeepUndeclaredKey("delete")
 				attest(DeletedJson('{"a":"ok","extra":1}')).equals({ a: "ok" })
+			})
+
+			it("self and jsonSchema configure have compiled code once used", () => {
+				const SelfCfg = type("string > 2").configure(
+					{ description: "X" },
+					"self"
+				)
+				const JsonSchemaCfg = type("string > 2").configure({
+					jsonSchema: { format: "custom" }
+				})
+				SelfCfg("abc")
+				SelfCfg("a")
+				JsonSchemaCfg("abc")
+				JsonSchemaCfg("a")
+				attest(SelfCfg.precompilation).satisfies("string")
+				attest(JsonSchemaCfg.precompilation).satisfies("string")
 			})
 		})
 	})
