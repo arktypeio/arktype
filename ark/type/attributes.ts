@@ -439,6 +439,11 @@ type _inferIntersection<l, r, piped extends boolean> =
 		: (In: _inferIntersection<lIn, r, false>) => lOut
 	: r extends InferredMorph<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => rOut
+	: // brand what the base intersects to, as distill.In reads the base back
+	l extends { readonly [brand]: [infer base, infer id] } ?
+		Brand<_inferIntersection<base, r, piped>, id>
+	: r extends { readonly [brand]: [infer base, infer id] } ?
+		Brand<_inferIntersection<l, base, piped>, id>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?

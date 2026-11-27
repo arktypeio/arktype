@@ -6,7 +6,14 @@ import type {
 	Pattern
 } from "@ark/schema"
 import type { regex } from "arkregex"
+import type { inferIntersection } from "../attributes.ts"
 import type { BaseType } from "./base.ts"
+
+// as a pattern intersected in a definition is
+type matching<t extends string, pattern, $> =
+	inferIntersection<t, pattern> extends infer narrowed extends string ?
+		Type<narrowed, $>
+	:	never
 
 /** @ts-ignore cast variance */
 interface Type<out t extends string = string, in out $ = {}>
@@ -14,9 +21,9 @@ interface Type<out t extends string = string, in out $ = {}>
 	matching<const schema extends Pattern.Schema>(
 		schema: schema,
 		message?: MessageConfig<"pattern">
-	): schema extends string ? Type<t & regex.infer<schema>, $>
+	): schema extends string ? matching<t, regex.infer<schema>, $>
 	: schema extends { rule: infer pattern extends string } ?
-		Type<t & regex.infer<pattern>, $>
+		matching<t, regex.infer<pattern>, $>
 	:	this
 
 	atLeastLength(

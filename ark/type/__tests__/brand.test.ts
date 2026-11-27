@@ -162,6 +162,18 @@ contextualize(() => {
 		attest<Brand<Date, "since">>(Since.t)
 	})
 
+	it("intersection brands what its base intersects to", () => {
+		const Ab = type("string#id").and("'a' | 'b'")
+		attest<Brand<"a", "id"> | Brand<"b", "id">>(Ab.t)
+		attest<"a" | "b">(Ab.inferIn)
+		attest<typeof Ab.t>(type("('a' | 'b') & string#id").t)
+
+		const Pair = type({ a: "string" }).brand("pair").and({ b: "number" })
+		attest<Brand<{ a: string; b: number }, "pair">>(Pair.t)
+		attest<{ a: string; b: number }>(Pair.inferIn)
+		attest(Pair.expression).snap("{ a: string, b: number }")
+	})
+
 	it("docs example", () => {
 		const Fluent = type.number.divisibleBy(2).brand("even")
 
