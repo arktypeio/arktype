@@ -519,12 +519,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	pick(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
-		return this.$.node("structure", this.filterKeys("pick", keys))
+		const inner = this.filterKeys("pick", keys)
+		delete inner.sequence
+		return this.$.node("structure", inner)
 	}
 
 	omit(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
-		return this.$.node("structure", this.filterKeys("omit", keys))
+		const inner = this.filterKeys("omit", keys)
+		delete inner.sequence
+		return this.$.node("structure", inner)
 	}
 
 	// a prop changing kind would move to its kind's canonical place
@@ -635,7 +639,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		keys: array<BaseRoot | Key>
 	): Structure.Inner.mutable {
 		const result = makeRootAndArrayPropertiesMutable(this.inner)
-		delete result.sequence
 
 		const shouldKeep = (key: KeyOrKeyNode) => {
 			const matchesKey = keys.some(k => typeOrTermExtends(key, k))

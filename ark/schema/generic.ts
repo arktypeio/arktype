@@ -85,6 +85,7 @@ export interface GenericAst<
 }
 
 const openInstancesByGeneric = new WeakMap<object, number>()
+const frozenMemoByGeneric = new WeakMap<object, Record<PropertyKey, unknown>>()
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -150,13 +151,13 @@ export class GenericRoot<
 	}
 
 	get id(): NodeId {
-		return this.memo("id", registerNodeId(this.alias ?? "generic"))
+		return this.memo("id", () => registerNodeId(this.alias ?? "generic"))
 	}
 
 	get baseInstance(): BaseRoot {
 		return this.memo(
 			"baseInstance",
-			this(...(this.constraints as any)) as never
+			() => this(...(this.constraints as any)) as never
 		)
 	}
 
@@ -251,38 +252,46 @@ export class GenericRoot<
 
 	protected memo<name extends keyof this>(
 		name: name,
-		value: this[name]
+		compute: () => this[name]
 	): this[name] {
-		if (Object.isExtensible(this)) Object.defineProperty(this, name, { value })
-		return value
+		if (Object.isExtensible(this)) {
+			const value = compute()
+			Object.defineProperty(this, name, { value })
+			return value
+		}
+		let cache = frozenMemoByGeneric.get(this)
+		if (!cache) frozenMemoByGeneric.set(this, (cache = {}))
+		if (name in cache) return cache[name] as this[name]
+		return (cache[name] = compute()) as this[name]
 	}
 
 	get json(): JsonStructure {
-		return this.memo("json", {
+		return this.memo("json", () => ({
 			params: this.params.map(param =>
 				param[1].isUnknown() ? param[0] : [param[0], param[1].json]
 			),
 			body: snapshot(this.bodyDef) as never
-		})
+		}))
 	}
 
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
 		return this.memo(
 			"params",
-			this.paramDefs.map(param =>
-				typeof param === "string" ?
-					[param, intrinsic.unknown]
-				:	[param[0], this.$.parseDef(param[1])]
-			) as never
+			() =>
+				this.paramDefs.map(param =>
+					typeof param === "string" ?
+						[param, intrinsic.unknown]
+					:	[param[0], this.$.parseDef(param[1])]
+				) as never
 		)
 	}
 
 	get names(): genericParamNames<params> {
-		return this.memo("names", this.params.map(e => e[0]) as never)
+		return this.memo("names", () => this.params.map(e => e[0]) as never)
 	}
 
 	get constraints(): { [i in keyof params]: BaseRoot } {
-		return this.memo("constraints", this.params.map(e => e[1]) as never)
+		return this.memo("constraints", () => this.params.map(e => e[1]) as never)
 	}
 
 	get internal(): this {

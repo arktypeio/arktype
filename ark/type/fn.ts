@@ -164,6 +164,8 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	get expression(): string {
 		let argsExpression = this.params.expression
 		if (argsExpression === undefined) return argsExpression
+		const returnExpression = this.returns?.expression
+		if (returnExpression === undefined) return returnExpression
 		const isUnion =
 			typeof this.params.is === "function" ?
 				this.params.is("union")
@@ -177,19 +179,28 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		else if (argsExpression.endsWith("[]"))
 			argsExpression = `...${argsExpression}`
 
-		return `(${argsExpression}) => ${this.returns?.expression ?? "unknown"}`
+		return `(${argsExpression}) => ${returnExpression ?? "unknown"}`
 	}
 }
 
 const hasTopLevelUnion = (expression: string): boolean => {
 	let depth = 0
 	let quote = ""
+	let inRegex = false
+	let inRegexClass = false
 	for (let i = 0; i < expression.length; i++) {
 		const ch = expression[i]
 		if (quote) {
 			if (ch === "\\") i++
 			else if (ch === quote) quote = ""
+		} else if (inRegex) {
+			if (ch === "\\") i++
+			else if (inRegexClass) {
+				if (ch === "]") inRegexClass = false
+			} else if (ch === "[") inRegexClass = true
+			else if (ch === "/") inRegex = false
 		} else if (ch === '"' || ch === "'") quote = ch
+		else if (ch === "/") inRegex = true
 		else if (ch === "(" || ch === "[" || ch === "{") depth++
 		else if (ch === ")" || ch === "]" || ch === "}") depth--
 		else if (ch === "|" && depth === 0) return true
