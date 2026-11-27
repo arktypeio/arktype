@@ -15,7 +15,14 @@ import {
 	type GenericRoot,
 	type IntersectionNode
 } from "@ark/schema"
-import { domainOf, hasDomain, isThunk, type Dict, type Domain } from "@ark/util"
+import {
+	domainOf,
+	hasDomain,
+	isInstanceOf,
+	isThunk,
+	type Dict,
+	type Domain
+} from "@ark/util"
 import { domainsOf, unitBitsOf } from "arksets/internal"
 import { preparseKey } from "./parser/objectLiteral.ts"
 import type { InternalScope } from "./scope.ts"
@@ -783,7 +790,7 @@ const valueFacts = (
 	const d = deferred.get(v)
 	if (d) return [d.facts, d.target ?? v]
 	if (isNode(v)) {
-		const of = v.isRoot() && nodeFacts(v)
+		const of = isInstanceOf(v, BaseRoot) && v.isRoot() && nodeFacts(v)
 		return of ? [of, v] : undefined
 	}
 	if (typeof v === "function" || !isPlainObject(v)) return
@@ -843,6 +850,7 @@ const walkLiteral = (
 				d ?
 					!d.facts.literal
 				:	!isNode(v) ||
+					!isInstanceOf(v, BaseRoot) ||
 					!v.is("intersection") ||
 					!v.structure ||
 					v.structure.index ||

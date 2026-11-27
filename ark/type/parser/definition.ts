@@ -8,6 +8,8 @@ import {
 	foreignTypesByMorph,
 	inProgress,
 	isCustomIssue,
+	writeForeignArkMessage,
+	type ArkError,
 	type BaseParseContext,
 	type Traversal,
 	type BaseScope,
@@ -122,7 +124,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 			if (hasArkKind(def, "root")) {
 				return isInstanceOf(def, BaseRoot) ?
 						def.internal
-					:	parseStandardSchema(def as never, ctx, true)
+					:	parseForeignRoot(def, ctx)
 			}
 			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			return parseObjectLiteral(def as Dict, ctx)
@@ -140,6 +142,11 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 				{ reduced: true }
 			)
 		case "Function": {
+			if (hasArkKind(def, "root")) {
+				return isInstanceOf(def, BaseRoot) ?
+						def.internal
+					:	parseForeignRoot(def, ctx)
+			}
 			// e.g. Effect's standardSchemaV1, a class that can't be called as a thunk
 			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			const resolvedDef = isThunk(def) ? resolveThunk(def) : def
@@ -179,6 +186,11 @@ const isThenable = (result: unknown): result is PromiseLike<unknown> =>
 	"then" in result &&
 	typeof result.then === "function"
 
+const parseForeignRoot = (def: object, ctx: BaseParseContext): BaseRoot =>
+	isStandardSchema(def) ?
+		parseStandardSchema(def as never, ctx, true)
+	:	throwParseError(writeForeignArkMessage("This Type"))
+
 // a Type from another copy of arktype, like 2.x, is foreign: it has its
 // arkKind but not its methods, so it validates through its Standard Schema
 const parseStandardSchema = (
@@ -204,6 +216,7 @@ const parseStandardSchema = (
 		// read as it fails, since parsing reads nothing of a definition
 		const { vendor, _c: isCustomError } = def["~standard"] as ArkWrittenProps
 		const fromArk = vendor === "arktype"
+		let firstError: ArkError | undefined
 		for (const issue of result.issues) {
 			const relativePath = (issue.path ?? []).map(k =>
 				typeof k === "object" ? k.key : k
@@ -216,6 +229,7 @@ const parseStandardSchema = (
 				message: fromArk2 ? problem : issue.message,
 				relativePath
 			})
+			firstError ??= error
 			// another library's message is a sentence of its own, unlike what
 			// arktype wrote from what it expected. Which it is isn't this copy's
 			// to tell where another's errors keep that to themselves, so a Type
@@ -241,6 +255,7 @@ const parseStandardSchema = (
 				)
 			}
 		}
+		return firstError
 	}
 	if (isForeign) foreignTypesByMorph.set(validate, def)
 	return ctx.$.intrinsic.unknown.pipe(validate)

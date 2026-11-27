@@ -443,6 +443,93 @@ contextualize(() => {
 			)
 		})
 
+		it("aborts piped morphs when a Standard Schema reports issues", () => {
+			let ranPipe = false
+			const Std: StandardSchemaV1<unknown, { id: string }> = {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: v =>
+						typeof v === "object" && v !== null && "id" in v ?
+							{ value: v as { id: string } }
+						:	{
+								issues: [
+									{ message: "first issue", path: ["a"] },
+									{ message: "second issue", path: ["b"] }
+								]
+							}
+				}
+			}
+			const Piped = type(Std).pipe(v => {
+				ranPipe = true
+				return v.id
+			})
+			attest(Piped("bad").toString()).snap("a: first issue\nb: second issue")
+			attest(ranPipe).equals(false)
+			attest(Piped({ id: "ok" })).equals("ok")
+			attest(ranPipe).equals(true)
+		})
+
+		it("handles callable foreign roots, foreign roots without ~standard, and deferred Record", () => {
+			const ForeignNoStandard = Object.setPrototypeOf(
+				{},
+				{ " arkKind": "root" }
+			)
+			attest(() => type({ user: ForeignNoStandard as never })).throws(
+				writeForeignArkMessage("This Type")
+			)
+
+			const ForeignNonThunkFn = Object.assign((v: unknown) => v, {
+				" arkKind": "root"
+			})
+			attest(() => type(ForeignNonThunkFn as never)).throws(
+				writeForeignArkMessage("This Type")
+			)
+
+			const ForeignFn = Object.assign((v: unknown) => v, {
+				" arkKind": "root",
+				"~standard": {
+					version: 1,
+					vendor: "arktype",
+					validate: (v: unknown) =>
+						typeof v === "object" && v !== null && "id" in v ?
+							{ value: v }
+						:	{
+								issues: [
+									{
+										message: "id must be a string",
+										problem: "must be a string",
+										path: ["id"]
+									}
+								]
+							},
+					jsonSchema: {
+						input: () => ({
+							type: "object",
+							properties: { id: { type: "string" } }
+						}),
+						output: () => ({
+							type: "object",
+							properties: { id: { type: "string" } }
+						})
+					}
+				}
+			})
+			const Wrapped = type({ user: ForeignFn as never })
+			attest(Wrapped({ user: {} }).toString()).snap("user.id must be a string")
+			attest(Wrapped.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: {
+					user: { type: "object", properties: { id: { type: "string" } } }
+				},
+				required: ["user"]
+			})
+
+			const Rec = type.Record("string", ForeignFn as StandardSchemaV1)
+			attest(Rec({ a: { id: "ok" } })).equals({ a: { id: "ok" } })
+			attest(Rec({ a: {} }).toString()).snap("a.id must be a string")
+		})
+
 		it("throws for a module or generic in a scope", () => {
 			class ForeignModule {
 				get " arkKind"() {
