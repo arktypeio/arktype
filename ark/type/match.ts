@@ -320,15 +320,13 @@ interface AtParser<ctx extends MatchParserContext> {
 		ChainableMatchParser<next>
 	:	never
 
-	<
-		const key extends string,
-		const cases,
-		ctxAtKey extends MatchParserContext = ctx.atKey<ctx, key>
-	>(
+	<const key extends string, const cases>(
 		key: validateKey<key, ctx>,
-		cases: cases extends validateCases<cases, ctxAtKey> ? cases
-		:	errorCases<cases, ctxAtKey>
-	): addCasesToParser<cases, ctxAtKey, "def">
+		cases: cases &
+			atCases<cases, ctx.atKey<ctx, key>> &
+			(cases extends validateCases<cases, ctx.atKey<ctx, key>> ? unknown
+			:	caseCompletions<ctx.atKey<ctx, key>>)
+	): addCasesToParser<cases, ctx.atKey<ctx, key>, "def">
 }
 
 interface ChainableMatchParser<ctx extends MatchParserContext> {
@@ -367,19 +365,24 @@ type validateCases<cases, ctx extends MatchParserContext> = {
 	:	validateCase<def, ctx>
 }
 
-type errorCases<cases, ctx extends MatchParserContext> = {
+type atCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
 	: def extends validateCase<def, ctx> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
 	:	ErrorType<validateCase<def, ctx>>
-} & {
+}
+
+type caseCompletions<ctx extends MatchParserContext> = {
 	[k in BaseCompletions<ctx["$"], {}>]?: (
 		In: inferCaseArg<k, ctx, "out">
 	) => unknown
 } & {
 	default?: DefaultCase<ctx>
 }
+
+type errorCases<cases, ctx extends MatchParserContext> = atCases<cases, ctx> &
+	caseCompletions<ctx>
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>

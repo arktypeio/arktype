@@ -473,6 +473,129 @@ contextualize(() => {
 >`)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1288
+		it("infers handler parameter for literal and union keys in at(key, cases)", () => {
+			const numLit = match
+				.in<{ id: 0 | 1 | 2 }>()
+				.at("id", {
+					"0": o => {
+						attest<{ id: 0 }>(o)
+						return o.id
+					},
+					number: o => {
+						attest<{ id: 0 | 1 | 2 }>(o)
+						return o.id
+					}
+				})
+				.default("never")
+
+			attest<0 | 1 | 2>(numLit({ id: 0 })).equals(0)
+			attest<0 | 1 | 2>(numLit({ id: 1 })).equals(1)
+
+			const unquotedNum = match
+				.in<{ id: 0 | 1 | 2 }>()
+				.at("id", {
+					0: o => {
+						attest<{ id: 0 }>(o)
+						return o.id
+					},
+					"1 | 2": o => {
+						attest<{ id: 1 | 2 }>(o)
+						return o.id
+					}
+				})
+				.default("never")
+
+			attest<0>(unquotedNum({ id: 0 })).equals(0)
+			attest<0 | 1 | 2>(unquotedNum({ id: 2 })).equals(2)
+
+			type Tagged = { kind: "a"; a: string } | { kind: "b"; b: number }
+			const strLit = match
+				.in<Tagged>()
+				.at("kind", {
+					"'a'": o => {
+						attest<{ kind: "a"; a: string }>(o)
+						return o.a
+					},
+					"'b'": o => {
+						attest<{ kind: "b"; b: number }>(o)
+						return o.b
+					}
+				})
+				.default("never")
+
+			attest<string>(strLit({ kind: "a", a: "hi" })).equals("hi")
+			attest<number>(strLit({ kind: "b", b: 42 })).equals(42)
+
+			const boolLit = match
+				.in<{ ok: boolean }>()
+				.at("ok", {
+					true: o => {
+						attest<{ ok: true }>(o)
+						return "yes" as const
+					},
+					false: o => {
+						attest<{ ok: false }>(o)
+						return "no" as const
+					}
+				})
+				.default("never")
+
+			attest<"yes">(boolLit({ ok: true })).equals("yes")
+			attest<"no">(boolLit({ ok: false })).equals("no")
+
+			const unionLit = match
+				.in<{ code: "a" | "b" | 0 | 1 }>()
+				.at("code", {
+					"'a' | 0": o => {
+						attest<{ code: "a" | 0 }>(o)
+						return o.code
+					},
+					"'b' | 1": o => {
+						attest<{ code: "b" | 1 }>(o)
+						return o.code
+					}
+				})
+				.default("never")
+
+			attest<"a" | 0>(unionLit({ code: "a" })).equals("a")
+			attest<"a" | 0>(unionLit({ code: 0 })).equals(0)
+			attest<"b" | 1>(unionLit({ code: 1 })).equals(1)
+
+			// without .in()
+			const untyped = match
+				.at("id", {
+					"0": o => {
+						attest<{ id: 0 }>(o)
+						return o.id
+					},
+					"'x'": o => {
+						attest<{ id: "x" }>(o)
+						return o.id
+					}
+				})
+				.default("never")
+
+			attest<0>(untyped({ id: 0 })).equals(0)
+			attest<"x">(untyped({ id: "x" })).equals("x")
+
+			// invalid case key still reports error and completions
+			attest(() =>
+				match.in<{ id: 0 | 1 }>().at("id", {
+					// @ts-expect-error
+					strong: () => true
+				})
+			).type.errors("'strong' is unresolvable")
+
+			attest(() =>
+				match.in<{ id: 0 | 1 }>().at("id", {
+					// prettier-ignore
+					// @ts-expect-error
+					"big": () => true
+				})
+			).completions({ big: ["bigint"] })
+		})
+
 		it("multiple ats", () => {
 			attest(() => {
 				match
