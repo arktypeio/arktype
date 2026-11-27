@@ -2891,7 +2891,11 @@ return namespace`
 		}
 	}
 
-	writeData(value: unknown, opts: WriteDataOptions = {}): string {
+	writeData(
+		value: unknown,
+		opts: WriteDataOptions = {},
+		seen = new Set<object>()
+	): string {
 		if (
 			opts.values &&
 			(typeof value === "function" ||
@@ -2918,6 +2922,11 @@ return namespace`
 			return printablePrimitive(value)
 		const written = opts.parts?.writtenAs(value as object)
 		if (written) return written
+		if (seen.has(value as object)) {
+			return throwParseError(
+				writeUnprecompilableMessage("cyclic introspection data")
+			)
+		}
 		const prototype = hasDomain(value, "object") && prototypeOf(value)
 		const isPlainArray = prototype === Array.prototype && Array.isArray(value)
 		if (
@@ -2934,17 +2943,22 @@ return namespace`
 				)
 			)
 		}
+		seen.add(value as object)
 		let text: string
-		if (isPlainArray)
-			text = `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
-		else {
-			const entries = Object.entries(value as object).map(
-				// a __proto__ key would set an object literal's prototype
-				([k, v]) =>
-					`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
-			)
-			if (prototype === null) entries.unshift("__proto__: null")
-			text = `{ ${entries.join(", ")} }`
+		try {
+			if (isPlainArray)
+				text = `[${(value as unknown[]).map(v => this.writeData(v, opts, seen)).join(", ")}]`
+			else {
+				const entries = Object.entries(value as object).map(
+					// a __proto__ key would set an object literal's prototype
+					([k, v]) =>
+						`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts, seen)}`
+				)
+				if (prototype === null) entries.unshift("__proto__: null")
+				text = `{ ${entries.join(", ")} }`
+			}
+		} finally {
+			seen.delete(value as object)
 		}
 		return opts.parts ? opts.parts.add(text, value as object) : text
 	}
