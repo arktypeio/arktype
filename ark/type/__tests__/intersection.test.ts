@@ -73,6 +73,17 @@ contextualize(() => {
 		attest(T.description).snap("{ foo: a string } & a Date")
 	})
 
+	it("proto with itself", () => {
+		const T = type("Date & Date")
+		attest<Date>(T.infer)
+		attest(T.expression).snap("Date")
+		const F = type(["Function", "&", "Function"])
+		attest<Function>(F.infer)
+		attest(F.expression).snap("Function")
+		const Timestamped = type({ at: "Date" }).and({ at: "Date", id: "string" })
+		attest<{ at: Date; id: string }>(Timestamped.infer)
+	})
+
 	it("bounded proto with props", () => {
 		const T = type("Date >= d'2023-01-01'").and({ foo: "string" })
 		attest(T.description).snap(

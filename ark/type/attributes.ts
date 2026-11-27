@@ -460,7 +460,13 @@ type intersectObjects<l, r, piped extends boolean> =
 			l & r
 	: r extends array ? l & r
 	: keyof l & keyof r extends never ? show<l & r>
-	: show<
+	: // a function or builtin like Date has no morph or default to
+	// intersect, and mapping its props would strip its call signatures
+	[l, r] extends (
+		[TerminallyInferredObject | Function, TerminallyInferredObject | Function]
+	) ?
+		l & r
+	:	show<
 			// this looks redundant, but should hit the cache anyways and
 			// preserves index signature + optional keys correctly
 			{
