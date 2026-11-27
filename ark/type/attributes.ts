@@ -189,11 +189,9 @@ type indexedDefaults<o> = {
 }
 
 export type isInferredDefault<v> =
-	unwrapInput<v> extends Default<infer t> ?
-		[t] extends [anyOrNever] ?
-			false
-		:	true
-	:	false
+	[v] extends [anyOrNever] ? false
+	: unwrapInput<v> extends Default ? true
+	: false
 
 type distillArray<t extends array, side extends DistillSide> =
 	// fast path for non-tuple arrays with no extra props

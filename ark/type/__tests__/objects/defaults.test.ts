@@ -105,6 +105,13 @@ contextualize(() => {
 			attest(O({ boo: 5 }).toString()).snap("boo must be boolean")
 		})
 
+		it("any is defaultable", () => {
+			const O = type({ a: "unknown.any = 5", b: "unknown.any" })
+			attest<{ a?: any; b: any }>(O.inferIn)
+			attest<{ a: any; b: any }>(O.infer)
+			attest(O({ b: 0 })).equals({ a: 5, b: 0 })
+		})
+
 		it("validated default in scope", () => {
 			const types = scope({
 				specialNumber: "number",
