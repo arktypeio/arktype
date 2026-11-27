@@ -783,13 +783,13 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 		attest(anyType(def).expression).equals(type.raw(def).expression)
 	})
 
-	it("a union nested in another is reduced as it's nested where their branches overlap", () => {
+	it("a union nested in another reduces to the same Type when overlapping branches keep meta", () => {
 		const plain = type(/a/)
 		const described = type(/a/).describe("x")
 		const first = plain.or(described).or("string & /c/")
 		const last = plain.or("string & /c/").or(described)
-		attest(first === last).equals(false)
-		// equal branches keep the meta of the one kept, however they're nested
+		attest(first === last).equals(true)
+		// equal branches keep the meta of the described branch, however they're nested
 		attest(first.json).snap([
 			{ domain: "string", pattern: ["c"] },
 			{
@@ -798,14 +798,7 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 				meta: "x"
 			}
 		])
-		attest(last.json).snap([
-			{ domain: "string", pattern: ["c"] },
-			{
-				domain: { domain: "string", meta: "x" },
-				pattern: [{ rule: "a", meta: "x" }],
-				meta: "x"
-			}
-		])
+		attest(last.json).equals(first.json)
 		// branches nothing reduces are one union however it's nested
 		attest(type.or("string", "number").or("boolean")).is(
 			type.or("string", "number", "boolean")

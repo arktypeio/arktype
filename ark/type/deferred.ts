@@ -34,9 +34,6 @@ interface Facts {
 	terms?: string[] | undefined
 	/** whether it's a union, any branch of which an intersection could conflict with */
 	branched?: boolean | undefined
-	/** whether two of a union's branches could allow one value, so are reduced as
-	 * they're nested */
-	overlaps?: boolean | undefined
 	/** what its input can be, as `domainsOf` writes it */
 	domains: number
 	/** whether it changes no data, which a union can't then find indeterminate */
@@ -982,14 +979,6 @@ const calls = (l: Facts, r: Facts) => {
 	return false
 }
 
-// whether nothing is allowed by both, so a union reduces neither however it's nested
-const apart = (l: Facts, r: Facts) =>
-	!(l.domains & r.domains) ||
-	disjointByTag(l, r) ||
-	(l.values !== undefined &&
-		r.values !== undefined &&
-		!l.values.some(v => r.values!.includes(v)))
-
 const determinate = (l: Facts, r: Facts) =>
 	!(l.domains & r.domains) ||
 	(!calls(l, r) && !calls(r, l) && ((l.pure && r.pure) || disjointByTag(l, r)))
@@ -1001,7 +990,7 @@ export const deferUnion = (
 	if (branches.length < 2 || !canDefer($)) return
 	const all: Facts[] = []
 	const defs: unknown[] = []
-	const flat: string[] = []
+	const terms: string[] = []
 	try {
 		for (let i = 0; i < branches.length; i++) {
 			const branch: unknown = branches[i]
@@ -1018,14 +1007,11 @@ export const deferUnion = (
 			if (!value || value[0].defaults || value[0].cyclic === true) return
 			all.push(value[0])
 			defs.push(value[1])
-			if (!insertAll(flat, value[0])) return
+			if (!insertAll(terms, value[0])) return
 		}
 	} catch {
 		return
 	}
-	// the branches another could reduce, and whether any is
-	const reduced: boolean[] = []
-	let overlaps = false
 	let domains = 0
 	let pure = true
 	let values: unknown[] | undefined = []
@@ -1040,7 +1026,6 @@ export const deferUnion = (
 		const f = all[i]
 		for (let j = i + 1; j < all.length; j++) {
 			if (!determinate(f, all[j])) return
-			if (!apart(f, all[j])) reduced[i] = reduced[j] = overlaps = true
 			// what two ranges meeting allow alone is a unit to what narrows the union
 			if (meet(f, all[j])) units = true
 		}
@@ -1058,17 +1043,6 @@ export const deferUnion = (
 		else
 			for (const [name, bits] of f.held) held?.set(name, held.get(name)! | bits)
 	}
-	// a union's branches are this one's unless reducing them first could matter:
-	// what's left of two that overlap keeps the meta of how they were nested
-	const nests = (f: Facts, i: number) => f.terms && (f.overlaps || reduced[i])
-	let terms = flat
-	if (all.some(nests)) {
-		terms = []
-		for (let i = 0; i < all.length; i++) {
-			if (nests(all[i], i)) insert(terms, wrap(all[i]))
-			else insertAll(terms, all[i])
-		}
-	}
 	let tags: Map<string, unknown[]> | undefined
 	if (all[0].tags) {
 		for (const [k, of] of all[0].tags) {
@@ -1085,7 +1059,6 @@ export const deferUnion = (
 			key: terms.join("|"),
 			terms,
 			branched: true,
-			overlaps,
 			domains,
 			pure,
 			tags,
