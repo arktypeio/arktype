@@ -507,7 +507,32 @@ contextualize(() => {
 				.default("never")
 
 			attest<0>(unquotedNum({ id: 0 })).equals(0)
-			attest<0 | 1 | 2>(unquotedNum({ id: 2 })).equals(2)
+			attest<1 | 2>(unquotedNum({ id: 2 })).equals(2)
+
+			const partialUnquoted = match
+				.in<{ id: 0 | 1 }>()
+				.at("id", {
+					0: () => "zero" as const
+				})
+				.default("never")
+			attest<"zero">(partialUnquoted({ id: 0 })).equals("zero")
+			// @ts-expect-error unquoted numeric key 0 must not widen to cover 1
+			attest(() => partialUnquoted({ id: 1 })).type.errors(
+				"Type '1' is not assignable to type '0'"
+			)
+
+			type OptionalTag = { kind?: "a"; a: string } | { kind: "b"; b: number }
+			const optTagged = match
+				.in<OptionalTag>()
+				.at("kind", {
+					"'b'": o => {
+						attest<{ kind: "b"; b: number }>(o)
+						return o.b
+					}
+				})
+				.default(() => -1)
+			attest<number>(optTagged({ kind: "b", b: 7 })).equals(7)
+			attest<number>(optTagged({ kind: "a", a: "hi" })).equals(-1)
 
 			type Tagged = { kind: "a"; a: string } | { kind: "b"; b: number }
 			const strLit = match
@@ -798,10 +823,9 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		attest(numeric).type.toString.snap(`Match<
-	unknown,
-	[(In: number) => "0", (In: number) => "1"]
->`)
+		attest(numeric).type.toString.snap(
+			`Match<unknown, [(In: 0) => "0", (In: 1) => "1"]>`
+		)
 		attest(numeric.json).snap({
 			branches: [
 				{
@@ -854,7 +878,10 @@ contextualize(() => {
 
 		attest(discriminateValue).type.toString.snap(`Match<
 	Data,
-	[(In: Data) => string, (In: Data) => number]
+	[
+		(In: { id: 1; oneValue: number }) => string,
+		(In: { id: 2; twoValue: string }) => number
+	]
 >`)
 
 		const a = discriminateValue({ id: 1, oneValue: 1 })
@@ -1082,7 +1109,10 @@ contextualize(() => {
 
 		attest(discriminateValue).type.toString.snap(`Match<
 	Data,
-	[(In: Data) => string, (In: Data) => number]
+	[
+		(In: { id: 1; value: number }) => string,
+		(In: { id: 2; value: number }) => number
+	]
 >`)
 	})
 

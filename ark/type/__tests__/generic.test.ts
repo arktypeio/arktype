@@ -1061,5 +1061,49 @@ contextualize(() => {
 		attest<{ v: string }>(UnionBranded.inferIn)
 		// @ts-expect-error
 		attest(() => GUnionBrand("string")).type.errors("Invalid argument for t")
+
+		// morph whose input is unbranded must not satisfy a branded constraint
+		const GBrand = generic(["t", "string#Id"])({ v: "t" })
+		const BrandedDirect = GBrand("string#Id")
+		attest<{ v: string }>(BrandedDirect.inferIn)
+		const strToId = type("string")
+			.pipe(s => s)
+			.to("string#Id")
+		// @ts-expect-error
+		attest(() => GBrand(strToId)).type.errors("Invalid argument for t")
+		// @ts-expect-error
+		attest(() => GNestedBrand({ id: strToId })).type.errors(
+			"Invalid argument for t"
+		)
+		const GEmail = generic(["t", "string.email#Email"])({ v: "t" })
+		const strToEmail = type("string")
+			.pipe(s => s)
+			.to("string.email#Email")
+		// @ts-expect-error
+		attest(() => GEmail(strToEmail))
+			.throws("t must be assignable to")
+			.type.errors("Invalid argument for t")
+
+		// cyclic object constraint reports invalid argument without TS2589
+		const cyclicScope = scope({
+			Node: { value: "string", "next?": "Node" },
+			"wrap<t extends Node>": { node: "t" }
+		})
+		const validCyclic = cyclicScope.type("wrap<Node>")
+		attest(validCyclic({ node: { value: "a" } })).equals({
+			node: { value: "a" }
+		})
+		// @ts-expect-error
+		attest(() => cyclicScope.type("wrap<number>"))
+			.throws("t must be assignable to")
+			.type.errors("t must be assignable to")
+
+		// readonly defaulted tuple constraint preserves readonly
+		const GReadonlyTuple = generic(["t", type(["string = 'x'"]).readonly()])({
+			v: "t"
+		})
+		const OptReadonlyTuple = GReadonlyTuple(type(["string?"]).readonly())
+		attest<{ v: readonly [string?] }>(OptReadonlyTuple.t)
+		attest(OptReadonlyTuple({ v: [] })).equals({ v: [] })
 	})
 })

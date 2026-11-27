@@ -689,34 +689,36 @@ age must be non-negative`)
 	describe("onUndeclaredKey", () => {
 		// https://github.com/arktypeio/arktype/issues/1752
 		it("delete keeps each key a branch of a union allowing the data declares", () => {
-			for (const jitless of [false, true]) {
+			for (const jitless of [true, false]) {
+				// run jitless first with a distinct key so precompiled units from
+				// compiled tests don't bind under jitless (pnpm testCache)
 				const Contents = withConfig({ onUndeclaredKey: "delete" }, () =>
 					scope({}, { jitless })
-						.type({ uri: "string", "text?": "string" })
-						.or({ uri: "string", "blob?": "string" })
+						.type({ href: "string", "text?": "string" })
+						.or({ href: "string", "blob?": "string" })
 				)
 				// the first data is checked uncompiled
-				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents({ href: "a" })).equals({ href: "a" })
 				attest(Contents.precompilation === undefined).equals(jitless)
-				attest(Contents({ uri: "a" })).equals({ uri: "a" })
-				attest(Contents({ uri: "a", text: "t" })).equals({
-					uri: "a",
+				attest(Contents({ href: "a" })).equals({ href: "a" })
+				attest(Contents({ href: "a", text: "t" })).equals({
+					href: "a",
 					text: "t"
 				})
-				attest(Contents({ uri: "a", blob: "b" })).equals({
-					uri: "a",
+				attest(Contents({ href: "a", blob: "b" })).equals({
+					href: "a",
 					blob: "b"
 				})
-				attest(Contents({ uri: "a", text: "t", blob: "b" })).equals({
-					uri: "a",
+				attest(Contents({ href: "a", text: "t", blob: "b" })).equals({
+					href: "a",
 					text: "t",
 					blob: "b"
 				})
-				attest(Contents({ uri: "a", text: 1, blob: "b" })).equals({
-					uri: "a",
+				attest(Contents({ href: "a", text: 1, blob: "b" })).equals({
+					href: "a",
 					blob: "b"
 				})
-				attest(Contents({ uri: "a", z: 1 })).equals({ uri: "a" })
+				attest(Contents({ href: "a", z: 1 })).equals({ href: "a" })
 			}
 		})
 

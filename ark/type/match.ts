@@ -162,13 +162,13 @@ type casesToMorphTuple<
 			(
 				In: [ctx["callInput"]] extends [unset] ?
 					inferCaseArg<
-						defs[i] extends number ? `${number}` : defs[i],
+						defs[i] extends number ? `${defs[i]}` : defs[i],
 						ctx,
 						"in"
 					>
 				: [
 					inferCaseArg<
-						defs[i] extends number ? `${number}` : defs[i],
+						defs[i] extends number ? `${defs[i]}` : defs[i],
 						ctx,
 						"in"
 					>
@@ -227,6 +227,12 @@ type narrowAtKey<ctxInput, key extends PropertyKey, val> =
 		[v] extends [val] ? ctxInput
 		: [v & val] extends [never] ? never
 		: showIfSafelyMappable<ctxInput & { [k in key]: val }>
+	: key extends keyof ctxInput ?
+		[Exclude<ctxInput[key], undefined> & val] extends [never] ?
+			[undefined] extends [val] ?
+				showIfSafelyMappable<ctxInput & { [k in key]: val }>
+			:	never
+		:	showIfSafelyMappable<ctxInput & { [k in key]: val }>
 	:	showIfSafelyMappable<ctxInput & { [k in key]: val }>
 
 type narrowInput<ctxInput, result> =

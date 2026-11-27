@@ -316,11 +316,12 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 				)
 			}
 
-			it("keeps each key a branch allowing the data declares", () =>
-				testKept(false))
-
+			// run jitless before compiled so precompiled units don't bind under jitless (pnpm testCache)
 			it("keeps each key a branch allowing the data declares jitless", () =>
 				testKept(true))
+
+			it("keeps each key a branch allowing the data declares", () =>
+				testKept(false))
 
 			it("is the same union in either order", () => {
 				const Text = type({ "+": "delete", uri: "string", "text?": "string" })
@@ -1015,9 +1016,9 @@ hasOwnProperty must be removed`)
 			)
 		}
 
-		it("are undeclared", () => testUndeclared(false))
-
 		it("are undeclared jitless", () => testUndeclared(true))
+
+		it("are undeclared", () => testUndeclared(false))
 
 		const testDeclared = (jitless: boolean) => {
 			const types = scope(
@@ -1050,8 +1051,37 @@ hasOwnProperty must be removed`)
 			attest(String(types.Rejected(getDeclared()))).snap("b must be removed")
 		}
 
+		it("can be declared jitless", () => testDeclared(true))
+
 		it("can be declared", () => testDeclared(false))
 
-		it("can be declared jitless", () => testDeclared(true))
+		it("defines own properties over non-writable Object.prototype keys in delete transforms", () => {
+			const propName = "__arktypeTestNonWritableProtoProp__"
+			Object.defineProperty(Object.prototype, propName, {
+				value: 1,
+				writable: false,
+				configurable: true
+			})
+			try {
+				for (const jitless of [true, false]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({
+						"+": "delete",
+						a: "string.trim",
+						[`${propName}?`]: "string"
+					})
+					const out = T({ a: " ok ", [propName]: "x", extra: 2 }) as Record<
+						string,
+						unknown
+					>
+					attest(Object.prototype.hasOwnProperty.call(out, propName)).equals(
+						true
+					)
+					attest(out).equals({ a: "ok", [propName]: "x" })
+				}
+			} finally {
+				delete (Object.prototype as Record<string, unknown>)[propName]
+			}
+		})
 	})
 })

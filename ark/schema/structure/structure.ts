@@ -1733,10 +1733,10 @@ const jsSetOwnProp = (
 ): string =>
 	key === "__proto__" ?
 		`Object.defineProperty(${target}, "__proto__", { value: ${value}, writable: true, enumerable: true, configurable: true })`
-	: isPlain ? `${target}${js.prop(key)} = ${value}`
 	: key in Object.prototype ?
 		`${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
-	:	`Object.getPrototypeOf(${target}) === Object.prototype ? (${target}${js.prop(key)} = ${value}) : ${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
+	: isPlain ? `${target}${js.prop(key)} = ${value}`
+	: `Object.getPrototypeOf(${target}) === Object.prototype ? (${target}${js.prop(key)} = ${value}) : ${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
 
 export const compileDefault = (
 	js: NodeCompiler,

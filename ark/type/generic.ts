@@ -62,26 +62,75 @@ export type validateGenericArg<arg, param extends GenericParamAst, $> =
 export type satisfiesGenericConstraint<t, constraint> =
 	[distill.In<t>] extends [constraint] ? true
 	: stripConstraintDefaults<constraint> extends infer c ?
-		[distill.In<t>] extends [c] ? true
-		: [distill.In<t>] extends [distill.In<c>] ?
-			[distill.Out<t>] extends [c] ? true
-			: [stripConstraintDefaults<t>] extends [c] ? true
-			: [t, c] extends (
-				[InferredMorph<infer ti, infer to>, InferredMorph<infer ci, infer co>]
+		[constraintKindsOf<c>] extends [noConstraintKinds<"default">] ?
+			[constraintInput<t>] extends [c] ?
+				true
+			:	false
+		: [stripConstraintDefaults<t>] extends [c] ? true
+		: [t, c] extends (
+			[InferredMorph<infer ti, infer to>, InferredMorph<infer ci, infer co>]
+		) ?
+			c extends (...args: never) => anyOrNever ? false
+			: t extends (...args: never) => anyOrNever ? false
+			: [constraintInput<ti>, distill.Out<to["t"]>] extends (
+				[constraintInput<ci>, distill.Out<co["t"]>]
 			) ?
-				c extends (...args: never) => anyOrNever ? false
-				: t extends (...args: never) => anyOrNever ? false
-				: [distill.In<ti>, distill.Out<to["t"]>] extends (
-					[distill.In<ci>, distill.Out<co["t"]>]
-				) ?
-					true
-				:	false
+				true
 			:	false
 		:	false
 	:	never
 
+type ConstraintTransformKind = "default" | "morph"
+
+type ConstraintArrayKey = keyof unknown[] | `${number}`
+
+type indexedConstraintKinds<t> = {
+	[k in keyof t as string extends k ? ""
+	: symbol extends k ? ""
+	: k]-?: constraintKindsOf<t[k]>
+}
+
+// mirrors distilledSidesOf so cyclic types short-circuit without TS2589
+type constraintKindsOf<t> =
+	t extends undefined ? never
+	: [t] extends [anyOrNever] ? never
+	: unknown extends t ? never
+	: t extends Brand | TerminallyInferredObject | Primitive ? never
+	: t extends Function ?
+		t extends (...args: never) => anyOrNever ? never
+		: t extends InferredMorph<infer i> ? "morph" | constraintKindsOf<i>
+		: never
+	: t extends Default ? "default"
+	: t extends array ?
+		keyof t extends ConstraintArrayKey ?
+			{ [i: number]: constraintKindsOf<t[number]> }
+		:	{
+				[k in number | Exclude<keyof t, ConstraintArrayKey>]: constraintKindsOf<
+					t[k]
+				>
+			}
+	: [keyof t] extends [never] ? never
+	: isSafelyMappable<t> extends true ?
+		string extends keyof t ? indexedConstraintKinds<t>
+		: symbol extends keyof t ? indexedConstraintKinds<t>
+		: { [k in keyof t]-?: constraintKindsOf<t[k]> }
+	:	never
+
+type noConstraintKinds<ignored extends ConstraintTransformKind = never> =
+	| ignored
+	| { readonly [k: PropertyKey]: noConstraintKinds<ignored> }
+
 // mirrors runtime withoutDefaults while keeping brands and morphs intact
 type stripConstraintDefaults<t> =
+	[constraintKindsOf<t>] extends [noConstraintKinds<"morph">] ? t
+	:	_stripConstraint<t, false>
+
+// mirrors runtime morph.extends: strips defaults and unwraps morph inputs while keeping brands
+type constraintInput<t> =
+	[constraintKindsOf<t>] extends [noConstraintKinds] ? t
+	:	_stripConstraint<t, true>
+
+type _stripConstraint<t, unwrapMorph extends boolean> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
@@ -89,37 +138,45 @@ type stripConstraintDefaults<t> =
 	: t extends Function ?
 		t extends (...args: never) => anyOrNever ? t
 		: t extends InferredMorph<infer i, infer o> ?
-			(In: stripConstraintDefaults<i>) => o
+			unwrapMorph extends true ?
+				_stripConstraint<i, true>
+			:	(In: _stripConstraint<i, false>) => o
 		:	t
-	: t extends Default<infer base> ? stripConstraintDefaults<base>
+	: t extends Default<infer base> ? _stripConstraint<base, unwrapMorph>
 	: t extends array ?
 		t[number][] extends t ?
 			t extends unknown[] ?
-				stripConstraintDefaults<t[number]>[]
-			:	readonly stripConstraintDefaults<t[number]>[]
-		:	stripTupleDefaults<[...t], []>
+				_stripConstraint<t[number], unwrapMorph>[]
+			:	readonly _stripConstraint<t[number], unwrapMorph>[]
+		: t extends unknown[] ? stripTupleDefaults<[...t], [], unwrapMorph>
+		: Readonly<stripTupleDefaults<[...t], [], unwrapMorph>>
 	: [keyof t] extends [never] ? t
 	: isSafelyMappable<t> extends true ?
 		show<
 			{
 				[k in keyof t as isInferredDefault<t[k]> extends true ? never
-				:	k]: stripConstraintDefaults<t[k]>
+				:	k]: _stripConstraint<t[k], unwrapMorph>
 			} & {
 				[k in keyof t as isInferredDefault<t[k]> extends true ? k
-				:	never]?: stripConstraintDefaults<t[k]>
+				:	never]?: _stripConstraint<t[k], unwrapMorph>
 			}
 		>
 	:	t
 
-type stripTupleDefaults<t extends array, prefix extends array> =
+type stripTupleDefaults<
+	t extends array,
+	prefix extends array,
+	unwrapMorph extends boolean
+> =
 	t extends readonly [infer head, ...infer tail] ?
 		stripTupleDefaults<
 			tail,
 			isInferredDefault<head> extends true ?
-				[...prefix, stripConstraintDefaults<head>?]
-			:	[...prefix, stripConstraintDefaults<head>]
+				[...prefix, _stripConstraint<head, unwrapMorph>?]
+			:	[...prefix, _stripConstraint<head, unwrapMorph>],
+			unwrapMorph
 		>
-	:	[...prefix, ...{ [i in keyof t]: stripConstraintDefaults<t[i]> }]
+	:	[...prefix, ...{ [i in keyof t]: _stripConstraint<t[i], unwrapMorph> }]
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
