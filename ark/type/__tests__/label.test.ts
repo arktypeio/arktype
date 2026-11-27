@@ -579,12 +579,25 @@ quantity must be an integer`)
 			)
 		})
 
+		it("names a missing value each branch labels alike", () => {
+			const T = type({
+				id: type("string").label("ID").or(type("number").label("ID"))
+			})
+			attest(reportOf(T, {})).snap([
+				[[["id"], "id", "ID must be a number or a string (was missing)"]],
+				"ID must be a number or a string (was missing)"
+			])
+		})
+
 		it("names no value branches label differently", () => {
 			const T = type({
 				id: type("string").label("Name").or(type("number").label("Count"))
 			})
 			attest((T({ id: true }) as type.errors).summary).snap(
 				"id must be a number or a string"
+			)
+			attest((T({}) as type.errors).summary).snap(
+				"id must be a number or a string (was missing)"
 			)
 		})
 

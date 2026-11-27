@@ -359,7 +359,8 @@ const readers: Record<NodeKind, SchemaReader> = {
 	intersection: (schema: dict, $) => {
 		const { structure, ...flattened } = schema
 		const structureSchema: dict = (structure as dict | undefined) ?? {}
-		const input: dict = {}
+		// without a prototype, a key like __proto__ is kept to be rejected
+		const input: dict = Object.create(null)
 		for (const k of keysInParseOrder(flattened)) {
 			const v = flattened[k]
 			if (hasOwn(structureKeys, k)) {
@@ -383,7 +384,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 		return input
 	},
 	structure: (schema: dict, $) => {
-		const input: dict = {}
+		const input: dict = Object.create(null)
 		for (const k of keysInParseOrder(schema)) {
 			const v = schema[k]
 			if (k === "sequence") input[k] = parseNodeSchema(k, v, $)

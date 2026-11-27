@@ -818,8 +818,10 @@ const urlRoot = cached(() =>
 	predicateStringNode(isParsableUrl, "string.url", { format: "uri" })
 )
 
-// http(s), cased without the i flag, which JSON Schema's pattern can't write
-const httpUrlMatcher = /^[Hh][Tt]{2}[Pp][Ss]?:\/\//
+// http(s), cased without the i flag, which JSON Schema's pattern can't write,
+// then no space or control character, which a URL parser would strip or encode
+// eslint-disable-next-line no-control-regex
+const httpUrlMatcher = /^[Hh][Tt]{2}[Pp][Ss]?:\/\/[^\x00- \x7f]*$/
 
 // a URL a browser opens as a page, unlike mailto:, javascript: or ftp:
 const httpUrl = cached(() =>

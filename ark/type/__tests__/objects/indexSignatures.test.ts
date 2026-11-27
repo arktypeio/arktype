@@ -233,6 +233,33 @@ other must be a string`)
 		)
 	})
 
+	it("fails an array's element at its index, as its sequence does", () => {
+		const T = type({ "[string]": "number" })
+		const out = T(["x", 1, "y"]) as type.errors
+		attest(out.summary).snap(`[0] must be a number
+[2] must be a number`)
+		attest(out.issues.map(issue => issue.path)).equals([[0], [2]])
+		// an object's key is a string, though it reads as an index
+		attest(T({ "0": "x" }).toString()).snap('["0"] must be a number')
+	})
+
+	it("transforms an array's element at its index", () => {
+		const T = type({ "[string]": "string.numeric.parse" })
+		// TypeScript doesn't read an array as a record
+		const parsed: unknown = T(["1", "2"])
+		attest(parsed).equals([1, 2])
+		attest(T(["1", "x"]).toString()).snap(
+			"[1] must be a well-formed numeric string"
+		)
+	})
+
+	it("fails an element once where an array and a record both check it", () => {
+		const value = scope({
+			value: ["number | value[]", "|", { "[string]": "value" }]
+		}).type("value")
+		attest(value([true]).toString()).snap("[0] must be a number or an object")
+	})
+
 	it("keeps no error from a signature rejecting a key", () => {
 		const $ = scope({})
 		const K = $.type("string").narrow(

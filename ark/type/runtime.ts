@@ -92,6 +92,7 @@ export {
 	applyRejected,
 	ArkErrors,
 	arrayIndexMatcher,
+	arrayPathKeyOf,
 	byAncestorPath,
 	byPath,
 	callMorph,

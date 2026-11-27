@@ -169,6 +169,7 @@ export const addIssueFeatures = (
 		else if (node.is("structure")) {
 			// an index signature's keys come from data, as do the undeclared
 			// keys a structure rejects
+			if (node.index) features.reportsIndices = true
 			if (
 				node.index ||
 				node.undeclared === "reject" ||

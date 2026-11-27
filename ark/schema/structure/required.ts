@@ -1,5 +1,6 @@
 import type { errorCtx, nodeOfKind } from "../kinds.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import { metaLabeledAlike } from "../roots/union.ts"
 import type {
 	ArkEnv,
 	BaseErrorContext,
@@ -90,7 +91,11 @@ export class RequiredNode extends BaseProp<"required"> {
 			code: "required",
 			missingValueDescription: missingDescriptionOf(this.value),
 			missing: missingValueOf(this.value),
-			valueMeta: this.value.meta,
+			// a missing union is named as its branches are when it's present
+			valueMeta:
+				this.value.is("union") ?
+					metaLabeledAlike(this.value.meta, this.value.branches)
+				:	this.value.meta,
 			meta: this.meta
 		}))
 	}

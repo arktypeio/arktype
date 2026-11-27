@@ -11,6 +11,13 @@ const isUnread = (t: object) => !hasOwn(t, "kind")
 
 const anyType: any = type
 
+// a RegExp that isn't written as what it matches
+class Keyword extends RegExp {
+	override toString(): string {
+		return "string"
+	}
+}
+
 const messageOf = (define: () => unknown): string | undefined => {
 	try {
 		define()
@@ -124,6 +131,7 @@ console.log(
 			"5 < string < 3",
 			"-1 <= number < -1",
 			"string[] < -1",
+			{ a: "3 <= string > 3[] <= 5" },
 			"string < 1.5",
 			"'a' = 'b'",
 			"string & number",
@@ -165,6 +173,25 @@ console.log(
 		).throws("results in an unsatisfiable type")
 	})
 
+	it("a Record of a literal holding an alias throws where it's composed", () => {
+		// its conflict is thrown the first time each is composed
+		const cyclic = () =>
+			type
+				.raw({
+					"[string]": "boolean",
+					a: "this | 1 <= number.integer <= 5 = 3"
+				})
+				.or("number.safe")
+		const held = anyType.Record("string", { z: cyclic() })
+		attest(isUnread(held)).equals(true)
+		attest(() => held.narrow(() => true)).throws(
+			"results in an unsatisfiable type"
+		)
+		attest(() =>
+			anyType.Record("string", [{ z: cyclic() }, "[]"]).narrow(() => true)
+		).throws("results in an unsatisfiable type")
+	})
+
 	it("a narrow checks a unit it holds at its call", () => {
 		const rejected: unknown[] = []
 		const rejects = (value: unknown) => {
@@ -175,13 +202,68 @@ console.log(
 		attest(rejected.includes("narrowed")).equals(true)
 		const defs = [
 			type("'keptA' | null").describe("described"),
-			type({ held: "string" }).or("'keptB'").describe("described")
+			type({ held: "string" }).or("'keptB'").describe("described"),
+			type.or("5 <= number <= 5", "string")
 		]
 		for (const t of defs) {
 			rejected.length = 0
 			messageOf(() => (t as any).narrow(rejects))
 			attest(rejected.length > 0).equals(true)
 		}
+	})
+
+	it("a number bounded to one value is the unit a narrow checks", () => {
+		attest(
+			printed(`const seen = []
+const sees = n => (seen.push(n), true)
+const range = type("5 <= number <= 5")
+const bounded = type("number.integer >= 1")
+const narrowed = type("number >= 2").narrow(sees)
+const length = type("3 <= string <= 3").narrow(sees)
+range.narrow(sees)
+bounded.atMost(1).narrow(sees)
+narrowed.atMost(2)
+console.log(seen.join(), Object.hasOwn(length, "kind"))
+const t = type({ limit: "0 <= number <= 0 = 0" })
+console.log(Object.hasOwn(t, "kind"), t({}).limit)`)
+		).snap("5,1,2 false\nfalse 0\n")
+	})
+
+	it("defers negative upper-bounded numeric ranges", () => {
+		const neg = type({ n: "number <= -5" })
+		attest(isUnread(neg)).equals(true)
+		attest(neg.allows({ n: -5 })).equals(true)
+		attest(neg.allows({ n: -4 })).equals(false)
+	})
+
+	it("a narrow of a morph checks a unit its output holds at its call", () => {
+		attest(
+			printed(`const seen = []
+const sees = s => (seen.push(s), true)
+const to = type("string.trim").to(type.or("'seen'", "string.date.iso"))
+console.log(Object.hasOwn(to, "kind"), seen.length)
+const narrowed = to.narrow(sees)
+console.log(seen.join(), Object.hasOwn(type("string.trim").to("string.date.iso").narrow(sees), "kind"))`)
+		).snap(`false 0
+seen false
+`)
+	})
+
+	it("a narrow of a union checks a unit a built morph outputs at its call", () => {
+		const seen: unknown[] = []
+		const sees = (value: unknown) => {
+			seen.push(value)
+			return true
+		}
+		const union = type.or("number[]", type.raw("string.trim").to("'a' | 'b'"))
+		attest(isUnread(union)).equals(true)
+		union.narrow(sees)
+		attest(seen).equals(["a", "b"])
+		const unitless = type.or(
+			"number[]",
+			type.raw("string.trim").to("string > 1")
+		)
+		attest(isUnread(unitless.narrow(sees))).equals(true)
 	})
 
 	it("a union with a unit calls what it narrows at its call", () => {
@@ -192,6 +274,155 @@ console.log(
 		})
 		attest(isUnread(narrowed.or("'seen'"))).equals(false)
 		attest(seen).equals(["seen"])
+	})
+
+	it("a union calls what a branch narrows on a unit another holds in its place, at its call", () => {
+		const seen: unknown[] = []
+		const sees = (data: unknown) => {
+			seen.push(data)
+			return true
+		}
+		const narrowed = () => type(/(?:)/).narrow(sees)
+		const unions: (() => unknown)[] = [
+			// a node says nothing of how it was written
+			() => type.or(type.raw("string").narrow(sees), "'node'"),
+			() => narrowed().and(/(?:)/).or("'and'"),
+			() =>
+				narrowed()
+					.array()
+					.or(type.unit(["element"])),
+			() =>
+				narrowed()
+					.array()
+					.atLeastLength(1)
+					.or(type.unit(["bounded"])),
+			() => type.Record("string", narrowed()).or(type.unit({ a: "record" })),
+			() => type({ a: narrowed() }).or({ a: "'prop'" }),
+			() => type({ a: { b: narrowed() } }).or({ a: { b: "'nested'" } }),
+			// a discriminant read after the prop doesn't spare the call
+			() => type({ a: narrowed(), z: "'l'" }).or({ a: "'tagged'", z: "'r'" }),
+			() => type({ a: type.raw("string").narrow(sees) }).or({ a: "'held'" })
+		]
+		for (const union of unions) {
+			seen.length = 0
+			attest(isUnread(union() as object)).equals(false)
+			attest(seen.length).equals(1)
+		}
+		seen.length = 0
+		// neither a predicate of a prop nor one of the whole is called on another prop's unit
+		const apart = [
+			type({ kind: "'l'", a: narrowed() }).or({ kind: "'r'", b: "'unit'" }),
+			type({ kind: "'l'", a: "string" })
+				.narrow(sees)
+				.or({ kind: "'r'", a: "'unit'" }),
+			type({ a: narrowed() }).or({ b: "number" }).or({ c: "'unit'" })
+		]
+		for (const t of apart) attest(isUnread(t)).equals(true)
+		attest(seen).equals([])
+	})
+
+	it("a union calls what a branch narrows on the one value its range and another's meet at, at its call", () => {
+		const seen: unknown[] = []
+		const sees = (data: unknown) => {
+			seen.push(data)
+			return true
+		}
+		// each from a number of its own, since a unit is asked of a predicate once
+		const from = (n: number) => type.raw(`number >= ${n}`).narrow(sees)
+		const unions: (() => unknown)[] = [
+			() => type.or("number.integer >= 1", "number <= 1").narrow(sees),
+			() => type.or(from(2), "number <= 2"),
+			() =>
+				type
+					.or(type.or("number.integer >= 3", "string"), "number <= 3")
+					.narrow(sees),
+			() => type({ a: from(4) }).or({ a: "number <= 4" }),
+			// a discriminant read after the prop doesn't spare the call
+			() =>
+				type({ a: { b: from(5) }, z: "'l'" }).or({
+					a: { b: "number <= 5" },
+					z: "'r'"
+				}),
+			() => type.or(from(6).array(), "(0 <= number <= 6)[]"),
+			() =>
+				type.or(
+					type.raw("Date >= d'2000-01-01'").narrow(sees),
+					type.raw("Date <= d'2000-01-01'")
+				)
+		]
+		for (const union of unions) {
+			seen.length = 0
+			attest(isUnread(union() as object)).equals(false)
+			attest(seen.length).equals(1)
+		}
+		seen.length = 0
+		// ranges that overlap, stop short of each other or meet at what one excludes
+		// allow no value alone
+		const apart = [
+			type.or(from(10), "number.integer >= 10"),
+			type.or(from(12), "number <= 11"),
+			type.or(type.raw("number > 13").narrow(sees), "number <= 13"),
+			type({ kind: "'l'", n: type.raw("0 <= number <= 100").narrow(sees) }).or({
+				kind: "'r'",
+				n: "0 <= number <= 100"
+			}),
+			type.or(type.raw("string >= 2").narrow(sees), "string <= 2")
+		]
+		for (const t of apart) attest(isUnread(t)).equals(true)
+		attest(seen).equals([])
+	})
+
+	it("a range narrowed before it's read says where it ends", () => {
+		attest(
+			printed(`const seen = []
+const sees = n => (seen.push(n), true)
+const narrowed = type("number >= 1").narrow(sees)
+const bounded = type("number").narrow(sees).atLeast(2)
+const elements = type("number >= 3").narrow(sees).array().atLeastLength(1)
+const short = type("number >= 4").narrow(sees)
+const unions = [
+	narrowed.or("number <= 1"),
+	bounded.or("number.integer <= 2"),
+	elements.or("(number <= 3)[]"),
+	short.or("number < 4")
+]
+console.log(seen.join(), unions.map(t => Object.hasOwn(t, "kind")).join())`)
+		).snap(`1,2,3 true,true,true,false
+`)
+	})
+
+	it("holding a built union calls nothing discriminating it would", () => {
+		const seen: unknown[] = []
+		const sees = (data: unknown) => {
+			seen.push(data)
+			return false
+		}
+		// its string case asks what's narrowed of each unit once it's first used
+		const union = type.or(
+			type.enumerated("a", "b").pipe(s => s),
+			type("string").narrow(sees),
+			{}
+		)
+		attest(isUnread(union)).equals(false)
+		seen.length = 0
+		const holding = [
+			type({ held: union }),
+			type.or({ held: union }, "false"),
+			type.or(union.array(), "false"),
+			type.Record("string", union)
+		]
+		for (const t of holding) attest(isUnread(t)).equals(true)
+		attest(seen).equals([])
+	})
+
+	it("an optional prop that could be undefined calls what it narrows at its call", () => {
+		attest(
+			printed(`configure({ exactOptionalPropertyTypes: false })
+const seen = []
+const loose = type.raw("unknown").narrow(data => (seen.push(String(data)), true))
+type({ "a?": loose })
+console.log(seen.join())`)
+		).snap("undefined\n")
 	})
 
 	it("throws at a chained call", () => {
@@ -211,6 +442,17 @@ console.log(
 						.narrow(() => true) as any
 				).atMostLength(1),
 			() => type("string.trim").or("string.trim |> string > 1"),
+			() => type.or("string <= 2", "string >= 5").and("3 <= string <= 4"),
+			() =>
+				type
+					.or("string <= 2", "string >= 5")
+					.describe("d")
+					.and("3 <= string <= 4"),
+			() =>
+				type
+					.or("string <= 2", "string >= 5")
+					.narrow(() => true)
+					.and("3 <= string <= 4"),
 			() => type({ a: "string" }).and({ a: "number" }),
 			() => type({ a: "string.trim" }).or({ a: "string" })
 		]
@@ -220,6 +462,11 @@ console.log(
 			const again = messageOf(chain)
 			attest(again).equals(messageOf(chain))
 		}
+	})
+
+	it("an intersection with a union of strings is built at its call", () => {
+		attest(isUnread(type.or("string <= 2", /b/).and(/c/))).equals(false)
+		attest(isUnread(type(/a/).and("string <= 2").and(/c/))).equals(true)
 	})
 
 	it("config it can't prove anything under parses at the call", () => {
@@ -261,6 +508,27 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 		).snap("An unordered union of a type i\nAn unordered union of a type i\n")
 	})
 
+	it("a default of undefined throws at its call where a default replaces undefined", () => {
+		attest(
+			printed(`configure({ exactOptionalPropertyTypes: false })
+for (const define of [
+	() => type({ a: ["'x' | undefined", "=", undefined] }),
+	() => type({ a: type("'x' | undefined").default(undefined) })
+]) {
+	try {
+		define()
+	} catch (e) {
+		console.log(e.message)
+	}
+}`)
+		).snap(`Default for a must be "x"
+Default for a must be "x"
+`)
+		attest(anyType({ a: ["'x' | undefined", "=", undefined] })({})).equals({
+			a: undefined
+		})
+	})
+
 	// as written here, each is what parsing the pair gives where nothing read either first
 	it("equal definitions are one Type, as their nodes make them", () => {
 		const same: [unknown, unknown][] = [
@@ -286,6 +554,15 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 			[{ a: "string" }, { "a?": "string" }],
 			[{ a: "string = 'x'" }, { a: "string = 'y'" }],
 			[{ "a,1b": "string" }, { a: "string", b: "string" }],
+			// a name starting with a digit isn't more of its length
+			[
+				{ "1a": "string", bbbbbbbbbb: "number" },
+				{ "a:string,10bbbbbbbbbb": "number" }
+			],
+			[
+				{ "1a": "string", bbbbbbbbbb: "number" },
+				{ "a:string,10:bbbbbbbbbb": "number" }
+			],
 			[
 				{ a: "string", b: "string" },
 				{ b: "string", a: "string" }
@@ -293,10 +570,26 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 			["number > 1", "number >= 2"],
 			["number.integer > 1", "number.integer >= 2"],
 			["number >= 0", "number"],
-			["'1'", "true"]
+			["'1'", "true"],
+			// a string's regex is the source a / it escapes is bare in
+			[{ a: /b\/c/ }, { a: "/b\\/c/" }],
+			[{ a: "/b\rc/" }, { a: "/b\\rc/" }],
+			[{ a: new Keyword("b") }, { a: "string" }]
 		]
 		for (const [l, r] of apart)
 			attest([l, r, anyType(l) === anyType(r)]).equals([l, r, false])
+	})
+
+	it("a bound before an array of a range is that range's", () => {
+		attest(
+			printed(`const outer = type({ a: type("string < 5").array().atLeastLength(3).atMostLength(5) })
+const parenthesized = type({ a: "3 <= (string < 5)[] <= 5" })
+const inner = type({ a: "3 <= string < 5[] <= 5" })
+console.log(outer === parenthesized, inner === outer, Object.hasOwn(parenthesized, "kind"))
+console.log(inner.expression, outer.expression)`)
+		).snap(
+			"true false false\n{ a: (3 <= string <= 4)[] <= 5 } { a: 3 <= (string <= 4)[] <= 5 }\n"
+		)
 	})
 
 	it("a bound with its own message isn't the Type its bound alone writes", () => {
@@ -445,6 +738,18 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 		)
 	})
 
+	it("to a string that can't be scanned throws what parsing it throws", () => {
+		attest(
+			printed(`try {
+	type("string.trim").to("string & /(/")
+} catch (e) {
+	console.log(e.constructor.name, e.message)
+}`)
+		)
+			.snap(`ParseError SyntaxError: Invalid regular expression: /(/: Unterminated group
+`)
+	})
+
 	it("pipe.try is on a Type that's unread", () => {
 		const t = type("'tried'").pipe.try(s => JSON.parse(s))
 		attest(t("tried").toString()).snap(
@@ -476,6 +781,35 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 	it("holds a __proto__ key as its prop", () => {
 		const def = JSON.parse(`{ "__proto__": "string" }`)
 		attest(anyType(def).expression).equals(type.raw(def).expression)
+	})
+
+	it("a union nested in another is reduced as it's nested where their branches overlap", () => {
+		const plain = type(/a/)
+		const described = type(/a/).describe("x")
+		const first = plain.or(described).or("string & /c/")
+		const last = plain.or("string & /c/").or(described)
+		attest(first === last).equals(false)
+		// equal branches keep the meta of the one kept, however they're nested
+		attest(first.json).snap([
+			{ domain: "string", pattern: ["c"] },
+			{
+				domain: { domain: "string", meta: "x" },
+				pattern: [{ rule: "a", meta: "x" }],
+				meta: "x"
+			}
+		])
+		attest(last.json).snap([
+			{ domain: "string", pattern: ["c"] },
+			{
+				domain: { domain: "string", meta: "x" },
+				pattern: [{ rule: "a", meta: "x" }],
+				meta: "x"
+			}
+		])
+		// branches nothing reduces are one union however it's nested
+		attest(type.or("string", "number").or("boolean")).is(
+			type.or("string", "number", "boolean")
+		)
 	})
 
 	it("a definition changed after its call isn't read", () => {
@@ -647,6 +981,57 @@ console.log(S === L, S.allows(arr), L.allows(arr), S.allows(["x"]))`)
 		})
 	})
 
+	describe("intersection and morph cache isolation", () => {
+		it("a description of an intersection isn't one of its last operand", () => {
+			for (const wholeFirst of [true, false]) {
+				const out =
+					printed(`const makeWhole = () => type("string").and(/b/).describe("x")
+const makeOperand = () => type("string").describe("x").and(/b/)
+const first = ${wholeFirst ? "makeWhole()" : "makeOperand()"}
+const second = ${wholeFirst ? "makeOperand()" : "makeWhole()"}
+const [Whole, Operand] = ${wholeFirst ? "[first, second]" : "[second, first]"}
+console.log(Whole === Operand, Whole.description, Operand.description)`)
+				attest(out).equals("false x matched by b\n")
+			}
+		})
+
+		it("a description of a morph isn't one of what it pipes to", () => {
+			for (const wholeFirst of [true, false]) {
+				const out =
+					printed(`const makeWhole = () => type("string.trim").to("string").describe("x")
+const makeOutput = () => type("string.trim").to(type("string").describe("x"))
+const first = ${wholeFirst ? "makeWhole()" : "makeOutput()"}
+const second = ${wholeFirst ? "makeOutput()" : "makeWhole()"}
+const [Whole, Output] = ${wholeFirst ? "[first, second]" : "[second, first]"}
+console.log(Whole === Output, String(Whole(5)), String(Output(5)))`)
+				attest(out).equals("false must be x must be a string\n")
+			}
+		})
+
+		it("an intersection is its operands in order", () => {
+			const dateFirst = type({ a: "string.date & string.url" })
+			const urlFirst = type({ a: "string.url & string.date" })
+			attest(dateFirst.description).snap(
+				"{ a: a parsable date and a URL string }"
+			)
+			attest(urlFirst.description).snap(
+				"{ a: a URL string and a parsable date }"
+			)
+		})
+
+		it("an intersection of a union isn't a union with an intersection", () => {
+			for (const andFirst of [true, false]) {
+				const out = printed(`const makeAnd = () => type(/a/).or(/b/).and(/c/)
+const makeOr = () => type(/b/).and(/c/).or(/a/)
+const first = ${andFirst ? "makeAnd()" : "makeOr()"}
+const second = ${andFirst ? "makeOr()" : "makeAnd()"}
+const [And, Or] = ${andFirst ? "[first, second]" : "[second, first]"}
+console.log(And === Or, And.allows("a"), Or.allows("a"), And.allows("ac"), Or.allows("bc"))`)
+				attest(out).equals("false false true true true\n")
+			}
+		})
+	})
+
 	describe("unit and enumerated syntax escaping", () => {
 		it("does not interpret single quotes or backslashes as syntax when deferred", () => {
 			attest(
@@ -718,6 +1103,26 @@ console.log(
 	Object.is(Neg({}).a, -0)
 )`)
 				attest(out).equals("false true true\n")
+			}
+		})
+
+		it("distinguishes -0 and 0 bounds in both creation orders", () => {
+			for (const posFirst of [true, false]) {
+				const out =
+					printed(`const makePos = () => [type("number").atMost(0), type("string").atMostLength(0)]
+const makeNeg = () => [type("number").atMost(-0), type("string").atMostLength(-0)]
+const first = ${posFirst ? "makePos()" : "makeNeg()"}
+const second = ${posFirst ? "makeNeg()" : "makePos()"}
+const [Pos, Neg] = ${posFirst ? "[first, second]" : "[second, first]"}
+console.log(
+	Pos[0] === Neg[0],
+	Pos[0].json.max,
+	Neg[0].json.max,
+	Pos[1] === Neg[1],
+	Pos[1].json.exactLength,
+	Neg[1].json.exactLength
+)`)
+				attest(out).equals("false 0 -0 false 0 -0\n")
 			}
 		})
 	})

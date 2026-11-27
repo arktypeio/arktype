@@ -69,7 +69,7 @@ import {
 	type TraverseTransform
 } from "./shared/traversal.ts"
 import { hasArkKind, isNode } from "./shared/utils.ts"
-import { arrayIndexMatcher } from "./structure/shared.ts"
+import { arrayIndexMatcher, arrayPathKeyOf } from "./structure/shared.ts"
 
 // leaves read no object property
 const isLeafIn = (node: BaseNode, byId: Record<string, BaseNode>): boolean => {
@@ -312,6 +312,7 @@ const unitConstants = {
 	allowsInBranchBy,
 	ArkErrors,
 	arrayIndexMatcher,
+	arrayPathKeyOf,
 	callMorph,
 	copyDeclared,
 	copyOf,

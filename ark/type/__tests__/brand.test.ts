@@ -101,6 +101,12 @@ contextualize(() => {
 		attest(Id("abc") as unknown).equals("abc")
 		attest(Id("").toString()).snap("must be non-empty")
 
+		// as a pattern intersected in a definition is
+		const A = type("string#id").matching("^a")
+		const Expected = type("string#id & /^a/")
+		attest<typeof Expected.t>(A.t)
+		attest(A.expression).snap("/^a/")
+
 		const Cents = type("number#Cents").moreThan(0)
 		attest<Brand<number, "Cents">>(Cents.infer)
 		attest<number>(Cents.inferIn)

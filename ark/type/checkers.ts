@@ -15,6 +15,7 @@ import {
 	allowsUntracked,
 	appliesValues,
 	ArkErrors,
+	arrayPathKeyOf,
 	copyOf,
 	describePredicate,
 	discriminatesBooleans,
@@ -767,8 +768,11 @@ export const recordOf = ((value: Checker): Checker => {
 	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
-		for (const k of Object.keys(data))
-			if (failsValue(ctx, value, data, k, data[k])) return false
+		const isArray = Array.isArray(data)
+		for (const k of Object.keys(data)) {
+			const pathKey = isArray ? arrayPathKeyOf(k) : k
+			if (failsValue(ctx, value, data, pathKey, data[k])) return false
+		}
 		return true
 	}
 	checker.description = objectCheck.description
@@ -791,12 +795,17 @@ export const indexed = ((
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
 		if (!walks(data, ctx)) return false
+		const isArray = Array.isArray(data)
 		for (const k of [
 			...Object.keys(data),
 			...Object.getOwnPropertySymbols(data)
 		]) {
+			const pathKey = isArray ? arrayPathKeyOf(k) : k
 			for (const [key, value] of signatures) {
-				if (matchesKey(key, k, ctx) && failsValue(ctx, value, data, k, data[k]))
+				if (
+					matchesKey(key, k, ctx) &&
+					failsValue(ctx, value, data, pathKey, data[k])
+				)
 					return false
 			}
 			if (

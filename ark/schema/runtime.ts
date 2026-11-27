@@ -33,7 +33,7 @@ export {
 } from "./shared/jsonSchema.ts"
 export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
-export { arrayIndexMatcher } from "./structure/shared.ts"
+export { arrayIndexMatcher, arrayPathKeyOf } from "./structure/shared.ts"
 
 // frozen when the first validator is created
 export const runtimeConfig: ResolvedConfig = {

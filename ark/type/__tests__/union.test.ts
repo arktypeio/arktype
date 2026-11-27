@@ -6,7 +6,7 @@ import {
 	writeUnresolvableMessage,
 	type UnionNode
 } from "@ark/schema"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
@@ -648,5 +648,130 @@ x must be a string`)
 		})
 		attest(OrderedDup("a")).equals("a")
 		attest(OrderedDup("b")).equals("g:b")
+	})
+
+	it("equal branches with the same meta are that branch", () => {
+		const meta = {
+			description: "a name",
+			message: "not a name",
+			[Symbol("s")]: 1,
+			custom: "x"
+		}
+		const Name = type("string").configure(meta as never)
+		const T = Name.or(type("string").configure(meta as never))
+		attest(T.internal).is(Name.internal)
+		attest(T.description).snap("a name")
+		attest(T(5).toString()).snap("not a name")
+		attest(
+			type("string")
+				.label("Name")
+				.or(type("string").label("Name"))(5)
+				.toString()
+		).snap("Name must be a string")
+	})
+
+	it("equal branches with different meta keep one's, as alongside another branch", () => {
+		const X = type("string").describe("x")
+		const Y = type("string").describe("y")
+		attest(X.or(Y).description).snap("x")
+		attest(Y.or(X).description).snap("x")
+		attest(X.or(Y).or("number").description).snap("a number or x")
+	})
+
+	it("orders cyclic types by when they were defined", () => {
+		// an alias's id counts those of its name, so three defined in turn can be
+		// counted8, counted9 and counted10, the last before the others as text
+		const k = () =>
+			scope({ counted: { a: "counted", k: "true" } }).export().counted
+		let K = k()
+		while (!/\D9*8$/.test(K.internal.id)) K = k()
+		const L = scope({ counted: { a: "counted", l: "true" } }).export().counted
+		const R = scope({ counted: { a: "counted", r: "true" } }).export().counted
+		const ids = [K, L, R].map(T => T.internal.id)
+		attest(ids.map(id => id.length - ids[0].length)).equals([0, 0, 1])
+
+		const T = L.array().or(R.array())
+		attest(T.expression).snap(
+			"{ a: $counted, l: true }[] | { a: $counted, r: true }[]"
+		)
+		attest(R.array().or(L.array()).expression).equals(T.expression)
+
+		// an intersection's operands
+		const intersected = {
+			required: [
+				{ key: "a", value: `$ark.${ids[1]}&${ids[2]}` },
+				{ key: "l", value: { unit: true } },
+				{ key: "r", value: { unit: true } }
+			],
+			domain: "object"
+		}
+		attest(L.and(R).json).equals(intersected)
+		attest(R.and(L).json).equals(intersected)
+
+		// intersections sharing their first operand
+		const Nested = type({ v: K.and(R) }).or({ v: K.and(L) })
+		attest(Nested.expression).snap(
+			"{ v: { a: $counted&$counted, k: true, l: true } } | { v: { a: $counted&$counted, k: true, r: true } }"
+		)
+
+		// a name that is another's and a digit follows it, however many of
+		// either were defined: as text, numbered3 is after numbered2_3
+		const numbered = () => {
+			const types = scope({
+				numbered: { a: "numbered", l: "true" },
+				numbered2: { a: "numbered2", r: "true" }
+			}).export()
+			return types.numbered.array().or(types.numbered2.array()).expression
+		}
+		const first = numbered()
+		attest(first).snap(
+			"{ a: $numbered, l: true }[] | { a: $numbered2, r: true }[]"
+		)
+		numbered()
+		attest(numbered()).equals(first)
+
+		// a name's own digits aren't a counter
+		const named = scope({
+			named15: { a: "named15", l: "true" },
+			named9: { a: "named9", r: "true" }
+		}).export()
+		attest(named.named9.array().or(named.named15.array()).expression).snap(
+			"{ a: $named15, l: true }[] | { a: $named9, r: true }[]"
+		)
+
+		// a string that reads as a reference is still ordered by code unit
+		attest(type("'$ark.counted9' | '$ark.counted10'").expression).snap(
+			'"$ark.counted10" | "$ark.counted9"'
+		)
+	})
+
+	it("a predicate throwing while the union is discriminated throws at each check", () => {
+		let throws = false
+		const T = type({ k: "'a'", a: "1" })
+			.or({ k: "'b'", a: "2" })
+			.or({
+				k: type("string").narrow(() => {
+					if (throws) throw new Error("boom")
+					return true
+				}),
+				z: "1"
+			})
+		// reducing the union calls the predicate too, so it's built first
+		attest(T.expression).snap(
+			'{ a: 1, k: "a" } | { a: 2, k: "b" } | { k: string & fn, z: 1 }'
+		)
+		throws = true
+		const results = [0, 1, 2].map(() => {
+			try {
+				T({ k: "a", a: 1 })
+				return "checked"
+			} catch (e) {
+				return (e as Error).message
+			}
+		})
+		// a Type's first check can run through its branches, undiscriminated
+		attest(results.slice(1)).equals(["boom", "boom"])
+		throws = false
+		attest(T({ k: "a", a: 1 })).snap({ k: "a", a: 1 })
 	})
 })

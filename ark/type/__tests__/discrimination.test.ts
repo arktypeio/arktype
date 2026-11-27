@@ -1536,4 +1536,99 @@ nested.z must be removed`)
 			}
 		}
 	})
+
+	it("doesn't prune a key whose name begins the discriminant's", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ data: "object", dataType: "'x'" }).or({
+				data: "object",
+				dataType: "'y'",
+				y: "number"
+			})
+			// uncompiled, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				attest(T.allows({ data: 5, dataType: "x" })).equals(false)
+				attest(T.allows({ data: {}, dataType: "x" })).equals(true)
+			}
+			attest(T({ data: 5, dataType: "x" }).toString()).snap(
+				"data must be an object"
+			)
+
+			const Structured = $.type({ data: { a: "string" }, dataType: "'x'" }).or({
+				data: { a: "string" },
+				dataType: "'y'",
+				y: "number"
+			})
+			for (let pass = 0; pass < 2; pass++)
+				attest(Structured.allows({ data: null, dataType: "x" })).equals(false)
+			attest(Structured({ data: 5, dataType: "x" }).toString()).snap(
+				"data must be an object"
+			)
+		}
+	})
+
+	it("case relates a unit to a narrowed type by the basis it keeps", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type("'a' | null")
+				.pipe(v => v)
+				.or("string.url")
+				.or("number")
+			// discriminated uncompiled by data no branch allows, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				attest(T(undefined)?.toString()).snap(
+					'must be a number, a string, "a" or null'
+				)
+				attest(T("b")?.toString()).snap('must be a URL string, "a" or null')
+				attest(T(null)).equals(null)
+				attest(T("a")).equals("a")
+				attest(T("https://arktype.io")).equals("https://arktype.io")
+			}
+
+			// a predicate that would allow the unit doesn't overlap its branch
+			const NotA = $.type("'a' | null")
+				.pipe(v => v)
+				.or($.type("string").narrow(s => s !== "a"))
+				.or("number")
+			attest(NotA(undefined)?.toString()).snap(
+				'must be a number, a string, "a" or null'
+			)
+			attest(NotA("b")).equals("b")
+
+			// an object's predicate above the discriminant
+			const Above = $.type({
+				o: $.type({ k: "'a'" }).narrow(o => o.k.length === 1),
+				"a?": "1"
+			})
+				.or({ o: { k: "'b'" }, "b?": "1" })
+				.or({ o: $.type({ k: "'a'", x: "1" }).or("null"), "c?": "1" })
+			for (let pass = 0; pass < 2; pass++) {
+				attest(Above(0).toString()).snap("must be an object")
+				attest(Above.allows({ o: null })).equals(true)
+				attest(Above.allows({ o: { k: "a" } })).equals(true)
+				attest(Above.allows({ o: { k: "c" } })).equals(false)
+			}
+		}
+
+		const isLong = (s: string) => s.length > 1
+		const Narrowed = type("string").narrow(isLong).or("symbol")
+		attest(discriminantJsonOf(Narrowed.internal.assertIs("union"))).equals({
+			kind: "domain",
+			path: [],
+			cases: {
+				'"string"': {
+					domain: "string",
+					predicate: [registeredReference(isLong)]
+				},
+				'"symbol"': true
+			}
+		})
+		// a length implies the basis pruned from it
+		const Bounded = type("string > 1").or("symbol")
+		attest(discriminantJsonOf(Bounded.internal.assertIs("union"))).snap({
+			kind: "domain",
+			path: [],
+			cases: { '"string"': { minLength: 2 }, '"symbol"': true }
+		})
+	})
 })
