@@ -36,7 +36,8 @@ export declare namespace State {
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
-		caseInsensitive: contains<flags, "i">
+		caseInsensitive: contains<flags, "i"> extends true ? CasedBudget.Initial
+		:	false
 		multiline: contains<flags, "m">
 		flags: flags
 	}>
@@ -56,7 +57,7 @@ export declare namespace State {
 		branches: RegexAst[]
 		sequence: RegexAst
 		root: RegexAst
-		caseInsensitive: boolean
+		caseInsensitive: CaseInsensitiveState
 		multiline: boolean
 	}
 
@@ -80,7 +81,7 @@ export declare namespace State {
 			remaining extends (
 				[infer head extends RegexAst, ...infer tail extends RegexAst[]]
 			) ?
-				head extends UnionTree<infer headBranches> ?
+				[head] extends [UnionTree<infer headBranches>] ?
 					finalizeUnion<tail, [...flattened, ...headBranches]>
 				:	finalizeUnion<tail, [...flattened, head]>
 			:	UnionTree<flattened>
@@ -104,6 +105,53 @@ export type AnchorMarker<inner extends Anchor = Anchor> =
 
 export type StartAnchorMarker = AnchorMarker<"^">
 export type EndAnchorMarker = AnchorMarker<"$">
+
+/**
+ * Tracks case-insensitive expansion budget as `[currentBranchCased, maxBranchCased]`
+ * when case-insensitive matching is active, or `false` when case-sensitive.
+ */
+export type CaseInsensitiveState = false | CasedBudget
+
+export type CasedBudget = [cased: 1[], maxCased: 1[]]
+
+export declare namespace CasedBudget {
+	export type Initial = [[], []]
+}
+
+type longerTuple<a extends 1[], b extends 1[]> =
+	a extends [...b, ...1[]] ? a : b
+
+type resetBranchCased<
+	groups extends State.Group[],
+	budget extends CasedBudget
+> = [
+	groups extends [...unknown[], infer parent extends State.Group] ?
+		parent["caseInsensitive"] extends [infer parentCased extends 1[], 1[]] ?
+			parentCased
+		:	[]
+	:	[],
+	longerTuple<budget[1], budget[0]>
+]
+
+type pushGroupCaseInsensitive<
+	current extends CaseInsensitiveState,
+	modifier extends boolean | undefined
+> =
+	modifier extends false ? false
+	: modifier extends true ?
+		current extends [infer cased extends 1[], 1[]] ?
+			[cased, cased]
+		:	CasedBudget.Initial
+	: current extends [infer cased extends 1[], 1[]] ? [cased, cased]
+	: false
+
+type popGroupCaseInsensitive<last extends State.Group, inner extends State> =
+	last["caseInsensitive"] extends infer lastBudget extends CasedBudget ?
+		inner["capture"] extends LookaroundKind ? lastBudget
+		: inner["caseInsensitive"] extends infer innerBudget extends CasedBudget ?
+			[longerTuple<innerBudget[1], innerBudget[0]>, lastBudget[1]]
+		:	lastBudget
+	:	false
 
 export declare namespace s {
 	export type error<message extends string> = State.from<{
@@ -130,6 +178,24 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], s["root"]>
 		root: root
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
+		flags: s["flags"]
+	}>
+
+	export type shiftCasedChar<
+		s extends State,
+		root extends RegexAst,
+		unscanned extends string
+	> = State.from<{
+		unscanned: unscanned
+		groups: s["groups"]
+		capture: s["capture"]
+		branches: s["branches"]
+		sequence: pushQuantifiable<s["sequence"], s["root"]>
+		root: root
+		caseInsensitive: s["caseInsensitive"] extends CasedBudget ?
+			[[...s["caseInsensitive"][0], 1], s["caseInsensitive"][1]]
+		:	false
 		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
@@ -185,7 +251,11 @@ export declare namespace s {
 		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
 		sequence: SequenceTree.Empty
 		root: ""
-		caseInsensitive: s["caseInsensitive"]
+		caseInsensitive: s["caseInsensitive"] extends (
+			infer budget extends CasedBudget
+		) ?
+			resetBranchCased<s["groups"], budget>
+		:	false
 		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
@@ -219,8 +289,10 @@ export declare namespace s {
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
-		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
-		:	s["caseInsensitive"]
+		caseInsensitive: pushGroupCaseInsensitive<
+			s["caseInsensitive"],
+			caseInsensitive
+		>
 		multiline: multiline extends boolean ? multiline : s["multiline"]
 		flags: s["flags"]
 	}>
@@ -245,7 +317,7 @@ export declare namespace s {
 				: s["capture"] extends LookaroundKind ? ""
 				: // non-capturing
 					State.Group.finalize<s>
-				caseInsensitive: last["caseInsensitive"]
+				caseInsensitive: popGroupCaseInsensitive<last, s>
 				multiline: last["multiline"]
 				flags: s["flags"]
 			}>

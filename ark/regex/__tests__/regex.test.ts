@@ -1735,6 +1735,65 @@ contextualize(() => {
 			attest<Regex<anyCase<"relay" | "relai" | "point">, { flags: "i" }>>(S)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1533
+		it("long case-insensitive patterns widen without TS2589", () => {
+			const Instagram = regex(
+				"^(?:https?://)?(?:www\\.)?instagram\\.com/([a-zA-Z0-9._]+)",
+				"i"
+			)
+			const url1: typeof Instagram.infer = "https://www.instagram.com/arktype"
+			const url2: typeof Instagram.infer = "HTTP://INSTAGRAM.COM/Ark_Type.1"
+			const url3: typeof Instagram.infer = "instagram.com/user"
+			const url4: typeof Instagram.infer = "WWW.Instagram.Com/foo"
+			attest(Instagram.test(url1)).equals(true)
+			attest(Instagram.test(url2)).equals(true)
+			attest(Instagram.test(url3)).equals(true)
+			attest(Instagram.test(url4)).equals(true)
+			const match = Instagram.exec("HTTPS://WWW.INSTAGRAM.COM/ark_type")!
+			attest<string>(match[1]).equals("ark_type")
+
+			const Long = regex("^abcdefghijklmnopqrst$", "i")
+			const okLower: typeof Long.infer = "abcdefghijklmnopqrst"
+			const okUpper: typeof Long.infer = "ABCDEFGHIJKLMNOPQRST"
+			const okMixed: typeof Long.infer = "AbCdEfGhIjKlMnOpQrSt"
+			// @ts-expect-error first 5 characters are still checked case-insensitively
+			const _badPrefix: typeof Long.infer = "xyzdefghijklmnopqrst"
+			attest(Long.test(okLower)).equals(true)
+			attest(Long.test(okUpper)).equals(true)
+			attest(Long.test(okMixed)).equals(true)
+
+			const Hyphenated = regex("^ab-cd-ef-gh-ij-kl-mn-op-qr-st$", "i")
+			const okHyphen: typeof Hyphenated.infer = "Ab-cD-Ef-gH-Ij-kL-Mn-oP-Qr-sT"
+			attest(Hyphenated.test(okHyphen)).equals(true)
+
+			const Grouped = regex("^(?:abcde)(?:fghij)(?:klmno)(?:pqrst)$", "i")
+			const okGrouped: typeof Grouped.infer = "ABCDEfghijKLMNOpqrst"
+			attest(Grouped.test(okGrouped)).equals(true)
+
+			const Repeated = regex("^a{20}$", "i")
+			const okRepeated: typeof Repeated.infer = "aAaAaAaAaAaAaAaAaAaA"
+			attest(Repeated.test(okRepeated)).equals(true)
+
+			const RepeatedGroup = regex("^(?:abcde){10}$", "i")
+			const okRepeatedGroup: typeof RepeatedGroup.infer =
+				"abcdeABCDEabcdeABCDEabcdeABCDEabcdeABCDEabcdeABCDE"
+			attest(RepeatedGroup.test(okRepeatedGroup)).equals(true)
+
+			const Short = regex("^abc$", "i")
+			attest<
+				Regex<
+					"abc" | "abC" | "aBc" | "aBC" | "Abc" | "AbC" | "ABc" | "ABC",
+					{ flags: "i" }
+				>
+			>(Short)
+
+			const MixedBranchThenSeq = regex("^(?:abcde|1)(?:fghij)$", "i")
+			const okBranch1: typeof MixedBranchThenSeq.infer = "AbCdEfGhIj"
+			const okBranch2: typeof MixedBranchThenSeq.infer = "1FGHIJ"
+			attest(MixedBranchThenSeq.test(okBranch1)).equals(true)
+			attest(MixedBranchThenSeq.test(okBranch2)).equals(true)
+		})
+
 		it("m", () => {
 			const S = regex("^abc$", "m")
 			attest<Regex<`${string}abc${string}`, { flags: "m" }>>(S)

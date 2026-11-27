@@ -15,7 +15,7 @@ import type {
 	writeUnnecessaryEscapeMessage
 } from "./escape.ts"
 import type { UnicodeFlag } from "./regex.ts"
-import type { Control, s, State } from "./state.ts"
+import type { CasedBudget, Control, s, State } from "./state.ts"
 
 export type parseCharset<s extends State, unscanned extends string> =
 	Scanner.shiftUntilEscapable<unscanned, "]", Backslash> extends (
@@ -38,11 +38,9 @@ export type parseCharset<s extends State, unscanned extends string> =
 			> extends infer result extends string ?
 				[result] extends [never] ? s.error<emptyCharacterSetMessage>
 				: result extends ErrorMessage ? s.error<result>
-				: s.shiftQuantifiable<
-						s,
-						applyCharsetCasing<s["caseInsensitive"], result>,
-						remaining
-					>
+				: s["caseInsensitive"] extends false ?
+					s.shiftQuantifiable<s, result, remaining>
+				:	shiftCaseInsensitiveCharset<s, result, remaining>
 			:	never
 		:	s.error<writeUnclosedGroupMessage<"]">>
 	:	never
@@ -63,10 +61,20 @@ type parseNegatedCharset<
 		:	s.shiftQuantifiable<s, string, remaining>
 	:	s.shiftQuantifiable<s, string, remaining>
 
-type applyCharsetCasing<caseInsensitive extends boolean, chars extends string> =
-	caseInsensitive extends false ? chars
-	: string extends chars ? chars
-	: expandCharsetCasing<chars>
+type shiftCaseInsensitiveCharset<
+	s extends State,
+	chars extends string,
+	remaining extends string
+> =
+	string extends chars ? s.shiftQuantifiable<s, chars, remaining>
+	: expandCharsetCasing<chars> extends infer expanded extends string ?
+		[expanded] extends [chars] ? s.shiftQuantifiable<s, chars, remaining>
+		: s["caseInsensitive"] extends CasedBudget ?
+			s["caseInsensitive"][0]["length"] extends 5 ?
+				s.shiftQuantifiable<s, string, remaining>
+			:	s.shiftCasedChar<s, expanded, remaining>
+		:	s.shiftQuantifiable<s, chars, remaining>
+	:	never
 
 type expandCharsetCasing<char extends string> =
 	char extends unknown ?

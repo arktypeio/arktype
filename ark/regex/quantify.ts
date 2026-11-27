@@ -134,6 +134,13 @@ export type quantify<
 	max extends number | null
 > = tryFastPath<pattern, min, max>
 
+type isUnionString<s extends string, copy extends string = s> =
+	s extends unknown ?
+		[copy] extends [s] ?
+			false
+		:	true
+	:	never
+
 type tryFastPath<
 	pattern extends string,
 	min extends number,
@@ -163,7 +170,25 @@ type loopFromZero<
 	repetitions extends 1[]
 > =
 	repetitions["length"] extends max ? acc
+	: repetitions["length"] extends 2 ?
+		isUnionString<base> extends true ?
+			string
+		:	loopFromZeroUnchecked<
+				base,
+				max,
+				acc | `${acc}${base}`,
+				[...repetitions, 1]
+			>
 	:	loopFromZero<base, max, acc | `${acc}${base}`, [...repetitions, 1]>
+
+type loopFromZeroUnchecked<
+	base extends string,
+	max extends number,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends max ? acc
+	:	loopFromZeroUnchecked<base, max, acc | `${acc}${base}`, [...repetitions, 1]>
 
 type loopUntilMin<
 	base extends string,
@@ -179,7 +204,24 @@ type loopUntilMin<
 		// already been taken
 		repetitions["length"] extends 0 ? acc | appendString<`${acc}${base}`>
 		: appendString<acc>
+	: repetitions["length"] extends 2 ?
+		isUnionString<base> extends true ?
+			appendString<acc>
+		:	loopUntilMinUnchecked<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 	:	loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]>
+
+type loopUntilMinUnchecked<
+	base extends string,
+	min extends number,
+	max extends number | null,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends min ?
+		max extends number ? loopUntilMaxUnchecked<base, min, max, acc, repetitions>
+		: repetitions["length"] extends 0 ? acc | appendString<`${acc}${base}`>
+		: appendString<acc>
+	:	loopUntilMinUnchecked<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 
 type loopUntilMax<
 	base extends string,
@@ -189,7 +231,33 @@ type loopUntilMax<
 	repetitions extends 1[]
 > =
 	repetitions["length"] extends max ? acc
+	: repetitions["length"] extends 2 ?
+		isUnionString<base> extends true ?
+			appendString<acc>
+		:	loopUntilMaxUnchecked<
+				base,
+				min,
+				max,
+				acc | `${acc}${base}`,
+				[...repetitions, 1]
+			>
 	:	loopUntilMax<base, min, max, acc | `${acc}${base}`, [...repetitions, 1]>
+
+type loopUntilMaxUnchecked<
+	base extends string,
+	min extends number,
+	max extends number,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends max ? acc
+	:	loopUntilMaxUnchecked<
+			base,
+			min,
+			max,
+			acc | `${acc}${base}`,
+			[...repetitions, 1]
+		>
 
 export type QuantifyingChar = "*" | "+" | "?"
 

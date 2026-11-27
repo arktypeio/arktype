@@ -9,7 +9,7 @@ import type {
 	QuantifyingChar
 } from "./quantify.ts"
 import type { UnicodeFlag } from "./regex.ts"
-import type { Anchor, AnchorMarker, s, State, UnionTree } from "./state.ts"
+import type { Anchor, AnchorMarker, CasedBudget, s, State } from "./state.ts"
 
 export type parseState<s extends State> =
 	s["unscanned"] extends ErrorMessage ? s["unscanned"]
@@ -37,14 +37,20 @@ export type next<s extends State> =
 				s.error<loneClosingBraceMessage>
 			:	s.shiftQuantifiable<s, "}", unscanned>
 		: lookahead extends "[" ? parseCharset<s, unscanned>
-		: s.shiftQuantifiable<
-				s,
-				maybeSplitCasing<s["caseInsensitive"], lookahead>,
-				unscanned
-			>
+		: s["caseInsensitive"] extends false ?
+			s.shiftQuantifiable<s, lookahead, unscanned>
+		:	shiftCaseInsensitiveChar<s, lookahead, unscanned>
 	:	never
 
-type maybeSplitCasing<caseInsensitive extends boolean, char extends string> =
-	caseInsensitive extends false ? char
-	: Lowercase<char> extends Uppercase<char> ? char
-	: UnionTree<[Lowercase<char>, Capitalize<char>]>
+type shiftCaseInsensitiveChar<
+	s extends State,
+	char extends string,
+	unscanned extends string
+> =
+	Lowercase<char> extends Uppercase<char> ?
+		s.shiftQuantifiable<s, char, unscanned>
+	: s["caseInsensitive"] extends CasedBudget ?
+		s["caseInsensitive"][0]["length"] extends 5 ?
+			s.shiftQuantifiable<s, string, unscanned>
+		:	s.shiftCasedChar<s, Lowercase<char> | Uppercase<char>, unscanned>
+	:	s.shiftQuantifiable<s, char, unscanned>

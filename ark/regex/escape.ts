@@ -47,12 +47,20 @@ type parseNumericBackreference<
 	Scanner.shiftUntilNot<fullUnscanned, StringDigit> extends (
 		Scanner.shiftResult<infer ref, infer remaining>
 	) ?
-		s.shiftQuantifiable<s, ReferenceNode<ref, s["caseInsensitive"]>, remaining>
+		s.shiftQuantifiable<
+			s,
+			ReferenceNode<ref, s["caseInsensitive"] extends false ? false : true>,
+			remaining
+		>
 	:	never
 
 type parseNamedBackreference<s extends State, unscanned extends string> =
 	unscanned extends `<${infer ref}>${infer following}` ?
-		s.shiftQuantifiable<s, ReferenceNode<ref, s["caseInsensitive"]>, following>
+		s.shiftQuantifiable<
+			s,
+			ReferenceNode<ref, s["caseInsensitive"] extends false ? false : true>,
+			following
+		>
 	:	s.error<missingBackreferenceNameMessage>
 
 type parseUnicodeProperty<
