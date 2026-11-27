@@ -78,6 +78,22 @@ contextualize(() => {
 		)
 	})
 
+	it("args expression", () => {
+		attest<"a">(type("keyof", { a: "string" }).infer)
+		// @ts-expect-error
+		attest(() => type("keyof", "string")).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "string")
+		)
+		// @ts-expect-error
+		attest(() => type("keyof", "string.json.parse"))
+			.throws("keyof operand must be an object (was (In: string) => Out<")
+			.type.errors("keyof operand must be an object (was Function)")
+		// @ts-expect-error
+		attest(() => type("keyof", "unknown.any")).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "unknown")
+		)
+	})
+
 	it("morph", () => {
 		// @ts-expect-error
 		attest(() => type("keyof string.numeric.parse"))

@@ -51,7 +51,8 @@ import type {
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
-	TupleInfixOperator
+	TupleInfixOperator,
+	validateKeyofOperand
 } from "./parser/tupleExpressions.ts"
 import {
 	$arkTypeRegistry,
@@ -104,6 +105,7 @@ export interface ValidatedArgs<
 	predicate: Predicate<distill.Out<inferDefinition<zero, $>>>
 	morph: Morph<distill.Out<inferDefinition<zero, $>>, unknown>
 	operand: validateDefinition<rest[0], $, bindThis<rest[0]>>
+	keyofOperand: validateKeyofOperand<one, $, bindThis<one>>
 	predicateRest: [
 		ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "predicate"
 		:	never]
@@ -164,7 +166,9 @@ export interface BaseTypeParser<$ = {}> {
 		: type.validate<zero, $>,
 		_1: zero extends ParameterString ?
 			ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "body" : never]
-		: zero extends "keyof" ? type.validate<one, $>
+		: zero extends "keyof" ?
+			ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "keyofOperand"
+			:	never]
 		: zero extends "instanceof" ? conform<one, Constructor>
 		: zero extends "===" ? conform<one, unknown>
 		: conform<one, ArgTwoOperator>,

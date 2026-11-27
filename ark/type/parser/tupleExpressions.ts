@@ -100,17 +100,17 @@ export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
 	def["length"] extends 1 ?
 		readonly [ErrorMessage<writeMissingRightOperandMessage<def[0]>>]
 	: def[0] extends "keyof" ?
-		readonly [
-			def[0],
-			inferDefinition<def[1], $, args> extends infer data ?
-				isKeyofOperand<data> extends true ?
-					validateDefinition<def[1], $, args>
-				:	writeKeyofOperandError<data>
-			:	never
-		]
+		readonly [def[0], validateKeyofOperand<def[1], $, args>]
 	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof" ? readonly [def[0], ...Constructor[]]
 	: never
+
+export type validateKeyofOperand<operandDef, $, args> =
+	inferDefinition<operandDef, $, args> extends infer data ?
+		isKeyofOperand<data> extends true ?
+			validateDefinition<operandDef, $, args>
+		:	writeKeyofOperandError<data>
+	:	never
 
 export type validateIndexOneExpression<
 	def extends IndexOneExpression,
