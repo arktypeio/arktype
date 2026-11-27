@@ -3,6 +3,7 @@ import {
 	Disjoint,
 	isResolutionFinal,
 	type BaseConstraint,
+	type BaseNode,
 	type BaseRoot,
 	type DomainNode,
 	type IntersectionContext,
@@ -14,17 +15,26 @@ import {
 	type setImplementationOf
 } from "../implement.ts"
 
+const deferredUnitIntersections = new WeakSet<BaseNode>()
+
+/** whether node stands for a unit's intersection until the aliases its other operand holds resolve */
+export const isDeferredUnitIntersection = (node: BaseNode): boolean =>
+	deferredUnitIntersections.has(node)
+
 const deferUnitIntersection = (
 	l: Unit.Node,
 	r: BaseRoot,
 	ctx: IntersectionContext
-): BaseRoot =>
-	ctx.$.lazilyResolve(
+): BaseRoot => {
+	const deferred = ctx.$.lazilyResolve(
 		() => (r.allowsUnused(l.unit) ? l : $ark.kw.never.internal),
 		`${l.id}&${r.id}`,
 		"&",
 		[l, r]
 	)
+	deferredUnitIntersections.add(deferred)
+	return deferred
+}
 
 export const unit: setImplementationOf<Unit.Declaration> = {
 	intersections: {

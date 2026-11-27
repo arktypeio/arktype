@@ -3,7 +3,10 @@ import {
 	Disjoint,
 	isIoFinal,
 	isNode,
+	isResolutionFinal,
+	reachesDefault,
 	rootKinds,
+	uncheckedDiscards,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
@@ -18,6 +21,7 @@ import {
 } from "@ark/schema"
 import type { TypeGuard } from "@ark/util"
 import { setImplementationsByKind } from "./kinds.ts"
+import { isDeferredUnitIntersection } from "./roots/unit.ts"
 
 type IntersectionCache = WeakMap<
 	BaseScope,
@@ -28,7 +32,11 @@ type IntersectionCache = WeakMap<
 >
 
 // a result belongs to the scope that parsed it
-const intersectionCache: IntersectionCache = new WeakMap()
+let intersectionCache: IntersectionCache = new WeakMap()
+
+// a result cached while a check waited is served without queueing the check
+// again, so once checks are discarded that hadn't passed, none is kept
+let checkedAsOf = 0
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -54,6 +62,10 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		r: BaseNode,
 		ctx: IntersectionContext
 	): BaseNode | Disjoint | null => {
+		if (checkedAsOf !== uncheckedDiscards()) {
+			intersectionCache = new WeakMap()
+			checkedAsOf = uncheckedDiscards()
+		}
 		let cacheByOperator = intersectionCache.get(ctx.$)
 		if (!cacheByOperator) {
 			intersectionCache.set(
@@ -64,7 +76,16 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		const cacheByL = cacheByOperator[ctx.pipe ? "|>" : "&"]
 		let cacheByR = cacheByL.get(l)
 		const cached = cacheByR?.get(r)
-		if (cached !== undefined) {
+		// a unit's intersection deferred while an alias could be unresolved stands
+		// for neither operand, so once they've resolved it's decided instead
+		if (
+			cached !== undefined &&
+			!(
+				isNode(cached) &&
+				isDeferredUnitIntersection(cached) &&
+				isResolutionFinal()
+			)
+		) {
 			$ark.reached?.cached(cacheByR!, r)
 			return cached as never
 		}
@@ -99,15 +120,18 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 	}) as never
 
 // no data reaches both of two Types whose inputs are disjoint, so they are
-// disjoint whatever morphs they hold. Morphs must be the same only for data
-// reaching both, but are compared wherever two meet, which can be at a key
-// intersected before the one the inputs are disjoint at
+// disjoint whatever morphs or defaults they hold. Morphs must be the same,
+// and a default one that what it meets allows, only for data reaching both,
+// but are compared wherever two meet, which can be at a key intersected
+// before the one the inputs are disjoint at
 const disjointInputsOf = (
 	l: BaseNode,
 	r: BaseNode,
 	ctx: IntersectionContext
 ): Disjoint | undefined => {
-	if (!l.hasMorph || !r.hasMorph || !l.isRoot() || !r.isRoot()) return
+	if (!l.isRoot() || !r.isRoot()) return
+	if (!(l.hasMorph && r.hasMorph) && !reachesDefault(l) && !reachesDefault(r))
+		return
 	const lIn = l._in
 	const rIn = r._in
 	if (lIn === l && rIn === r) return

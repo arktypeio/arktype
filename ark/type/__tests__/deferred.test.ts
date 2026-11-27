@@ -164,8 +164,8 @@ console.log(
 	it("what holds an alias throws where it's composed", () => {
 		const cyclic = type
 			.raw({
-				"[string]": "boolean",
-				a: "this | 1 <= number.integer <= 5 = 3"
+				"[string]": "string",
+				a: "this | string.numeric.parse"
 			})
 			.or("number.safe")
 		attest(() =>
@@ -178,8 +178,8 @@ console.log(
 		const cyclic = () =>
 			type
 				.raw({
-					"[string]": "boolean",
-					a: "this | 1 <= number.integer <= 5 = 3"
+					"[string]": "string",
+					a: "this | string.numeric.parse"
 				})
 				.or("number.safe")
 		const held = anyType.Record("string", { z: cyclic() })

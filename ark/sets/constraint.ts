@@ -96,7 +96,21 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 
 		if (result.isRoot()) {
 			s.roots.push(result)
-			s.l.splice(i, 1)
+			// sequences that met as tuples of several lengths are the root's now,
+			// but what's left of a structure rejecting undeclared keys still
+			// declares the indices they did
+			if (
+				s.kind === "structure" &&
+				s.baseInner.undeclared === "reject" &&
+				head.is("sequence") &&
+				result.branches.some(
+					branch => branch.is("intersection") && branch.structure?.sequence
+				)
+			) {
+				s.l[i] = s.ctx.$.node("sequence", {
+					variadic: $ark.kw.unknown.internal
+				})
+			} else s.l.splice(i, 1)
 			return intersectConstraints(s)
 		}
 

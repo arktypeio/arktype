@@ -879,7 +879,7 @@ const computeReachesDefault = (root: BaseRoot, final: boolean): boolean => {
 	return false
 }
 
-const reachesDefault = (root: BaseRoot): boolean => {
+export const reachesDefault = (root: BaseRoot): boolean => {
 	if (!root.alters && !root.hasAlias) return false
 	const final = isResolutionFinal()
 	const cacheable = final || !root.hasAlias

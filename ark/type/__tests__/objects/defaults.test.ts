@@ -1506,4 +1506,169 @@ baz[0] must be a number`)
 			writeInvalidDateMessage("not-a-date")
 		)
 	})
+
+	it("a default isn't checked against what no data reaches with it", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// no data holds both a `c` of 1 and one of "a"
+			const L = $.type({ c: "1", b: "false = false" })
+			const R = $.type({ c: "'a' = 'a'", "b?": "0" })
+			// whichever is intersected first, though only R's keys meet `b` before `c`
+			attest(L.or("0").and(R.or("0")).expression).equals("0")
+			attest(R.or("0").and(L.or("0")).expression).equals("0")
+			attest(() => L.and(R)).throws(
+				'ParseError: Intersection at c of 1 and "a" results in an unsatisfiable type'
+			)
+			attest(() => R.and(L)).throws(
+				'ParseError: Intersection at c of "a" and 1 results in an unsatisfiable type'
+			)
+			// nor are two defaults that differ
+			const One = $.type({ z: "1", b: "number = 1" })
+			const Two = $.type({ "z?": "2", b: "number = 2" })
+			attest(One.or("0").and(Two.or("0")).expression).equals("0")
+			attest(Two.or("0").and(One.or("0")).expression).equals("0")
+
+			// data without `c` reaches both of these, so `b` can't default
+			const Open = $.type({ "c?": "1", b: "false = false" })
+			attest(() => Open.or("0").and($.type({ "c?": "'a'", "b?": "0" }))).throws(
+				"ParseError: Default for b must be never"
+			)
+		}
+	})
+
+	it("an index signature checks the default of a key it matches", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// as it checks a value the data holds at the key
+			attest(() =>
+				$.type({ "[string]": "number > 0", count: "number = 0" })
+			).throws("ParseError: Default for count must be positive")
+			attest(() =>
+				$.type({ count: "number = 0" }).and({ "[string]": "number > 0" })
+			).throws("ParseError: Default for count must be positive")
+			// with no value both allow, the key allows nothing
+			attest(() =>
+				$.type({ "[string]": "string", count: "number = 0" })
+			).throws("ParseError: Default for count must be never")
+			attest(() =>
+				$.type({ "[string]": "string" }).and({ count: "number = 0" })
+			).throws("ParseError: Default for count must be never")
+			// what a morph of the signature's is given
+			attest(() =>
+				$.type({
+					"[string]": "string.numeric.parse",
+					count: "string = 'five'"
+				})
+			).throws(
+				"ParseError: Default for count must be a well-formed numeric string"
+			)
+
+			// one its signatures allow, or whose key they don't match, is kept
+			const T = $.type({
+				"[string]": "number >= 0",
+				"[/^x/]": "string",
+				"[symbol]": "string",
+				count: "number = 0"
+			})
+			attest(T({})).equals({ count: 0 })
+			attest(T({ count: -1 }).toString()).equals("count must be non-negative")
+			// as is a key without one, which then allows nothing
+			attest(
+				$.type({ "[string]": "string", "count?": "number" }).expression
+			).equals("{ [string]: string, count?: never }")
+		}
+	})
+
+	it("a default a cyclic value rejects is rejected each time it's defined", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		// checked once node resolves, which is after its prop is created
+		const define = () =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0]
+			})
+		attest(define).throws("Default for a must be an object")
+		attest(define).throws("Default for a must be an object")
+		// @ts-expect-error
+		attest(() => $.type({ a: "node = 0" })).throws(
+			"Default for a must be an object"
+		)
+
+		// index signature with cyclic target must also reject on both 1st and 2nd call
+		const defineIndexed = () =>
+			$.type({
+				"[string]": "node",
+				a: "unknown = 0"
+			})
+		attest(defineIndexed).throws("Default for a must be an object")
+		attest(defineIndexed).throws("Default for a must be an object")
+
+		// @ts-expect-error
+		const defineElement = () => $.type([["node", "=", 0]])
+		attest(defineElement).throws("Default must be an object")
+		attest(defineElement).throws("Default must be an object")
+	})
+
+	it("a default is checked where the definition it was first in threw before it was", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		attest(() =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0],
+				b: ["null", "&", "string"]
+			})
+		).throws("Intersection of null and string results in an unsatisfiable type")
+		attest(() =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0]
+			})
+		).throws("Default for a must be an object")
+	})
+
+	it("a default a cyclic value rejects is rejected each time it's intersected with it", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		// the intersection is cached before node resolves, which is when its
+		// default is checked
+		const define = () =>
+			$.type([{ "a?": "node | number" }, "&", { a: ["unknown", "=", "x"] }])
+		attest(define).throws("Default for a must be a number or an object")
+		attest(define).throws("Default for a must be a number or an object")
+
+		// or where the definition it was first in threw before it was checked
+		const nested = [
+			{ "b?": "node | string" },
+			"&",
+			{ b: ["unknown", "=", 0] }
+		] as const
+		attest(() => $.type({ nested, c: ["null", "&", "string"] })).throws(
+			"Intersection of null and string results in an unsatisfiable type"
+		)
+		attest(() => $.type(nested)).throws(
+			"Default for b must be a string or an object"
+		)
+
+		// one it allows is the same Type each time
+		const T = $.type([
+			{ "a?": "node | number" },
+			"&",
+			{ a: ["unknown", "=", 0] }
+		])
+		attest(T({})).equals({ a: 0 })
+		attest(
+			$.type([
+				{ "a?": "node | number" },
+				"&",
+				{ a: ["unknown", "=", 0] }
+			]).equals(T)
+		).equals(true)
+	})
+
+	it("a default a cyclic value allows is defined again as the same Type", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		const T = $.type({ a: ["node | number", "=", 0] })
+		attest(T.expression).snap("{ a: number | { next?: $node } = 0 }")
+		attest(T({})).equals({ a: 0 })
+		attest($.type({ a: ["node | number", "=", 0] }).equals(T)).equals(true)
+	})
 })

@@ -12,6 +12,7 @@ import {
 	isNode,
 	isResolutionFinal,
 	queueUnchecked,
+	reachesDefault,
 	type Alias,
 	type BaseNode,
 	type BaseRange,
@@ -721,67 +722,85 @@ const resolveCase = (
 		} else resolvedEntries?.push({ originalIndex, branch: pruned })
 	}
 
-	if (!ctx.defaultPairs.length) return resolvedEntries
+	if (ctx.defaultPairs.length) {
+		const discriminantNode = discriminantCaseToNode(
+			caseCtx.condition,
+			ctx.location.path,
+			ctx.node.$
+		)
+		let primitiveDiscriminantNode: BaseRoot | undefined
+		const nextDefaults: BranchEntry[] = []
+		const branchSet =
+			caseCtx.seen ??
+			(caseCtx.branchIndices.length >= 8 ?
+				new Set(caseCtx.branchIndices)
+			:	undefined)
 
-	const discriminantNode = discriminantCaseToNode(
-		caseCtx.condition,
-		ctx.location.path,
-		ctx.node.$
-	)
-	let primitiveDiscriminantNode: BaseRoot | undefined
-	const nextDefaults: BranchEntry[] = []
-	const branchSet =
-		caseCtx.seen ??
-		(caseCtx.branchIndices.length >= 8 ?
-			new Set(caseCtx.branchIndices)
-		:	undefined)
-
-	for (let i = 0; i < ctx.defaultPairs.length; i++) {
-		const entry = ctx.defaultPairs[i]
-		const inCase =
-			branchSet ?
-				branchSet.has(entry.originalIndex)
-			:	caseCtx.branchIndices.includes(entry.originalIndex)
-		if (!inCase) {
-			const intersection = intersectNodesRoot(
-				entry.branch._in,
-				discriminantNode,
-				ctx.node.$
-			)
-			if (
-				!(intersection instanceof Disjoint) ||
-				disjointLeavesKeyOverlap(entry.branch._in, intersection) ||
-				// a branch disjoint above the case may reach it through a primitive's
-				// keys, e.g. a string's characters
-				(intersection.some(
-					disjointEntry => disjointEntry.path.length < ctx.location.path.length
-				) &&
-					entry.branch._in.overlaps(
-						(primitiveDiscriminantNode ??= discriminantCaseToNode(
-							caseCtx.condition,
-							ctx.location.path,
-							ctx.node.$,
-							{ includesPrimitives: true }
+		for (let i = 0; i < ctx.defaultPairs.length; i++) {
+			const entry = ctx.defaultPairs[i]
+			const inCase =
+				branchSet ?
+					branchSet.has(entry.originalIndex)
+				:	caseCtx.branchIndices.includes(entry.originalIndex)
+			if (!inCase) {
+				const intersection = intersectNodesRoot(
+					entry.branch._in,
+					discriminantNode,
+					ctx.node.$
+				)
+				if (
+					!(intersection instanceof Disjoint) ||
+					disjointLeavesKeyOverlap(entry.branch._in, intersection) ||
+					// a branch disjoint above the case may reach it through a primitive's
+					// keys, e.g. a string's characters
+					(intersection.some(
+						disjointEntry =>
+							disjointEntry.path.length < ctx.location.path.length
+					) &&
+						entry.branch._in.overlaps(
+							(primitiveDiscriminantNode ??= discriminantCaseToNode(
+								caseCtx.condition,
+								ctx.location.path,
+								ctx.node.$,
+								{ includesPrimitives: true }
+							))
 						))
-					))
-			) {
-				// include cases where an object not including the
-				// discriminant path might have that value present as an undeclared key
-				const overlapping = pruneDiscriminant(entry.branch, ctx.location)
-				if (overlapping === null) resolvedEntries = null
-				else {
-					resolvedEntries?.push({
-						originalIndex: entry.originalIndex,
-						branch: overlapping
-					})
-				}
-			} else if (disjointUsesOwnEnumerableCheck(entry.branch._in, intersection))
-				ctx.ownEnumerableDefault = true
-			nextDefaults.push(entry)
+				) {
+					// include cases where an object not including the
+					// discriminant path might have that value present as an undeclared key
+					const overlapping = pruneDiscriminant(entry.branch, ctx.location)
+					if (overlapping === null) resolvedEntries = null
+					else {
+						resolvedEntries?.push({
+							originalIndex: entry.originalIndex,
+							branch: overlapping
+						})
+					}
+				} else if (
+					disjointUsesOwnEnumerableCheck(entry.branch._in, intersection)
+				)
+					ctx.ownEnumerableDefault = true
+				nextDefaults.push(entry)
+			}
 		}
+
+		ctx.defaultPairs = nextDefaults
 	}
 
-	ctx.defaultPairs = nextDefaults
+	// branches alike only at the case's value aren't alike once pruned of it;
+	// keep them as the union has them so reducing the case stays determinate
+	if (
+		resolvedEntries &&
+		!ctx.node.ordered &&
+		resolvedEntries.some(entry => entry.branch.tfs) &&
+		!staysDeterminate(resolvedEntries)
+	) {
+		resolvedEntries = resolvedEntries.map(({ originalIndex }) => ({
+			originalIndex,
+			branch: ctx.node.branches[originalIndex]
+		}))
+	}
+
 	return resolvedEntries
 }
 
@@ -841,9 +860,12 @@ export const discriminantCaseToNode = (
 		:	caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
+		// the case is of any data holding the value there, so its keys are
+		// open whatever $ configures for undeclared ones
 		const structure =
 			typeof key === "number" ?
 				$.node("structure", {
+					undeclared: "ignore",
 					sequence: $.node("sequence", {
 						// create unknown for preceding elements (could be optimized with safe imports)
 						prefix: [...range(key).map(_ => $.node("intersection", {})), node],
@@ -851,6 +873,7 @@ export const discriminantCaseToNode = (
 					})
 				})
 			:	$.node("structure", {
+					undeclared: "ignore",
 					required: [$.node("required", { key, value: node })]
 				})
 		node = $.node(
@@ -2358,15 +2381,7 @@ const assertDeterminateOverlap = (
 		if (!l.tfs && !r.tfs) return
 	} else if (!l.alters && !r.alters) return
 
-	if (
-		arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
-		(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
-		arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) &&
-		arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
-			isEqual: flatRefsAreEqual
-		})
-	)
-		return
+	if (isDeterminateOverlap(l, r)) return
 
 	throwParseError(
 		writeIndiscriminableMorphMessage(
@@ -2375,6 +2390,88 @@ const assertDeterminateOverlap = (
 			describeIndiscriminableDetails(l, r)
 		)
 	)
+}
+
+const isDeterminateOverlap = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): boolean => {
+	const narrows = narrowsToOverlap(l, r)
+	if (sameTransforms(l, r, flatMorphsAreEqual)) {
+		// a morph both apply could be one only one applies to some of what they
+		// share, like a key's number that one measures and the other allows as
+		// it is, unless they apply it to the same inputs, or would once narrowed
+		if (sameTransforms(l, r, flatMorphsAllowAlike)) return true
+		if (!narrows) return false
+		const overlapping = narrowToOverlap(l, r)
+		return (
+			!overlapping ||
+			sameTransforms(overlapping[0], overlapping[1], flatMorphsAllowAlike)
+		)
+	}
+
+	// nor does either transform what the other leaves if narrowed, they're one Type
+	const overlapping = narrows && narrowToOverlap(l, r)
+	return !!overlapping && overlapping[0].equals(overlapping[1])
+}
+
+type FlatMorph = FlatRef<Morph.Node | Intersection.Node>
+
+const sameTransforms = (
+	l: BaseRoot,
+	r: BaseRoot,
+	isEqual: (l: FlatMorph, r: FlatMorph) => boolean
+): boolean =>
+	arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
+	(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
+	arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual }) &&
+	arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
+		isEqual: flatRefsAreEqual
+	})
+
+const flatMorphsAllowAlike = (l: FlatMorph, r: FlatMorph): boolean =>
+	flatMorphsAreEqual(l, r) &&
+	(l.node === r.node ||
+		!l.node.is("morph") ||
+		(l.node._in.extends(r.node._in) && r.node._in.extends(l.node._in)))
+
+// a default is given to data lacking its key even where the other rejects the
+// key, which narrowed to it would drop the default, and an alias narrowed is
+// one more to resolve
+const narrowsToOverlap = (l: Union.ChildNode, r: Union.ChildNode): boolean =>
+	!l.hasAlias && !r.hasAlias && !reachesDefault(l) && !reachesDefault(r)
+
+// each narrowed to the input both allow, where a transform one applies only to
+// data the other rejects, like a morph on another branch of a key's union, is
+// gone
+const narrowToOverlap = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): [l: BaseRoot, r: BaseRoot] | null => {
+	const overlap = intersectNodesRoot(l._in, r._in, l.$)
+	if (overlap instanceof Disjoint) return null
+	const lOverlap = intersectNodesRoot(l, overlap, l.$)
+	if (lOverlap instanceof Disjoint) return null
+	const rOverlap = intersectNodesRoot(r, overlap, l.$)
+	return rOverlap instanceof Disjoint ? null : [lOverlap, rOverlap]
+}
+
+// whether a case's branches, pruned of what told the data they share apart from
+// what only one transforms, are still found to do the same to it
+const staysDeterminate = (entries: readonly BranchEntry[]): boolean => {
+	for (let i = 0; i < entries.length - 1; i++) {
+		const l = entries[i].branch as Union.ChildNode
+		for (let j = i + 1; j < entries.length; j++) {
+			const r = entries[j].branch as Union.ChildNode
+			if (
+				(l.tfs || r.tfs) &&
+				!(intersectNodesRoot(l._in, r._in, l.$) instanceof Disjoint) &&
+				!isDeterminateOverlap(l, r)
+			)
+				return false
+		}
+	}
+	return true
 }
 
 const peekAliasResolution = (alias: Alias.Node): BaseRoot | undefined => {
@@ -2444,7 +2541,7 @@ const describeIndiscriminableDetails = (
 	const rFlatAt = new Map<string, FlatRef<Morph.Node | Intersection.Node>[]>()
 
 	for (const ref of lFlat) {
-		if (!rFlat.some(other => flatMorphsAreEqual(ref, other))) {
+		if (!rFlat.some(other => flatMorphsAllowAlike(ref, other))) {
 			const formatted = formatFlatPath(ref.path)
 			conflictPaths.add(formatted)
 			;(
@@ -2453,7 +2550,7 @@ const describeIndiscriminableDetails = (
 		}
 	}
 	for (const ref of rFlat) {
-		if (!lFlat.some(other => flatMorphsAreEqual(ref, other))) {
+		if (!lFlat.some(other => flatMorphsAllowAlike(ref, other))) {
 			const formatted = formatFlatPath(ref.path)
 			conflictPaths.add(formatted)
 			;(

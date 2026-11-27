@@ -1782,4 +1782,74 @@ next.t must be a string (was missing)`)
 			}
 		}
 	})
+
+	it("a definition that throws leaves no deferred check to another Type's call", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// built as it's defined, so no parse of its own comes between the
+			// definition that throws and its first calls
+			const T = $.type({ a: "true", "+": "reject" })
+				.or({ a: "'b'" })
+				.or({ a: "null" })
+			const Self = $.type({ "a?": "this" })
+			// x's union is indeterminate, which is checked once `this` resolves
+			attest(() =>
+				$.type({
+					x: [{ b: "string.trim" }, "|", Self],
+					y: ["null", "&", "string"]
+				})
+			).throws(
+				"Intersection of null and string results in an unsatisfiable type"
+			)
+			// uncompiled, then compiled, which discriminates it
+			attest(T.allows({ a: true })).equals(true)
+			attest(T.allows({ a: true })).equals(true)
+			attest(T({ a: true, b: 1 }).toString()).equals("b must be removed")
+			// where the union is all that's defined, it throws as it did
+			attest(() => $.type([{ b: "string.trim" }, "|", Self])).throws(
+				writeIndiscriminableMorphMessage(
+					"{ a?: this }",
+					$.type({ b: "string.trim" }).expression
+				)
+			)
+		}
+	})
+
+	it("a Date literal's intersection with a cyclic branch is decided once its cycle resolves", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({ list: { v: "number", "next?": "list" } }, { jitless })
+			// reduced as list resolves, when whether it allows the Date can't be read
+			const T = $.type("d'2000-01-01' | list")
+			// and again with each branch added
+			const U = T.or("0")
+			attest(U.expression).equals(
+				"{ v: number, next?: $list } | d'2000-01-01T00:00:00.000Z' | 0"
+			)
+			attest(U.allows({ v: 0 })).equals(true)
+			attest(U({ v: 0, next: { v: 1 } })).equals({ v: 0, next: { v: 1 } })
+			attest(U({ v: 0, next: { v: "a" } }).toString()).equals(
+				"next.v must be a number or must be 2000-01-01"
+			)
+			attest(T.equals("d'2000-01-01'")).equals(false)
+
+			const List = T.exclude("Date")
+			attest(List.expression).equals("{ v: number, next?: $list }")
+			attest(List.overlaps("d'2000-01-01'")).equals(false)
+			attest(List.extends("d'2000-01-01'")).equals(false)
+			attest(() => List.and("d'2000-01-01'")).throws(
+				"Intersection of { v: number, next?: $list } and d'2000-01-01T00:00:00.000Z' results in an unsatisfiable type"
+			)
+		}
+	})
+
+	it("a Date literal a cyclic branch allows is reduced to that branch", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({ node: { "next?": "node" } }, { jitless })
+			const T = $.type("d'2000-01-01' | node").or("0")
+			attest(T.expression).equals("{ next?: $node } | 0")
+			attest(T.allows(new Date("2000-01-01"))).equals(true)
+			attest(T.allows({ next: 0 })).equals(false)
+			attest($.type("d'2000-01-01'").extends("node")).equals(true)
+		}
+	})
 })

@@ -40,7 +40,13 @@ import {
 	type UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { $ark, nodesById, type NodeId } from "./shared/registry.ts"
-import { composing, hasArkKind, isNode } from "./shared/utils.ts"
+import {
+	composing,
+	hasArkKind,
+	isNode,
+	markUnchecked,
+	uncheckedQueued
+} from "./shared/utils.ts"
 import type { ArkEnv } from "./shared/declare.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
@@ -158,9 +164,11 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		inner[k] = keyImpl.structural ? deferAliases(v, ctx.$) : v
 	}
 
+	let unchecked = false
 	if ($ark.sets) {
 		$ark.sets.sort(ctx.kind, inner)
 		if (!ctx.reduced) {
+			const uncheckedBefore = uncheckedQueued()
 			const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
@@ -174,6 +182,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 				// impliedBy
 				return withMeta(reduced, meta)
 			}
+			unchecked = uncheckedQueued() > uncheckedBefore
 		}
 	}
 
@@ -183,7 +192,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		kind: ctx.kind,
 		inner,
 		meta,
-		$: ctx.$
+		$: ctx.$,
+		unchecked
 	})
 }
 
@@ -224,6 +234,7 @@ export type CreateNodeInput = {
 	$: BaseScope
 	ignoreCache?: true
 	shell?: DeferredShell | undefined
+	unchecked?: boolean | undefined
 }
 
 export interface DeferredShell {
@@ -242,7 +253,8 @@ export const createNode = ({
 	meta,
 	$,
 	ignoreCache,
-	shell
+	shell,
+	unchecked
 }: CreateNodeInput): BaseNode => {
 	// serialized as the node is created, so meta that can't be throws here
 	const metaJson = isEmptyObject(meta) ? undefined : metaJsonOf(meta)
@@ -256,7 +268,9 @@ export const createNode = ({
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
-		if (cached) {
+		// one whose check was thrown, or discarded with its definition, before it
+		// passed is created again, which makes the check again
+		if (cached && !cached.c.unchecked) {
 			$ark.reached?.node(cached)
 			return cached
 		}
@@ -291,6 +305,8 @@ export const createNode = ({
 	const node = composing(() =>
 		resolveDescription(new nodeClassesByKind[kind](attachments, $))
 	)
+
+	if (unchecked) markUnchecked(node)
 
 	if (key) {
 		node.c.key = key

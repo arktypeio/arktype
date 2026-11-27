@@ -777,6 +777,53 @@ Make their inputs disjoint (e.g. with a discriminant key or narrower morph input
 			const out: unknown = I.partial()({ a: "x", z: 1 } as never)
 			attest(out).snap({ a: "x", z: 1 })
 		})
+
+		it("an explicit ignore stays ignore in tuples that meet at more than one length", () => {
+			for (const jitless of [false, true]) {
+				for (const onUndeclaredKey of ["delete", "reject"] as const) {
+					const [Open, Configured] = withConfig({ onUndeclaredKey }, () => {
+						const $ = scope({}, { jitless })
+						const Leading = $.type(["0", "...", "number[]"])
+						const Trailing = $.type(["...", "number[]", "0"])
+						return [
+							Leading.onUndeclaredKey("ignore").and(
+								Trailing.onUndeclaredKey("ignore")
+							),
+							Leading.and(Trailing)
+						]
+					})
+					const data = () => Object.assign([0], { extra: 1 })
+					attest(Open.expression).equals("[0, ...number[], 0] | [0]")
+					attest(Open(data()) as unknown).equals(data())
+					attest(Open(data()) as unknown).equals(data())
+					// tuples left to the config still follow it
+					const configured: unknown = Configured(data())
+					if (onUndeclaredKey === "delete") attest(configured).equals([0])
+					else {
+						attest(String(configured)).equals(
+							"must be at least length 2 or extra must be removed"
+						)
+					}
+				}
+			}
+		})
+
+		it("a branch with its own rule for undeclared keys stays at a case of a key it doesn't declare", () => {
+			for (const jitless of [false, true]) {
+				const Ignoring = withConfig({ onUndeclaredKey: "reject" }, () => {
+					const $ = scope({}, { jitless })
+					const Kinds = $.type({ kind: "'a'", a: "string" }).or({
+						kind: "'b'",
+						b: "number"
+					})
+					return Kinds.or({ "+": "ignore", id: "string" })
+				})
+				// no branch reading `kind` allows an `a` of 1
+				const data = () => ({ kind: "a", a: 1, id: "x" })
+				attest(Ignoring(data())).equals(data())
+				attest(Ignoring(data())).equals(data())
+			}
+		})
 	})
 
 	it("prereducedAliases", () => {
