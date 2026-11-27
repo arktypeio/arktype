@@ -48,6 +48,18 @@ contextualize(() => {
 		attest<[string, ...boolean[]]>(types.myVariadicKeyword.infer)
 	})
 
+	it("spreads an empty tuple as no elements", () => {
+		const T = type(["string", "...", []])
+		attest<[string]>(T.infer)
+		attest(T.expression).snap("[string]")
+		attest(T(["a", 1]).toString()).snap("must be exactly length 1")
+		attest(type(["...", []]).expression).snap("[]")
+		// unknown[] is still spread as a variadic element
+		attest(type(["string", "...", "unknown[]"]).expression).snap(
+			"[string, ...unknown[]]"
+		)
+	})
+
 	it("errors on non-array", () => {
 		attest(() =>
 			// @ts-expect-error

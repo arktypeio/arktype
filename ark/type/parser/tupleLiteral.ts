@@ -191,8 +191,11 @@ const appendSpreadBranch = (
 ): mutableInnerOfKind<"sequence"> => {
 	const spread = branch.select({ method: "find", kind: "sequence" })
 	if (!spread) {
-		// the only array with no sequence reference is unknown[]
-		return appendVariadicElement(base, $ark.kw.unknown)
+		// an array with no sequence reference is the empty tuple, which adds no
+		// elements, or unknown[]
+		return branch.select({ method: "find", kind: "exactLength" })?.rule === 0 ?
+				base
+			:	appendVariadicElement(base, $ark.kw.unknown)
 	}
 
 	if (spread.prefix)
