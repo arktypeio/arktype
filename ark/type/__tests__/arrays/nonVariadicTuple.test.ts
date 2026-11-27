@@ -84,6 +84,23 @@ contextualize(() => {
 		attest(T(invalid).toString()).snap("[1][0].b[0] must be null")
 	})
 
+	it("morph or default beside an unknown element", () => {
+		const T = type(["unknown", "string.numeric.parse"])
+		attest<[unknown, string]>(T.inferIn)
+		attest<[unknown, number]>(T.infer)
+		attest(T([null, "5"])).equals([null, 5])
+
+		attest<[unknown, ...string[]]>(
+			type(["unknown", "...", "string.numeric.parse[]"]).inferIn
+		)
+		attest<{ a: [unknown, string?] }>(
+			type({ a: ["unknown", "string = 'x'"] }).inferIn
+		)
+		attest<[string?, ...unknown[]]>(
+			type(["string.numeric.parse?", "...", "unknown[]"]).inferIn
+		)
+	})
+
 	it("optional tuple", () => {
 		const T = type([["string", "?"]])
 		attest<[string?]>(T.infer)

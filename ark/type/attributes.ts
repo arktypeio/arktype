@@ -80,7 +80,13 @@ type distilledSidesOf<t> =
 	: t extends array ?
 		// an index signature rather than an array defers recursive arrays like JSON
 		keyof t extends ArrayKey ?
-			{ [i: number]: distilledSidesOf<t[number]> }
+			{
+				[i: number]: unknown extends t[number] ?
+					// an unknown or any element absorbs the rest in t[number],
+					// so a tuple with one is read element by element
+					elementSidesOf<t>
+				:	distilledSidesOf<t[number]>
+			}
 		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
 	: // like object, which a homomorphic mapped type would return as is
 	[keyof t] extends [never] ? never
@@ -89,6 +95,16 @@ type distilledSidesOf<t> =
 		: symbol extends keyof t ? indexedSidesOf<t>
 		: { [k in keyof t]-?: distilledSidesOf<t[k]> }
 	:	never
+
+type elementSidesOf<t extends array> =
+	t extends readonly [infer head, ...infer tail] ?
+		distilledSidesOf<head> | elementSidesOf<tail>
+	: t extends readonly [...infer init, infer last] ?
+		distilledSidesOf<last> | elementSidesOf<init>
+	: t[number][] extends t ? distilledSidesOf<t[number]>
+	: t extends readonly [(infer head)?, ...infer tail] ?
+		distilledSidesOf<head> | elementSidesOf<tail>
+	:	distilledSidesOf<t[number]>
 
 // map index signatures to "" so their value types are related
 type indexedSidesOf<t> = {
