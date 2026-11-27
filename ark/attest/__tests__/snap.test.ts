@@ -80,4 +80,13 @@ secondLine`)
 		attest("firstLine\nsecondLine").snap(`firstLine
 secondLine`)
 	})
+
+	it("compares non-plain object snapshots by serialized contents", () => {
+		attest(new Uint8Array([1, 2]) as unknown).snap({ "0": 1, "1": 2 })
+		assert.throws(
+			() =>
+				attest(new Uint8Array([1, 2]) as unknown).snap(new Uint8Array([3, 4])),
+			assert.AssertionError
+		)
+	})
 })

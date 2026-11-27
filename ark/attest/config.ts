@@ -92,6 +92,7 @@ const getParamValue = (param: keyof AttestConfig) => {
 	}
 
 	const raw = process.argv[paramIndex + 1]
+	if (raw === undefined) return
 	if (raw === "true") return true
 
 	if (raw === "false") return false

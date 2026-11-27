@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { isPositionWithinRange } from "@ark/attest/internal/cache/getCachedAssertions.ts"
 import { getDiagnosticTscOutput } from "@ark/attest/internal/cli/shared.ts"
 import {
 	parseCallSite,
@@ -183,5 +184,16 @@ contextualize(() => {
 			if (prevCursorTo) Object.defineProperty(stdout, "cursorTo", prevCursorTo)
 			else delete (stdout as { cursorTo?: unknown }).cursorTo
 		}
+	})
+
+	it("checks same-line upper character bounds in isPositionWithinRange", () => {
+		const range = {
+			start: { line: 10, char: 5 },
+			end: { line: 10, char: 20 }
+		}
+		attest(isPositionWithinRange({ line: 10, char: 5 }, range)).equals(true)
+		attest(isPositionWithinRange({ line: 10, char: 20 }, range)).equals(true)
+		attest(isPositionWithinRange({ line: 10, char: 4 }, range)).equals(false)
+		attest(isPositionWithinRange({ line: 10, char: 21 }, range)).equals(false)
 	})
 })
