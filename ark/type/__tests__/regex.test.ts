@@ -93,6 +93,18 @@ contextualize(() => {
 			attest(T.json).equals(Expected.json)
 		})
 
+		it("invalid pattern", () => {
+			// as a regex literal in a definition throws
+			attest(() => type("string").matching("a{2,1}")).throws.snap(
+				"ParseError: SyntaxError: Invalid regular expression: /a{2,1}/: numbers out of order in {} quantifier"
+			)
+			attest(() =>
+				type("string").matching({ rule: "a", flags: "zz" } as never)
+			).throws.snap(
+				"ParseError: SyntaxError: Invalid flags supplied to RegExp constructor 'zz'"
+			)
+		})
+
 		it("invalid operand", () => {
 			// @ts-expect-error
 			attest(() => type("number").matching("foo"))

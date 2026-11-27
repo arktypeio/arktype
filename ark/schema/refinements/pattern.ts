@@ -9,6 +9,7 @@ import {
 	isUuid,
 	isWellFormedInteger,
 	numericStringMatcher,
+	throwParseError,
 	uuidMatcher,
 	wellFormedIntegerMatcher
 } from "@ark/util"
@@ -131,6 +132,15 @@ const writtenOut = (instance: RegExp): RegExp => {
 		:	new RegExp(written, flags)
 }
 
+// a RegExp's own SyntaxError, as a ParseError like one in a regex literal's
+const regexOf = (rule: string, flags: string | undefined): RegExp => {
+	try {
+		return new RegExp(rule, flags)
+	} catch (e) {
+		return throwParseError(String(e))
+	}
+}
+
 const writeRegexLiteral = (rule: string, flags = ""): string =>
 	`/${rule.replace(/\\.|[\n\r/\u2028\u2029]/g, token => escapesInRegexLiteral[token] ?? token)}/${flags}`
 
@@ -142,7 +152,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 		this.costly = true
 	}
 
-	readonly instance: RegExp = new RegExp(this.rule, this.flags)
+	readonly instance: RegExp = regexOf(this.rule, this.flags)
 	// what a speed build and arktype test
 	readonly tested: RegExp = writtenOut(this.instance)
 	readonly expression: string = writeRegexLiteral(this.rule, this.flags)
