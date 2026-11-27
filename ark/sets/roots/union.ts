@@ -1151,13 +1151,19 @@ export const reduceBranches = ({
 		)!
 		if (intersection instanceof Disjoint) return
 
-		if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
+		const joined =
+			!ordered && assertDeterminateOverlap(branches[i], branches[j])
 
+		// a joined branch whose input is a subtype of another's keeps keys the
+		// other deletes, unless that one deletes none
 		if (intersection.equals(branches[i]._in)) {
+			// of two with the same input, the one deleting none is kept
+			if (joined && !branches[i].alters && intersection.equals(branches[j]._in))
+				uniquenessByIndex[j] = false
 			// preserve ordered branches that are a subtype of a subsequent branch
-			uniquenessByIndex[i] = !!ordered
+			else uniquenessByIndex[i] = !!ordered || (joined && branches[j].alters)
 		} else if (intersection.equals(branches[j]._in))
-			uniquenessByIndex[j] = false
+			uniquenessByIndex[j] = joined && branches[i].alters
 	}
 
 	const reducePairwise = (indices: readonly number[]): void => {
@@ -2361,10 +2367,13 @@ const sameMeta = (nodes: readonly BaseNode[]) => {
 const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))
 
+// whether the branches are joined: all either does to data both allow is
+// delete undeclared keys, and not the same ones, so that data keeps each key
+// either does and neither is transformed before the other
 const assertDeterminateOverlap = (
 	l: Union.ChildNode,
 	r: Union.ChildNode
-): void => {
+): boolean => {
 	if (l.hasAlias || r.hasAlias) {
 		if (!isResolutionFinal()) {
 			// aliased branches' transforms and overlap are known once definitions close
@@ -2376,14 +2385,15 @@ const assertDeterminateOverlap = (
 				)
 					assertDeterminateOverlap(l, r)
 			}, `${l.id}|${r.id}`)
-			return
+			return false
 		}
-		if (!l.tfs && !r.tfs) return
-	} else if (!l.alters && !r.alters) return
+		if (!l.tfs && !r.tfs) return false
+	} else if (!l.alters && !r.alters) return false
 
-	if (isDeterminateOverlap(l, r)) return
+	const joined = joinedIfDeterminate(l, r)
+	if (joined !== null) return joined
 
-	throwParseError(
+	return throwParseError(
 		writeIndiscriminableMorphMessage(
 			l.expression,
 			r.expression,
@@ -2392,27 +2402,31 @@ const assertDeterminateOverlap = (
 	)
 }
 
-const isDeterminateOverlap = (
+const joinedIfDeterminate = (
 	l: Union.ChildNode,
 	r: Union.ChildNode
-): boolean => {
+): boolean | null => {
 	const narrows = narrowsToOverlap(l, r)
 	if (sameTransforms(l, r, flatMorphsAreEqual)) {
 		// a morph both apply could be one only one applies to some of what they
 		// share, like a key's number that one measures and the other allows as
 		// it is, unless they apply it to the same inputs, or would once narrowed
-		if (sameTransforms(l, r, flatMorphsAllowAlike)) return true
-		if (!narrows) return false
+		if (sameTransforms(l, r, flatMorphsAllowAlike)) return false
+		if (!narrows) return null
 		const overlapping = narrowToOverlap(l, r)
 		return (
-			!overlapping ||
-			sameTransforms(overlapping[0], overlapping[1], flatMorphsAllowAlike)
-		)
+				!overlapping ||
+					sameTransforms(overlapping[0], overlapping[1], flatMorphsAllowAlike)
+			) ?
+				false
+			:	null
 	}
+
+	if (l.deletesOnly && r.deletesOnly) return true
 
 	// nor does either transform what the other leaves if narrowed, they're one Type
 	const overlapping = narrows && narrowToOverlap(l, r)
-	return !!overlapping && overlapping[0].equals(overlapping[1])
+	return overlapping && overlapping[0].equals(overlapping[1]) ? false : null
 }
 
 type FlatMorph = FlatRef<Morph.Node | Intersection.Node>
@@ -2466,7 +2480,7 @@ const staysDeterminate = (entries: readonly BranchEntry[]): boolean => {
 			if (
 				(l.tfs || r.tfs) &&
 				!(intersectNodesRoot(l._in, r._in, l.$) instanceof Disjoint) &&
-				!isDeterminateOverlap(l, r)
+				joinedIfDeterminate(l, r) === null
 			)
 				return false
 		}

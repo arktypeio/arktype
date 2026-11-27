@@ -702,6 +702,11 @@ export abstract class BaseRoot<
 		return true
 	}
 
+	/** whether deleting undeclared keys is all it does to the data it allows, if it does anything */
+	get deletesOnly(): boolean {
+		return !this.hasAlias && !this.hasMorph && !reachesDefault(this)
+	}
+
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {
 		return this.onUndeclaredKey({ rule: behavior, deep: true })
 	}

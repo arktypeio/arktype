@@ -13,6 +13,7 @@ import {
 } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import { forgetReferences, type BaseNode } from "../node.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	canJit,
 	compileSerializedValue,
@@ -46,6 +47,7 @@ import {
 	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
+import { transformKept } from "../shared/transform.ts"
 import {
 	allowsInBranch,
 	allowsInBranchBy,
@@ -261,6 +263,32 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
+	/**
+	 * the branches whose only transform is deleting undeclared keys, each
+	 * allowing data another allows and would delete other keys of. Data more
+	 * than one allows keeps each key any of them does, so no order among them
+	 * decides what it becomes
+	 */
+	get joined(): ReadonlySet<BaseRoot> {
+		return (this.c.joined ??= joinedOf(this))
+	}
+
+	/** whether data more than one branch allows is transformed by each of them */
+	get keepsAny(): boolean {
+		return this.joined.size !== 0
+	}
+
+	// what joined branches make of data they share has keys of each, which the
+	// output of neither declares, so theirs is what they allow
+	override getIo(ioKind: "in" | "out"): BaseNode {
+		if (ioKind === "in" || !this.keepsAny) return super.getIo(ioKind)
+		return this.$.node("union", {
+			branches: this.branches.map(branch =>
+				this.joined.has(branch) ? branch._in : branch._out
+			)
+		})
+	}
+
 	get brief(): string {
 		return this.distribute(branch => branch.brief, describeBranches)
 	}
@@ -430,6 +458,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					)
 				:	transform(ctx, caseNode, data)
 		}
+		if (this.keepsAny) return this.tfKept(data, ctx)
 		// Apply also takes the first valid branch
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
@@ -437,6 +466,29 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				return branch.tfs ? transform(ctx, branch, data) : data
 		}
 		return this.tfCtx ? data : unset
+	}
+
+	/** transforms data by each joined branch allowing it */
+	private tfKept(data: unknown, ctx: InternalTraversal): unknown {
+		// each branch is checked before any transforms, as one writing a builtin
+		// in place could delete a key another requires
+		const allowing: BaseRoot[] = []
+		for (let i = 0; i < this.branches.length; i++) {
+			const branch = this.branches[i]
+			if (!allowsInBranch(ctx, branch, data)) continue
+			// one that deletes nothing keeps all the others do
+			if (!branch.tfs) return data
+			// any other allowing data transforms it the same
+			if (!this.joined.has(branch)) return transform(ctx, branch, data)
+			allowing.push(branch)
+		}
+		if (!allowing.length) return this.tfCtx ? data : unset
+		return transformKept(
+			data,
+			ctx,
+			allowing.map(branch => branch.tTransform!),
+			allowing
+		)
 	}
 
 	jsCond(js: NodeCompiler, data: string): string | undefined {
@@ -613,14 +665,24 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			js.return(false)
 		} else {
+			// unless it requires ctx, a root checks for unset instead of calling its Allows
+			const disallowed = this.tfCtx ? "data" : compileSerializedValue(unset)
+			if (this.keepsAny) js.const("allowing", "[]")
 			for (const branch of this.branches) {
 				js.if(
 					branch.jsCond?.(js, "data") ?? js.inv(branch, { kind: "Allows" }),
-					() => js.return(branch.tfs ? invokeTransform(js, branch) : "data")
+					() =>
+						// each joined branch is checked before any transforms, as tfKept does
+						branch.tfs && this.joined.has(branch) ?
+							js.line(`allowing.push(${js.traversal(branch, "Transform")})`)
+						:	js.return(branch.tfs ? invokeTransform(js, branch) : "data")
 				)
 			}
-			// unless it requires ctx, a root checks for unset instead of calling its Allows
-			js.return(this.tfCtx ? "data" : compileSerializedValue(unset))
+			js.return(
+				this.keepsAny ?
+					`allowing.length ? ${js.ref(transformKept)}(data, ctx, allowing) : ${disallowed}`
+				:	disallowed
+			)
 		}
 	}
 
@@ -638,6 +700,31 @@ export const Union = {
 }
 
 const maxInlinedBranches = 4
+
+const noneJoined: ReadonlySet<BaseRoot> = new Set()
+
+const joinedOf = (node: UnionNode): ReadonlySet<BaseRoot> => {
+	// an ordered union transforms by the first branch allowing data, and without
+	// a set engine no union's branches were found to overlap
+	if (node.ordered || !node.alters || !$ark.sets) return noneJoined
+	const joinable: BaseRoot[] = node.branches.filter(
+		branch => branch.deletesOnly
+	)
+	let joined: Set<BaseRoot> | undefined
+	for (let i = 0; i < joinable.length - 1; i++) {
+		const l = joinable[i]
+		for (let j = i + 1; j < joinable.length; j++) {
+			const r = joinable[j]
+			if (
+				(l.alters || r.alters) &&
+				!l.sameMorphs(r) &&
+				!($ark.sets.intersect(l._in, r._in, node.$) instanceof Disjoint)
+			)
+				(joined ??= new Set()).add(l).add(r)
+		}
+	}
+	return joined ?? noneJoined
+}
 
 // a function's is "object"; without an object case, any but null's is its typeof
 export const compileDomainOf = (

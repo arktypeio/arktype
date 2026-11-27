@@ -45,7 +45,8 @@ import {
 	holdsOnlyIndices,
 	keepOwn,
 	mergeTransformed,
-	TransformErrors
+	TransformErrors,
+	transformKept
 } from "./shared/transform.ts"
 import {
 	addErrors,
@@ -340,6 +341,7 @@ const unitConstants = {
 	timeOf,
 	transformed,
 	transformedInApply,
+	transformKept,
 	transformsValid,
 	TransformErrors
 }

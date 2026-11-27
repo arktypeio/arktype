@@ -115,12 +115,12 @@ import {
 import {
 	composing,
 	hasArkKind,
-	inProgress,
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
 	printSelfAsThis,
 	removedProblemMessage,
+	resolving,
 	withoutHoleNames,
 	writeInvalidMetaMessage
 } from "./shared/utils.ts"
@@ -253,6 +253,7 @@ class NodeCache {
 	preJit: BaseNode["allows"] | undefined
 	isReusableLeaf: boolean | undefined
 	unitBranches: (Unit.Node | Morph.Node)[] | undefined
+	joined: ReadonlySet<BaseRoot> | undefined
 	disc: Discriminant | null | undefined
 	discCases: DiscriminantCases | undefined
 	missLists: boolean | undefined
@@ -1321,13 +1322,12 @@ export abstract class BaseNode<
 		| Extract<ReturnType<mapper>, null> {
 		const ctx = this._tfContext(opts)
 		if (!ctx.throughAliases) return this._tf(mapper, ctx) as never
-		// an alias to a resolution still transforming resolves once the transform returns
-		inProgress.resolutions++
+		// an alias to a resolution still transforming resolves once the transform
+		// returns, as do the checks a union it built left for then
 		let transformed: BaseNode | null
 		try {
-			transformed = this._tf(mapper, ctx)
+			transformed = resolving(() => this._tf(mapper, ctx))
 		} finally {
-			inProgress.resolutions--
 			for (const id in ctx.synth) $ark.nodesById.delete(ctx.synth[id].id)
 		}
 		if (!transformed || opts?.names) return transformed as never

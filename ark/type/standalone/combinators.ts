@@ -153,6 +153,9 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 		return node.structure ? structureCalleesOf(node.structure) : []
 	}
 	if (node.is("union")) {
+		// a checker transforms by one branch, so one transformed by each
+		// allowing data is compiled
+		if (node.keepsAny) return
 		if (unitListOf(node)) return []
 		const domains = domainCasesOf(node)
 		if (domains) {
