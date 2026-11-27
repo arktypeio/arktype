@@ -17,6 +17,13 @@ var domainOf = data => {
 
 // ark/util/records.ts
 var hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
+var defineValue = (o, k, value) =>
+	Object.defineProperty(o, k, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
 
 // ark/util/objectKinds.ts
 var isArray = /* @__PURE__ */ (() => Array.isArray)()
@@ -440,6 +447,10 @@ var copyOf = data => {
 	copiedInPlace.set(copy, data)
 	return copy
 }
+var setOwnValue = (out, k, value) => {
+	if (k in out && !hasOwn(out, k)) defineValue(out, k, value)
+	else out[k] = value
+}
 
 // ark/schema/shared/traversal.ts
 var errorsOf = ctx => (ctx._errors ??= ctx.createErrors())
@@ -677,7 +688,7 @@ var writtenProps = (declared, changing, data) => {
 		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
 		if (holds ? value !== void 0 && value !== data[k] : defaulted?.length) {
 			if (out === data) out = copyOf(data)
-			out[k] = value
+			setOwnValue(out, k, value)
 		}
 	}
 	if (out !== data) {
@@ -707,7 +718,7 @@ var writtenValues = (declared, changing, data, values) => {
 		const value = values.transformed(checker.t, data[k], k)
 		if (Object.is(value, data[k])) continue
 		if (out === data) out = copyOf(data)
-		out[k] = value
+		setOwnValue(out, k, value)
 	}
 	if (defaults && !values.failed()) {
 		for (const k in changing) {
@@ -715,7 +726,7 @@ var writtenValues = (declared, changing, data, values) => {
 			if (holdsValue(checker, data, k) || !isDefaulted(checker)) continue
 			if (out === data) out = copyOf(data)
 			if (checker.w) values.defaulted(checker.w, out)
-			else out[k] = checker.d[0]
+			else setOwnValue(out, k, checker.d[0])
 		}
 	}
 	if (out !== data) {
@@ -734,7 +745,9 @@ var deletes = (declared, data, out) => {
 	}
 	return out
 }
-var sitedKeeps = (declared, checkers, write) => (data, values) => {
+var sitedKeeps = (declared, checkers, write, fallback) => (data, values) => {
+	if (Object.getPrototypeOf(data) !== Object.prototype)
+		return fallback(data, values)
 	const out = write(data, checkers, values, copyOf)
 	if (out !== data) {
 		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
@@ -749,7 +762,10 @@ var sitedProps = (allows, declared, write, walks = props(declared)) => {
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
-		const written = sitedKeeps(declared, checkers, write)
+		const changing = changingIn(declared)
+		const written = sitedKeeps(declared, checkers, write, data =>
+			writtenProps(declared, changing, data)
+		)
 		checker.t = data => written(data)
 	}
 	return checker
@@ -764,18 +780,16 @@ var sited = (allows, declared, write, writes, removed, withCtx) => {
 	if (!write) return checker
 	const checkers = Object.values(declared)
 	const changing = changingIn(declared)
-	const keeps = sitedKeeps(declared, checkers, write)
+	const fallback = (data, values) =>
+		values ?
+			writtenValues(declared, changing, data, values)
+		:	writtenProps(declared, changing, data)
+	const keeps = sitedKeeps(declared, checkers, write, fallback)
 	const written = (data, values) =>
 		writes < 3 ? keeps(data, values)
 		: Object.getPrototypeOf(data) === Object.prototype ?
 			write(data, checkers, values, copyOf)
-		:	deletes(
-				declared,
-				data,
-				values ?
-					writtenValues(declared, changing, data, values)
-				:	writtenProps(declared, changing, data)
-			)
+		:	deletes(declared, data, fallback(data, values))
 	checker.t =
 		writes % 2 ?
 			data => written(data)

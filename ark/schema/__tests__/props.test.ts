@@ -3,6 +3,7 @@ import {
 	copyDeclared,
 	mergeTransformed,
 	rootSchema,
+	schemaScope,
 	setOwnValue,
 	writeEnumerableIndexBranches
 } from "@ark/schema"
@@ -346,6 +347,145 @@ To add it, use .merge(), which takes "+" from the merged object.`)
 			const right = JSON.parse('{"a":1,"__proto__":{"hijacked":true}}')
 			const merged = mergeTransformed(base, { a: 2 }, right) as object
 			expectSafeProto(merged, { hijacked: true })
+		})
+	})
+
+	describe("inherited accessor and frozen-prototype own-property safety", () => {
+		it("defines own property over prototype getter-only accessor without throwing", () => {
+			class ReadOnly {
+				get ro() {
+					return "  hi  "
+				}
+			}
+			const trim = rootSchema({
+				in: "string",
+				morphs: [(s: string) => s.trim()]
+			})
+			const T = rootSchema({
+				domain: "object",
+				required: [{ key: "ro", value: trim }]
+			})
+			// exercise uncompiled first call and compiled JIT path
+			for (let i = 0; i < 3; i++) {
+				const out = T.assert(new ReadOnly()) as ReadOnly
+				attest(out instanceof ReadOnly).equals(true)
+				attest(hasOwn(out, "ro")).equals(true)
+				attest(out.ro).equals("hi")
+			}
+		})
+
+		it("defines own property over prototype getter/setter without invoking setter", () => {
+			class ReadWrite {
+				_v = 1
+				get rw() {
+					return "  hi  "
+				}
+				set rw(_: string) {
+					this._v = 999
+				}
+			}
+			const trim = rootSchema({
+				in: "string",
+				morphs: [(s: string) => s.trim()]
+			})
+			const T = rootSchema({
+				domain: "object",
+				required: [{ key: "rw", value: trim }]
+			})
+			for (let i = 0; i < 3; i++) {
+				const out = T.assert(new ReadWrite()) as ReadWrite
+				attest(out instanceof ReadWrite).equals(true)
+				attest(hasOwn(out, "rw")).equals(true)
+				attest(out.rw).equals("hi")
+				attest(out._v).equals(1)
+			}
+		})
+
+		it("defines own property over frozen prototype data property when deleting undeclared keys", () => {
+			class FrozenProto {
+				a = 1
+			}
+			;(FrozenProto.prototype as any).inherited = { k: 1, drop: 2 }
+			Object.freeze(FrozenProto.prototype)
+
+			const Inner = rootSchema({
+				domain: "object",
+				required: [{ key: "k", value: "number" }],
+				undeclared: "delete"
+			})
+			const T = rootSchema({
+				domain: "object",
+				required: [
+					{ key: "a", value: "number" },
+					{ key: "inherited", value: Inner }
+				],
+				undeclared: "delete"
+			})
+			const WithDefault = rootSchema({
+				domain: "object",
+				required: [
+					{ key: "a", value: "number" },
+					{ key: "inherited", value: Inner }
+				],
+				optional: [{ key: "d", value: "number", default: 7 }],
+				undeclared: "delete"
+			})
+			for (let i = 0; i < 3; i++) {
+				const out = T.assert(new FrozenProto()) as any
+				attest(out instanceof FrozenProto).equals(true)
+				attest(hasOwn(out, "inherited")).equals(true)
+				attest(out.inherited).equals({ k: 1 })
+				attest("drop" in out.inherited).equals(false)
+
+				const outDef = WithDefault.assert(new FrozenProto()) as any
+				attest(outDef instanceof FrozenProto).equals(true)
+				attest(hasOwn(outDef, "inherited")).equals(true)
+				attest(outDef.inherited).equals({ k: 1 })
+				attest(outDef.d).equals(7)
+			}
+		})
+
+		it("defines own property for defaults replacing inherited undefined getter under exactOptionalPropertyTypes: false", () => {
+			class UndefGetter {
+				get x() {
+					return undefined
+				}
+			}
+			const $ = schemaScope({}, { exactOptionalPropertyTypes: false })
+			const T = $.parse({
+				domain: "object",
+				optional: [
+					{
+						key: "x",
+						value: [{ domain: "string" }, { unit: undefined }],
+						default: "hi"
+					}
+				]
+			})
+			for (let i = 0; i < 3; i++) {
+				const out = T.assert(new UndefGetter()) as { x: string }
+				attest(out instanceof UndefGetter).equals(true)
+				attest(hasOwn(out, "x")).equals(true)
+				attest(out.x).equals("hi")
+			}
+		})
+
+		it("defines own __proto__ safely for transforming index signatures", () => {
+			const trim = rootSchema({
+				in: "string",
+				morphs: [(s: string) => s.trim()]
+			})
+			const T = rootSchema({
+				domain: "object",
+				index: [{ signature: "string", value: trim }],
+				undeclared: "delete"
+			})
+			for (let i = 0; i < 3; i++) {
+				const input = JSON.parse('{"__proto__":"  hi  ","a":"  ok  "}')
+				const out = T.assert(input) as Record<string, unknown>
+				expectSafeProto(out, "hi")
+				attest(out.a).equals("ok")
+			}
 		})
 	})
 })

@@ -223,7 +223,9 @@ export const setOwnValue = (
 	k: PropertyKey,
 	value: unknown
 ): void => {
-	if (k === "__proto__") defineValue(out, k, value)
+	// an inherited key can be an accessor (like __proto__ or a class getter/setter)
+	// or a non-writable data property on a frozen prototype, so define an own value
+	if (k in out && !hasOwn(out, k)) defineValue(out, k, value)
 	else out[k as never] = value as never
 }
 

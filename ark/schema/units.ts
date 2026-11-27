@@ -45,6 +45,7 @@ import {
 	holdsOnlyIndices,
 	keepOwn,
 	mergeTransformed,
+	setOwnValue,
 	TransformErrors,
 	transformKept
 } from "./shared/transform.ts"
@@ -338,6 +339,7 @@ const unitConstants = {
 	printable,
 	rejected,
 	rejects,
+	setOwnValue,
 	timeOf,
 	transformed,
 	transformedInApply,

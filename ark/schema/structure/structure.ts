@@ -1240,7 +1240,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.const("value", "data[k]").tfKey("transformed", "value", steps, {
 						keyExpr: "k",
 						pathKeyExpr: jsArrayPathKey(js),
-						onChange: () => this.jsCopy(js).line("out[k] = transformed")
+						onChange: () =>
+							this.jsCopy(js).line(
+								`${js.ref(setOwnValue)}(out, k, transformed)`
+							)
 					})
 				if (transformedIndex.length === 1) {
 					return js.if(
@@ -1282,7 +1285,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			`${keys.map(k => `!(${js.serialize(k)} in data) && `).join("")}${this.jsShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype`,
 			() => {
 				js.const("out", "{ ...data }")
-				for (const prop of this.defaultable) compileDefault(js, prop, "out")
+				for (const prop of this.defaultable)
+					compileDefault(js, prop, "out", true)
 				return this.jsDeclaredCopy(js, keys).return("out")
 			}
 		)
@@ -1295,7 +1299,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		let first = options?.first === true
 		for (const node of this.defaultable) {
 			js.if(`!(${node.jsHoldsValue(js, "data")})`, () =>
-				compileDefault(this.jsCopy(js, { first }), node, "out")
+				compileDefault(
+					this.jsCopy(js, { first }),
+					node,
+					"out",
+					!node.defaultsUndefined
+				)
 			)
 			first = false
 		}
@@ -1525,7 +1534,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				literalOf(slots, () => "null")
 			)
 			for (const prop of literal)
-				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop)))
+				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop), true))
 		}
 		const copies =
 			this.declaresKey("__proto__") ?
@@ -1555,11 +1564,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 		for (const prop of added) {
 			const store = () =>
-				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop)))
+				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop), true))
 			if (prop.is("required")) store()
 			else {
 				js.if(prop.jsHoldsValue(js, "data"), store)
-				if (prop.hasDef()) js.else(() => compileDefault(js, prop, "result"))
+				if (prop.hasDef())
+					js.else(() => compileDefault(js, prop, "result", true))
 			}
 		}
 		for (const prop of this.protoProps) {
@@ -1576,7 +1586,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				() =>
 					js.if(
 						`!(k in ${js.ref(this.byKey)}) && (${this._jsDeclaresKey(js)})`,
-						() => js.line("result[k] = out[k]")
+						() => js.line(`${js.ref(setOwnValue)}(result, k, out[k])`)
 					),
 				"outKeys",
 				"outSymbols"
@@ -1712,25 +1722,37 @@ const getPossibleMorph = (
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
-// assigning "__proto__" invokes Object.prototype's setter instead of defining an own key
+// assigning "__proto__" or an inherited accessor/read-only property invokes
+// prototype setters or throws instead of defining an own key
 const jsSetOwnProp = (
 	js: NodeCompiler,
 	target: string,
 	key: Key,
-	value: string
+	value: string,
+	isPlain = false
 ): string =>
 	key === "__proto__" ?
 		`Object.defineProperty(${target}, "__proto__", { value: ${value}, writable: true, enumerable: true, configurable: true })`
-	:	`${target}${js.prop(key)} = ${value}`
+	: isPlain ? `${target}${js.prop(key)} = ${value}`
+	: key in Object.prototype ?
+		`${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
+	:	`Object.getPrototypeOf(${target}) === Object.prototype ? (${target}${js.prop(key)} = ${value}) : ${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
 
 export const compileDefault = (
 	js: NodeCompiler,
 	node: Optional.Node.withDefault,
-	out: string
+	out: string,
+	isPlain = false
 ): NodeCompiler => {
 	if (hasPlainDefault(node)) {
 		return js.line(
-			jsSetOwnProp(js, out, node.key, serializeDefault(js, node.default))
+			jsSetOwnProp(
+				js,
+				out,
+				node.key,
+				serializeDefault(js, node.default),
+				isPlain
+			)
 		)
 	}
 	return compileDefaultMorph(

@@ -142,6 +142,7 @@ export {
 	rejects,
 	runtimeConfig,
 	runtimeScope,
+	setOwnValue,
 	silentCtx,
 	throwIssues,
 	throwOnDefault,

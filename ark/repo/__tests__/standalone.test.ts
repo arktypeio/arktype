@@ -18,7 +18,7 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { arkKindOf, flatMorph, hasDomain } from "@ark/util"
+import { arkKindOf, flatMorph, hasDomain, hasOwn } from "@ark/util"
 import {
 	ark,
 	fromJsonSchema,
@@ -3998,6 +3998,74 @@ export default shared`).js
 			attest(loaded.IsoDate("2025-01-01T00:00:00Z").summary).snap(
 				"must be an ISO 8601 date"
 			)
+		}
+	})
+
+	it("defines own properties over prototype accessors and frozen prototypes in speed and size builds", async () => {
+		class ReadOnly {
+			get ro() {
+				return "  hi  "
+			}
+		}
+		class ReadWrite {
+			_v = 1
+			get rw() {
+				return "  hi  "
+			}
+			set rw(_: string) {
+				this._v = 999
+			}
+		}
+		class FrozenProto {
+			a = 1
+		}
+		;(FrozenProto.prototype as any).inherited = { k: 1, drop: 2 }
+		Object.freeze(FrozenProto.prototype)
+
+		const TrimRo = type({ ro: "string.trim" })
+		const TrimRw = type({ rw: "string.trim" })
+		const DeleteInherited = type({
+			"+": "delete",
+			a: "number",
+			inherited: { "+": "delete", k: "number" }
+		})
+		const KeepInherited = type({
+			a: "number",
+			inherited: { "+": "delete", k: "number" }
+		})
+
+		for (const optimize of ["speed", "size"] as const) {
+			const loaded = await load(
+				{ TrimRo, TrimRw, DeleteInherited, KeepInherited },
+				{ optimize }
+			)
+
+			const roOut = loaded.TrimRo(new ReadOnly())
+			attest(roOut instanceof ReadOnly).equals(true)
+			attest(hasOwn(roOut, "ro")).equals(true)
+			attest(roOut.ro).equals("hi")
+			attest(roOut).equals(TrimRo(new ReadOnly()))
+
+			const rwOut = loaded.TrimRw(new ReadWrite())
+			attest(rwOut instanceof ReadWrite).equals(true)
+			attest(hasOwn(rwOut, "rw")).equals(true)
+			attest(rwOut.rw).equals("hi")
+			attest(rwOut._v).equals(1)
+			attest(rwOut).equals(TrimRw(new ReadWrite()))
+
+			const delOut = loaded.DeleteInherited(new FrozenProto())
+			attest(delOut instanceof FrozenProto).equals(true)
+			attest(hasOwn(delOut, "inherited")).equals(true)
+			attest(delOut.a).equals(1)
+			attest(delOut.inherited).equals({ k: 1 })
+			attest("drop" in delOut.inherited).equals(false)
+			attest(delOut).equals(DeleteInherited(new FrozenProto()))
+
+			const keepOut = loaded.KeepInherited(new FrozenProto())
+			attest(keepOut instanceof FrozenProto).equals(true)
+			attest(hasOwn(keepOut, "inherited")).equals(true)
+			attest(keepOut.inherited).equals({ k: 1 })
+			attest(keepOut).equals(KeepInherited(new FrozenProto()))
 		}
 	})
 })

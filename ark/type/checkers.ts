@@ -30,6 +30,7 @@ import {
 	pipeTransformed,
 	runtimeConfig,
 	runtimeScope,
+	setOwnValue,
 	silentCtx,
 	siteOf,
 	stops,
@@ -852,7 +853,7 @@ const writtenProps = (declared: Props, changing: Props, data: any): any => {
 		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
 		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
 			if (out === data) out = copyOf(data)
-			out[k] = value
+			setOwnValue(out, k, value)
 		}
 	}
 	if (out !== data)
@@ -892,7 +893,7 @@ const writtenValues = (
 		const value = values.transformed(checker.t, data[k], k)
 		if (Object.is(value, data[k])) continue
 		if (out === data) out = copyOf(data)
-		out[k] = value
+		setOwnValue(out, k, value)
 	}
 	if (defaults && !values.failed()) {
 		for (const k in changing) {
@@ -901,7 +902,7 @@ const writtenValues = (
 			if (out === data) out = copyOf(data)
 			// a default is written even where it's undefined
 			if (checker.w) values.defaulted(checker.w, out)
-			else out[k] = checker.d![0]
+			else setOwnValue(out, k, checker.d![0])
 		}
 	}
 	if (out !== data)
@@ -1039,10 +1040,18 @@ type SitedWrite = (
 ) => any
 
 // what a shape keeping the keys it doesn't declare writes: its own text's
-// result, then where data's copied, each key it declares that the copy lacks
+// result on a plain object, else its own fallback using setOwnValue, then where
+// data's copied, each key it declares that the copy lacks
 const sitedKeeps =
-	(declared: Props, checkers: readonly Checker[], write: SitedWrite) =>
+	(
+		declared: Props,
+		checkers: readonly Checker[],
+		write: SitedWrite,
+		fallback: (data: any, values?: WrittenValues) => any
+	) =>
 	(data: any, values?: WrittenValues): any => {
+		if (Object.getPrototypeOf(data) !== Object.prototype)
+			return fallback(data, values)
 		const out = write(data, checkers, values, copyOf)
 		if (out !== data)
 			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
@@ -1068,7 +1077,10 @@ export const sitedProps = ((
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
-		const written = sitedKeeps(declared, checkers, write)
+		const changing = changingIn(declared)
+		const written = sitedKeeps(declared, checkers, write, data =>
+			writtenProps(declared, changing, data)
+		)
 		checker.t = data => written(data)
 	}
 	return checker
@@ -1094,19 +1106,17 @@ export const sited = ((
 	if (!write) return checker
 	const checkers = Object.values(declared)
 	const changing = changingIn(declared)
-	const keeps = sitedKeeps(declared, checkers, write)
+	const fallback = (data: any, values?: WrittenValues) =>
+		values ?
+			writtenValues(declared, changing, data, values)
+		:	writtenProps(declared, changing, data)
+	const keeps = sitedKeeps(declared, checkers, write, fallback)
 	const written = (data: any, values?: WrittenValues) =>
 		writes < 3 ? keeps(data, values)
 			// an instance is copied, keeping its prototype
 		: Object.getPrototypeOf(data) === Object.prototype ?
 			write(data, checkers, values, copyOf)
-		:	deletes(
-				declared,
-				data,
-				values ?
-					writtenValues(declared, changing, data, values)
-				:	writtenProps(declared, changing, data)
-			)
+		:	deletes(declared, data, fallback(data, values))
 	checker.t =
 		writes % 2 ?
 			data => written(data)
