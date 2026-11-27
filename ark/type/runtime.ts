@@ -266,7 +266,7 @@ export class Validator {
 	// a build without the expression member has none to print, and one whose
 	// validators all lack it ships no read of it
 	toString(): string {
-		return holdsExpression && this.expression ?
+		return holdsExpression && this.expression !== undefined ?
 				`Type<${this.expression}>`
 			:	"Type"
 	}

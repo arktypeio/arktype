@@ -1,10 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { configureAfterTypeMessage } from "arktype/schema"
+import { configureAfterTypeMessage, holeNameMarker } from "arktype/schema"
 import { precompileModule, renderDiagnostic } from "@ark/aot"
 import { isRuntimeExport } from "@ark/aot/internal/graph.ts"
 import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
 import * as arktype from "arktype"
 import { type } from "arktype"
+import { precompileStandalone } from "arktype/internal/standalone.ts"
 import * as arktypeRuntime from "arktype/runtime"
 import {
 	analyze,
@@ -690,6 +691,32 @@ export const A = type.instanceOf(Cat).or("null")`
 					d => `${d.rule} ${d.severity}`
 				)
 			).snap(["R1 warning"])
+		})
+
+		it("preserves empty expression and Type<> string for anonymous class validators", () => {
+			const Anon = (() => class {})()
+			const T = type.instanceOf(Anon)
+			Object.defineProperty(Anon, "name", {
+				value: `${holeNameMarker}anon`,
+				configurable: true
+			})
+			const { code } = precompileStandalone(
+				{
+					T: {
+						type: T.internal as never,
+						params: [{ kind: "class", label: "Anon", value: Anon }]
+					}
+				},
+				{ members: { expression: true } }
+			)
+			attest(code.includes('return ""')).equals(true)
+			attest(code.includes("return \n")).equals(false)
+			attest(
+				arktypeRuntime.Validator.prototype.toString.call({ expression: "" })
+			).equals("Type<>")
+			attest(arktypeRuntime.Validator.prototype.toString.call({})).equals(
+				"Type"
+			)
 		})
 	})
 })

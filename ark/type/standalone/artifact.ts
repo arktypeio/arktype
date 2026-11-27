@@ -2724,15 +2724,20 @@ return namespace`
 		const write = (opts: TracedOptions) =>
 			root.toJsonSchema(target ? { target, ...opts } : opts)
 		let trace: FallbackTrace | undefined
+		let thrown: unknown
 		try {
 			assertBakeableJsonSchema(root)
 			trace = this.baking.write(() =>
-				traceFallbacks(root, (fallback, writers) =>
-					write({ fallback, [unionJsonSchemaWritersKey]: writers })
-				)
+				traceFallbacks(root, (fallback, writers) => {
+					try {
+						return write({ fallback, [unionJsonSchemaWritersKey]: writers })
+					} catch (e) {
+						throw (thrown = e)
+					}
+				})
 			)
 		} catch (e) {
-			if (e instanceof ParseError) return
+			if (e === thrown || e instanceof ParseError) return
 			throw e
 		}
 		if (!trace) return
@@ -3386,14 +3391,15 @@ return namespace`
 		parts: (string | BaseRoot)[]
 	): string {
 		const imports: Record<string, string[]> = {}
-		const body = parts
-			.map(part => {
-				if (typeof part === "string") return JSON.stringify(part)
-				const name = this.stringModuleOf(part, kind)
-				imports[this.specifierOf(name)] = [name]
-				return `${name}()`
-			})
-			.join(" + ")
+		const body =
+			parts
+				.map(part => {
+					if (typeof part === "string") return JSON.stringify(part)
+					const name = this.stringModuleOf(part, kind)
+					imports[this.specifierOf(name)] = [name]
+					return `${name}()`
+				})
+				.join(" + ") || '""'
 		const name = `${kind}${hashOf(body)}`
 		this.share(
 			name,

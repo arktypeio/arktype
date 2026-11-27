@@ -1372,7 +1372,9 @@ const reduceJsonSchemaByKind: {
 		const excluded: JsonSchema =
 			schema.type === "string" ?
 				{ type: "string", minLength: node.rule, maxLength: node.rule }
-			:	{ ...arraySchemaOf(ctx), minItems: node.rule, maxItems: node.rule }
+			: schema.type === "array" ?
+				{ ...arraySchemaOf(ctx), minItems: node.rule, maxItems: node.rule }
+			:	ToJsonSchema.throwOperandError("notEqualLength", schema)
 		schema.not =
 			schema.not ?
 				{

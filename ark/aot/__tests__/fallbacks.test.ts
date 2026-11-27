@@ -11,6 +11,7 @@ import {
 	traceFallbacks,
 	writeReplay
 } from "arktype/internal/standalone/fallbacks.ts"
+import { precompile } from "./utils.ts"
 
 // each level reuses the last twice, doubling the fallback's calls and the
 // objects each call would record the state of
@@ -126,5 +127,33 @@ contextualize(() => {
 			],
 			discriminator: { propertyName: "kind" }
 		})
+	})
+
+	it("leaves baseless length bounds unbaked instead of crashing replay tracing", () => {
+		attest(() => type.schema({ notEqualLength: 1 }).toJsonSchema()).throws(
+			"Unexpected JSON Schema input for notEqualLength: {}"
+		)
+		const { modules } = precompile(
+			`import { type } from "arktype"
+export const BareMin = type.schema({ minLength: 3 })
+export const BareNotEq = type.schema({ notEqualLength: 1 })`,
+			{},
+			{ members: { toJsonSchema: true } }
+		)
+		const unbaked = [
+			...Object.values(modules)
+				.join("\n")
+				.matchAll(/runtime\.throwUnbaked\((".*?[^\\]")\)/g)
+		].map(([, reason]) => JSON.parse(reason))
+		attest(
+			unbaked.some(r =>
+				r.includes("Unexpected JSON Schema input for minLength")
+			)
+		).equals(true)
+		attest(
+			unbaked.some(r =>
+				r.includes("Unexpected JSON Schema input for notEqualLength")
+			)
+		).equals(true)
 	})
 })
