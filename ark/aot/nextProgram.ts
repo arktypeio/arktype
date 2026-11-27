@@ -100,8 +100,13 @@ const programsDirOf = (root: string) =>
 
 // one for each project and option set, kept from build to build so an answer
 // Turbopack's cache holds a module's output against stays the file it read
-const programDirOf = (root: string, opts: PrecompilePluginOptions): string =>
-	join(programsDirOf(root), hashOf(JSON.stringify(opts)))
+const programDirOf = (root: string, opts: PrecompilePluginOptions): string => {
+	const normalized =
+		opts.cwd !== undefined && realPathOf(opts.cwd) === realPathOf(root) ?
+			(({ cwd: _, ...rest }) => rest)(opts)
+		:	opts
+	return join(programsDirOf(root), hashOf(JSON.stringify(normalized)))
+}
 
 export const doneFileOf = (dir: string): string => join(dir, "done.json")
 
@@ -691,8 +696,9 @@ export const readProjectWith = async (
 	opts: PrecompilePluginOptions
 }> => {
 	const read = nextConfigReadOf(config, isOwnLoader)
+	const raw = given ?? ("options" in read ? read.options : {})
 	const opts = resolvedOptionsOf(
-		withSettingsFile(given ?? ("options" in read ? read.options : {})),
+		withSettingsFile(raw.cwd !== undefined ? raw : { ...raw, cwd: root }),
 		true
 	)
 	if (!readsWith(opts)) return { refused: undefined, warnings: [], opts }
