@@ -39,6 +39,13 @@ contextualize(() => {
 		attest(() => type("string#")).throwsAndHasTypeError(emptyBrandNameMessage)
 	})
 
+	it("branded again by the same name", () => {
+		const T = type("string#id").brand("id")
+		attest(T.t).type.toString.snap('Brand<Brand<string, "id">, "id">')
+		attest<string>(T.inferIn)
+		attest<{ a: string }>(type({ a: T }).inferIn)
+	})
+
 	it("name with !", () => {
 		const T = type("string#a!b")
 		attest<Brand<string, "a!b">>(T.infer)

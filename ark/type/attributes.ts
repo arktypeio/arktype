@@ -110,7 +110,8 @@ type _distill<t, side extends DistillSide> =
 	: unknown extends t ? unknown
 	: t extends { readonly [brand]: [infer base, unknown] } ?
 		side extends "in" | "encoded" ?
-			base
+			// a base branded again is unbranded again
+			_distill<base, side>
 		:	t
 	: // Function is excluded from TerminallyInferredObjectKind so that
 	// those types could be inferred before checking for morphs
