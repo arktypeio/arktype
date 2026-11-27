@@ -15,6 +15,7 @@ import type {
 	GenericInstantiationAst,
 	inferGenericInstantiation
 } from "./generic.ts"
+import type { unbrandKeyofOperand } from "./keyof.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
@@ -65,8 +66,9 @@ export type inferExpression<ast, $, args> =
 		: ast[1] extends "%" | "?" ? inferExpression<ast[0], $, args>
 		: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 			inferGenericInstantiation<g, argAsts, $, args>
-		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
-		: never
+		: ast[0] extends "keyof" ?
+			arkKeyOf<unbrandKeyofOperand<inferExpression<ast[1], $, args>>>
+		:	never
 	:	never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"

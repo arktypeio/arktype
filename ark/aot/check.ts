@@ -30,6 +30,19 @@ import { withSettingsFile } from "./settings.ts"
 import { SchemaStrategies } from "./strategies.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
+export interface CheckDiagnostic {
+	severity: Diagnostic["severity"]
+	rule?: Diagnostic["rule"]
+	file?: string
+	line?: number
+	column?: number
+	start?: number
+	end?: number
+	message: string
+	reasons?: string[]
+	hint?: string
+}
+
 export interface CheckReport {
 	lines: string[]
 	sites: number
@@ -41,6 +54,7 @@ export interface CheckReport {
 	errorsOutsideSites: number
 	errors: number
 	files: number
+	diagnostics: CheckDiagnostic[]
 }
 
 const nameASource =
@@ -51,11 +65,11 @@ export const writeNoSourcesMessage = (
 	patterns: string[],
 	cwd: string
 ): string =>
-	`--check was given ${patterns.join(", ")}, which ${patterns.length === 1 ? "matches" : "match"} no script in ${cwd}. ${nameASource}`
+	`ark check was given ${patterns.join(", ")}, which ${patterns.length === 1 ? "matches" : "match"} no script in ${cwd}. ${nameASource}`
 
 // each of patterns holds scripts, but only in directories it skips
 export const writeSkippedSourcesMessage = (patterns: string[]): string =>
-	`--check was given ${patterns.join(", ")}, which ${patterns.length === 1 ? "holds" : "hold"} scripts only in directories it skips (node_modules, out, dist and build) or as declaration files. ${nameASource}`
+	`ark check was given ${patterns.join(", ")}, which ${patterns.length === 1 ? "holds" : "hold"} scripts only in directories it skips (node_modules, out, dist and build) or as declaration files. ${nameASource}`
 
 export const writeMissingTsconfigMessage = (tsconfig: string): string =>
 	`The tsconfig ${tsconfig} can't be read. Name the tsconfig your build uses as --tsconfig, or remove it to check without one.`
@@ -79,7 +93,9 @@ const sourcesOf = (patterns: string[], cwd: string): string[] => {
 		.map(match => resolve(cwd, match))
 		.sort()
 	for (const path of matches) {
-		if (!statSync(path).isDirectory()) {
+		const stat = statSync(path, { throwIfNoEntry: false })
+		if (!stat) continue
+		if (!stat.isDirectory()) {
 			if (scriptFile.test(path)) files.add(path)
 		} else if (!dirs.some(dir => path.startsWith(dir + sep))) dirs.push(path)
 	}
@@ -102,7 +118,9 @@ const holdsSkippedSources = (pattern: string, cwd: string): boolean => {
 	const exclude = isInNodeModules(pattern) ? undefined : isInNodeModules
 	return globSync(pattern, { cwd, exclude }).some(match => {
 		const path = resolve(cwd, match)
-		return statSync(path).isDirectory() ?
+		const stat = statSync(path, { throwIfNoEntry: false })
+		if (!stat) return false
+		return stat.isDirectory() ?
 				globSync(defaultSources, {
 					cwd: path,
 					exclude
@@ -180,7 +198,8 @@ export const check = (
 		rate: 100,
 		errorsOutsideSites: 0,
 		errors: 0,
-		files: files.length
+		files: files.length,
+		diagnostics: []
 	}
 	// each key of schemas that chose for a definition of some file
 	const choosing = new Set<string>()
@@ -223,6 +242,8 @@ export const check = (
 				realPathOf(cwd)
 			).definitionlessIn(new Set(files.map(realPathOf)), choosing)
 			report.lines.push(...definitionless)
+			for (const message of definitionless)
+				report.diagnostics.push({ severity: "error", message })
 			report.errors += definitionless.length
 			report.errorsOutsideSites += definitionless.length
 		}
@@ -232,6 +253,10 @@ export const check = (
 			files
 		) as RenderedDiagnostics
 		report.lines.push(...errors, ...warnings)
+		for (const message of errors)
+			report.diagnostics.push({ severity: "error", message })
+		for (const message of warnings)
+			report.diagnostics.push({ severity: "warning", message })
 		report.errors += errors.length
 		report.errorsOutsideSites += errors.length
 		// as a production build prunes
@@ -239,7 +264,10 @@ export const check = (
 			isProductionEnv() &&
 			precompilerOptions.prune !== false &&
 			unprunedMessageOf(files, cwd, request)
-		if (unpruned) report.lines.push(unpruned)
+		if (unpruned) {
+			report.lines.push(unpruned)
+			report.diagnostics.push({ severity: "warning", message: unpruned })
+		}
 		if (
 			precompilerOptions.runtime !== "arktype" &&
 			!precompilerOptions.shadow
@@ -268,6 +296,23 @@ const reportModule = (
 	cwd: string
 ): void => {
 	const path = printablePathOf(cwd, file)
+	const sortedDiagnostics = [...result.diagnostics].sort(
+		(l, r) => l.start - r.start
+	)
+	for (const diagnostic of sortedDiagnostics) {
+		report.diagnostics.push({
+			severity: diagnostic.severity,
+			rule: diagnostic.rule,
+			file: printablePathOf(cwd, diagnostic.file),
+			line: diagnostic.line,
+			column: diagnostic.column,
+			start: diagnostic.start,
+			end: diagnostic.end,
+			message: diagnostic.message,
+			reasons: diagnostic.reasons,
+			...(diagnostic.hint !== undefined && { hint: diagnostic.hint })
+		})
+	}
 	const entries: [number, string][] = result.diagnostics.map(diagnostic => [
 		diagnostic.start,
 		renderDiagnostic({

@@ -17,6 +17,13 @@ var domainOf = data => {
 
 // ark/util/records.ts
 var hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
+var defineValue = (o, k, value) =>
+	Object.defineProperty(o, k, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
 
 // ark/util/objectKinds.ts
 var isArray = /* @__PURE__ */ (() => Array.isArray)()
@@ -75,12 +82,12 @@ var ReadIssues = class {
 	/** @internal */
 	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const stops =
+		const stops2 =
 			missing.length && !(key in data) ?
 				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
-		return stops
+		return stops2
 	}
 }
 var UnreadIssues = class {
@@ -111,12 +118,12 @@ var UnreadIssues = class {
 	}
 	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const stops =
+		const stops2 =
 			missing.length && !(key in data) ?
 				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
-		return stops
+		return stops2
 	}
 }
 var failsSite = (ctx, context, data) =>
@@ -161,12 +168,12 @@ var Issues =
 				}
 				_k(apply, data, key, ...missing) {
 					this._p.push(key)
-					const stops =
+					const stops2 =
 						missing.length && !(key in data) ?
 							this._e(data, "required", ...missing)
 						:	!apply(data[key], this)
 					this._p.pop()
-					return stops
+					return stops2
 				}
 				get summary() {
 					let summary = ""
@@ -213,12 +220,12 @@ var Issues =
 				}
 				_k(apply, data, key, ...missing) {
 					this._p.push(key)
-					const stops =
+					const stops2 =
 						missing.length && !(key in data) ?
 							this._e(data, "required", ...missing)
 						:	!apply(data[key], this)
 					this._p.pop()
-					return stops
+					return stops2
 				}
 				get summary() {
 					let summary = ""
@@ -322,19 +329,42 @@ var pathOf = issue => {
 	}
 	return path
 }
+var formatArkError
+var isLabeledIssue = (issue, message, defaultMessage) => {
+	if (issue._n !== void 0) return true
+	const meta = issue.code === "required" ? issue.valueMeta : issue.meta
+	if (
+		typeof meta?.label === "string" &&
+		meta.message === void 0 &&
+		message.startsWith(meta.label + " ")
+	)
+		return true
+	return (
+		(issue.expected !== void 0 || issue.code === "required") &&
+		message.length > defaultMessage.length + 1 &&
+		(message.endsWith(" " + defaultMessage) ||
+			message.includes(" " + defaultMessage + " "))
+	)
+}
 var lineOf = issue => {
-	const message = (issue.message ??= messageOf(issue))
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== void 0) return formatted
+	}
+	const defaultMessage = messageOf(issue)
+	const message = issue.message ?? defaultMessage
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== void 0 ? issue._l
-		: labelsValues && issue._n !== void 0 ? labeledPathOf(issue) + message
+		: labelsValues && isLabeledIssue(issue, message, defaultMessage) ?
+			labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
 				writesText &&
 				!(message === "is invalid" && issue.expected === "valid") &&
-				!message.startsWith(messageOf(issue))
+				!message.startsWith(defaultMessage)
 			) ?
 				": "
 			:	" ") +
@@ -386,26 +416,41 @@ var TransformErrors = class _TransformErrors {
 		return gathered
 	}
 }
+var copiedInPlace
+var deletableKeysOf = data => [
+	...Object.keys(data),
+	...Object.getOwnPropertySymbols(data)
+]
 var copyOf = data => {
 	if (isArray(data)) {
-		const copy = Array.prototype.slice.call(data)
+		const copy2 = Array.prototype.slice.call(data)
 		const keys = Object.keys(data)
 		return (
-				keys.length !== copy.length ||
-					keys[copy.length - 1] !== `${copy.length - 1}` ||
+				keys.length !== copy2.length ||
+					keys[copy2.length - 1] !== `${copy2.length - 1}` ||
 					Object.getOwnPropertySymbols(data).length
 			) ?
 				Object.defineProperties(
-					copy,
+					copy2,
 					Object.getOwnPropertyDescriptors({ ...data })
 				)
-			:	copy
+			:	copy2
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
-	return Object.prototype.toString.call(data) === "[object Object]" ?
-			Object.setPrototypeOf({ ...data }, prototype)
-		:	data
+	if (copiedInPlace?.has(data)) return data
+	if (Object.prototype.toString.call(data) === "[object Object]")
+		return Object.setPrototypeOf({ ...data }, prototype)
+	if (!copiedInPlace) return data
+	const copy = /* @__PURE__ */ Object.create(null)
+	for (const k of deletableKeysOf(data)) copy[k] = data[k]
+	copiedInPlace.set(copy, data)
+	return copy
+}
+var setOwnValue = (out, k, value) => {
+	"use strict"
+	if (k in out && !hasOwn(out, k)) defineValue(out, k, value)
+	else out[k] = value
 }
 
 // ark/schema/shared/traversal.ts
@@ -413,6 +458,10 @@ var errorsOf = ctx => (ctx._errors ??= ctx.createErrors())
 var receive = (ctx, data) => {
 	ctx.recv = data
 	ctx.recvAt = ctx.path.length
+}
+var transformsValid = ctx => ctx.branches.length === 0 && !ctx.chkOnly
+var transformedInApply = (ctx, result) => {
+	if (result instanceof TransformErrors) addMorphErrs(ctx, result)
 }
 var callContext
 var inContext = (context, run) => {
@@ -464,7 +513,20 @@ var addMorphErrs = (ctx, errors, key) => {
 	ctx.recvAt = recvAt
 }
 
+// ark/schema/structure/shared.ts
+var arrayIndexSource = `^(?:0|[1-9]\\d*)$`
+var arrayIndexMatcher = /* @__PURE__ */ new RegExp(arrayIndexSource)
+var maxArrayLength = 4294967295
+var arrayPathKeyOf = k =>
+	typeof k === "string" && arrayIndexMatcher.test(k) && +k < maxArrayLength ?
+		+k
+	:	k
+
 // ark/type/checkers.ts
+var transformedBy = ({ t }, data, ctx) =>
+	!t ? data
+	: t.c ? t(data, ctx)
+	: t(data)
 var holdingMorphs = (t, held) => {
 	for (const checker of held) {
 		t.e ??= checker.t?.e
@@ -501,7 +563,7 @@ var moreThan = (
 ) => check("min", description, data => data > rule)
 var minLength = (
 	rule,
-	description = rule === 1 ? "non-empty" : `at least length ${rule}`
+	description = rule === 1 ? "non-empty" : `at least ${rule} characters`
 ) => check("minLength", description, data => data.length >= rule)
 var divisor = (
 	rule,
@@ -607,8 +669,11 @@ var closedProps = (declared, description = "removed") => {
 var recordOf = value => {
 	const checker = (data, ctx) => {
 		if (!objectCheck.test(data)) return !failsAt(ctx, objectCheck, data)
-		for (const k of Object.keys(data))
-			if (failsValue(ctx, value, data, k, data[k])) return false
+		const isArray2 = Array.isArray(data)
+		for (const k of Object.keys(data)) {
+			const pathKey = isArray2 ? arrayPathKeyOf(k) : k
+			if (failsValue(ctx, value, data, pathKey, data[k])) return false
+		}
 		return true
 	}
 	checker.description = objectCheck.description
@@ -624,7 +689,7 @@ var writtenProps = (declared, changing, data) => {
 		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
 		if (holds ? value !== void 0 && value !== data[k] : defaulted?.length) {
 			if (out === data) out = copyOf(data)
-			out[k] = value
+			setOwnValue(out, k, value)
 		}
 	}
 	if (out !== data) {
@@ -654,7 +719,7 @@ var writtenValues = (declared, changing, data, values) => {
 		const value = values.transformed(checker.t, data[k], k)
 		if (Object.is(value, data[k])) continue
 		if (out === data) out = copyOf(data)
-		out[k] = value
+		setOwnValue(out, k, value)
 	}
 	if (defaults && !values.failed()) {
 		for (const k in changing) {
@@ -662,7 +727,7 @@ var writtenValues = (declared, changing, data, values) => {
 			if (holdsValue(checker, data, k) || !isDefaulted(checker)) continue
 			if (out === data) out = copyOf(data)
 			if (checker.w) values.defaulted(checker.w, out)
-			else out[k] = checker.d[0]
+			else setOwnValue(out, k, checker.d[0])
 		}
 	}
 	if (out !== data) {
@@ -681,7 +746,9 @@ var deletes = (declared, data, out) => {
 	}
 	return out
 }
-var sitedKeeps = (declared, checkers, write) => (data, values) => {
+var sitedKeeps = (declared, checkers, write, fallback) => (data, values) => {
+	if (Object.getPrototypeOf(data) !== Object.prototype)
+		return fallback(data, values)
 	const out = write(data, checkers, values, copyOf)
 	if (out !== data) {
 		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
@@ -696,7 +763,10 @@ var sitedProps = (allows, declared, write, walks = props(declared)) => {
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
-		const written = sitedKeeps(declared, checkers, write)
+		const changing = changingIn(declared)
+		const written = sitedKeeps(declared, checkers, write, data =>
+			writtenProps(declared, changing, data)
+		)
 		checker.t = data => written(data)
 	}
 	return checker
@@ -711,18 +781,16 @@ var sited = (allows, declared, write, writes, removed, withCtx) => {
 	if (!write) return checker
 	const checkers = Object.values(declared)
 	const changing = changingIn(declared)
-	const keeps = sitedKeeps(declared, checkers, write)
+	const fallback = (data, values) =>
+		values ?
+			writtenValues(declared, changing, data, values)
+		:	writtenProps(declared, changing, data)
+	const keeps = sitedKeeps(declared, checkers, write, fallback)
 	const written = (data, values) =>
 		writes < 3 ? keeps(data, values)
 		: Object.getPrototypeOf(data) === Object.prototype ?
 			write(data, checkers, values, copyOf)
-		:	deletes(
-				declared,
-				data,
-				values ?
-					writtenValues(declared, changing, data, values)
-				:	writtenProps(declared, changing, data)
-			)
+		:	deletes(declared, data, fallback(data, values))
 	checker.t =
 		writes % 2 ?
 			data => written(data)
@@ -793,7 +861,20 @@ var freed = values => {
 }
 var readingValues = (t, held, withCtx) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	if (held.some(({ w }) => w)) t.e = applyMorphAt
 	return holdingMorphs(t, held)
+}
+var applyMorphAt = (ctx, checker, value, k) => {
+	ctx.path.push(k)
+	const passes =
+		(
+			transformsValid(ctx) &&
+			(checker.a ? checker.a(value, ctx) : checker(value))
+		) ?
+			(transformedInApply(ctx, transformedBy(checker, value, ctx)), true)
+		:	checker(value, ctx)
+	ctx.path.pop()
+	return !passes
 }
 var units = (
 	values,
@@ -939,10 +1020,10 @@ var intersectionj0sv370oqte88 = [
 		"removed"
 	)
 ]
-var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
+var intersectionielnw11y5lwhc = /* @__PURE__ */ (([
 	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersectiona1747b08zjj0xAllows = /* @__PURE__ */ sited(
+	const intersectionielnw11y5lwhcAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -963,14 +1044,15 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[18](data.conditions)) ||
-				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
-				("checker" in data && !checkers[20](data.checker)) ||
-				("dependencies" in data && !checkers[21](data.dependencies)) ||
-				("cwd" in data && !checkers[19](data.cwd)) ||
+				("droppedNarrow" in data && !booleanChecker(data.droppedNarrow)) ||
+				("conditions" in data && !checkers[19](data.conditions)) ||
+				("tsconfig" in data && !checkers[20](data.tsconfig)) ||
+				("checker" in data && !checkers[21](data.checker)) ||
+				("dependencies" in data && !checkers[22](data.dependencies)) ||
+				("cwd" in data && !checkers[20](data.cwd)) ||
 				("inline" in data && !booleanChecker(data.inline)) ||
 				("declare" in data && !booleanChecker(data.declare)) ||
-				("defers" in data && !checkers[25](data.defers))
+				("defers" in data && !checkers[26](data.defers))
 			)
 				return false
 			for (const k in data)
@@ -993,6 +1075,7 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 					case "shadow":
 					case "prune":
 					case "allowUnsafe":
+					case "droppedNarrow":
 					case "conditions":
 					case "tsconfig":
 					case "checker":
@@ -1089,6 +1172,7 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 			shadow: /* @__PURE__ */ optional(booleanChecker),
 			prune: /* @__PURE__ */ optional(booleanChecker),
 			allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
+			droppedNarrow: /* @__PURE__ */ optional(booleanChecker),
 			conditions: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					arrayCheck,
@@ -1128,7 +1212,7 @@ var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectiona1747b08zjj0xAllows]
+	return [intersectionielnw11y5lwhcAllows]
 })(intersectionj0sv370oqte88)
 var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -1143,10 +1227,10 @@ var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 	validator.withContext = freeze(context => withContextOf(validator, context))
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
+var intersection1wq6sd31bdhaey = /* @__PURE__ */ (([
 	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersection1kiu37t1iquj2hAllows = /* @__PURE__ */ sited(
+	const intersection1wq6sd31bdhaeyAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -1167,10 +1251,11 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[18](data.conditions)) ||
-				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
-				("checker" in data && !checkers[20](data.checker)) ||
-				("dependencies" in data && !checkers[21](data.dependencies))
+				("droppedNarrow" in data && !booleanChecker(data.droppedNarrow)) ||
+				("conditions" in data && !checkers[19](data.conditions)) ||
+				("tsconfig" in data && !checkers[20](data.tsconfig)) ||
+				("checker" in data && !checkers[21](data.checker)) ||
+				("dependencies" in data && !checkers[22](data.dependencies))
 			)
 				return false
 			for (const k in data)
@@ -1193,6 +1278,7 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 					case "shadow":
 					case "prune":
 					case "allowUnsafe":
+					case "droppedNarrow":
 					case "conditions":
 					case "tsconfig":
 					case "checker":
@@ -1285,6 +1371,7 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 			shadow: /* @__PURE__ */ optional(booleanChecker),
 			prune: /* @__PURE__ */ optional(booleanChecker),
 			allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
+			droppedNarrow: /* @__PURE__ */ optional(booleanChecker),
 			conditions: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					arrayCheck,
@@ -1311,34 +1398,34 @@ var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection1kiu37t1iquj2hAllows]
+	return [intersection1wq6sd31bdhaeyAllows]
 })(intersectionj0sv370oqte88)
-var intersection84g0ee1bxihyt = /* @__PURE__ */ (([
-	intersection1kiu37t1iquj2hAllows
+var intersection128xenx0krshz5 = /* @__PURE__ */ (([
+	intersection1wq6sd31bdhaeyAllows
 ]) => {
-	const intersection84g0ee1bxihytAllows = /* @__PURE__ */ closedProps({
+	const intersection128xenx0krshz5Allows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows)
+		precompile: /* @__PURE__ */ optional(intersection1wq6sd31bdhaeyAllows)
 	})
-	return [intersection84g0ee1bxihytAllows]
-})(intersection1kiu37t1iquj2h)
-var intersection1j4pd4n1jwocfa = /* @__PURE__ */ (([
-	intersection1kiu37t1iquj2hAllows
+	return [intersection128xenx0krshz5Allows]
+})(intersection1wq6sd31bdhaey)
+var intersection1w95fmx179ztfg = /* @__PURE__ */ (([
+	intersection1wq6sd31bdhaeyAllows
 ]) => {
-	const intersection1j4pd4n1jwocfaAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows),
+	const intersection1w95fmx179ztfgAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection1wq6sd31bdhaeyAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection1j4pd4n1jwocfaAllows]
-})(intersection1kiu37t1iquj2h)
+	return [intersection1w95fmx179ztfgAllows]
+})(intersection1wq6sd31bdhaey)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("1vfc2j508amzo4", () =>
-					create1q5hta0h0lh5t(intersectiona1747b08zjj0x, "1706xit1")
+				const validator0 = interned("j27pj9070cym7", () =>
+					create1q5hta0h0lh5t(intersectionielnw11y5lwhc, "12wu7wd0")
 				)
 				return validator0
 			})())
@@ -1347,8 +1434,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("inq2he0srsmw8", () =>
-					create1q5hta0h0lh5t(intersection84g0ee1bxihyt, "1y1ytoj0")
+				const validator0 = interned("3szwik1gnqx9x", () =>
+					create1q5hta0h0lh5t(intersection128xenx0krshz5, "ixdf2s01")
 				)
 				return validator0
 			})())
@@ -1357,8 +1444,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("73gcco1k0mhoe", () =>
-					create1q5hta0h0lh5t(intersection1j4pd4n1jwocfa, "12jiwy81")
+				const validator0 = interned("1l0po1w04w90hs", () =>
+					create1q5hta0h0lh5t(intersection1w95fmx179ztfg, "1b6rquc1")
 				)
 				return validator0
 			})())
@@ -1377,6 +1464,7 @@ export const cliOptions = {
 	declare: { type: "boolean", values: "true|false" },
 	defers: { type: "string", values: "large|true|false" },
 	dependencies: { type: "object", values: "json" },
+	droppedNarrow: { type: "boolean", values: "true|false" },
 	errors: { type: "string", values: "all|first|none" },
 	freeze: { type: "boolean", values: "true|false" },
 	inline: { type: "boolean", values: "true|false" },
@@ -1399,69 +1487,206 @@ export const cliOptions = {
 export const precompileJsonSchema = {
 	type: "object",
 	properties: {
-		allowUnsafe: { type: "boolean" },
+		allowUnsafe: {
+			type: "boolean",
+			description:
+				"Report unsafe build patterns (like ParseErrors or late configure() imports) as warnings instead of failing the build"
+		},
 		bakedLimit: {
 			type: "integer",
-			description: "the characters a site's baked introspection may total",
+			description:
+				"Maximum total characters of baked introspection metadata allowed per precompiled site (default 1 MB)",
 			exclusiveMinimum: 0
 		},
-		checker: { type: "string", enum: ["tsgo", "tsjs", "tsrs"] },
-		conditions: { type: "array", items: { type: "string" } },
+		checker: {
+			type: "string",
+			enum: ["tsgo", "tsjs", "tsrs"],
+			description:
+				"TypeScript checker used by `ark declare`: 'tsjs' (TS 5.5-6), 'tsgo' (TS 7 native), or 'tsrs'"
+		},
+		conditions: {
+			type: "array",
+			description:
+				"Package export conditions used when resolving imports during precompilation",
+			items: { type: "string" }
+		},
 		config: {
 			anyOf: [
 				{ type: "string", minLength: 1 },
 				{ type: "boolean", const: false }
 			],
-			description: "a module path or false"
+			description:
+				"Path to the module that calls configure(), or false to forbid configure() calls"
 		},
-		creationChecks: { type: "string", enum: ["helpers", "none", "types"] },
+		creationChecks: {
+			type: "string",
+			enum: ["helpers", "none", "types"],
+			description:
+				"Runtime checks emitted when validators are created: 'types' (default), 'helpers' (tests), or 'none' (production)"
+		},
 		dependencies: {
 			type: "object",
+			description:
+				"How to handle dependencies that import arktype without opting in: 'aot' to precompile or 'arktype' to run on arktype",
 			additionalProperties: { type: "string", enum: ["aot", "arktype"] }
 		},
-		errors: { type: "string", enum: ["all", "first", "none"] },
-		freeze: { type: "boolean" },
-		jsonInput: { type: "boolean" },
-		lazy: { type: "boolean" },
+		droppedNarrow: {
+			type: "boolean",
+			description:
+				"Warn when structural operations ('...', .merge(), .pick(), .omit(), .partial(), .required(), .map()) drop a root .narrow() predicate (default true)"
+		},
+		errors: {
+			type: "string",
+			enum: ["all", "first", "none"],
+			description:
+				"Error reporting mode for standalone validators: 'all' (default), 'first', or 'none'"
+		},
+		freeze: {
+			type: "boolean",
+			description:
+				"Freeze precompiled validators and their members (default true in development, false in production)"
+		},
+		jsonInput: {
+			type: "boolean",
+			description:
+				"Trust objects validated with rejected undeclared keys to be plain JSON-like objects so key counts can be used"
+		},
+		lazy: {
+			type: "boolean",
+			description:
+				"Create validators lazily on first read instead of eagerly at module load (default true, false under 'smallest')"
+		},
 		members: {
 			type: "object",
 			properties: {
-				assert: { type: "boolean" },
-				description: { type: "boolean" },
-				expression: { type: "boolean" },
-				json: { type: "boolean" },
-				meta: { type: "boolean" },
-				methods: { type: "boolean" },
-				toJSON: { type: "boolean" },
-				toJsonSchema: { type: "boolean" },
-				withContext: { type: "boolean" },
-				"~standard": { type: "boolean" },
-				"~standard.jsonSchema": { type: "boolean" }
+				assert: {
+					type: "boolean",
+					description: "Keep .assert() on standalone validators (default true)"
+				},
+				description: {
+					type: "boolean",
+					description:
+						"Bake .description onto standalone validators (auto-detected when unset)"
+				},
+				expression: {
+					type: "boolean",
+					description:
+						"Bake .expression onto standalone validators (auto-detected when unset)"
+				},
+				json: {
+					type: "boolean",
+					description:
+						"Bake .json onto standalone validators (auto-detected when unset)"
+				},
+				meta: {
+					type: "boolean",
+					description: "Keep .meta on standalone validators (default true)"
+				},
+				methods: {
+					type: "boolean",
+					description:
+						"Keep .traverse(), .from(), and .toString() on standalone validators (default true)"
+				},
+				toJSON: {
+					type: "boolean",
+					description:
+						"Bake .toJSON() onto standalone validators (auto-detected when unset)"
+				},
+				toJsonSchema: {
+					type: "boolean",
+					description:
+						"Bake .toJsonSchema() onto standalone validators (auto-detected when unset)"
+				},
+				withContext: {
+					type: "boolean",
+					description:
+						"Keep .withContext() on standalone validators (default true)"
+				},
+				"~standard": {
+					type: "boolean",
+					description:
+						"Keep the Standard Schema '~standard' property on standalone validators (default true)"
+				},
+				"~standard.jsonSchema": {
+					type: "boolean",
+					description:
+						"Bake Standard JSON Schema support onto '~standard.jsonSchema' (auto-detected when unset)"
+				}
 			},
+			description:
+				"Control which properties and introspection helpers are kept on standalone validators",
 			additionalProperties: false
 		},
 		mutatesInput: {
-			anyOf: [{ type: "string", const: "always" }, { type: "boolean" }]
+			anyOf: [{ type: "string", const: "always" }, { type: "boolean" }],
+			description:
+				"Allow morphs and defaults to mutate input in place: false (default), true, or 'always'"
 		},
-		optimize: { type: "string", enum: ["size", "speed"] },
-		optimizeErrors: { type: "string", enum: ["size", "speed"] },
-		preset: { type: "string", enum: ["introspectable", "smallest"] },
-		prune: { type: "boolean" },
-		runtime: { type: "string", const: "arktype" },
+		optimize: {
+			type: "string",
+			enum: ["size", "speed"],
+			description:
+				"Optimize generated validators for 'speed' (default, compiled per Type) or 'size' (shared runtime checkers)"
+		},
+		optimizeErrors: {
+			type: "string",
+			enum: ["size", "speed"],
+			description:
+				"Optimize generated error paths for 'speed' or 'size' (defaults to optimize)"
+		},
+		preset: {
+			type: "string",
+			enum: ["introspectable", "smallest"],
+			description:
+				"Named preset of defaults: 'smallest' minimizes bundle size, 'introspectable' keeps all introspection members"
+		},
+		prune: {
+			type: "boolean",
+			description:
+				"Prune unused validator members in production bundles (default true where supported)"
+		},
+		runtime: {
+			type: "string",
+			const: "arktype",
+			description:
+				"Set to 'arktype' to ship arktype's runtime parser alongside precompiled validators"
+		},
 		schemas: {
 			type: "object",
+			description:
+				"Map module paths, globs, or 'path#Declaration' keys to a strategy name ('fastest', 'smallest', or custom)",
 			additionalProperties: { type: "string", minLength: 1 }
 		},
-		shadow: { type: "boolean" },
+		shadow: {
+			type: "boolean",
+			description:
+				"Run both precompiled validators and dynamic arktype in tests and fail wherever they disagree"
+		},
 		strategies: {
 			type: "object",
+			description:
+				"Define named optimization strategies referenced by 'schemas' or '// @ark-strategy' comments",
 			additionalProperties: {
 				type: "object",
-				properties: { optimize: { type: "string", enum: ["size", "speed"] } },
+				properties: {
+					optimize: {
+						type: "string",
+						enum: ["size", "speed"],
+						description:
+							"Optimize validators using this strategy for 'speed' or 'size'"
+					}
+				},
+				description: "Named optimization strategy options",
 				additionalProperties: false
 			}
 		},
-		tsconfig: { type: "string", description: "a path", minLength: 1 }
+		tsconfig: {
+			type: "string",
+			description:
+				"Path to the tsconfig.json whose paths and program settings the build uses",
+			minLength: 1
+		}
 	},
+	description: "@ark/aot precompiler options",
 	additionalProperties: false
 }

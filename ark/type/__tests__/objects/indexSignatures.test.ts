@@ -6,6 +6,10 @@ import {
 } from "@ark/schema"
 import { scope, type } from "arktype"
 import { writeOptionalIndexKeyMessage } from "arktype/internal/parser/objectLiteral.ts"
+import {
+	writeExpressionExpectedMessage,
+	writeMissingRightOperandMessage
+} from "arktype/internal/parser/shift/operand/unenclosed.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -229,6 +233,33 @@ other must be a string`)
 		)
 	})
 
+	it("fails an array's element at its index, as its sequence does", () => {
+		const T = type({ "[string]": "number" })
+		const out = T(["x", 1, "y"]) as type.errors
+		attest(out.summary).snap(`[0] must be a number
+[2] must be a number`)
+		attest(out.issues.map(issue => issue.path)).equals([[0], [2]])
+		// an object's key is a string, though it reads as an index
+		attest(T({ "0": "x" }).toString()).snap('["0"] must be a number')
+	})
+
+	it("transforms an array's element at its index", () => {
+		const T = type({ "[string]": "string.numeric.parse" })
+		// TypeScript doesn't read an array as a record
+		const parsed: unknown = T(["1", "2"])
+		attest(parsed).equals([1, 2])
+		attest(T(["1", "x"]).toString()).snap(
+			"[1] must be a well-formed numeric string"
+		)
+	})
+
+	it("fails an element once where an array and a record both check it", () => {
+		const value = scope({
+			value: ["number | value[]", "|", { "[string]": "value" }]
+		}).type("value")
+		attest(value([true]).toString()).snap("[0] must be a number or an object")
+	})
+
 	it("keeps no error from a signature rejecting a key", () => {
 		const $ = scope({})
 		const K = $.type("string").narrow(
@@ -332,6 +363,62 @@ other must be a string`)
 		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
 	})
 
+	it("invalid unit key types for index definition", () => {
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[1]": "number"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("1"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[true]": "number"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("true"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[null]": "number"
+			})
+		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("null"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"['a' | 1]": "number"
+			})
+		)
+			.throws(writeInvalidPropertyKeyMessage('"a" | 1'))
+			.type.errors(writeInvalidPropertyKeyMessage("'a' | 1"))
+
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"['a' | number]": "number"
+			})
+		)
+			.throws(writeInvalidPropertyKeyMessage('number | "a"'))
+			.type.errors(writeInvalidPropertyKeyMessage("'a' | number"))
+	})
+
+	it("incomplete index definition", () => {
+		// @ts-expect-error
+		attest(() => type({ "[]": "number" }))
+			.throws(writeExpressionExpectedMessage(""))
+			.type.errors("ErrorType<")
+		// @ts-expect-error
+		attest(() => type({ "[string|]": "number" }))
+			.throws(writeMissingRightOperandMessage("|"))
+			.type.errors('ErrorType<"string|Array"')
+		// @ts-expect-error
+		attest(() => type({ "[strin]": "number" }))
+			.throws("'strin' is unresolvable")
+			.type.errors('ErrorType<"string">')
+	})
+
 	it("does not allow invalid key type error as value", () => {
 		attest(() =>
 			type({
@@ -351,6 +438,7 @@ other must be a string`)
 			domain: "object",
 			required: [{ key: "[string]", value: "string" }]
 		})
+		attest(O.expression).snap('{ "[string]": string }')
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1525
@@ -370,6 +458,7 @@ other must be a string`)
 			optional: [{ key: "[string]", value: "string" }],
 			domain: "object"
 		})
+		attest(O.expression).snap('{ "[string]"?: string }')
 		attest(O({})).equals({})
 	})
 
@@ -388,5 +477,40 @@ other must be a string`)
 		attest(Repro.expression).snap(
 			"{ normal: string >= 1, optional?: string >= 1 }"
 		)
+	})
+
+	it("handles exclude/extract on declared keys alongside index signatures without crashing", () => {
+		const T = type({ a: "string | number", "[string]": "string" })
+		attest(T.exclude({ a: "string" }).expression).snap("never")
+		attest(T.extract({ a: "string" }).expression).snap(
+			"{ [string]: string, a: string }"
+		)
+
+		const Opt = type({ "a?": "string | number", "[string]": "string" })
+		attest(Opt.exclude({ "a?": "string" }).expression).snap("never")
+
+		const $ = scope(
+			{
+				A: { "a?": "string | number" },
+				B: { a: "string | undefined" },
+				C: { "a?": "string | number", "+": "reject" },
+				D: { "[string]": "string" }
+			},
+			{ exactOptionalPropertyTypes: false }
+		).export()
+		const exOpt = $.A.exclude($.B)
+		attest(exOpt.allows({})).equals(true)
+		attest(exOpt.allows({ a: 1 })).equals(true)
+		attest(exOpt.allows({ a: undefined })).equals(false)
+		attest(exOpt.allows({ a: "x" })).equals(false)
+
+		const exIdx = $.C.extract($.D)
+		attest(exIdx.allows({})).equals(true)
+		attest(exIdx.allows({ a: "x" })).equals(true)
+		attest(exIdx.allows({ a: undefined })).equals(false)
+		attest(exIdx.allows({ a: 1 })).equals(false)
+
+		const described = type({ a: "string | number" }).describe("Custom")
+		attest(described.exclude({ a: "number" }).description).snap("Custom")
 	})
 })

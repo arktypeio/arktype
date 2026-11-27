@@ -10,7 +10,7 @@ import {
 	writeIndiscriminableMorphMessage,
 	writeMorphIntersectionMessage
 } from "arksets/internal"
-import { scope, type, type Type } from "arktype"
+import { scope, type, type Brand, type Type } from "arktype"
 import { writeUnresolvedFilterMessage } from "arktype/internal/keywords/ts.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 
@@ -475,7 +475,7 @@ contextualize(() => {
 		)
 		attest(
 			String(x.onDeepUndeclaredKey("reject")({ p0: [1, { p0: [2] }] }))
-		).snap('p0["1"] must be a number')
+		).snap("p0[1] must be a number")
 		attest(
 			tagged.u
 				.onDeepUndeclaredKey("reject")({
@@ -1669,5 +1669,187 @@ swap.swap.order[1] must be "on"`)
 			proto._resolve = _resolve
 		}
 		attest(resolves < 10).equals(true)
+	})
+
+	it("infers recursive readonly arrays without infinite recursion", () => {
+		type Value = number | readonly Value[]
+		const Thing = type("unknown").as<Value>()
+		attest<Value>(Thing.infer)
+		attest<Value>(Thing.inferIn)
+		attest(Thing([1, [2]])).equals([1, [2]])
+
+		// also when distillation must traverse into the readonly array (e.g. branded element)
+		type BrandedValue = number | Brand<string, "id"> | readonly BrandedValue[]
+		type UnbrandedValue = number | string | readonly UnbrandedValue[]
+		const BrandedThing = type("unknown").as<BrandedValue>()
+		attest<BrandedValue>(BrandedThing.infer)
+		attest<UnbrandedValue>(BrandedThing.inferIn)
+
+		// wrapped in an object type
+		const Wrapped = type({ value: Thing })
+		attest<{ value: Value }>(Wrapped.infer)
+	})
+
+	it("rejects invalid nested data in filtered cyclic morph with contextual narrow", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({
+				a: $.type("string").narrow((_s, _ctx) => true),
+				t: "string.trim",
+				"next?": "this"
+			}).filter(() => true)
+			const invalid = { a: "", t: " a ", next: { a: 1 } }
+			attest(T.allows(invalid)).equals(false)
+			// call twice so both uncompiled and JIT paths run when jitless is false
+			for (let i = 0; i < 2; i++) {
+				attest(T(invalid).toString()).snap(`next.a must be a string
+next.t must be a string (was missing)`)
+			}
+			const valid = { a: "", t: " a ", next: { a: "x", t: " b " } }
+			attest(T.allows(valid)).equals(true)
+			attest(T(valid)).equals({ a: "", t: "a", next: { a: "x", t: "b" } })
+		}
+	})
+
+	it("rejects cyclic data failing a filter on a transforming cyclic node", () => {
+		for (const jitless of [false, true]) {
+			const $: any = scope(
+				{
+					node: () =>
+						$.type({
+							a: "string",
+							t: "string.trim",
+							"next?": "node"
+						}).filter((o: { a: string }) => o.a === "ok")
+				},
+				{ jitless }
+			)
+			const Node = $.export().node
+			const selfBad: any = { a: "bad", t: " a " }
+			selfBad.next = selfBad
+			attest(Node.allows(selfBad)).equals(false)
+			for (let i = 0; i < 2; i++) {
+				attest(Node(selfBad).toString()).snap(
+					"must be valid according to an anonymous predicate"
+				)
+			}
+
+			const first: any = { a: "ok", t: " a " }
+			const second: any = { a: "bad", t: " b ", next: first }
+			first.next = second
+			attest(Node.allows(first)).equals(false)
+			for (let i = 0; i < 2; i++) {
+				attest(Node(first).toString()).snap(
+					"next must be valid according to an anonymous predicate"
+				)
+			}
+
+			const selfGood: any = { a: "ok", t: " a " }
+			selfGood.next = selfGood
+			attest(Node.allows(selfGood)).equals(true)
+			const out = Node.assert(selfGood) as any
+			attest(out.t).equals("a")
+			attest(out.next).is(out)
+		}
+	})
+
+	it("terminates on cyclic data in a contextual union", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope(
+				{
+					union: [
+						{
+							a: type("string").narrow((_s, _ctx) => true),
+							"next?": "union"
+						},
+						"|",
+						{ b: "number" }
+					]
+				},
+				{ jitless }
+			)
+			const U = $.export().union
+			const cyc: any = { a: "ok" }
+			cyc.next = cyc
+			attest(U.allows(cyc)).equals(true)
+			for (let i = 0; i < 2; i++) attest(U(cyc)).is(cyc)
+			const bad = { a: "ok", next: { a: 1 } }
+			attest(U.allows(bad)).equals(false)
+			for (let i = 0; i < 2; i++) {
+				attest(U(bad).toString()).snap(
+					"next.a must be a string, next.b must be a number or b must be a number"
+				)
+			}
+		}
+	})
+
+	it("a definition that throws leaves no deferred check to another Type's call", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// built as it's defined, so no parse of its own comes between the
+			// definition that throws and its first calls
+			const T = $.type({ a: "true", "+": "reject" })
+				.or({ a: "'b'" })
+				.or({ a: "null" })
+			const Self = $.type({ "a?": "this" })
+			// x's union is indeterminate, which is checked once `this` resolves
+			attest(() =>
+				$.type({
+					x: [{ b: "string.trim" }, "|", Self],
+					y: ["null", "&", "string"]
+				})
+			).throws(
+				"Intersection of null and string results in an unsatisfiable type"
+			)
+			// uncompiled, then compiled, which discriminates it
+			attest(T.allows({ a: true })).equals(true)
+			attest(T.allows({ a: true })).equals(true)
+			attest(T({ a: true, b: 1 }).toString()).equals("b must be removed")
+			// where the union is all that's defined, it throws as it did
+			attest(() => $.type([{ b: "string.trim" }, "|", Self])).throws(
+				writeIndiscriminableMorphMessage(
+					"{ a?: this }",
+					$.type({ b: "string.trim" }).expression
+				)
+			)
+		}
+	})
+
+	it("a Date literal's intersection with a cyclic branch is decided once its cycle resolves", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({ list: { v: "number", "next?": "list" } }, { jitless })
+			// reduced as list resolves, when whether it allows the Date can't be read
+			const T = $.type("d'2000-01-01' | list")
+			// and again with each branch added
+			const U = T.or("0")
+			attest(U.expression).equals(
+				"{ v: number, next?: $list } | d'2000-01-01T00:00:00.000Z' | 0"
+			)
+			attest(U.allows({ v: 0 })).equals(true)
+			attest(U({ v: 0, next: { v: 1 } })).equals({ v: 0, next: { v: 1 } })
+			attest(U({ v: 0, next: { v: "a" } }).toString()).equals(
+				"next.v must be a number or must be 2000-01-01"
+			)
+			attest(T.equals("d'2000-01-01'")).equals(false)
+
+			const List = T.exclude("Date")
+			attest(List.expression).equals("{ v: number, next?: $list }")
+			attest(List.overlaps("d'2000-01-01'")).equals(false)
+			attest(List.extends("d'2000-01-01'")).equals(false)
+			attest(() => List.and("d'2000-01-01'")).throws(
+				"Intersection of { v: number, next?: $list } and d'2000-01-01T00:00:00.000Z' results in an unsatisfiable type"
+			)
+		}
+	})
+
+	it("a Date literal a cyclic branch allows is reduced to that branch", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({ node: { "next?": "node" } }, { jitless })
+			const T = $.type("d'2000-01-01' | node").or("0")
+			attest(T.expression).equals("{ next?: $node } | 0")
+			attest(T.allows(new Date("2000-01-01"))).equals(true)
+			attest(T.allows({ next: 0 })).equals(false)
+			attest($.type("d'2000-01-01'").extends("node")).equals(true)
+		}
 	})
 })

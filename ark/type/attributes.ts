@@ -78,6 +78,8 @@ type distilledSidesOf<t> =
 		keyof t extends ArrayKey ?
 			{ [i: number]: distilledSidesOf<t[number]> }
 		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
+	: // like object, which a homomorphic mapped type would return as is
+	[keyof t] extends [never] ? never
 	: isSafelyMappable<t> extends true ?
 		string extends keyof t ? indexedSidesOf<t>
 		: symbol extends keyof t ? indexedSidesOf<t>
@@ -116,6 +118,9 @@ type _distill<t, side extends DistillSide> =
 		: t
 	: t extends Default<infer constraint> ? _distill<constraint, side>
 	: t extends array ? distillArray<t, side>
+	: // a type with no keys, like object, has nothing to distill, where mapping
+	// it would widen it to {}
+	[keyof t] extends [never] ? t
 	: isSafelyMappable<t> extends true ? distillMappable<t, side>
 	: t
 
@@ -162,17 +167,19 @@ type indexedDefaults<o> = {
 	[k in keyof o as isInferredDefault<o[k]> extends true ? k : never]: 0
 }
 
-type isInferredDefault<v> =
-	unwrapInput<v> extends Default<infer t> ?
-		[t] extends [anyOrNever] ?
-			false
-		:	true
-	:	false
+export type isInferredDefault<v> =
+	[unwrapInput<v>] extends [anyOrNever] ? false
+	: unwrapInput<v> extends Default ? true
+	: false
 
 type distillArray<t extends array, side extends DistillSide> =
 	// fast path for non-tuple arrays with no extra props
-	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ? alignReadonly<_distill<t[number], side>[], t>
+	// this also allows TS to infer certain recursive arrays like JSON,
+	// including readonly recursive arrays without forcing Readonly<...>
+	t[number][] extends t ?
+		t extends unknown[] ?
+			_distill<t[number], side>[]
+		:	readonly _distill<t[number], side>[]
 	:	distillNonArraykeys<
 			t,
 			alignReadonly<distillArrayFromPrefix<[...t], side, []>, t>,
@@ -207,7 +214,8 @@ type distillArrayFromPrefix<
 		distillArrayFromPrefix<
 			tail,
 			side,
-			[side, head] extends ["in", Default] ? [...prefix, _distill<head, side>?]
+			[side, isInferredDefault<head>] extends ["in", true] ?
+				[...prefix, _distill<head, side>?]
 			:	[...prefix, _distill<head, side>]
 		>
 	:	[...prefix, ...distillArrayFromPostfix<t, side, []>]
@@ -345,7 +353,7 @@ export type withDefault<t, v, undistributed = t> =
 
 export type required<t> = { [k in keyof t]-?: withoutDefault<t[k]> }
 
-type withoutDefault<t> =
+export type withoutDefault<t> =
 	t extends Default<infer constraint> ? constraint
 	: t extends InferredMorph<infer i, infer o> ?
 		[i] extends [anyOrNever] ? t

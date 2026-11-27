@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync } from "node:fs"
-import { dirname, relative } from "node:path"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, join, relative } from "node:path"
+import { fileURLToPath } from "node:url"
 import { parseArgs } from "node:util"
 import type { Checker, DeclareOptions } from "./declare.ts"
 import { isBuildError } from "./host.ts"
@@ -15,16 +16,50 @@ import {
 import { cliOptions } from "./settingsValidators.ts"
 import { checkArktypeVersion } from "./version.ts"
 
+const rawArgs = (() => {
+	const sep = process.argv.indexOf("--", 2)
+	return sep === -1 ? process.argv.slice(2) : process.argv.slice(2, sep)
+})()
+let isCheckJson =
+	rawArgs.includes("--check") &&
+	rawArgs.includes("--json") &&
+	!rawArgs.includes("--no-json") &&
+	!rawArgs.includes("--emit") &&
+	!rawArgs.includes("--declare")
+
+const emitJsonFailure = (message: string, status: number): never => {
+	console.log(
+		JSON.stringify(
+			{
+				files: 0,
+				sites: 0,
+				accepted: 0,
+				islands: 0,
+				rate: 0,
+				errors: 1,
+				errorsOutsideSites: 1,
+				diagnostics: [{ severity: "error", message }]
+			},
+			null,
+			2
+		)
+	)
+	process.exit(status)
+}
+
 // before importing what reads fs.globSync, which older versions lack
 const [major, minor] = process.versions.node.split(".").map(Number)
 if (major < 22 || (major === 22 && minor < 12)) {
-	console.error(writeNodeVersionMessage("@ark/aot", "22.12"))
+	const message = writeNodeVersionMessage("@ark/aot", "22.12")
+	if (isCheckJson) emitJsonFailure(message, 1)
+	console.error(message)
 	process.exit(1)
 }
 
 try {
 	checkArktypeVersion()
 } catch (e) {
+	if (isCheckJson) emitJsonFailure((e as Error).message, 1)
 	console.error((e as Error).message)
 	process.exit(1)
 }
@@ -43,7 +78,16 @@ const options = Object.entries(cliOptions).filter(
 const flagOf = (name: string) =>
 	name.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)
 
-const usage = `Usage: ark check [...files or globs] [--fail-under <percent>] ${options
+const here = dirname(fileURLToPath(import.meta.url))
+const aotRoot = existsSync(join(here, "package.json")) ? here : dirname(here)
+const aotVersion: string =
+	(
+		JSON.parse(readFileSync(join(aotRoot, "package.json"), "utf8")) as {
+			version?: string
+		}
+	).version ?? "unknown"
+
+const usage = `Usage: ark check [...files or globs] [--fail-under <percent>] [--json] ${options
 	.map(([name, { type, values }]) =>
 		type === "boolean" ?
 			`[--[no-]${flagOf(name)}]`
@@ -54,6 +98,7 @@ const usage = `Usage: ark check [...files or globs] [--fail-under <percent>] ${o
 	)}\n       ark emit [--declare] [--tsconfig <path>] [...the options check takes]\n       ark declare [--tsconfig <path>] [--checker <${checkers.join("|")}>]`
 
 const fail = (problem: string): never => {
+	if (isCheckJson) emitJsonFailure(problem, 2)
 	console.error(`${problem}\n${usage}`)
 	process.exit(2)
 }
@@ -61,6 +106,7 @@ const fail = (problem: string): never => {
 // file errors (e.g. an unparseable package.json or ark.json) aren't usage errors
 const failSettings = (e: unknown): never => {
 	if (isFileError(e) || (e instanceof Error && "code" in e)) {
+		if (isCheckJson) emitJsonFailure(e.message, 1)
 		console.error(e.message)
 		process.exit(1)
 	}
@@ -77,9 +123,11 @@ const { values, positionals } = ((): {
 			allowNegative: true,
 			options: {
 				help: { type: "boolean", short: "h" },
+				version: { type: "boolean", short: "v" },
 				check: { type: "boolean" },
 				declare: { type: "boolean" },
 				emit: { type: "boolean" },
+				json: { type: "boolean" },
 				"fail-under": { type: "string" },
 				...Object.fromEntries(
 					options.map(([name, { type }]) => [
@@ -94,8 +142,17 @@ const { values, positionals } = ((): {
 	}
 })()
 
+isCheckJson = Boolean(
+	values.check && values.json && !values.emit && !values.declare
+)
+
 if (values.help) {
 	console.log(usage)
+	process.exit(0)
+}
+
+if (values.version) {
+	console.log(aotVersion)
 	process.exit(0)
 }
 
@@ -113,6 +170,7 @@ const run = <result>(build: () => result): result => {
 		// e.g. a config module that can't be read or a tsconfig that's missing,
 		// which the message names
 		if (!isBuildError(e)) throw e
+		if (isCheckJson) emitJsonFailure(e.message, 1)
 		console.error(e.message)
 		process.exit(1)
 	}
@@ -122,10 +180,12 @@ const declare = (): never => {
 	const checker = values.checker as string | undefined
 	if (checker !== undefined && !checkers.includes(checker as Checker))
 		fail(`--checker must be ${checkers.join(", ")} (was ${checker})`)
+	const cwd = values.cwd as string | undefined
 	// a flag over ark.json, as for the other modes
 	const { tsconfig, checker: setChecker } = ((): DeclareOptions => {
 		try {
 			return withSettingsFile({
+				cwd,
 				tsconfig: values.tsconfig as string | undefined,
 				checker: checker as Checker | undefined
 			})
@@ -134,7 +194,7 @@ const declare = (): never => {
 		}
 	})()
 	const declarations = run(() =>
-		emitDeclarations({ tsconfig, checker: setChecker })
+		emitDeclarations({ cwd, tsconfig, checker: setChecker })
 	)
 	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
@@ -146,11 +206,15 @@ const declare = (): never => {
 
 if (values.declare && !values.emit) {
 	const others = Object.keys(values).filter(
-		flag => flag !== "declare" && flag !== "tsconfig" && flag !== "checker"
+		flag =>
+			flag !== "declare" &&
+			flag !== "tsconfig" &&
+			flag !== "checker" &&
+			flag !== "cwd"
 	)
 	if (others.length || positionals.length) {
 		fail(
-			`--declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
+			`ark declare emits the tsconfig's program and takes no files or option but --tsconfig, --checker and --cwd (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
 		)
 	}
 	declare()
@@ -158,15 +222,19 @@ if (values.declare && !values.emit) {
 
 if (values.emit && (values.check || positionals.length)) {
 	fail(
-		"--emit precompiles the tsconfig's program and takes no files or --check"
+		"ark emit precompiles the tsconfig's program and takes no files or --check"
 	)
 }
 
+if (values.emit && values.json) fail("ark emit does not take --json")
+
 if (!values.check && !values.emit)
-	fail("--check, --emit or --declare is required")
+	fail("ark check, ark emit or ark declare is required")
 
 const failUnder =
-	values["fail-under"] === undefined ? undefined : Number(values["fail-under"])
+	values["fail-under"] === undefined ? undefined
+	: (values["fail-under"] as string).trim() === "" ? Number.NaN
+	: Number(values["fail-under"])
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 
@@ -227,7 +295,24 @@ if (values.emit) {
 
 const report = run(() => check(positionals, opts as PrecompilePluginOptions))
 
-for (const line of report.lines) console.log(line)
+if (values.json) {
+	console.log(
+		JSON.stringify(
+			{
+				files: report.files,
+				sites: report.sites,
+				accepted: report.accepted,
+				islands: report.islands,
+				rate: report.rate,
+				errors: report.errors,
+				errorsOutsideSites: report.errorsOutsideSites,
+				diagnostics: report.diagnostics
+			},
+			null,
+			2
+		)
+	)
+} else for (const line of report.lines) console.log(line)
 
 // any error fails a build, unless --fail-under holds the project to a rate
 if (

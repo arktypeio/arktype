@@ -1,7 +1,7 @@
 import { append, type array, type listable } from "./arrays.ts"
 import type { conform, show } from "./generics.ts"
 import type { Key } from "./keys.ts"
-import type { Entry, entryOf } from "./records.ts"
+import { defineValue, hasOwn, type Entry, type entryOf } from "./records.ts"
 import type { intersectUnion } from "./unionToTuple.ts"
 
 type objectFromListableEntries<transformed extends readonly GroupableEntry[]> =
@@ -106,7 +106,10 @@ export const flatMorph: FlatMorph = (
 		for (let j = 0; j < flattenedEntries.length; j++) {
 			const k = flattenedEntries[j][0]
 			const v = flattenedEntries[j][1]
-			if (typeof k === "object") result[k.group] = append(result[k.group], v)
+			if (typeof k === "object") {
+				const existing = hasOwn(result, k.group) ? result[k.group] : undefined
+				defineValue(result, k.group, append(existing, v))
+			} else if (k === "__proto__") defineValue(result, k, v)
 			else result[k] = v
 		}
 	}

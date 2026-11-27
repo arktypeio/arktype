@@ -140,7 +140,7 @@ export class ChainableAssertions implements AssertionRecord {
 				// to give a clearer error message. This avoid problems with objects
 				// like subtypes of array that do not pass node's deep equality test
 				// but serialize to the same value.
-				if (printable(args[0]) !== printable(this.unversionedActual))
+				if (printable(expectedSerialized) !== printable(this.serializedActual))
 					assertEquals(expectedSerialized, this.serializedActual, this.ctx)
 			}
 			return this

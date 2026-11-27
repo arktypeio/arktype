@@ -8,6 +8,7 @@ import type {
 	equals,
 	ErrorMessage,
 	ErrorType,
+	exactEquals,
 	optionalKeyOf,
 	requiredKeyOf,
 	show,
@@ -21,7 +22,10 @@ import type {
 	ThunkCast
 } from "./parser/definition.ts"
 import type { MetaKey } from "./parser/objectLiteral.ts"
-import type { OptionalPropertyDefinition } from "./parser/property.ts"
+import type {
+	isDefaultable,
+	OptionalPropertyDefinition
+} from "./parser/property.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
@@ -173,13 +177,137 @@ type validateArrayInference<
 	args,
 	ctx extends DeclareContext
 > =
-	declaredObjectOf<declared, ctx> extends infer declared extends array ?
+	ctx["assignable"] extends true ?
+		unknown extends declared ? unknown
+		: true extends (
+			declared extends unknown ?
+				exactEquals<declared, object>
+			:	never
+		) ?
+			unknown
+		: Extract<declared, array> extends infer branch extends array ?
+			[branch] extends [never] ?
+				show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+			:	validateAssignableArrayBranch<def, branch, $, args, ctx>
+		:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+	: [declared] extends [never] ?
+		show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+	: [declared] extends [infer d extends array] ?
+		true extends isUnion<d> ?
+			validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+		:	validateArrayBranch<def, d, $, args, ctx>
+	:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+
+type isUnion<t, full = t> =
+	t extends unknown ?
+		[full] extends [t] ?
+			false
+		:	true
+	:	never
+
+type validateAssignableArrayBranch<
+	def extends array,
+	branch extends array,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	branch extends unknown ? validateArrayBranch<def, branch, $, args, ctx>
+	:	never
+
+type validateArrayBranch<
+	def extends array,
+	declared extends array,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	"..." extends def[number] ?
+		validateArrayShallowInference<inferDefinition<def, $, args>, declared, ctx>
+	: number extends declared["length"] ?
+		validateArrayShallowInference<inferDefinition<def, $, args>, declared, ctx>
+	: ctx["assignable"] extends true ?
 		{
 			[i in keyof declared]: i extends keyof def ?
-				validateInference<def[i], declared[i], $, args, ctx>
+				validateAssignableTupleElement<def[i], declared, i, $, args, ctx>
 			:	declared[i]
 		}
-	:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+	:	{
+			[i in keyof declared]-?: i extends keyof def ?
+				validateExactTupleElement<def[i], declared, i, $, args, ctx>
+			:	declared[i]
+		}
+
+// tuple literals infer mutable arrays, so ignore top-level readonly on variadic
+// declared arrays just as the element-wise branch above does for fixed tuples
+type validateArrayShallowInference<
+	t,
+	declared extends array,
+	ctx extends DeclareContext,
+	inferred = ctx["side"] extends distill.Side ? distill<t, ctx["side"]> : t
+> =
+	(
+		ctx["assignable"] extends true ?
+			[inferred] extends [declared] ?
+				true
+			:	false
+		:	equals<inferred, declared extends unknown[] ? declared : [...declared]>
+	) extends true ?
+		unknown
+	:	show<declarationMismatch<inferred, declared>>
+
+type validateAssignableTupleElement<
+	elDef,
+	declared extends array,
+	i extends keyof declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	i extends optionalKeyOf<declared> ?
+		validateInference<
+			elDef,
+			| Required<declared>[i]
+			| ({ [_ in i]: undefined } extends Pick<declared, i> ? undefined : never),
+			$,
+			args,
+			ctx
+		>
+	: isDeclaredOptionalValue<elDef, $, args, ctx> extends true ?
+		show<
+			declarationMismatch<
+				inferDefinition<elDef, $, args> | undefined,
+				declared[i]
+			>
+		>
+	:	validateInference<elDef, declared[i], $, args, ctx>
+
+type validateExactTupleElement<
+	elDef,
+	declared extends array,
+	i extends keyof declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	i extends optionalKeyOf<declared> ?
+		isDeclaredOptionalValue<elDef, $, args, ctx> extends true ?
+			validateInference<
+				elDef,
+				declaredOptionalValue<declared, i, elDef, $, args, ctx>,
+				$,
+				args,
+				ctx
+			>
+		:	OptionalPropertyDefinition
+	: isDeclaredOptionalValue<elDef, $, args, ctx> extends true ?
+		show<
+			declarationMismatch<
+				inferDefinition<elDef, $, args> | undefined,
+				declared[i]
+			>
+		>
+	:	validateInference<elDef, declared[i], $, args, ctx>
 
 type validateObjectInference<
 	def extends object,
@@ -187,15 +315,32 @@ type validateObjectInference<
 	$,
 	args,
 	ctx extends DeclareContext
-> = show<
-	validateObjectKeys<def, declaredObjectOf<declared, ctx>, $, args, ctx> &
-		DeclaredObjectSettings
->
+> =
+	ctx["assignable"] extends true ?
+		unknown extends declared ? unknown
+		: Exclude<Extract<declared, object>, array> extends infer branch ?
+			[branch] extends [never] ?
+				show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+			:	validateAssignableObjectBranch<def, branch, $, args, ctx>
+		:	never
+	:	show<
+			validateObjectKeys<def, declared, $, args, ctx> & DeclaredObjectSettings
+		>
 
-// an object is assignable to `T | undefined` exactly where it is to `T`
-type declaredObjectOf<declared, ctx extends DeclareContext> =
-	ctx["assignable"] extends true ? Exclude<declared, null | undefined>
-	:	declared
+type validateAssignableObjectBranch<
+	def extends object,
+	branch,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	branch extends unknown ?
+		exactEquals<branch, object> extends true ?
+			unknown
+		:	show<
+				validateObjectKeys<def, branch, $, args, ctx> & DeclaredObjectSettings
+			>
+	:	never
 
 type validateObjectKeys<
 	def extends object,
@@ -227,7 +372,13 @@ type validateIndexedDeclaredKeys<
 		keyof def,
 		literalKey | `${literalKey & string}?` | MetaKey
 	>]: validateInference<def[k], declared[string & keyof declared], $, args, ctx>
-}
+} & (unknown extends declared[string & keyof declared] ? unknown
+	: "[string]" extends keyof def ? unknown
+	: ctx["assignable"] extends true ?
+		def extends { "+": "reject" | "delete" } ?
+			unknown
+		:	{ "[string]": declared[string & keyof declared] }
+	:	{ "[string]": declared[string & keyof declared] })
 
 type literalKeyOf<o> = keyof {
 	[k in keyof o as string extends k ? never
@@ -242,18 +393,49 @@ type validateDeclaredKeys<
 	$,
 	args,
 	ctx extends DeclareContext
+> = validateRequiredKeys<def, declared, $, args, ctx> &
+	(ctx["assignable"] extends true ?
+		validateAssignableOptionalKeys<def, declared, $, args, ctx>
+	:	{
+			[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
+				k,
+				def,
+				$,
+				args,
+				ctx
+			>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+		})
+
+type validateRequiredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	ctx["side"] extends "in" ?
+		validateGuardedRequiredKeys<def, declared, $, args, ctx>
+	: [Extract<def[keyof def], OptionalPropertyDefinition>] extends [never] ?
+		{
+			[k in requiredKeyOf<declared>]: k extends keyof def ?
+				validateInference<def[k], declared[k], $, args, ctx>
+			:	declared[k]
+		}
+	:	validateGuardedRequiredKeys<def, declared, $, args, ctx>
+
+type validateGuardedRequiredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
 > = {
 	[k in requiredKeyOf<declared>]: k extends keyof def ?
-		validateInference<def[k], declared[k], $, args, ctx>
+		isDeclaredOptionalValue<def[k], $, args, ctx> extends true ?
+			show<declarationMismatch<declared[k] | undefined, declared[k]>>
+		:	validateInference<def[k], declared[k], $, args, ctx>
 	:	declared[k]
-} & (ctx["assignable"] extends true ?
-	validateAssignableOptionalKeys<def, declared, $, args, ctx>
-:	{
-		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
-			k,
-			def
-		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
-	})
+}
 
 // a key declared optional may be left out, or written required or optional,
 // and either way its value may be narrower than the one declared
@@ -299,12 +481,14 @@ type validateEscapedDeclaredKeys<
 	[k in requiredKeyOf<declared> as declaredKey<k>]: declaredKey<k> extends (
 		keyof def
 	) ?
-		validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
+		isDeclaredOptionalValue<def[declaredKey<k>], $, args, ctx> extends true ?
+			show<declarationMismatch<declared[k] | undefined, declared[k]>>
+		:	validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
 	:	declared[k]
 } & {
 	// an escaped key can only be optional through its value
 	[k in optionalKeyOf<declared> & string as k extends MetaKey ? declaredKey<k>
-	:	declaredOptionalKeySuggestion<k, def>]: k extends MetaKey ?
+	:	declaredOptionalKeySuggestion<k, def, $, args, ctx>]: k extends MetaKey ?
 		declaredEscapedOptionalValueSuggestion<def, k, declared, $, args, ctx>
 	:	declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
 }
@@ -317,9 +501,20 @@ type DeclaredObjectSettings = {
 
 type declaredKey<k> = k extends MetaKey ? `${Backslash}${k}` : k
 
-type declaredOptionalKeySuggestion<k extends string, def> =
+type isDeclaredOptionalValue<val, $, args, ctx extends DeclareContext> =
+	val extends OptionalPropertyDefinition ? true
+	: ctx["side"] extends "in" ? isDefaultable<val, $, args>
+	: false
+
+type declaredOptionalKeySuggestion<
+	k extends string,
+	def,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
 	k extends keyof def ?
-		def[k] extends OptionalPropertyDefinition ?
+		isDeclaredOptionalValue<def[k], $, args, ctx> extends true ?
 			k
 		:	`${k}?`
 	:	`${k}?`
@@ -332,7 +527,12 @@ type declaredEscapedOptionalValueSuggestion<
 	args,
 	ctx extends DeclareContext
 > =
-	def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
+	isDeclaredOptionalValue<
+		def[declaredKey<k> & keyof def],
+		$,
+		args,
+		ctx
+	> extends true ?
 		validateInference<
 			def[declaredKey<k> & keyof def],
 			declaredOptionalValue<
@@ -340,7 +540,8 @@ type declaredEscapedOptionalValueSuggestion<
 				k,
 				def[declaredKey<k> & keyof def],
 				$,
-				args
+				args,
+				ctx
 			>,
 			$,
 			args,
@@ -357,10 +558,10 @@ type declaredOptionalValueSuggestion<
 	ctx extends DeclareContext
 > =
 	k extends keyof def ?
-		def[k] extends OptionalPropertyDefinition ?
+		isDeclaredOptionalValue<def[k], $, args, ctx> extends true ?
 			validateInference<
 				def[k],
-				declaredOptionalValue<declared, k, def[k], $, args>,
+				declaredOptionalValue<declared, k, def[k], $, args, ctx>,
 				$,
 				args,
 				ctx
@@ -369,7 +570,7 @@ type declaredOptionalValueSuggestion<
 	: `${k}?` extends keyof def ?
 		validateInference<
 			def[`${k}?`],
-			declaredOptionalValue<declared, k, def[`${k}?`], $, args>,
+			declaredOptionalValue<declared, k, def[`${k}?`], $, args, ctx>,
 			$,
 			args,
 			ctx
@@ -385,9 +586,14 @@ type declaredOptionalValue<
 	k extends keyof declared,
 	valueDef,
 	$,
-	args
+	args,
+	ctx extends DeclareContext
 > =
-	undefined extends inferDefinition<valueDef, $, args> ?
+	undefined extends (
+		ctx["side"] extends distill.Side ?
+			distill<inferDefinition<valueDef, $, args>, ctx["side"]>
+		:	inferDefinition<valueDef, $, args>
+	) ?
 		{ [_ in k]: undefined } extends Pick<declared, k> ?
 			declared[k]
 		:	Required<declared>[k]

@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	checkers,
+	commonDirOf,
 	emitDeclarations,
 	type Checker
 } from "@ark/aot/internal/declare.ts"
@@ -12,6 +13,7 @@ import {
 	readdirSync,
 	readFileSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync
 } from "node:fs"
 import { join } from "node:path"
@@ -854,42 +856,583 @@ export type makeTree = {
 		])
 	})
 
-	it("fails loudly on a solution-style tsconfig with files: [] and references", () => {
+	it("follows project references in a solution-style tsconfig, emitting ~arktype.d.ts per referenced project", () => {
+		const dir = tempPath("solution")
+		const baseOptions = {
+			strict: true,
+			skipLibCheck: true,
+			composite: true,
+			target: "ES2022",
+			module: "ESNext",
+			moduleResolution: "bundler",
+			customConditions: ["ark-ts"],
+			types: []
+		}
+		try {
+			writeFixture(
+				{
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							// directory-style reference resolves packages/app/tsconfig.json
+							{ path: "./packages/app" },
+							{ path: "./tsconfig.nested.json" }
+						]
+					}),
+					"tsconfig.nested.json": JSON.stringify({
+						compilerOptions: { composite: true },
+						files: [],
+						references: [
+							{ path: "./tsconfig.lib.json" },
+							// diamond reference to packages/app and cyclic back-reference to root
+							{ path: "./packages/app" },
+							{ path: "./tsconfig.json" }
+						]
+					}),
+					"packages/app/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "src",
+							outDir: "../../dist-app"
+						},
+						include: ["src"]
+					}),
+					"tsconfig.lib.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "lib",
+							outDir: "dist-lib"
+						},
+						include: ["lib"]
+					}),
+					"packages/app/src/index.ts":
+						'import { type } from "arktype"\nexport const AppUser = type({ name: "string" })\n',
+					"lib/index.ts":
+						'import { type } from "arktype"\nexport const LibItem = type({ id: "number" })\n'
+				},
+				dir
+			)
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: dir, checker })
+				attest(res.diagnostics).equals("")
+				attest(res.errors).equals(0)
+				attest(res.shapes).equals(2)
+				const relFiles = Object.keys(res.files)
+					.map(path => relative(tsPath(dir), path))
+					.sort()
+				attest(relFiles).equals([
+					"dist-app/index.d.ts",
+					"dist-app/~arktype.d.ts",
+					"dist-lib/index.d.ts",
+					"dist-lib/~arktype.d.ts"
+				])
+				attest(res.files[tsPath(join(dir, "dist-app", "~arktype.d.ts"))]).snap(
+					`// the shapes of this build's Types, Scopes and Modules\nexport type AppUser = {\n    name: string;\n};\n`
+				)
+				attest(res.files[tsPath(join(dir, "dist-lib", "~arktype.d.ts"))]).snap(
+					`// the shapes of this build's Types, Scopes and Modules\nexport type LibItem = {\n    id: number;\n};\n`
+				)
+			}
+			const cli = runCli(dir, "--declare", "--checker", "tsjs")
+			attest([cli.status, cli.stdout, cli.stderr]).equals([
+				0,
+				"4 declaration files in ., with 2 shapes in ~arktype.d.ts\n",
+				""
+			])
+			attest(existsSync(join(dir, "dist-app", "~arktype.d.ts"))).equals(true)
+			attest(existsSync(join(dir, "dist-lib", "~arktype.d.ts"))).equals(true)
+		} finally {
+			rmSync(dir, { recursive: true, force: true })
+		}
+	}).timeout(180_000)
+
+	it("emits clean composite solution references in topological order with a virtual .d.ts overlay", () => {
+		const baseOptions = {
+			strict: true,
+			skipLibCheck: true,
+			composite: true,
+			target: "ES2022",
+			module: "NodeNext",
+			moduleResolution: "NodeNext",
+			customConditions: ["ark-ts"],
+			types: []
+		}
+		const verifyTsc = (dir: string, files: Record<string, string>) => {
+			for (const [path, text] of Object.entries(files)) {
+				mkdirSync(join(path, ".."), { recursive: true })
+				writeFileSync(path, text)
+			}
+			writeFileSync(
+				join(dir, "tsconfig.consumer.json"),
+				JSON.stringify({
+					compilerOptions: {
+						strict: true,
+						skipLibCheck: true,
+						noEmit: true,
+						target: "ES2022",
+						module: "NodeNext",
+						moduleResolution: "NodeNext",
+						customConditions: ["ark-ts"],
+						allowImportingTsExtensions: true,
+						types: ["node"]
+					},
+					files: ["consumer.ts"]
+				})
+			)
+			const tsc = spawnSync(
+				process.execPath,
+				[
+					fromHere("..", "node_modules", "typescript-6", "bin", "tsc"),
+					"-p",
+					"tsconfig.consumer.json"
+				],
+				{ cwd: dir, encoding: "utf8" }
+			)
+			attest([tsc.status, tsc.stdout, tsc.stderr]).equals([0, "", ""])
+		}
+
+		// 1. Clean relative-import composite solution (listed in reverse dependency order)
+		const relDir = tempPath("solution-topo-relative")
+		try {
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./packages/api" },
+							{ path: "./packages/shared" }
+						]
+					}),
+					"packages/shared/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "src",
+							outDir: "dist"
+						},
+						include: ["src"]
+					}),
+					"packages/shared/src/index.ts": `import { type } from "arktype"
+export const Item = type({ sku: "string", qty: "number.integer > 0" })
+export type Item = typeof Item.infer
+`,
+					"packages/api/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "src",
+							outDir: "dist"
+						},
+						include: ["src"],
+						references: [{ path: "../shared" }]
+					}),
+					"packages/api/src/index.ts": `import { type } from "arktype"
+import { Item } from "../../shared/src/index.js"
+export const Order = type({ id: "string", items: Item.array() })
+export type Order = typeof Order.infer
+`,
+					"consumer.ts": `import type { Order } from "./packages/api/dist/index.js"
+const o: Order = { id: "ord_1", items: [{ sku: "A", qty: 2 }] }
+export const sku: string = o.items[0].sku
+`
+				},
+				relDir
+			)
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: relDir, checker })
+				attest([checker, res.diagnostics, res.errors]).equals([checker, "", 0])
+				const apiShapes =
+					res.files[tsPath(join(relDir, "packages/api/dist/~arktype.d.ts"))]
+				attest(apiShapes.includes("[k: string]: any")).equals(false)
+				attest(apiShapes.includes("id: string")).equals(true)
+				attest(apiShapes.includes("sku: string")).equals(true)
+				attest(apiShapes.includes("qty: number")).equals(true)
+				if (checker === "tsjs") verifyTsc(relDir, res.files)
+			}
+		} finally {
+			rmSync(relDir, { recursive: true, force: true })
+		}
+
+		// 2. Clean workspace-package solution (@pkg/shared with exports.types -> ./dist/index.d.ts)
+		const wsDir = tempPath("solution-topo-workspace")
+		try {
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./packages/api" },
+							{ path: "./packages/shared" }
+						]
+					}),
+					"packages/shared/package.json": JSON.stringify({
+						name: "@pkg/shared",
+						type: "module",
+						exports: {
+							".": {
+								types: "./dist/index.d.ts",
+								default: "./dist/index.js"
+							}
+						}
+					}),
+					"packages/shared/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "src",
+							outDir: "dist"
+						},
+						include: ["src"]
+					}),
+					"packages/shared/src/index.ts": `import { type } from "arktype"
+export const Item = type({ sku: "string", qty: "number.integer > 0" })
+export type Item = typeof Item.infer
+`,
+					"packages/api/package.json": JSON.stringify({
+						name: "@pkg/api",
+						type: "module",
+						dependencies: { "@pkg/shared": "workspace:*" }
+					}),
+					"packages/api/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							rootDir: "src",
+							outDir: "dist"
+						},
+						include: ["src"],
+						references: [{ path: "../shared" }]
+					}),
+					"packages/api/src/index.ts": `import { type } from "arktype"
+import { Item } from "@pkg/shared"
+export const Order = type({ id: "string", items: Item.array() })
+export type Order = typeof Order.infer
+export default type({ id: "string", items: Item.array() })
+`,
+					"consumer.ts": `import DefaultOrder, { type Order } from "./packages/api/dist/index.js"
+const o: Order = { id: "ord_1", items: [{ sku: "A", qty: 2 }] }
+const d: typeof DefaultOrder.infer = o
+export const qty: number = d.items[0].qty
+`
+				},
+				wsDir
+			)
+			mkdirSync(join(wsDir, "node_modules", "@pkg"), { recursive: true })
+			symlinkSync(
+				join(wsDir, "packages", "shared"),
+				join(wsDir, "node_modules", "@pkg", "shared")
+			)
+			const res = emitDeclarations({ cwd: wsDir, checker: "tsjs" })
+			attest([res.diagnostics, res.errors]).equals(["", 0])
+			const apiIndex =
+				res.files[tsPath(join(wsDir, "packages/api/dist/index.d.ts"))]
+			attest(apiIndex.includes("export default _default;")).equals(true)
+			const apiShapes =
+				res.files[tsPath(join(wsDir, "packages/api/dist/~arktype.d.ts"))]
+			attest(apiShapes.includes("[k: string]: any")).equals(false)
+			attest(apiShapes.includes("id: string")).equals(true)
+			attest(apiShapes.includes("sku: string")).equals(true)
+			attest(apiShapes.includes("qty: number")).equals(true)
+			verifyTsc(wsDir, res.files)
+		} finally {
+			rmSync(wsDir, { recursive: true, force: true })
+		}
+
+		// 3. Diamond dependency graph (app -> b, c -> base)
+		const diamondDir = tempPath("solution-topo-diamond")
+		try {
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./packages/app" },
+							{ path: "./packages/b" },
+							{ path: "./packages/c" },
+							{ path: "./packages/base" }
+						]
+					}),
+					"packages/base/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"]
+					}),
+					"packages/base/src/index.ts": `import { type } from "arktype"
+export const Id = type("string > 0")
+`,
+					"packages/b/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"],
+						references: [{ path: "../base" }]
+					}),
+					"packages/b/src/index.ts": `import { type } from "arktype"
+import { Id } from "../../base/src/index.js"
+export const Item = type({ id: Id, sku: "string" })
+`,
+					"packages/c/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"],
+						references: [{ path: "../base" }]
+					}),
+					"packages/c/src/index.ts": `import { type } from "arktype"
+import { Id } from "../../base/src/index.js"
+export const Customer = type({ id: Id, email: "string.email" })
+`,
+					"packages/app/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"],
+						references: [{ path: "../b" }, { path: "../c" }]
+					}),
+					"packages/app/src/index.ts": `import { type } from "arktype"
+import { Item } from "../../b/src/index.js"
+import { Customer } from "../../c/src/index.js"
+export const Order = type({ item: Item, customer: Customer })
+export type Order = typeof Order.infer
+`,
+					"consumer.ts": `import type { Order } from "./packages/app/dist/index.js"
+const o: Order = { item: { id: "1", sku: "X" }, customer: { id: "2", email: "a@b.c" } }
+export const email: string = o.customer.email
+`
+				},
+				diamondDir
+			)
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: diamondDir, checker })
+				attest([checker, res.diagnostics, res.errors]).equals([checker, "", 0])
+				const appShapes =
+					res.files[tsPath(join(diamondDir, "packages/app/dist/~arktype.d.ts"))]
+				attest(appShapes.includes("[k: string]: any")).equals(false)
+				attest(appShapes.includes("sku: string")).equals(true)
+				attest(appShapes.includes("email: string")).equals(true)
+				if (checker === "tsjs") verifyTsc(diamondDir, res.files)
+			}
+		} finally {
+			rmSync(diamondDir, { recursive: true, force: true })
+		}
+
+		// 4. Real TS2742/TS2883 on a FunctionDeclaration parameter must NOT be suppressed
+		const paramErrDir = tempPath("solution-topo-param-portability")
+		try {
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./packages/api" },
+							{ path: "./packages/shared" }
+						]
+					}),
+					"packages/shared/package.json": JSON.stringify({
+						name: "@pkg/shared",
+						type: "module",
+						exports: {
+							".": {
+								types: "./dist/index.d.ts",
+								default: "./dist/index.js"
+							}
+						}
+					}),
+					"packages/shared/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"]
+					}),
+					"packages/shared/src/secret.ts":
+						"export interface Secret { token: string }\nexport const makeSecret = (): Secret => ({ token: 'x' })\n",
+					"packages/shared/src/index.ts": `import { type } from "arktype"
+import { makeSecret } from "./secret.js"
+export const Item = type({ sku: "string", qty: "number.integer > 0" })
+export { makeSecret }
+`,
+					"packages/api/package.json": JSON.stringify({
+						name: "@pkg/api",
+						type: "module",
+						dependencies: { "@pkg/shared": "workspace:*" }
+					}),
+					"packages/api/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"],
+						references: [{ path: "../shared" }]
+					}),
+					"packages/api/src/index.ts": `import { type } from "arktype"
+import { Item, makeSecret } from "@pkg/shared"
+export function makeOrder(x = makeSecret()) {
+	void x
+	return type({ id: "string", items: Item.array() })
+}
+`
+				},
+				paramErrDir
+			)
+			mkdirSync(join(paramErrDir, "node_modules", "@pkg"), { recursive: true })
+			symlinkSync(
+				join(paramErrDir, "packages", "shared"),
+				join(paramErrDir, "node_modules", "@pkg", "shared")
+			)
+			const res = emitDeclarations({ cwd: paramErrDir, checker: "tsjs" })
+			attest(res.errors > 0).equals(true)
+			attest(/TS2742|TS2883/.test(res.diagnostics)).equals(true)
+			attest(res.diagnostics.includes("Secret")).equals(true)
+		} finally {
+			rmSync(paramErrDir, { recursive: true, force: true })
+		}
+
+		// 5. Non-composite project with explicit `files` + `references` still emits transitively imported local files
+		const nonCompDir = tempPath("solution-topo-non-composite-helper")
+		try {
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./packages/api" },
+							{ path: "./packages/shared" }
+						]
+					}),
+					"packages/shared/tsconfig.json": JSON.stringify({
+						compilerOptions: { ...baseOptions, rootDir: "src", outDir: "dist" },
+						include: ["src"]
+					}),
+					"packages/shared/src/index.ts": `import { type } from "arktype"
+export const Item = type({ sku: "string" })
+`,
+					"packages/api/tsconfig.json": JSON.stringify({
+						compilerOptions: {
+							...baseOptions,
+							composite: false,
+							rootDir: "src",
+							outDir: "dist"
+						},
+						files: ["src/index.ts"],
+						references: [{ path: "../shared" }]
+					}),
+					"packages/api/src/helper.ts": `import { type } from "arktype"
+export const Helper = type({ tag: "string" })
+`,
+					"packages/api/src/index.ts": `import { type } from "arktype"
+import { Item } from "../../shared/src/index.js"
+import { Helper } from "./helper.js"
+export const Order = type({ item: Item, helper: Helper })
+`
+				},
+				nonCompDir
+			)
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: nonCompDir, checker })
+				attest([checker, res.diagnostics, res.errors]).equals([checker, "", 0])
+				const relFiles = Object.keys(res.files)
+					.map(path => relative(tsPath(nonCompDir), path))
+					.sort()
+				attest([
+					checker,
+					relFiles.includes("packages/api/dist/helper.d.ts")
+				]).equals([checker, true])
+				attest([
+					checker,
+					relFiles.includes("packages/shared/src/index.d.ts")
+				]).equals([checker, false])
+			}
+		} finally {
+			rmSync(nonCompDir, { recursive: true, force: true })
+		}
+	}).timeout(180_000)
+
+	it("fails loudly when referenced projects in a solution tsconfig collide on an emitted declaration file", () => {
 		const dir = writeFixture({
 			"tsconfig.json": JSON.stringify({
 				files: [],
 				references: [
-					{ path: "./tsconfig.app.json" },
-					{ path: "./tsconfig.lib.json" }
+					{ path: "./tsconfig.a.json" },
+					{ path: "./tsconfig.b.json" }
 				]
 			}),
-			"tsconfig.app.json": JSON.stringify({
-				compilerOptions: { composite: true, outDir: "dist-app", types: [] },
-				include: ["src"]
+			"tsconfig.a.json": JSON.stringify({
+				compilerOptions: {
+					composite: true,
+					rootDir: "a",
+					outDir: "dist",
+					types: []
+				},
+				include: ["a"]
 			}),
-			"tsconfig.lib.json": JSON.stringify({
-				compilerOptions: { composite: true, outDir: "dist-lib", types: [] },
-				include: ["src"]
+			"tsconfig.b.json": JSON.stringify({
+				compilerOptions: {
+					composite: true,
+					rootDir: "b",
+					outDir: "dist",
+					types: []
+				},
+				include: ["b"]
 			}),
-			"src/index.ts": "export const id = 1\n"
+			"a/index.ts": "export const a = 1\n",
+			"b/index.ts": "export const b = 2\n"
 		})
-		const expected =
-			"tsconfig.json lists no source files of its own, only project references (tsconfig.app.json, tsconfig.lib.json). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. `ark declare --tsconfig tsconfig.app.json`."
-		for (const checker of ["tsjs", "tsgo"] as const)
-			attest(() => emitDeclarations({ cwd: dir, checker })).throws(expected)
-		const cli = runCli(dir, "--declare")
-		attest([cli.status, cli.stdout, cli.stderr]).equals([
-			1,
-			"",
-			`${expected}\n`
-		])
+		const colliding = tsPath(join(dir, "dist", "index.d.ts"))
+		attest(() => emitDeclarations({ cwd: dir, checker: "tsjs" })).throws(
+			`${colliding} is emitted by more than one referenced project. Set a distinct outDir or declarationDir for each referenced tsconfig, or run \`ark declare --tsconfig <path>\` for one project at a time.`
+		)
 	}).timeout(60000)
+
+	it("preserves Windows drive roots in commonDirOf and handles symlink loops and uppercase .JSON references", () => {
+		attest(commonDirOf(["C:/a", "C:/b"], "fallback")).equals("C:/")
+		attest(commonDirOf(["C:\\a", "C:\\b"], "fallback")).equals("C:/")
+		attest(commonDirOf(["C:/proj/a", "C:/proj/b"], "fallback")).equals(
+			"C:/proj"
+		)
+		attest(commonDirOf(["/a", "/b"], "fallback")).equals("/")
+		attest(commonDirOf(["C:/a", "D:/b"], "fallback")).equals("fallback")
+
+		const dir = tempPath("solution-edge")
+		try {
+			writeFixture(
+				{
+					"tsconfig.json": JSON.stringify({
+						files: [],
+						references: [
+							{ path: "./tsconfig.Lib.JSON" },
+							{ path: "./tsconfig.loop.json" }
+						]
+					}),
+					"tsconfig.Lib.JSON": JSON.stringify({
+						compilerOptions: {
+							strict: true,
+							skipLibCheck: true,
+							composite: true,
+							target: "ES2022",
+							module: "ESNext",
+							moduleResolution: "bundler",
+							customConditions: ["ark-ts"],
+							types: [],
+							rootDir: "src",
+							outDir: "dist"
+						},
+						include: ["src"]
+					}),
+					"src/index.ts":
+						'import { type } from "arktype"\nexport const Item = type({ id: "string" })\n'
+				},
+				dir
+			)
+			symlinkSync(join(dir, "tsconfig.json"), join(dir, "tsconfig.loop.json"))
+			for (const checker of ["tsjs", "tsgo"] as const) {
+				const res = emitDeclarations({ cwd: dir, checker })
+				attest(res.errors).equals(0)
+				attest(res.shapes).equals(1)
+				attest(
+					Object.keys(res.files)
+						.map(path => relative(tsPath(dir), path))
+						.sort()
+				).equals(["dist/index.d.ts", "dist/~arktype.d.ts"])
+			}
+		} finally {
+			rmSync(dir, { recursive: true, force: true })
+		}
+	}).timeout(120_000)
 
 	it("refuses the CLI's other modes and options with --declare", () => {
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
 		attest([cli.status, cli.stderr.split("\n")[0]]).snap([
 			2,
-			"--declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was --check --preset)"
+			"ark declare emits the tsconfig's program and takes no files or option but --tsconfig, --checker and --cwd (was --check --preset)"
 		])
 	})
 

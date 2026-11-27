@@ -7,6 +7,7 @@ import type {
 	FailureSite,
 	IssueJson,
 	MissingText,
+	ReadableIssue,
 	SiteContext
 } from "./issues.ts"
 import {
@@ -392,21 +393,61 @@ export const pathOf = (issue: {
 	return path
 }
 
+let formatArkError: ((error: ReadableIssue) => string | undefined) | undefined
+
+export const registerErrorLineFormatter = (
+	formatter: (error: ReadableIssue) => string | undefined
+): void => {
+	formatArkError = formatter
+}
+
+const isLabeledIssue = (
+	issue: ReadableIssue,
+	message: string,
+	defaultMessage: string
+): boolean => {
+	if ((issue as ArkIssue)._n !== undefined) return true
+	const meta =
+		issue.code === "required" ?
+			(issue as { valueMeta?: { label?: unknown; message?: unknown } })
+				.valueMeta
+		:	(issue as { meta?: { label?: unknown; message?: unknown } }).meta
+	if (
+		typeof meta?.label === "string" &&
+		meta.message === undefined &&
+		message.startsWith(meta.label + " ")
+	)
+		return true
+	return (
+		(issue.expected !== undefined || issue.code === "required") &&
+		message.length > defaultMessage.length + 1 &&
+		(message.endsWith(" " + defaultMessage) ||
+			message.includes(" " + defaultMessage + " "))
+	)
+}
+
 // an issue's line of a summary, as issues.ts's lineOf
-export const lineOf = (issue: ArkIssue): string => {
-	const message = (issue.message ??= messageOf(issue))
+export const lineOf = (issue: ReadableIssue): string => {
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== undefined) return formatted
+	}
+	const defaultMessage = messageOf(issue)
+	const message = issue.message ?? defaultMessage
 	// as issues.ts's, joined where every key is an identifier
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
-		listsUnions && issue._l !== undefined ? issue._l
-		: labelsValues && issue._n !== undefined ? labeledPathOf(issue) + message
+		listsUnions && (issue as ArkIssue)._l !== undefined ?
+			(issue as ArkIssue)._l!
+		: labelsValues && isLabeledIssue(issue, message, defaultMessage) ?
+			labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
 				writesText &&
 				!(message === "is invalid" && issue.expected === "valid") &&
-				!message.startsWith(messageOf(issue))
+				!message.startsWith(defaultMessage)
 			) ?
 				": "
 			:	" ") +
@@ -417,7 +458,7 @@ export const lineOf = (issue: ArkIssue): string => {
 
 // an undeclared key's site says what's expected, as issues.ts's messageOf
 export const messageOf = (issue: {
-	readonly code?: ArkErrorCode
+	readonly code?: ArkErrorCode | undefined
 	readonly expected?: string | undefined
 }): string =>
 	issue.expected !== undefined ?

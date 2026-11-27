@@ -1336,10 +1336,6 @@ type CallSite = {
 	module: SourceModule
 }
 
-type ResolvedExport =
-	| { kind: "binding"; binding: Binding; module: SourceModule }
-	| { kind: "expression"; node: Node; module: SourceModule }
-
 type ClassMemberNode = MethodDefinition | PropertyDefinition | AccessorProperty
 
 type Es5ProtoMethod = { ctorBinding: Binding; methodKey: string }
@@ -2223,8 +2219,13 @@ const isForwardingCallee = (
 	if (
 		target.type === "FunctionExpression" ||
 		target.type === "FunctionDeclaration"
-	)
+	) {
+		if (target.type === "FunctionExpression" && target.id) {
+			const idBinding = module.scopes.bindingsById.get(target.id)
+			if (idBinding && mayOverrideForwarding(idBinding)) return false
+		}
 		return !isSkippedFunction(target, module, ctx)
+	}
 	if (target.type !== "Identifier") return false
 	const binding = module.scopes.byId.get(target)?.binding
 	return !!binding && isForwardingBinding(binding, module, ctx, seen)
@@ -2239,15 +2240,14 @@ const isForwardingBinding = (
 	if (
 		seen.has(binding) ||
 		binding.writes.length > 0 ||
-		mayOverrideForwarding(binding, module)
+		mayOverrideForwarding(binding)
 	)
 		return false
 	seen.add(binding)
 	switch (binding.kind) {
 		case "function":
 			return (
-				(binding.declaration.type === "FunctionDeclaration" ||
-					binding.declaration.type === "FunctionExpression") &&
+				binding.declaration.type === "FunctionDeclaration" &&
 				!isSkippedFunction(binding.declaration, module, ctx)
 			)
 		case "const":
@@ -2260,13 +2260,6 @@ const isForwardingBinding = (
 			)
 				return false
 			return isForwardingCallee(binding.declaration.init, module, ctx, seen)
-		case "import": {
-			const resolved = resolveImportBinding(binding, module, ctx)
-			if (!resolved) return false
-			return resolved.kind === "binding" ?
-					isForwardingBinding(resolved.binding, resolved.module, ctx, seen)
-				:	isForwardingCallee(resolved.node, resolved.module, ctx, seen)
-		}
 		case "param":
 			return isForwardingParam(binding, module, ctx, seen)
 		default:
@@ -2274,74 +2267,28 @@ const isForwardingBinding = (
 	}
 }
 
-// whether a reference may give the function its own `call` or `apply`, or a
-// prototype other than Function.prototype: a member write like
-// `f.call = t => t`, or `Object.defineProperty(f, "call", ...)` and
-// `Object.setPrototypeOf(f, ...)`
-const mayOverrideForwarding = (
-	binding: Binding,
-	module: SourceModule
-): boolean =>
+// whether any reference or export exposes the function to something other than
+// calling it (or calling its `.call` / `.apply`), so an alias
+// (`const g = f; g.call = ...`), helper (`patch(f)`), or importer may give it
+// its own `call` or `apply`, or a prototype other than Function.prototype
+const mayOverrideForwarding = (binding: Binding): boolean =>
+	binding.exportNames.length > 0 ||
 	binding.references.some(ref => {
-		if (ref.isWrite) return false
+		if (ref.isWrite) return true
 		const [op, use] = operatorOf(ref.id)
-		return (
-			(use?.type === "MemberExpression" &&
-				use.object === op &&
-				isWriteTarget(use)) ||
-			isPrototypeMutatorCall(op, use, module)
-		)
-	})
-
-const resolveImportBinding = (
-	binding: Binding,
-	module: SourceModule,
-	ctx: ThisReadsContext
-): ResolvedExport | undefined => {
-	const { declaration } = binding
-	const statement = declaration.parent
-	if (statement?.type !== "ImportDeclaration") return
-	if (declaration.type === "ImportNamespaceSpecifier") return
-	const target = ctx.resolve(statement.source.value, module)
-	if (!target) return
-	const name =
-		declaration.type === "ImportSpecifier" ?
-			exportNameOf(declaration.imported)
-		:	"default"
-	return resolveExport(target, name, ctx)
-}
-
-const resolveExport = (
-	module: SourceModule,
-	name: string,
-	ctx: ThisReadsContext,
-	seen = new Set<string>()
-): ResolvedExport | undefined => {
-	const key = `${module.id}\0${name}`
-	if (seen.has(key)) return
-	seen.add(key)
-	const entry = module.scopes.exportsByName[name]
-	if (entry) {
-		switch (entry.kind) {
-			case "binding":
-				return { kind: "binding", binding: entry.binding, module }
-			case "expression":
-				return { kind: "expression", node: entry.node, module }
-			case "reexport": {
-				const target = ctx.resolve(entry.specifier, module)
-				return target ? resolveExport(target, entry.name, ctx, seen) : undefined
-			}
-			case "namespace":
-				return
+		if (use?.type === "CallExpression" && use.callee === op) return false
+		if (
+			use?.type === "MemberExpression" &&
+			use.object === op &&
+			!isWriteTarget(use) &&
+			forwardingMethods.has(String(memberNameOf(use)))
+		) {
+			const [memOp, memUse] = operatorOf(use)
+			if (memUse?.type === "CallExpression" && memUse.callee === memOp)
+				return false
 		}
-	}
-	if (name === "default") return
-	for (const specifier of module.scopes.starExports) {
-		const target = ctx.resolve(specifier, module)
-		const resolved = target && resolveExport(target, name, ctx, seen)
-		if (resolved) return resolved
-	}
-}
+		return true
+	})
 
 const isForwardingParam = (
 	binding: Binding,

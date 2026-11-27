@@ -1,5 +1,12 @@
-import type { NodeKind, nodeOfKind, SequenceTuple } from "arktype/schema"
-import { hasKey, throwError, throwInternalError } from "arktype/util"
+import { keywords } from "arktype"
+import type { NodeKind, nodeOfKind } from "arktype/schema"
+import {
+	defineValue,
+	hasKey,
+	throwError,
+	throwInternalError,
+	unset
+} from "arktype/util"
 import * as fc from "fast-check"
 import {
 	getPossiblyWeightedArray,
@@ -20,12 +27,11 @@ export const buildArbitrary = (
 		case "intersection":
 			ctx.seenIntersectionIds[node.id] = true
 
-			//specifically in the case of unknown, it is represented as an empty intersection so we just return anything here.
-			if (node.basis === null) return fc.anything()
-
+			// unknown and narrowed unknown are intersections with no basis
 			const basisArbitrary =
-				node.basis?.kind === "domain" ?
-					buildDomainArbitrary[node.basis?.domain](node, ctx)
+				node.basis === null ? fc.anything()
+				: node.basis.kind === "domain" ?
+					buildDomainArbitrary[node.basis.domain](node, ctx)
 				:	buildProtoArbitrary(node.basis.proto, node, ctx)
 
 			// generated around the values a != excludes or a narrow filters
@@ -60,11 +66,11 @@ export const buildArbitrary = (
 				)
 			}
 			// past maxDepth, oneof only takes its first branch, so branches that
-			// can't recurse come first
+			// can't recurse (or can terminate without required recursion) come first
 			return fc.oneof(
 				{ maxDepth: 4, depthIdentifier: ctx.depthIdentifier },
 				...[...node.children]
-					.sort((l, r) => Number(l.hasAlias) - Number(r.hasAlias))
+					.sort((l, r) => branchRecursionRank(l) - branchRecursionRank(r))
 					.map(child => buildArbitrary(child, ctx))
 			)
 		case "unit":
@@ -78,8 +84,19 @@ export const buildArbitrary = (
 		case "required":
 		case "optional":
 			return buildArbitrary(node.value as never, ctx)
-		case "morph":
-			return node.head ? buildArbitrary(node.head as never, ctx) : fc.anything()
+		case "morph": {
+			if (
+				node.meta.keyword === "string.json.parse" ||
+				(!node.declaredIn &&
+					node.head?.is("domain") &&
+					node.head.domain === "string" &&
+					node.morphs[1] ===
+						keywords.string.json.parse.internal.assertIs("morph").morphs[1])
+			)
+				return fc.json()
+			const input = node.declaredIn ?? node.head
+			return input ? buildArbitrary(input as never, ctx) : fc.anything()
+		}
 		case "alias":
 			if (ctx.tieStack.length < 1)
 				throwInternalError("Tie has not been initialized")
@@ -122,54 +139,98 @@ export const buildStructureArbitrary = (
 		return fc
 			.tuple(indexArbitrary, buildObjectArbitrary(structure, ctx))
 			.map(([indexed, declared]) => {
-				const result: Record<PropertyKey, unknown> = { ...indexed }
+				const result: Record<PropertyKey, unknown> = {}
+				for (const key of Reflect.ownKeys(indexed))
+					defineValue(result, key, indexed[key as never])
 				for (const prop of structure.props) delete result[prop.key]
-				return Object.assign(result, declared)
+				for (const key of Reflect.ownKeys(declared))
+					defineValue(result, key, declared[key as never])
+				return result
 			})
 	}
 
-	if (node.inner.exactLength?.rule === 0) return fc.tuple()
+	let arrArbitrary: fc.Arbitrary<unknown[]>
+	if (node.inner.exactLength?.rule === 0) arrArbitrary = fc.tuple()
+	else {
+		const fcArrayConstraints: fc.ArrayConstraints = {}
+		if (node.inner.exactLength) {
+			fcArrayConstraints.minLength = node.inner.exactLength.rule
+			fcArrayConstraints.maxLength = node.inner.exactLength.rule
+		}
+		if (node.inner.minLength)
+			fcArrayConstraints.minLength = node.inner.minLength.rule
+		if (node.inner.maxLength)
+			fcArrayConstraints.maxLength = node.inner.maxLength.rule
 
-	const fcArrayConstraints: fc.ArrayConstraints = {}
-	if (node.inner.exactLength) {
-		fcArrayConstraints.minLength = node.inner.exactLength.rule
-		fcArrayConstraints.maxLength = node.inner.exactLength.rule
+		arrArbitrary =
+			structure?.sequence ?
+				buildArrayArbitrary(structure.sequence, fcArrayConstraints, ctx)
+			:	fc.array(fc.anything(), fcArrayConstraints)
 	}
-	if (node.inner.minLength)
-		fcArrayConstraints.minLength = node.inner.minLength.rule
-	if (node.inner.maxLength)
-		fcArrayConstraints.maxLength = node.inner.maxLength.rule
-
-	const arrArbitrary =
-		structure?.sequence ?
-			buildArrayArbitrary(structure.sequence, fcArrayConstraints, ctx)
-		:	fc.array(fc.anything(), fcArrayConstraints)
 
 	if (structure?.required || structure?.optional) {
 		const objectArbitrary = buildObjectArbitrary(structure, ctx)
-		return fc
-			.tuple(arrArbitrary, objectArbitrary)
-			.map(([arr, record]) => Object.assign([...arr], record))
+		return fc.tuple(arrArbitrary, objectArbitrary).map(([arr, record]) => {
+			const out = [...arr]
+			for (const key of Reflect.ownKeys(record))
+				defineValue(out, key, record[key as never])
+			return out
+		})
 	}
 
 	return arrArbitrary
+}
+
+const branchRecursionRank = (branch: nodeOfKind<NodeKind>): number => {
+	if (!branch.hasAlias) return 0
+	if (!branch.is("intersection") || !branch.structure) return 2
+	const struct = branch.structure
+	if (struct.sequence) {
+		const req = struct.sequence.prefix?.some(el => el.hasAlias)
+		return req ? 2 : 1
+	}
+	return struct.required?.some(p => p.value.hasAlias) ? 2 : 1
 }
 
 export const buildObjectArbitrary = (
 	node: nodeOfKind<"structure">,
 	ctx: Ctx
 ): fc.Arbitrary<Record<string, unknown>> => {
-	const requiredKeys = node.requiredKeys
+	const requiredKeys = [...node.requiredKeys]
 	const arbitrariesByKey: Record<PropertyKey, fc.Arbitrary<unknown>> = {}
+	let hasDepthBoundedOptional = false
+	let hasProtoKey = false
 
 	for (const prop of node.props) {
 		const value = indexedValueOf(node, prop)
 		// an optional key no index value allows is left out
-		if (!value.isNever())
-			arbitrariesByKey[prop.key] = buildArbitrary(value, ctx)
+		if (value.isNever()) continue
+		if (prop.key === "__proto__") hasProtoKey = true
+		if (prop.optional && ctx.tieStack.length && value.hasAlias) {
+			hasDepthBoundedOptional = true
+			requiredKeys.push(prop.key)
+			defineValue(
+				arbitrariesByKey,
+				prop.key,
+				fc.oneof(
+					{ maxDepth: 4, depthIdentifier: ctx.depthIdentifier },
+					fc.constant(unset),
+					buildArbitrary(value, ctx)
+				)
+			)
+		} else defineValue(arbitrariesByKey, prop.key, buildArbitrary(value, ctx))
 	}
 
-	return fc.record(arbitrariesByKey, { requiredKeys } as never)
+	const base = fc.record(arbitrariesByKey, { requiredKeys } as never)
+	if (!hasDepthBoundedOptional && !hasProtoKey) return base
+	return base.map(record => {
+		const out: Record<PropertyKey, unknown> = {}
+		for (const key of Reflect.ownKeys(record)) {
+			const val = record[key as never]
+			if (val !== unset) defineValue(out, key, val)
+		}
+		return out as Record<string, unknown>
+	})
 }
 
 // a key an index signature also matches must satisfy both values
@@ -178,7 +239,7 @@ const indexedValueOf = (
 	prop: nodeOfKind<"required" | "optional">
 ): nodeOfKind<NodeKind> => {
 	const matching = node.index?.filter(index => index.signature.allows(prop.key))
-	if (!matching?.length) return prop
+	if (!matching?.length) return prop.value as never
 	return matching.reduce(
 		(value, index) => value.intersect(index.value).toNeverIfDisjoint(),
 		prop.value
@@ -196,10 +257,13 @@ const buildIndexSignatureArbitrary = (
 		dictionaryArbitraries.push(getDictionaryArbitrary(indexNode, ctx))
 
 	return fc.tuple(...dictionaryArbitraries).map(arbs => {
-		const recordArb: Record<string, unknown> = {}
-		for (const arb of arbs) Object.assign(recordArb, arb)
+		const recordArb: Record<PropertyKey, unknown> = {}
+		for (const arb of arbs) {
+			for (const key of Reflect.ownKeys(arb))
+				defineValue(recordArb, key, arb[key as never])
+		}
 		// a key several signatures match must satisfy each of their values
-		for (const key in recordArb) {
+		for (const key of Reflect.ownKeys(recordArb)) {
 			if (
 				!indexNodes.every(
 					index =>
@@ -208,7 +272,7 @@ const buildIndexSignatureArbitrary = (
 			)
 				delete recordArb[key]
 		}
-		return recordArb
+		return recordArb as Record<string, unknown>
 	})
 }
 
@@ -246,16 +310,17 @@ const buildArrayArbitrary = (
 		return getPossiblyWeightedArray(arrArbitrary, node, refinements, ctx)
 	}
 
-	return getSpreadVariadicElementsTuple(node.tuple, refinements, ctx)
+	return getSpreadVariadicElementsTuple(node, refinements, ctx)
 }
 
 const getSpreadVariadicElementsTuple = (
-	tupleElements: SequenceTuple,
+	node: nodeOfKind<"sequence">,
 	refinements: fc.ArrayConstraints,
 	ctx: Ctx
 ) =>
 	spreadVariadicElements(
-		tupleElements.map(element => buildArbitrary(element.node as never, ctx)),
-		tupleElements,
-		refinements
+		node.tuple.map(element => buildArbitrary(element.node as never, ctx)),
+		node,
+		refinements,
+		ctx
 	)

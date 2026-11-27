@@ -34,6 +34,8 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 	return Number.isSafeInteger(parsed) ? parsed : ctx.error(integerParseError)
 }
 
+export const parseBoolean = (s: "true" | "false"): boolean => s === "true"
+
 export const parseNumeric = (s: string): number => Number(s)
 
 // Infinity takes at least five characters ("1e309"), so a shorter numeric string is finite
@@ -87,7 +89,7 @@ const isoDateParseError = /* @__PURE__ */ keywordError(
 
 // a calendar, week or ordinal date, then a time whose last unit can have a fraction, then an offset
 const isoDateParts =
-	/^([+-]?\d{4})(?:-?(?:(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?([1-7]))?|(\d{3})))?(?:T(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?(?:[,.](\d+))?(?:[Zz]|([+-])(\d{2}):?(\d{2})?)?)?$/
+	/^([+-]?\d{4})(?:-?(?:(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?([1-7]))?|(\d{3})))?(?:T(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?(?:[,.](\d+))?(?:[Zz]|([+-])(\d{2})(?::?(\d{2}))?)?)?$/
 
 // read in UTC unless it has an offset, so it's one instant on every machine
 const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
@@ -273,7 +275,25 @@ export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
 	}
 }
 
-export const stringifyJson = (data: Json): string => JSON.stringify(data)
+const jsonStringifyError = {
+	code: "predicate",
+	description: "a JSON-serializable value"
+} as const
+
+export const stringifyJson = (
+	data: Json,
+	ctx?: Traversal
+): string | ArkError => {
+	try {
+		const result = JSON.stringify(data)
+		if (result !== undefined) return result
+		if (!ctx) throw new TypeError("Value is not JSON-serializable")
+		return ctx.error(jsonStringifyError)
+	} catch (e) {
+		if (!ctx || !(e instanceof TypeError)) throw e
+		return ctx.error({ ...jsonStringifyError, cause: e })
+	}
+}
 
 // inverses of parse keywords, which arktype/codecs encodes with
 export const writeIsoDate = (date: Date): string => date.toISOString()
@@ -312,6 +332,14 @@ export const emptyCollectionDefaults = {
 } as const satisfies {
 	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
+
+// returns a thunk producing a fresh array copy on each call
+export const arrayDefault = (
+	elements: readonly unknown[]
+): (() => unknown[]) =>
+	elements.some(e => e instanceof Date) ?
+		() => elements.map(e => (e instanceof Date ? new Date(e) : e))
+	:	() => [...elements]
 
 const regexPattern = "a regex pattern"
 

@@ -171,7 +171,12 @@ const snapshotArgsToQueuedUpdate = ({
 	const snapCallArgs = getSnapCallArgs(position, snapFunctionName)
 	let newArgText =
 		typeof serializedValue === "string" && serializedValue.includes("\n") ?
-			"`" + serializedValue.replace(/`/g, "\\`").replace(/\${/g, "\\${") + "`"
+			"`" +
+			serializedValue
+				.replace(/\\/g, "\\\\")
+				.replace(/`/g, "\\`")
+				.replace(/\${/g, "\\${") +
+			"`"
 		:	JSON.stringify(serializedValue)
 
 	newArgText = newArgText
@@ -217,7 +222,7 @@ const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 		const updatedPaths = [
 			...new Set(queuedUpdates.map(update => filePath(update.position.file)))
 		]
-		shell(`${formatter} ${updatedPaths.join(" ")}`)
+		shell(`${formatter} ${updatedPaths.map(p => JSON.stringify(p)).join(" ")}`)
 	} catch {
 		// If formatter is unavailable or skipped, do nothing.
 	}

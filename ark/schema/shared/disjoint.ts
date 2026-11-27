@@ -86,7 +86,10 @@ export class Disjoint extends Array<DisjointEntry> {
 		}
 		return (
 			`The following intersections result in unsatisfiable types:\n• ${this.map(
-				({ path, l, r }) => `${path}: ${describeReasons(l, r)}`
+				({ path, l, r }) => {
+					const pathString = stringifyPath(path)
+					return `${pathString ? `${pathString}: ` : ""}${describeReasons(l, r)}`
+				}
 			).join("\n• ")}` + this.undeclaredHint()
 		)
 	}

@@ -54,7 +54,7 @@ import {
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets/internal"
-import type { InferredMorph } from "./attributes.ts"
+import type { distill, InferredMorph } from "./attributes.ts"
 import type { AmbientKey } from "./config.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
@@ -75,7 +75,8 @@ import type {
 	Module,
 	Submodule,
 	exportScope,
-	instantiateExport
+	instantiateExport,
+	isGenericExport
 } from "./module.ts"
 import type {
 	NaryIntersectionParser,
@@ -183,15 +184,22 @@ type normalizeAmbientEntry<v> =
 	: v extends { [inferred]: infer t } ? t
 	: never
 
+// a `#private` key is never what a reference resolves, so it's not one
+// a definition can be checked or completed against either
 type normalizeAmbientRecord<ambient> = {
-	[k in Exclude<keyof ambient, arkKind>]: normalizeAmbientEntry<ambient[k]>
+	[k in Exclude<
+		keyof ambient,
+		arkKind | PrivateDeclaration
+	>]: normalizeAmbientEntry<ambient[k]>
 } & unknown
 
 type normalizeAmbient<ambient> =
 	[ambient] extends [anyOrNever] ? ambient
 	: ambient extends Module<infer exports> | BoundModule<infer exports, any> ?
 		Exclude<keyof ambient, arkKind> extends keyof exports ?
-			exports
+			[keyof exports & PrivateDeclaration] extends [never] ?
+				exports
+			:	{ [k in Exclude<keyof exports, PrivateDeclaration>]: exports[k] }
 		:	normalizeAmbientRecord<ambient>
 	: ambient extends Primitive | Fn | readonly unknown[] ? {}
 	: normalizeAmbientRecord<ambient>
@@ -740,6 +748,52 @@ export interface Scope<$ = {}> {
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): instantiateExport<$[name], $>
+}
+
+export declare namespace Scope {
+	/**
+	 * #### map each exported alias in a `Scope` to its inferred output type, recursing into nested submodules
+	 *
+	 * @example
+	 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+	 * // { id: string; user: { id: string; age: number } }
+	 * type Types = Scope.infer<typeof $>
+	 */
+	export type infer<s extends { [arkKind]: "scope"; t: unknown }> =
+		inferScopeExports<s["t"], "out">
+
+	export namespace infer {
+		/**
+		 * #### map each exported alias in a `Scope` to its inferred input type, recursing into nested submodules
+		 *
+		 * @example
+		 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+		 * // { id: string; user: { id: string; age?: number } }
+		 * type Inputs = Scope.infer.In<typeof $>
+		 */
+		export type In<s extends { [arkKind]: "scope"; t: unknown }> =
+			inferScopeExports<s["t"], "in">
+
+		/**
+		 * #### map each exported alias in a `Scope` to its inferred output type, recursing into nested submodules
+		 *
+		 * @example
+		 * const $ = scope({ id: "string", user: { id: "id", age: "number = 0" } })
+		 * // { id: string; user: { id: string; age: number } }
+		 * type Outputs = Scope.infer.Out<typeof $>
+		 */
+		export type Out<s extends { [arkKind]: "scope"; t: unknown }> =
+			inferScopeExports<s["t"], "out">
+	}
+}
+
+type inferScopeExports<$, side extends "in" | "out"> = {
+	[k in exportedNameOf<$> as isGenericExport<$[k]> extends true ? never : k]: [
+		$[k]
+	] extends [anyOrNever] ?
+		$[k]
+	: [$[k]] extends [{ [arkKind]: "module" }] ? inferScopeExports<$[k], side>
+	: distill<$[k], side>
 }
 
 export interface ScopeConstructor {

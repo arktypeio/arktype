@@ -18,8 +18,16 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { arkKindOf, flatMorph, hasDomain } from "@ark/util"
-import { ark, generic, match, scope, type, type Scope } from "arktype"
+import { arkKindOf, flatMorph, hasDomain, hasOwn } from "@ark/util"
+import {
+	ark,
+	fromJsonSchema,
+	generic,
+	match,
+	scope,
+	type,
+	type Scope
+} from "arktype"
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
@@ -402,8 +410,66 @@ c must be a number`)
 				).summary
 			).snap(`name must be non-empty
 age must be an integer
-tags must be at most length 3
+tags must be at most 3 items
 nick must be a string or null`)
+		})
+
+		it("matches arktype's bound unit messages for strings, arrays, and custom units", async () => {
+			const T = type({
+				minStr: "string > 5",
+				maxOneStr: "string <= 1",
+				exactOneStr: "string == 1",
+				notEqOneStr: "string != 1",
+				nonEmptyStr: "string >= 1",
+				emptyStr: "string == 0",
+				minArr: "string[] >= 2",
+				maxOneArr: "string[] <= 1",
+				notEqOneArr: "string[] != 1",
+				tuple: ["string", "number"],
+				bareMin: type.schema({ minLength: 3 }),
+				customMinOne: type.string.atLeastLength({ rule: 1, unit: "byte" }),
+				customExactZero: type.string.exactlyLength({ rule: 0, unit: "byte" }),
+				custom: type.number.moreThan({ rule: 5, unit: "second" })
+			})
+			const bad = {
+				minStr: "abc",
+				maxOneStr: "ab",
+				exactOneStr: "ab",
+				notEqOneStr: "a",
+				nonEmptyStr: "",
+				emptyStr: "a",
+				minArr: ["a"],
+				maxOneArr: ["a", "b"],
+				notEqOneArr: ["a"],
+				tuple: ["a"],
+				bareMin: "ab",
+				customMinOne: "",
+				customExactZero: "a",
+				custom: 3
+			}
+			const expected = (T(bad) as type.errors).summary
+			attest(expected).snap(`minStr must be at least 6 characters
+maxOneStr must be at most 1 character
+exactOneStr must be exactly 1 character
+notEqOneStr must be other than 1 character
+nonEmptyStr must be non-empty
+emptyStr must be empty
+minArr must be at least 2 items
+maxOneArr must be at most 1 item
+notEqOneArr must be other than 1 item
+tuple must be exactly 2 items
+bareMin must be at least length 3
+customMinOne must be at least 1 byte
+customExactZero must be exactly 0 bytes
+custom must be more than 5 seconds`)
+			for (const options of [
+				{ optimize: "speed" as const },
+				{ optimize: "size" as const, shapes: true },
+				{ optimize: "size" as const, shapes: false }
+			]) {
+				const { T: Built } = await load({ T }, options)
+				attest((Built(bad) as type.errors).summary).equals(expected)
+			}
 		})
 
 		it("check data holding no case by the branches lacking the key", async () => {
@@ -970,7 +1036,7 @@ nick must be a string or null`)
 		]).snap([
 			"must be a URL string",
 			"must be a parsable date",
-			"a must be at least length 2\na must be empty"
+			"a must be at least 2 items\na must be empty"
 		])
 	})
 
@@ -1077,6 +1143,40 @@ user.name must be a string`)
 			}).toString()
 		).snap(`items[0]: Unit price must be positive
 items[0].name must be a string`)
+	})
+
+	it("names a union failing at each base by the label its bases share", async () => {
+		const Shape = type({ k: "'a'", v: "string" }).or({ k: "'b'", v: "number" })
+		const types = {
+			// read where its key can't be, and as branches each a base
+			Labeled: type({
+				shape: Shape.label("Shape"),
+				when: type("Date | Map").label("When")
+			}),
+			Alike: type({
+				when: type("Date").label("When").or(type("Map").label("When"))
+			}),
+			Root: Shape.label("Shape"),
+			// the union's alone names no base
+			Self: type({
+				shape: Shape.label("Shape", "self"),
+				when: type("Date | Map").label("When", "self")
+			})
+		}
+		const validators = await load(types)
+		const cases: [string, unknown][] = [
+			["Labeled", { shape: 5, when: 1 }],
+			["Alike", { when: 1 }],
+			["Root", 5],
+			["Self", { shape: 5, when: 1 }]
+		]
+		attest(textOf(validators, cases)).equals(textOf(types, cases))
+		attest(textOf(validators, cases)).snap([
+			"Shape must be an object\nWhen must be a Date or a Map",
+			"When must be a Date or a Map",
+			"Shape must be an object",
+			"shape must be an object\nwhen must be a Date or a Map"
+		])
 	})
 
 	it("a union's configured expected is written after must be and its path", async () => {
@@ -2032,7 +2132,7 @@ age must be a number (was missing)`)
 		attest(errors.summary).equals((T(input) as type.errors).summary)
 		// a message is a sentence set apart from its path, unlike one written
 		// from what's expected
-		attest(errors.summary).snap(`a: 1 isn't at least length 2
+		attest(errors.summary).snap(`a: 1 isn't at least 2 characters
 b: string isn't a number
 c must be a number (was string)
 d must be a number, as written`)
@@ -2041,8 +2141,8 @@ d must be a number, as written`)
 				code: "minLength",
 				path: ["a"],
 				data: "x",
-				expected: "at least length 2",
-				message: "1 isn't at least length 2"
+				expected: "at least 2 characters",
+				message: "1 isn't at least 2 characters"
 			},
 			{
 				code: "domain",
@@ -2091,7 +2191,7 @@ d must be a number, as written`)
 		const errors = create(message)(input)
 		attest(errors.summary).equals((T(input) as type.errors).summary)
 		attest(errors.summary).snap(`domain: isn't a string (a number)
-length: isn't at least length 2 (1)
+length: isn't at least 2 characters (1)
 unit: isn't "x" ("y")
 proto: isn't a Date (Array)
 after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
@@ -2174,7 +2274,7 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 		]
 		attest(textOf(validators, cases)).equals(textOf(types, cases))
 		attest(textOf(validators, cases)).snap([
-			"email: Enter your email.\npassword must be at least length 8",
+			"email: Enter your email.\npassword must be at least 8 characters",
 			"Enter your login.",
 			"Enter a number below 3.",
 			"a: Enter text.",
@@ -3531,9 +3631,16 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			})
 			attest([count("abc"), count.name, count.expression]).equals([
 				3,
-				"bound typed count",
+				"typed count",
 				"(string) => number"
 			])
+			const withThis = {
+				bias: 10,
+				count: create(function (this: { bias: number }, s: string) {
+					return this.bias + s.length
+				})
+			}
+			attest(withThis.count("abc")).equals(13)
 			attest(() => count(1)).throws.snap("TraversalError: [0] must be a string")
 			attest(() => create((s: string) => s)("b")).throws.snap(
 				"TraversalError: must be a number"
@@ -3786,5 +3893,223 @@ export default shared`).js
 		).equals([])
 		attest(/new Function|extends Function/.test(js)).equals(false)
 		attest(js.includes("initialRegistryContents")).equals(false)
+	})
+
+	it("precompiles fromJsonSchema object schemas with dynamic parity", async () => {
+		const User = fromJsonSchema({
+			type: "object",
+			properties: {
+				name: { type: "string", minLength: 1 },
+				age: { type: "integer", minimum: 0 }
+			},
+			required: ["name"]
+		})
+		const { User: standalone } = await load({ User })
+		const arrayWithName = Object.assign([], { name: "Ada" })
+		function Ada() {}
+		const cases: unknown[] = [
+			{ name: "Ada" },
+			{ name: "Ada", age: 36 },
+			{ name: "Ada", age: -1 },
+			{ name: "" },
+			{},
+			[],
+			arrayWithName,
+			() => {},
+			Ada,
+			null,
+			undefined,
+			"Ada",
+			42,
+			true
+		]
+		for (const input of cases) {
+			attest(standalone.allows(input)).equals(User.allows(input))
+			const dynamicOut = User(input)
+			const standaloneOut = standalone(input)
+			if (dynamicOut instanceof type.errors) {
+				attest(
+					hasDomain(standaloneOut, "object") && "summary" in standaloneOut
+				).equals(true)
+				attest((standaloneOut as any).summary).equals(dynamicOut.summary)
+			} else attest(standaloneOut).equals(dynamicOut)
+		}
+		// bundling a precompiled fromJsonSchema object pulls in no sets/ modules
+		const { modules } = bundle(precompileStandalone({ User }).code)
+		attest(modules.some(path => path.startsWith("sets/"))).equals(false)
+
+		const ConstObj = fromJsonSchema({ const: { a: 1 } })
+		const EnumObj = fromJsonSchema({ enum: [{ a: 1 }, { a: 2 }] })
+		const { ConstObj: standaloneConst, EnumObj: standaloneEnum } = await load({
+			ConstObj,
+			EnumObj
+		})
+		const constInputs: unknown[] = [
+			{ a: 1 },
+			{ a: 2 },
+			{ a: 1, extra: true },
+			Object.create({ a: 1 }),
+			Object.assign(Object.create(null), { a: 1 }),
+			[],
+			null
+		]
+		for (const input of constInputs) {
+			attest(standaloneConst.allows(input)).equals(ConstObj.allows(input))
+			attest(standaloneEnum.allows(input)).equals(EnumObj.allows(input))
+			const dynConst = ConstObj(input)
+			const stConst = standaloneConst(input)
+			if (dynConst instanceof type.errors) {
+				attest(hasDomain(stConst, "object") && "summary" in stConst).equals(
+					true
+				)
+				attest((stConst as any).summary).equals(dynConst.summary)
+			} else attest(stConst).equals(dynConst)
+		}
+		const { modules: constModules } = bundle(
+			precompileStandalone({ ConstObj, EnumObj }).code
+		)
+		attest(constModules.some(path => path.startsWith("sets/"))).equals(false)
+	})
+
+	it("precompiles string.boolean, string.boolean.parse, and string.date.iso.date", async () => {
+		await import("arktype/codecs")
+		const BoolStr = type("string.boolean")
+		const ParseBool = type("string.boolean.parse")
+		const EncodeBool = ParseBool.encode
+		const IsoDate = type("string.date.iso.date")
+		for (const optimize of ["speed", "size"] as const) {
+			const loaded = await load(
+				{ BoolStr, ParseBool, EncodeBool, IsoDate },
+				{ optimize }
+			)
+			attest(loaded.BoolStr("true")).equals("true")
+			attest(loaded.BoolStr("false")).equals("false")
+			attest(loaded.BoolStr("yes").summary).snap('must be "false" or "true"')
+			attest(loaded.ParseBool("true")).equals(true)
+			attest(loaded.ParseBool("false")).equals(false)
+			attest(loaded.ParseBool("yes").summary).snap('must be "false" or "true"')
+			attest(loaded.EncodeBool(true)).equals("true")
+			attest(loaded.EncodeBool(false)).equals("false")
+			attest(loaded.EncodeBool("true").summary).snap("must be boolean")
+			attest(loaded.IsoDate("2024-02-29")).equals("2024-02-29")
+			attest(loaded.IsoDate("2025-02-29").summary).snap(
+				"must be an ISO 8601 date"
+			)
+			attest(loaded.IsoDate("2025-01-01T00:00:00Z").summary).snap(
+				"must be an ISO 8601 date"
+			)
+		}
+	})
+
+	it("defines own properties over prototype accessors and frozen prototypes in speed and size builds", async () => {
+		class ReadOnly {
+			get ro() {
+				return "  hi  "
+			}
+		}
+		class ReadWrite {
+			_v = 1
+			get rw() {
+				return "  hi  "
+			}
+			set rw(_: string) {
+				this._v = 999
+			}
+		}
+		class FrozenProto {
+			a = 1
+		}
+		;(FrozenProto.prototype as any).inherited = { k: 1, drop: 2 }
+		Object.freeze(FrozenProto.prototype)
+
+		const TrimRo = type({ ro: "string.trim" })
+		const TrimRw = type({ rw: "string.trim" })
+		const DeleteInherited = type({
+			"+": "delete",
+			a: "number",
+			inherited: { "+": "delete", k: "number" }
+		})
+		const KeepInherited = type({
+			a: "number",
+			inherited: { "+": "delete", k: "number" }
+		})
+
+		for (const optimize of ["speed", "size"] as const) {
+			const loaded = await load(
+				{ TrimRo, TrimRw, DeleteInherited, KeepInherited },
+				{ optimize }
+			)
+
+			const roOut = loaded.TrimRo(new ReadOnly())
+			attest(roOut instanceof ReadOnly).equals(true)
+			attest(hasOwn(roOut, "ro")).equals(true)
+			attest(roOut.ro).equals("hi")
+			attest(roOut).equals(TrimRo(new ReadOnly()))
+
+			const rwOut = loaded.TrimRw(new ReadWrite())
+			attest(rwOut instanceof ReadWrite).equals(true)
+			attest(hasOwn(rwOut, "rw")).equals(true)
+			attest(rwOut.rw).equals("hi")
+			attest(rwOut._v).equals(1)
+			attest(rwOut).equals(TrimRw(new ReadWrite()))
+
+			const delOut = loaded.DeleteInherited(new FrozenProto())
+			attest(delOut instanceof FrozenProto).equals(true)
+			attest(hasOwn(delOut, "inherited")).equals(true)
+			attest(delOut.a).equals(1)
+			attest(delOut.inherited).equals({ k: 1 })
+			attest("drop" in delOut.inherited).equals(false)
+			attest(delOut).equals(DeleteInherited(new FrozenProto()))
+
+			const keepOut = loaded.KeepInherited(new FrozenProto())
+			attest(keepOut instanceof FrozenProto).equals(true)
+			attest(hasOwn(keepOut, "inherited")).equals(true)
+			attest(keepOut.inherited).equals({ k: 1 })
+			attest(keepOut).equals(KeepInherited(new FrozenProto()))
+		}
+	})
+
+	it("formats unit-aware actual for min, max, and notEqual in standalone configured writers", async () => {
+		const message = standIn(
+			(ctx: MessageContext) => `${ctx.actual} isn't ${ctx.expected}`,
+			"message"
+		)
+		const T = type({
+			min: type.number
+				.atLeast({ rule: 5, unit: "second" })
+				.describe("a long timeout")
+				.configure({ message }),
+			max: type.number
+				.atMost({ rule: 5, unit: "second" })
+				.describe("a short timeout")
+				.configure({ message }),
+			notEqual: type.number
+				.lessThan({ rule: 1, unit: "second" })
+				.or(type.number.moreThan({ rule: 1, unit: "second" }))
+				.describe("not one second")
+				.configure({ message }),
+			plain: type.number
+				.atLeast({ rule: 5, unit: "second" })
+				.configure({ message })
+		})
+		const input = { min: 1, max: 10, notEqual: 1, plain: 2 }
+		const expectedSummary = (T(input) as type.errors).summary
+		for (const optimize of ["speed", "size"] as const) {
+			const { T: create } = await load(
+				{
+					T: {
+						type: T,
+						params: [{ kind: "function", label: "`message`", value: message }]
+					}
+				},
+				{ optimize }
+			)
+			const errors = create(message)(input)
+			attest(errors.summary).equals(expectedSummary)
+			attest(errors.summary).snap(`min: 1 second isn't a long timeout
+max: 10 seconds isn't a short timeout
+notEqual: 1 second isn't not one second
+plain: 2 isn't at least 5 seconds`)
+		}
 	})
 })

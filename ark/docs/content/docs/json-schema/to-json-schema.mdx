@@ -232,34 +232,34 @@ const schema = types.User.toJsonSchema({ aliasDefs: true })
 
 ## How Types map
 
-| ArkType                                               | JSON Schema                                         |
-| ----------------------------------------------------- | --------------------------------------------------- |
-| `"string"`, `"number"`, `"boolean"`, `"null"`         | `type`                                              |
-| `"number.integer"`, `"number % 2"`                    | `type: "integer"`, plus `multipleOf: 2`             |
-| `"0 < number <= 1"`                                   | `exclusiveMinimum: 0`, `maximum: 1`                 |
-| `"string >= 1"`, `"string == 2"`                      | `minLength`, or `minLength` and `maxLength`         |
-| `"string[] > 0"`                                      | `items`, `minItems: 1`                              |
-| `["string", "number?"]`                               | `prefixItems`, `minItems: 1`, `items: false`        |
-| `/^a/`                                                | `pattern: "^a"`                                     |
-| `"string.email"`, `"string.uuid"`                     | `pattern`, `format: "email"`, `"uuid"`              |
-| `"string.ip.v4"`, `"string.ip.v6"`                    | `pattern`, `format: "ipv4"`, `"ipv6"`               |
-| `"string.date.iso"`                                   | `pattern`, `format: "date-time"`                    |
-| `"string.base64"`                                     | `pattern`, `contentEncoding: "base64"`              |
-| `"string.base64.url"`                                 | `pattern`, `contentEncoding: "base64url"`           |
-| `"string.date"`, `"string.url"`, `"string.regex"`     | `format: "date-time"`, `"uri"`, `"regex"`           |
-| `"string.json"`                                       | `contentMediaType: "application/json"`              |
-| `"'a' \| 'b'"`                                        | `type: "string"`, `enum: ["a", "b"]`                |
-| `"string \| null"`                                    | `anyOf`                                             |
-| `{ kind: "'a'", a: "string" }` or `{ kind: "'b'" }`   | [`oneOf`](#discriminated-unions)                    |
-| `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
-| `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
-| `"Record<string, number>"`                            | `additionalProperties: {...}`                       |
-| `{ id: "string", "[string]": "string" }`              | `additionalProperties: {...}`                       |
-| `{ id: "string \| number", "[string]": "string" }`    | `patternProperties: { "": {...} }`                  |
-| `{ "[/^x-/]": "string" }`                             | `patternProperties: { "^x-": {...} }`               |
-| `{ "[string <= 3]": "number", "+": "reject" }`        | `propertyNames`, `additionalProperties: {...}`      |
-| `{ role: "string = 'user'" }`                         | `default: "user"` on `role`                         |
-| `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples`                  |
+| ArkType                                                                | JSON Schema                                                |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `"string"`, `"number"`, `"boolean"`, `"null"`                          | `type`                                                     |
+| `"number.integer"`, `"number % 2"`                                     | `type: "integer"`, plus `multipleOf: 2`                    |
+| `"0 < number <= 1"`                                                    | `exclusiveMinimum: 0`, `maximum: 1`                        |
+| `"string >= 1"`, `"string == 2"`                                       | `minLength`, or `minLength` and `maxLength`                |
+| `"string[] > 0"`                                                       | `items`, `minItems: 1`                                     |
+| `["string", "number?"]`                                                | `prefixItems`, `minItems: 1`, `items: false`               |
+| `/^a/`                                                                 | `pattern: "^a"`                                            |
+| `"string.email"`, `"string.uuid"`                                      | `pattern`, `format: "email"`, `"uuid"`                     |
+| `"string.ip.v4"`, `"string.ip.v6"`                                     | `pattern`, `format: "ipv4"`, `"ipv6"`                      |
+| `"string.date.iso"`, `"string.date.iso.date"`                          | `pattern`, `format: "date-time"`, `"date"`                 |
+| `"string.base64"`                                                      | `pattern`, `contentEncoding: "base64"`                     |
+| `"string.base64.url"`                                                  | `pattern`, `contentEncoding: "base64url"`                  |
+| `"string.date"`, `"string.url"`, `"string.regex"`                      | `format: "date-time"`, `"uri"`, `"regex"`                  |
+| `"string.json"`                                                        | `contentMediaType: "application/json"`                     |
+| `"'a' \| 'b'"`                                                         | `type: "string"`, `enum: ["a", "b"]`                       |
+| `"string \| null"`                                                     | `anyOf`                                                    |
+| `{ kind: "'a'", a: "string" }` or `{ kind: "'b'" }`                    | [`oneOf`](#discriminated-unions)                           |
+| `{ "name?": "string" }`                                                | `properties`, with only required keys in `required`        |
+| `{ "+": "reject", ... }`                                               | `additionalProperties: false`                              |
+| `"Record<string, number>"`                                             | `additionalProperties: {...}`                              |
+| `{ id: "string", "[string]": "string" }`                               | `additionalProperties: {...}`                              |
+| `{ id: "string \| number", "[string]": "string" }`                     | `patternProperties: { "": {...} }`                         |
+| `{ "[/^x-/]": "string" }`                                              | `patternProperties: { "^x-": {...} }`                      |
+| `{ "[string <= 3]": "number", "+": "reject" }`                         | `propertyNames`, `additionalProperties: {...}`             |
+| `{ role: "string = 'user'" }`                                          | `default: "user"` on `role`                                |
+| `.describe("...")`, `.label("...")`, `.configure({ title, examples })` | `description`, `title` (unless `title` is set), `examples` |
 
 JSON Schema's `pattern` has no flags, and validators like Ajv read every pattern with `u`. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12 and OpenAPI 3.1, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback, as does a regex without `u` that fails or parses differently under `u`, like `/^a\-b$/` or `/^\p{L}$/`, with `flags: ""`.
 
@@ -336,7 +336,7 @@ The Type's other meta, like a description, is still written beside it. Unlike ot
 
 ### Meta
 
-Meta is written only where it's a JSON Schema annotation: `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`, plus any key starting with `x-` you add to [`ArkEnv.meta`](/docs/configuration#metadata). Anything else, like `alias`, `onFail`, the words configured for errors or another key you add, is left out, since strict validators like Ajv's, OpenAPI 3.0 and LLM APIs reject keywords they don't know. To write another key, put it in `jsonSchema`:
+Meta is written only where it's a JSON Schema annotation: `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`, plus any key starting with `x-` you add to [`ArkEnv.meta`](/docs/configuration#metadata). A [`.label()`](/docs/configuration#label) is written as `title` unless `title` is explicitly set. Anything else, like `alias`, `onFail`, the words configured for errors or another key you add, is left out, since strict validators like Ajv's, OpenAPI 3.0 and LLM APIs reject keywords they don't know. To write another key, put it in `jsonSchema`:
 
 ```ts
 const Id = type("string").configure({

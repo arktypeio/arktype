@@ -28,6 +28,36 @@ contextualize(() => {
 		).snap("[string?, number?, ...boolean[]]")
 	})
 
+	it("rejects array items beside prefixItems in 2020-12", () => {
+		attest(() =>
+			fromJsonSchema({
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				// @ts-expect-error
+				items: [{ type: "number" }]
+			})
+		).throws.snap(
+			'ParseError: #/items must be a schema beside prefixItems (was [{"type":"number"}])'
+		)
+		// draft-07 and 2019-09 ignore unknown prefixItems and read items array
+		attest(
+			fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				items: [{ type: "number" }]
+			}).expression
+		).snap("[number?, ...unknown[]]")
+		attest(
+			fromJsonSchema({
+				$schema: "https://json-schema.org/draft/2019-09/schema",
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				items: [{ type: "number" }]
+			}).expression
+		).snap("[number?, ...unknown[]]")
+	})
+
 	it("additionalItems applies only beside an items array", () => {
 		attest(
 			fromJsonSchema({

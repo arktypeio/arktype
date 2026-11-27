@@ -167,7 +167,7 @@ console.log(JSON.stringify(Long({ name: "a".repeat(11) })))
 		const js = outputFiles[0].text
 		attest(run(js))
 			.snap(`[{"name":"Ada","tag":"none"},{"name":"Ada","tag":"none"}]
-name must be at most length 10
+name must be at most 10 characters
 {"name":"aaaaaaaaaaa","tag":"none"}
 `)
 		attest(js.match(/\.tag = "none"/g)?.length).equals(1)

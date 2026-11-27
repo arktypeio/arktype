@@ -52,15 +52,17 @@ export const arkFormData: arkFormData.module = keywordModule(
 	}
 ) as never
 
+type arkFormData$ = {
+	root: FormData
+	value: FormDataValue
+	parse: (In: FormData) => To<ParsedFormData>
+	parsed: ParsedFormData
+}
+
 export declare namespace arkFormData {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<arkFormData$>
 
-	export type $ = {
-		root: FormData
-		value: FormDataValue
-		parse: (In: FormData) => To<ParsedFormData>
-		parsed: ParsedFormData
-	}
+	export type $ = arkFormData$
 }

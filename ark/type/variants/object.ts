@@ -10,6 +10,8 @@ import type {
 	arkIndexableOf,
 	arkKeyOf,
 	array,
+	brand,
+	exactEquals,
 	ErrorType,
 	inferred,
 	intersectUnion,
@@ -24,8 +26,11 @@ import type {
 import type {
 	Default,
 	InferredMorph,
+	isInferredDefault,
 	required,
-	withDefault
+	TerminallyInferredObject,
+	withDefault,
+	withoutDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { inferDefinition } from "../parser/definition.ts"
@@ -37,9 +42,18 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t extends object = object, in out $ = {}>
 	extends BaseType<t, $> {
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
-	:	Type<{ readonly [k in keyof t]: t[k] }, $>
+	:	Type<
+			exactEquals<t, object> extends true ? object
+			:	{ readonly [k in keyof t]: t[k] },
+			$
+		>
 
-	keyof(): instantiateType<arkKeyOf<t>, $>
+	// t is read from the receiver: Type<object>'s keys are never, so returning
+	// arkKeyOf<t> would keep an array or Date Type, which TS relates to
+	// Type<object> structurally rather than by variance, from being assignable
+	keyof<self extends { t: object }>(
+		this: self
+	): instantiateType<arkKeyOf<self["t"]>, $>
 
 	/**
 	 * #### the Type at a key, or at a path of up to three keys
@@ -144,7 +158,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	): r extends infer _ ? _ : never
 
 	/**
-	 * #### copy with every key required
+	 * #### copy with every key (or only the given keys) required
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
@@ -156,11 +170,20 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * const Draft = type({ "title?": "string", "body?": "string" })
 	 * // Type<{ title: string; body: string }>
 	 * const Post = Draft.required()
+	 * // Type<{ title: string; body?: string }>
+	 * const Titled = Draft.required("title")
 	 */
-	required(): instantiateType<show<required<t>>, $>
+	required(): instantiateType<
+		exactEquals<t, object> extends true ? object : show<required<t>>,
+		$
+	>
+	required<const key extends selectiveKeyOf<t>>(
+		...keys: [key | type.cast<key>, ...(key | type.cast<key>)[]]
+	): [t] extends [array] ? ArrayType<selectiveArrayRequired<t, key>, $>
+	:	Type<selectiveRequired<t, key>, $>
 
 	/**
-	 * #### copy with every key optional
+	 * #### copy with every key (or only the given keys) optional
 	 *
 	 * ⚠️ returns a new object built from the properties it extracts, so a root
 	 * narrow, filter or metadata on this `Type` is not carried over
@@ -172,8 +195,17 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * const User = type({ name: "string", email: "string.email" })
 	 * // Type<{ name?: string; email?: string }>
 	 * const UserPatch = User.partial()
+	 * // Type<{ name: string; email?: string }>
+	 * const OptionalEmail = User.partial("email")
 	 */
-	partial(): instantiateType<{ [k in keyof t]?: t[k] }, $>
+	partial(): instantiateType<
+		exactEquals<t, object> extends true ? object : { [k in keyof t]?: t[k] },
+		$
+	>
+	partial<const key extends selectiveKeyOf<t>>(
+		...keys: [key | type.cast<key>, ...(key | type.cast<key>)[]]
+	): [t] extends [array] ? ArrayType<selectiveArrayPartial<t, key>, $>
+	:	Type<selectivePartial<t, key>, $>
 
 	/**
 	 * #### copy with each property transformed by a function
@@ -209,6 +241,118 @@ interface Type<out t extends object = object, in out $ = {}>
 	props: readonly typePropOf<t, $>[]
 }
 
+type selectiveKeyOf<t> =
+	[Extract<t, array>] extends [never] ?
+		[t] extends [TerminallyInferredObject] ?
+			never
+		:	arkKeyOf<t>
+	: (t extends unknown ? (k: branchSelectiveKeyOf<t>) => void : never) extends (
+		(k: infer common) => void
+	) ?
+		common & Key
+	:	never
+
+type branchSelectiveKeyOf<t> =
+	t extends array ? propKeyOf<t> & Key
+	: t extends TerminallyInferredObject ? never
+	: arkKeyOf<t>
+
+type selectiveRequired<t, key> =
+	exactEquals<t, object> extends true ? object
+	: [Extract<t, array>] extends [never] ?
+		t extends unknown ?
+			show<
+				{
+					[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+				} & {
+					[k in keyof t as Extract<toArkKey<t, k>, key>]-?: withoutDefault<t[k]>
+				}
+			>
+		:	never
+	: t extends unknown ?
+		t extends array ?
+			selectiveArrayRequired<t, key>
+		:	show<
+				{
+					[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+				} & {
+					[k in keyof t as Extract<toArkKey<t, k>, key>]-?: withoutDefault<t[k]>
+				}
+			>
+	:	never
+
+type selectiveArrayRequired<t extends array, key> =
+	t extends unknown ?
+		propKeyOf<t> extends infer pk ?
+			[pk] extends [never] ?
+				t
+			:	arrayBaseOf<t> &
+					show<
+						{
+							[k in keyof t as k extends pk ? Exclude<toArkKey<t, k>, key>
+							: k extends typeof brand ? k
+							: never]: t[k]
+						} & {
+							[k in keyof t as k extends pk ? Extract<toArkKey<t, k>, key>
+							:	never]-?: withoutDefault<t[k]>
+						}
+					>
+		:	never
+	:	never
+
+type selectivePartial<t, key> =
+	exactEquals<t, object> extends true ? object
+	: [Extract<t, array>] extends [never] ?
+		t extends unknown ?
+			show<
+				{
+					[k in keyof t as isInferredDefault<t[k]> extends true ? toArkKey<t, k>
+					:	Exclude<toArkKey<t, k>, key>]: t[k]
+				} & {
+					[k in keyof t as isInferredDefault<t[k]> extends true ? never
+					:	Extract<toArkKey<t, k>, key>]?: t[k]
+				}
+			>
+		:	never
+	: t extends unknown ?
+		t extends array ?
+			selectiveArrayPartial<t, key>
+		:	show<
+				{
+					[k in keyof t as isInferredDefault<t[k]> extends true ? toArkKey<t, k>
+					:	Exclude<toArkKey<t, k>, key>]: t[k]
+				} & {
+					[k in keyof t as isInferredDefault<t[k]> extends true ? never
+					:	Extract<toArkKey<t, k>, key>]?: t[k]
+				}
+			>
+	:	never
+
+type selectiveArrayPartial<t extends array, key> =
+	t extends unknown ?
+		propKeyOf<t> extends infer pk ?
+			[pk] extends [never] ?
+				t
+			:	arrayBaseOf<t> &
+					show<
+						{
+							[k in keyof t as k extends pk ?
+								isInferredDefault<t[k]> extends true ?
+									toArkKey<t, k>
+								:	Exclude<toArkKey<t, k>, key>
+							: k extends typeof brand ? k
+							: never]: t[k]
+						} & {
+							[k in keyof t as k extends pk ?
+								isInferredDefault<t[k]> extends true ?
+									never
+								:	Extract<toArkKey<t, k>, key>
+							:	never]?: t[k]
+						}
+					>
+		:	never
+	:	never
+
 // a defaulted key is optional at runtime, so like an optional key's, the value
 // .get reads there includes undefined
 type gotAt<o, k extends arkIndexableOf<o>> = undefaulted<arkGet<o, k>>
@@ -237,10 +381,64 @@ type typePropOf<o, $> =
 		:	never
 	:	never
 
-// an array's elements and methods aren't props at runtime, only keys
-// intersected onto it, e.g. type("string[]").and({ foo: "string" })
+// an array's elements and methods (and Date's methods) aren't props at runtime,
+// only keys intersected onto them, e.g. type("string[]").and({ length: "1" })
 type propKeyOf<o> =
-	o extends array ? Exclude<keyof o, keyof unknown[] | `${number}`> : keyof o
+	o extends array ?
+		arrayBaseOf<o> extends infer base ?
+			[base, keyof o] extends [o, keyof base] ?
+				never
+			:	intersectedPropKeyOf<o, base, number | `${number}` | typeof brand>
+		:	never
+	: o extends Date ?
+		[Date, keyof o] extends [o, keyof Date] ?
+			never
+		:	intersectedPropKeyOf<o, Date, typeof brand>
+	:	Exclude<keyof o, typeof brand>
+
+type arrayBaseOf<o extends array> =
+	o extends unknown[] ? mutableArrayBaseOf<o>
+	:	readonly [...mutableArrayBaseOf<o>]
+
+type mutableArrayBaseOf<o extends array> =
+	number extends o["length"] ? [...o]
+	: o["length"] extends 0 ?
+		[o[number]] extends [never] ?
+			[]
+		:	[...o]
+	: "0" extends keyof o ? extractTuple<o>
+	: [...o]
+
+type extractTuple<
+	o extends array,
+	acc extends unknown[] = [],
+	count extends 1[] = []
+> =
+	`${count["length"]}` extends keyof o ?
+		extractTuple<
+			o,
+			`${count["length"]}` extends optionalKeyOf<o> ?
+				[...acc, Required<o>[`${count["length"]}`]?]
+			:	[...acc, o[`${count["length"]}`]],
+			[...count, 1]
+		>
+	:	acc
+
+type intersectedPropKeyOf<o, base, excluded = never> = keyof {
+	[k in Exclude<keyof o, excluded> as k extends keyof base ?
+		isInheritedKey<o, base, k> extends true ?
+			never
+		:	k
+	:	k]: 0
+}
+
+type isInheritedKey<o, base, k extends keyof o & keyof base> =
+	base[k] extends o[k] ? true
+	: base[k] extends (...args: infer a) => base ?
+		((...args: a) => o) extends o[k] ?
+			true
+		:	false
+	:	false
 
 // checked whole, since a prop's value is one Type, whatever its branches
 type typeProp<o, k extends keyof o, $, v = propValueOf<o, k>> =

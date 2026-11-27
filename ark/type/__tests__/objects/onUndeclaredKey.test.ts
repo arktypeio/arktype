@@ -5,8 +5,13 @@ import { writeInvalidUndeclaredBehaviorMessage } from "arktype/internal/parser/o
 contextualize(() => {
 	it("can parse an undeclared restriction", () => {
 		const T = type({ "+": "reject" })
-		attest<{}>(T.infer)
+		// an object, as {} would be any value but null or undefined
+		attest(T.infer).type.toString.snap("object")
 		attest(T.json).snap({ undeclared: "reject", domain: "object" })
+		// @ts-expect-error
+		attest(() => T.from(5))
+			.throws("must be an object")
+			.type.errors("not assignable to parameter of type 'object'")
 	})
 
 	it("fails on type definition for undeclared", () => {
@@ -77,7 +82,7 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			maxLength: 1
 		})
 		attest(T([0])).equals([0])
-		attest(T([0, 1]).toString()).snap("must be at most length 1")
+		attest(T([0, 1]).toString()).snap("must be at most 1 item")
 		const Empty = type({ "+": "reject" }).and("number[]")
 		attest(Empty.json).snap({
 			undeclared: "reject",
@@ -101,6 +106,44 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			sequence: "string",
 			proto: "Array"
 		})
+	})
+
+	it("closed tuples that meet at more than one length keep their elements", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Leading = $.type(["0", "...", "number[]"]).onUndeclaredKey("reject")
+			// a 0 that's both first and last, or one of each
+			const T = Leading.and(["...", "number[]", "0"])
+			attest(T.expression).equals("[0, ...number[], 0] | [0]")
+			attest(Leading.overlaps(["...", "number[]", "0"])).equals(true)
+			// the first data is checked uncompiled
+			attest(T([0]) as unknown).equals([0])
+			attest(T([0]) as unknown).equals([0])
+			attest(T([0, 1, 0])).equals([0, 1, 0])
+			attest(T([0, 1]).toString()).equals(
+				"[1] must be 0 or must be exactly 1 item"
+			)
+			// each length still rejects a key that isn't an element's
+			attest(T(Object.assign([0], { extra: 1 })).toString()).equals(
+				"must be at least 2 items or extra must be removed"
+			)
+			// and holds a prop both declare
+			const WithProp = $.type({ a: "string" })
+				.and(["0", "...", "number[]"])
+				.onUndeclaredKey("reject")
+				.and({ a: "'a'" })
+				.and(["...", "number[]", "0"])
+			attest(WithProp.expression).equals(
+				'{ a: "a", + (undeclared): reject } & [0, ...number[], 0] | { a: "a", + (undeclared): reject } & [0]'
+			)
+			attest(WithProp.allows(Object.assign([0], { a: "a" }))).equals(true)
+			attest(WithProp.allows(Object.assign([0], { a: "b" }))).equals(false)
+
+			// arrays that meet only empty hold no element to declare
+			attest(
+				$.type("string[]").onUndeclaredKey("reject").and("number[]").json
+			).equals({ undeclared: "reject", proto: "Array", exactLength: 0 })
+		}
 	})
 
 	it("an open object isn't a subtype of a closed one", () => {
@@ -236,14 +279,520 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			)
 		})
 
-		it("fails on delete indiscriminable union key", () => {
-			attest(() =>
-				type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey("delete")
-			).throws
-				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { a: string, + (undeclared): delete }
-Right: { b: boolean, + (undeclared): delete }
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+		// https://github.com/arktypeio/arktype/issues/1752
+		describe("delete in a union of overlapping objects", () => {
+			const testKept = (jitless: boolean) => {
+				const $ = scope({}, { jitless })
+				const Contents = $.type({
+					"+": "delete",
+					uri: "string",
+					"text?": "string"
+				}).or({ "+": "delete", uri: "string", "blob?": "string" })
+				// the first data is checked uncompiled
+				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents.precompilation === undefined).equals(jitless)
+				attest(Contents({ uri: "a" })).equals({ uri: "a" })
+				attest(Contents({ uri: "a", text: "t" })).equals({
+					uri: "a",
+					text: "t"
+				})
+				attest(Contents({ uri: "a", blob: "b" })).equals({
+					uri: "a",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", text: "t", blob: "b" })).equals({
+					uri: "a",
+					text: "t",
+					blob: "b"
+				})
+				// only the branch that doesn't declare text allows it
+				attest(Contents({ uri: "a", text: 1, blob: "b" })).equals({
+					uri: "a",
+					blob: "b"
+				})
+				attest(Contents({ uri: "a", z: 1 })).equals({ uri: "a" })
+				attest(Contents({ uri: 1, text: "t" }).toString()).snap(
+					"uri must be a string"
+				)
+			}
+
+			// run jitless before compiled so precompiled units don't bind under jitless (pnpm testCache)
+			it("keeps each key a branch allowing the data declares jitless", () =>
+				testKept(true))
+
+			it("keeps each key a branch allowing the data declares", () =>
+				testKept(false))
+
+			it("is the same union in either order", () => {
+				const Text = type({ "+": "delete", uri: "string", "text?": "string" })
+				const Blob = type({ "+": "delete", uri: "string", "blob?": "string" })
+				const AB = Text.or(Blob)
+				const BA = Blob.or(Text)
+				attest(AB.json).equals(BA.json)
+				attest(AB.equals(BA)).equals(true)
+				attest(AB.and(BA).equals(AB)).equals(true)
+				attest(AB.expression).snap(
+					"{ uri: string, blob?: string, + (undeclared): delete } | { uri: string, text?: string, + (undeclared): delete }"
+				)
+			})
+
+			it("keeps what any of three branches declares", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({ "+": "delete", a: "string" })
+						.or({ "+": "delete", "b?": "number" })
+						.or({ "+": "delete", a: "string", "c?": "boolean" })
+					const all = () => ({ a: "x", b: 1, c: true, z: 0 })
+					attest(T(all())).equals({ a: "x", b: 1, c: true })
+					attest(T(all())).equals({ a: "x", b: 1, c: true })
+					attest(T({ a: "x", b: "1", c: true })).equals({ a: "x", c: true })
+					attest(T({ a: 1, b: 1, c: true })).equals({ b: 1 })
+				}
+			})
+
+			it("applies at a key, in an array and to nested objects", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Either = $.type({ "+": "delete", "x?": "1" }).or({
+						"+": "delete",
+						"y?": "2"
+					})
+					const Held = $.type({
+						"+": "delete",
+						at: Either,
+						each: Either.array()
+					})
+					const held = () => ({
+						at: { x: 1, y: 2, z: 3 },
+						each: [
+							{ x: 1, y: 2, z: 3 },
+							{ x: 0, y: 2 }
+						],
+						z: 3
+					})
+					for (const data of [held(), held()]) {
+						attest(Held(data)).equals({
+							at: { x: 1, y: 2 },
+							each: [{ x: 1, y: 2 }, { y: 2 }]
+						})
+					}
+
+					const Nested = $.type({
+						"+": "delete",
+						a: { "+": "delete", "x?": "1" }
+					}).or({ "+": "delete", a: { "+": "delete", "y?": "2" }, "b?": "1" })
+					const nested = () => ({ a: { x: 1, y: 2, z: 3 }, b: 1, z: 3 })
+					attest(Nested(nested())).equals({ a: { x: 1, y: 2 }, b: 1 })
+					attest(Nested(nested())).equals({ a: { x: 1, y: 2 }, b: 1 })
+					// only the first branch allows a.y
+					attest(Nested({ a: { x: 1, y: 3 }, b: 1 })).equals({ a: { x: 1 } })
+				}
+			})
+
+			it("applies to the branches a discriminant leaves", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({ "+": "delete", kind: "'a'", "x?": "1" })
+						.or({ "+": "delete", kind: "'a'", "y?": "2" })
+						.or({ "+": "delete", kind: "'b'", "z?": "3" })
+					const a = () => ({ kind: "a", x: 1, y: 2, z: 3 })
+					attest(T(a())).equals({ kind: "a", x: 1, y: 2 })
+					attest(T(a())).equals({ kind: "a", x: 1, y: 2 })
+					attest(T({ kind: "a", x: 0, y: 2 })).equals({ kind: "a", y: 2 })
+					attest(T({ kind: "b", x: 1, y: 2, z: 3 })).equals({ kind: "b", z: 3 })
+					attest(T({ kind: "c" }).toString()).snap('kind must be "a" or "b"')
+				}
+			})
+
+			it("keeps every key where a branch deleting none allows the data", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({ "+": "delete", "a?": "1" }).or("Date")
+					attest(T({ a: 1, z: 2 })).equals({ a: 1 })
+					const date = Object.assign(new Date(0), { a: 1, z: 2 })
+					attest(T(date)).is(date)
+					attest(Object.keys(date)).equals(["a", "z"])
+				}
+			})
+
+			it("keeps a branch whose input is a subtype of another's", () => {
+				const Point = type({ "+": "delete", x: "number" }).or({
+					"+": "delete",
+					x: "number",
+					y: "number"
+				})
+				attest(Point.expression).snap(
+					"{ x: number, y: number, + (undeclared): delete } | { x: number, + (undeclared): delete }"
+				)
+				attest(Point({ x: 1, y: 2, z: 3 })).equals({ x: 1, y: 2 })
+				attest(Point({ x: 1, y: "2", z: 3 })).equals({ x: 1 })
+				// a branch deleting none keeps all a subtype of it does
+				attest(
+					type({ "+": "delete", x: "number" }).or("object").expression
+				).snap("object")
+				// or one with the same input
+				attest(
+					type({ "+": "delete", x: "number" }).or({ x: "number" }).expression
+				).snap("{ x: number }")
+			})
+
+			it("pipes what its branches keep", () => {
+				const T = type({ "+": "delete", "x?": "1" })
+					.or({ "+": "delete", "y?": "2" })
+					.to({ "+": "reject", "x?": "1", "y?": "2" })
+				attest(T({ x: 1, y: 2, z: 3 })).equals({ x: 1, y: 2 })
+				attest(T({ x: 0, y: 2, z: 3 })).equals({ y: 2 })
+			})
+
+			it("has an output allowing what its branches keep", () => {
+				const T = type({ "+": "delete", "x?": "1" }).or({
+					"+": "delete",
+					"y?": "2"
+				})
+				attest(T.out.expression).snap("{ x?: 1 } | { y?: 2 }")
+				attest(T.out.allows(T({ x: 1, y: 2, z: 3 }))).equals(true)
+			})
+
+			it("defines a key over one its copy inherits", () => {
+				let assigned = 0
+				const prototypes = [
+					{
+						get b() {
+							return 0
+						}
+					},
+					{
+						get b() {
+							return 0
+						},
+						set b(_: number) {
+							assigned++
+						}
+					},
+					Object.freeze({ b: 0 })
+				]
+				for (const jitless of [false, true]) {
+					const T = scope({}, { jitless })
+						.type({ "+": "delete", a: "number" })
+						.or({ "+": "delete", b: "number" })
+					for (const prototype of prototypes) {
+						const held = () =>
+							Object.create(
+								prototype,
+								Object.getOwnPropertyDescriptors({ a: 1, b: 2, z: 3 })
+							)
+						for (const data of [held(), held()]) {
+							const out = T(data) as object
+							attest(Object.getPrototypeOf(out) === prototype).equals(true)
+							attest(Object.getOwnPropertyDescriptors(out)).equals(
+								Object.getOwnPropertyDescriptors({ a: 1, b: 2 })
+							)
+						}
+					}
+				}
+				attest(assigned).equals(0)
+			})
+
+			it("assigns nothing to what a getter returns each branch anew", () => {
+				for (const jitless of [false, true]) {
+					const T = scope({}, { jitless })
+						.type({ "+": "delete", "a?": "number", held: "object" })
+						.or({ "+": "delete", "b?": "number", held: "object" })
+					const data = () =>
+						Object.defineProperty({ a: 1, b: 2, z: 3 }, "held", {
+							enumerable: true,
+							get: () => Object.freeze({ range: [0, 1] })
+						})
+					for (const input of [data(), data()]) {
+						attest(T(input) as object).equals({
+							a: 1,
+							held: { range: [0, 1] },
+							b: 2
+						})
+					}
+				}
+			})
+
+			// an Error, like any builtin, is written in place rather than copied
+			const thrown = (props: object) => Object.assign(new Error("m"), props)
+
+			it("deletes from an object it can't copy what each branch allowing it would", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({
+						"+": "delete",
+						message: "string",
+						"code?": "string"
+					}).or({ "+": "delete", message: "string", "errno?": "number" })
+					const both = () => thrown({ z: 0, code: "E", y: 0, errno: 1 })
+					for (const error of [both(), both()]) {
+						attest(T(error)).is(error)
+						attest(Object.keys(error)).equals(["code", "errno"])
+						attest(error.message).equals("m")
+					}
+					// one branch allowing it deletes as an object alone does
+					const coded = thrown({ z: 0, code: "E", errno: "1" })
+					attest(T(coded)).is(coded)
+					attest(Object.keys(coded)).equals(["code"])
+
+					// Map, Set, RegExp, and Date builtins behave the same way
+					const BuiltinUnion = $.type({ "+": "delete", "a?": "number" }).or({
+						"+": "delete",
+						"b?": "number"
+					})
+					for (const make of [
+						() => new Map([["k", 1]]),
+						() => new Set([1]),
+						() => /abc/,
+						() => new Date(0)
+					]) {
+						for (let i = 0; i < 2; i++) {
+							const b = Object.assign(make(), { a: 1, b: 2, extra: 3 })
+							attest(BuiltinUnion(b) as object).is(b)
+							attest(Object.keys(b)).equals(["a", "b"])
+						}
+					}
+				}
+			})
+
+			it("writes into an object it can't copy what its branches made of its values", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({
+						"+": "delete",
+						error: { "+": "delete", a: { "+": "delete", x: "1" } }
+					}).or({
+						"+": "delete",
+						error: { "+": "delete", b: { "+": "delete", y: "2" } }
+					})
+					const held = () =>
+						thrown({ a: { x: 1, z: 0 }, b: { y: 2, z: 0 }, z: 0 })
+					for (const error of [held(), held()]) {
+						const out = T({ error, z: 0 }) as { error: object }
+						attest(Object.keys(out)).equals(["error"])
+						attest(out.error).is(error)
+						attest({ ...error } as object).equals({
+							a: { x: 1 },
+							b: { y: 2 }
+						})
+					}
+				}
+			})
+
+			it("deletes from an object it can't copy only for the branches holding it", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Coded = $.type({ "+": "delete", "code?": "string" })
+					// the other branch deletes its key
+					const Dropped = $.type({ "+": "delete", error: Coded }).or({
+						"+": "delete",
+						"at?": "number"
+					})
+					// the other branch keeps all it holds
+					const Whole = $.type({ "+": "delete", error: Coded }).or({
+						"+": "delete",
+						error: "Error",
+						"at?": "number"
+					})
+					// each branch holds it twice, to delete other keys
+					const Twice = $.type({
+						"+": "delete",
+						l: { "+": "delete", code: "string", "a?": "1" },
+						r: { "+": "delete", code: "string", "b?": "2" }
+					}).or({ "+": "delete", l: Coded, r: Coded, "at?": "number" })
+					for (let i = 0; i < 2; i++) {
+						const error = thrown({ code: "E", a: 1, b: 2 })
+						attest(Dropped({ error, at: 0 }) as object).equals({ at: 0, error })
+						attest(Object.keys(error)).equals(["code"])
+						const whole = thrown({ code: "E", z: 0 })
+						attest(Whole({ error: whole, at: 0 }) as object).equals({
+							error: whole,
+							at: 0
+						})
+						attest(Object.keys(whole)).equals(["code", "z"])
+						const twice = thrown({ code: "E", a: 1, b: 2, z: 0 })
+						attest(Twice({ l: twice, r: twice }) as object).equals({
+							l: twice,
+							r: twice
+						})
+						attest(Object.keys(twice)).equals(["code"])
+					}
+				}
+			})
+
+			it("writes an object it can't copy once a join holding another has joined", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Inner = $.type({ "+": "delete", "a?": "1" }).or({
+						"+": "delete",
+						"b?": "2"
+					})
+					const T = $.type({ "+": "delete", v: Inner, "x?": "1" }).or({
+						"+": "delete",
+						v: { "+": "delete", "c?": "3" },
+						"y?": "2"
+					})
+					for (let i = 0; i < 2; i++) {
+						const error = thrown({ a: 1, b: 2, c: 3, z: 0 })
+						attest(T({ v: error, x: 1, y: 2, z: 0 }) as object).equals({
+							v: error,
+							x: 1,
+							y: 2
+						})
+						attest(Object.keys(error)).equals(["a", "b", "c"])
+						// only the inner union's branches allow it
+						const inner = thrown({ a: 1, b: 2, c: 3, z: 0 })
+						attest(T({ v: inner, x: 1, y: 0 }) as object).equals({
+							v: inner,
+							x: 1
+						})
+						attest(Object.keys(inner)).equals(["a", "b"])
+					}
+				}
+			})
+
+			it("writes an object it can't copy that two constraints of a branch transform", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const seconds = [
+						// allows the first's copy, which it writes
+						$.type({ "+": "delete", "a?": "1", "c?": "3" }),
+						// allows only the object, so what each made of it is merged
+						$.type("Error").and({ "+": "delete", "a?": "1", "c?": "3" })
+					]
+					for (const second of seconds) {
+						const T = $.type({
+							"+": "delete",
+							e: { "+": "delete", "a?": "1", "b?": "2" },
+							"[/^e/]": second,
+							"x?": "1"
+						}).or({ "+": "delete", e: { "+": "delete", "d?": "4" }, "y?": "2" })
+						for (let i = 0; i < 2; i++) {
+							const error = thrown({ a: 1, b: 2, c: 3, d: 4, z: 0 })
+							attest(T({ e: error, x: 1, y: 2 }) as object).equals({
+								e: error,
+								x: 1,
+								y: 2
+							})
+							attest(Object.keys(error)).equals(["a", "d"])
+						}
+					}
+				}
+			})
+
+			it("writes a key deleting doesn't read only where each branch transforms it", () => {
+				for (const jitless of [false, true]) {
+					const $ = scope({}, { jitless })
+					const Pruned = $.type({
+						"+": "delete",
+						cause: { "+": "delete", x: "1" }
+					})
+					const Each = Pruned.or({
+						"+": "delete",
+						cause: { "+": "delete", y: "2" }
+					})
+					// which alone leaves an Error's cause as it is
+					const One = Pruned.or({ "+": "delete", "k?": "1" })
+					const caused = (): Error & { cause?: unknown } =>
+						Object.defineProperty(thrown({ z: 0 }), "cause", {
+							value: { x: 1, y: 2, z: 0 },
+							writable: true,
+							configurable: true
+						})
+					for (let i = 0; i < 2; i++) {
+						const each = caused()
+						attest(Each(each) as object).is(each)
+						attest(each.cause).equals({ x: 1, y: 2 })
+						const one = caused()
+						attest(One(one) as object).is(one)
+						attest(one.cause).equals({ x: 1, y: 2, z: 0 })
+						attest(Object.keys(one)).equals([])
+					}
+				}
+			})
+
+			it("is indeterminate beside a morph or a default", () => {
+				attest(() =>
+					type({ "+": "delete", a: "string.trim", "x?": "1" }).or({
+						"+": "delete",
+						a: "string.trim",
+						"y?": "2"
+					})
+				).throws
+					.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, x?: 1, + (undeclared): delete }
+Right: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, y?: 2, + (undeclared): delete }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
+				attest(() =>
+					type({ "+": "delete", a: "string", x: "number = 1" }).or({
+						"+": "delete",
+						a: "string",
+						"y?": "2"
+					})
+				).throws("is indeterminate")
+			})
+
+			it("is indeterminate through a cycle", () => {
+				attest(() =>
+					scope({
+						a: { "+": "delete", "x?": "1", "next?": "a" },
+						b: { "+": "delete", "y?": "2" },
+						either: "a | b"
+					}).export()
+				).throws("is indeterminate")
+			})
+
+			it("is indeterminate through a cycle given delete by a method", () => {
+				const { Expr } = scope({
+					Expr: "Lit | Bin",
+					Bin: { "op?": "string", "l?": "Expr" },
+					Lit: { "value?": "number" }
+				}).export()
+				attest(() => Expr.onUndeclaredKey("delete")).throws
+					.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { l?: $Expr, op?: string, + (undeclared): delete }
+Right: { value?: number, + (undeclared): delete }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
+				attest(() => Expr.onDeepUndeclaredKey("delete")).throws(
+					"is indeterminate"
+				)
+				attest(() =>
+					type({ "value?": "number" })
+						.or({ "op?": "string", "l?": "this" })
+						.onUndeclaredKey("delete")
+				).throws("is indeterminate")
+			})
+
+			it("deletes by a method through a cycle a key tells apart", () => {
+				for (const jitless of [false, true]) {
+					const { Expr } = scope(
+						{
+							Expr: "Lit | Bin",
+							Bin: { kind: "'bin'", "l?": "Expr" },
+							Lit: { kind: "'lit'", "value?": "number" }
+						},
+						{ jitless }
+					).export()
+					const Shallow = Expr.onUndeclaredKey("delete")
+					const Deep = Expr.onDeepUndeclaredKey("delete")
+					const data = () => ({
+						kind: "bin",
+						z: 1,
+						l: { kind: "lit", value: 1, z: 2 }
+					})
+					for (const input of [data(), data()]) {
+						// only the objects the method was called on delete
+						attest(Shallow(input) as object).equals({
+							kind: "bin",
+							l: { kind: "lit", value: 1, z: 2 }
+						})
+						attest(Deep(input)).equals({
+							kind: "bin",
+							l: { kind: "lit", value: 1 }
+						})
+					}
+				}
+			})
 		})
 
 		it("reject key", () => {
@@ -467,9 +1016,9 @@ hasOwnProperty must be removed`)
 			)
 		}
 
-		it("are undeclared", () => testUndeclared(false))
-
 		it("are undeclared jitless", () => testUndeclared(true))
+
+		it("are undeclared", () => testUndeclared(false))
 
 		const testDeclared = (jitless: boolean) => {
 			const types = scope(
@@ -502,8 +1051,37 @@ hasOwnProperty must be removed`)
 			attest(String(types.Rejected(getDeclared()))).snap("b must be removed")
 		}
 
+		it("can be declared jitless", () => testDeclared(true))
+
 		it("can be declared", () => testDeclared(false))
 
-		it("can be declared jitless", () => testDeclared(true))
+		it("defines own properties over non-writable Object.prototype keys in delete transforms", () => {
+			const propName = "__arktypeTestNonWritableProtoProp__"
+			Object.defineProperty(Object.prototype, propName, {
+				value: 1,
+				writable: false,
+				configurable: true
+			})
+			try {
+				for (const jitless of [true, false]) {
+					const $ = scope({}, { jitless })
+					const T = $.type({
+						"+": "delete",
+						a: "string.trim",
+						[`${propName}?`]: "string"
+					})
+					const out = T({ a: " ok ", [propName]: "x", extra: 2 }) as Record<
+						string,
+						unknown
+					>
+					attest(Object.prototype.hasOwnProperty.call(out, propName)).equals(
+						true
+					)
+					attest(out).equals({ a: "ok", [propName]: "x" })
+				}
+			} finally {
+				delete (Object.prototype as Record<string, unknown>)[propName]
+			}
+		})
 	})
 })

@@ -11,6 +11,7 @@ import {
 	writeMessage,
 	writeNotEqualActual,
 	writeProtoActual,
+	writeRangeActual,
 	writeUnitActual,
 	writeUnitMessage
 } from "./enWriters.ts"
@@ -46,9 +47,9 @@ export const errorWritersByCode: {
 	divisor: {},
 	domain: { actual: writeDomainActual },
 	exactLength: { actual: writeLengthActual },
-	max: {},
+	max: { actual: writeRangeActual },
 	maxLength: { actual: writeLengthActual },
-	min: {},
+	min: { actual: writeRangeActual },
 	minLength: { actual: writeLengthActual },
 	notEqual: { actual: writeNotEqualActual },
 	notEqualLength: { actual: writeLengthActual },

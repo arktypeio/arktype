@@ -270,11 +270,39 @@ log(type("string"))
 				"/main.ts": `import { type } from "arktype"
 
 console.log(String([type("string")]), \`\${[[type("number")]]}\`)
+console.log([type("boolean")].join(), [type("bigint")].join(", "), [[type("symbol")]].join())
+console.log([{ a: type("null") }].join(), Array.from({ length: 1, 0: type("undefined") }).join())
 `
 			})
 		).snap([
 			"main.ts:3:21 bakes expression (dataflow)",
-			"main.ts:3:44 bakes expression (dataflow)"
+			"main.ts:3:44 bakes expression (dataflow)",
+			"main.ts:4:14 bakes expression (dataflow)",
+			"main.ts:4:40 bakes expression (dataflow)",
+			"main.ts:4:70 bakes expression (dataflow)",
+			"main.ts:5:19 bakes nothing (dataflow)",
+			"main.ts:5:70 bakes expression (dataflow)"
+		])
+	})
+
+	it("String.raw reads expression without losing track", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+console.log(
+	String.raw\`\${type("string")}\`,
+	String.raw\`\${[type("number")]}\`,
+	String.raw({ raw: ["", ""] }, type("boolean")),
+	String.raw({ raw: [type("bigint")] })
+)
+`
+			})
+		).snap([
+			"main.ts:4:15 bakes expression (dataflow)",
+			"main.ts:5:16 bakes expression (dataflow)",
+			"main.ts:6:32 bakes expression (dataflow)",
+			"main.ts:7:21 bakes expression (dataflow)"
 		])
 	})
 

@@ -13,6 +13,7 @@ import {
 } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import { forgetReferences, type BaseNode } from "../node.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	canJit,
 	compileSerializedValue,
@@ -46,6 +47,7 @@ import {
 	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
+import { transformKept } from "../shared/transform.ts"
 import {
 	allowsInBranch,
 	allowsInBranchBy,
@@ -127,7 +129,10 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 		ownErr: true,
 		bareKey: "branches",
 		keys: {
-			ordered: {},
+			ordered: {
+				// input and output sets don't transform, so branch order is redundant
+				reduceIo: () => {}
+			},
 			branches: {
 				child: true
 			}
@@ -147,10 +152,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _unitBranches: (Unit.Node | Morph.Node)[] | undefined
 	get unitBranches(): (Unit.Node | Morph.Node)[] {
 		// only a morph's input can be a unit where it isn't one itself
-		return (this._unitBranches ??= this.branches.filter(
+		return (this.c.unitBranches ??= this.branches.filter(
 			(n): n is Unit.Node | Morph.Node =>
 				n.is("unit") || (n.is("morph") && n._in.is("unit"))
 		))
@@ -159,38 +163,38 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	private _disc: Discriminant | null | undefined
 	get discriminant(): Discriminant | null {
-		if (this._disc === undefined) {
+		if (this.c.disc === undefined) {
 			// null while discriminating, which can read this union's references
-			this._disc = null
-			this._disc = this.discriminate()
+			this.c.disc = null
+			try {
+				this.c.disc = this.discriminate()
+			} catch (e) {
+				// a predicate that threw while discriminating throws at each read,
+				// rather than leaving the union undiscriminated after the first
+				this.c.disc = undefined
+				throw e
+			}
 		}
-		return this._disc
+		return this.c.disc
 	}
 
-	/** `discCases`, once read */
-	private _discCases: DiscriminantCases | undefined
 	/** the cases of its discriminant, by the serialized value each branch is discriminated by */
 	get discCases(): DiscriminantCases {
-		return (this._discCases ??= casesOf(this.discriminant!))
+		return (this.c.discCases ??= casesOf(this.discriminant!))
 	}
 
-	/** `missLists`, once read */
-	private _missLists: boolean | undefined
 	/** whether a miss of its own value lists its branches: if one is described, as an indiscriminable union's does */
 	get missLists(): boolean {
-		return (this._missLists ??=
+		return (this.c.missLists ??=
 			!isAuthored(this) &&
 			this.discriminant!.path.length === 0 &&
 			this.branches.some(isAuthored))
 	}
 
-	/** `discDesc`, once read */
-	private _discDesc: string | undefined
 	/** the description of what its discriminant expects */
 	get discDesc(): string {
-		return (this._discDesc ??=
+		return (this.c.discDesc ??=
 			isAuthored(this) ? this.meta.description! : describeCases(this.discCases))
 	}
 
@@ -207,11 +211,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return isAuthored(this) ? [] : this.discriminant!.path
 	}
 
-	/** `discMeta`, once read */
-	private _discMeta: ArkEnv.meta | undefined
 	/** the meta its discriminant's errors are written with: at a key, expected and actual describe the object around it */
 	get discMeta(): ArkEnv.meta {
-		return (this._discMeta ??= metaAtDiscriminant(
+		return (this.c.discMeta ??= metaAtDiscriminant(
 			this.meta,
 			this.missPath,
 			this.branches
@@ -246,7 +248,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// an indiscriminable union picks the branch it transforms by its Allows
 	protected override get ctxSel(): boolean {
 		const discriminant = this.discriminant
-		if (!discriminant) return true
+		if (!discriminant || discriminant.ownEnumerableDefault) return true
 		for (const k in discriminant.cases) {
 			const caseNode = discriminant.cases[k]
 			if (caseNode !== true && caseNode.tfCtx) return true
@@ -259,6 +261,32 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			(morphs, branch) => appendUnique(morphs, branch.topMorphs),
 			[] as Morph[]
 		)
+	}
+
+	/**
+	 * the branches whose only transform is deleting undeclared keys, each
+	 * allowing data another allows and would delete other keys of. Data more
+	 * than one allows keeps each key any of them does, so no order among them
+	 * decides what it becomes
+	 */
+	get joined(): ReadonlySet<BaseRoot> {
+		return (this.c.joined ??= joinedOf(this))
+	}
+
+	/** whether data more than one branch allows is transformed by each of them */
+	get keepsAny(): boolean {
+		return this.joined.size !== 0
+	}
+
+	// what joined branches make of data they share has keys of each, which the
+	// output of neither declares, so theirs is what they allow
+	override getIo(ioKind: "in" | "out"): BaseNode {
+		if (ioKind === "in" || !this.keepsAny) return super.getIo(ioKind)
+		return this.$.node("union", {
+			branches: this.branches.map(branch =>
+				this.joined.has(branch) ? branch._in : branch._out
+			)
+		})
 	}
 
 	get brief(): string {
@@ -287,11 +315,31 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				:	b.tAllows(data, ctx)
 			)
 		}
-		const caseNode =
-			discriminant.cases[
-				caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
-			]
-		return caseNode === true || !!caseNode?.tAllows(data, ctx)
+		const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+		const caseNode = discriminant.cases[k]
+		if (
+			caseNode === true ||
+			(caseNode &&
+				((
+					discriminant.ownEnumerableDefault &&
+					k !== "default" &&
+					caseNode.checksCtx
+				) ?
+					allowsInBranch(ctx as Traversal, caseNode, data)
+				:	caseNode.tAllows(data, ctx)))
+		)
+			return true
+		if (
+			discriminant.ownEnumerableDefault &&
+			k !== "default" &&
+			!isOwnEnumerablePath(discriminant.path, data)
+		) {
+			const fallback = discriminant.cases.default as BaseRoot
+			return fallback.checksCtx ?
+					allowsInBranch(ctx as Traversal, fallback, data)
+				:	fallback.tAllows(data, ctx)
+		}
+		return false
 	}
 
 	tApply(data: unknown, ctx: InternalTraversal): void {
@@ -309,6 +357,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				this.applyDefault(data, ctx, value)
 				return
 			}
+			if (
+				discriminant.ownEnumerableDefault &&
+				!isOwnEnumerablePath(discriminant.path, data) &&
+				allowsInBranch(ctx, discriminant.cases.default as BaseRoot, data)
+			)
+				return
 			const member = discriminant.members?.[k]
 			if (member) applyMember(caseNode, data, ctx, member)
 			else caseNode.tApply(data, ctx)
@@ -357,10 +411,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
 	// built once, as a node's is, so its errors share a builder
 	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
-		return (this._missContexts ??= [false, true].map(
+		return (this.c.missContexts ??= [false, true].map(
 			(absent): omit<DiscriminantErrorContext, "data"> => ({
 				code: "discriminant",
 				...this.discCases,
@@ -393,6 +446,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 			const caseNode = discriminant.cases[k]
+			if (
+				discriminant.ownEnumerableDefault &&
+				k !== "default" &&
+				caseNode !== true &&
+				!isOwnEnumerablePath(discriminant.path, data) &&
+				(!caseNode || !allowsInBranch(ctx, caseNode, data))
+			) {
+				const fallback = discriminant.cases.default as BaseRoot
+				if (allowsInBranch(ctx, fallback, data))
+					return fallback.tfs ? transform(ctx, fallback, data) : data
+			}
 			if (caseNode === true || !caseNode?.tfs) return data
 			const member = discriminant.members?.[k]
 			return member ?
@@ -405,6 +469,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					)
 				:	transform(ctx, caseNode, data)
 		}
+		if (this.keepsAny) return this.tfKept(data, ctx)
 		// Apply also takes the first valid branch
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
@@ -412,6 +477,29 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				return branch.tfs ? transform(ctx, branch, data) : data
 		}
 		return this.tfCtx ? data : unset
+	}
+
+	/** transforms data by each joined branch allowing it */
+	private tfKept(data: unknown, ctx: InternalTraversal): unknown {
+		// each branch is checked before any transforms, as one writing a builtin
+		// in place could delete a key another requires
+		const allowing: BaseRoot[] = []
+		for (let i = 0; i < this.branches.length; i++) {
+			const branch = this.branches[i]
+			if (!allowsInBranch(ctx, branch, data)) continue
+			// one that deletes nothing keeps all the others do
+			if (!branch.tfs) return data
+			// any other allowing data transforms it the same
+			if (!this.joined.has(branch)) return transform(ctx, branch, data)
+			allowing.push(branch)
+		}
+		if (!allowing.length) return this.tfCtx ? data : unset
+		return transformKept(
+			data,
+			ctx,
+			allowing.map(branch => branch.tTransform!),
+			allowing
+		)
 	}
 
 	jsCond(js: NodeCompiler, data: string): string | undefined {
@@ -441,6 +529,20 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// we need to access the path as optional so we don't throw if it isn't present
 		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
 		const cases = discriminant.cases
+		const fallback =
+			discriminant.ownEnumerableDefault ?
+				(cases.default as BaseRoot)
+			:	undefined
+		const ownEnumGuard =
+			fallback ?
+				`!${compileOwnEnumerablePath(js, discriminant.path)}`
+			:	undefined
+		const fallbackAllows =
+			fallback ?
+				fallback.checksCtx ?
+					`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(fallback, "Allows")}, data)`
+				:	js.inv(fallback, { kind: "Allows" })
+			:	undefined
 		const written: SwitchCase[] = []
 		for (const k in cases) {
 			const v = cases[k]
@@ -457,18 +559,44 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
 				:	`case ${k}`
 			const member = discriminant.members?.[k]
-			const caseResult =
-				js.trav === "Transform" ?
-					v !== true && v.tfs ?
-						invokeTransform(js, v, member)
-					:	"data"
-				: v === true ? "true"
-				: js.trav !== "Apply" ? js.inv(v)
-				: k === "default" ?
-					(js.defaultFails?.(this, v) ??
-					`${js.ref(this)}.applyDefault(data, ctx, ${value})`)
-				: member ? js.applyMember(v, member)
-				: js.inv(v)
+			let caseResult: string
+			if (js.trav === "Transform") {
+				const caseTf =
+					v !== true && v.tfs ? invokeTransform(js, v, member) : "data"
+				if (
+					fallback &&
+					k !== "default" &&
+					v !== true &&
+					(v.tfs || fallback.tfs)
+				) {
+					const vAllows =
+						v.checksCtx ?
+							`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(v, "Allows")}, data)`
+						:	js.inv(v, { kind: "Allows" })
+					const fallbackTf =
+						fallback.tfs ? invokeTransform(js, fallback) : "data"
+					caseResult = `(${ownEnumGuard} && !(${vAllows}) && ${fallbackAllows}) ? ${fallbackTf} : ${caseTf}`
+				} else caseResult = caseTf
+			} else if (v === true) caseResult = "true"
+			else if (js.trav !== "Apply") {
+				if (fallback && k !== "default") {
+					const vAllows =
+						v.checksCtx ?
+							`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(v, "Allows")}, data)`
+						:	js.inv(v)
+					caseResult = `(${vAllows}) || (${ownEnumGuard} && ${fallbackAllows})`
+				} else caseResult = js.inv(v)
+			} else if (k === "default") {
+				caseResult =
+					js.defaultFails?.(this, v) ??
+					`${js.ref(this)}.applyDefault(data, ctx, ${value})`
+			} else {
+				const applyCase = member ? js.applyMember(v, member) : js.inv(v)
+				caseResult =
+					fallback ?
+						`(${ownEnumGuard} && ${fallbackAllows}) || ${applyCase}`
+					:	applyCase
+			}
 			written.push([caseCondition, caseResult])
 		}
 		const otherwise =
@@ -551,14 +679,24 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			js.return(false)
 		} else {
+			// unless it requires ctx, a root checks for unset instead of calling its Allows
+			const disallowed = this.tfCtx ? "data" : compileSerializedValue(unset)
+			if (this.keepsAny) js.const("allowing", "[]")
 			for (const branch of this.branches) {
 				js.if(
 					branch.jsCond?.(js, "data") ?? js.inv(branch, { kind: "Allows" }),
-					() => js.return(branch.tfs ? invokeTransform(js, branch) : "data")
+					() =>
+						// each joined branch is checked before any transforms, as tfKept does
+						branch.tfs && this.joined.has(branch) ?
+							js.line(`allowing.push(${js.traversal(branch, "Transform")})`)
+						:	js.return(branch.tfs ? invokeTransform(js, branch) : "data")
 				)
 			}
-			// unless it requires ctx, a root checks for unset instead of calling its Allows
-			js.return(this.tfCtx ? "data" : compileSerializedValue(unset))
+			js.return(
+				this.keepsAny ?
+					`allowing.length ? ${js.ref(transformKept)}(data, ctx, allowing) : ${disallowed}`
+				:	disallowed
+			)
 		}
 	}
 
@@ -577,6 +715,31 @@ export const Union = {
 
 const maxInlinedBranches = 4
 
+const noneJoined: ReadonlySet<BaseRoot> = new Set()
+
+const joinedOf = (node: UnionNode): ReadonlySet<BaseRoot> => {
+	// an ordered union transforms by the first branch allowing data, and without
+	// a set engine no union's branches were found to overlap
+	if (node.ordered || !node.alters || !$ark.sets) return noneJoined
+	const joinable: BaseRoot[] = node.branches.filter(
+		branch => branch.deletesOnly
+	)
+	let joined: Set<BaseRoot> | undefined
+	for (let i = 0; i < joinable.length - 1; i++) {
+		const l = joinable[i]
+		for (let j = i + 1; j < joinable.length; j++) {
+			const r = joinable[j]
+			if (
+				(l.alters || r.alters) &&
+				!l.sameMorphs(r) &&
+				!($ark.sets.intersect(l._in, r._in, node.$) instanceof Disjoint)
+			)
+				(joined ??= new Set()).add(l).add(r)
+		}
+	}
+	return joined ?? noneJoined
+}
+
 // a function's is "object"; without an object case, any but null's is its typeof
 export const compileDomainOf = (
 	value: string,
@@ -591,6 +754,39 @@ export const compileDomainOf = (
 // an intersection binds more tightly than a union, so it never needs parens
 const expressBranch = (branch: Union.ChildNode): string =>
 	branch.is("intersection") ? branch.expression : branch.nestedExpr
+
+const propIsEnumerable = Object.prototype.propertyIsEnumerable
+
+const isOwnEnumerablePath = (
+	path: readonly PropertyKey[],
+	data: unknown
+): boolean => {
+	let cur: unknown = data
+	for (let i = 0; i < path.length; i++) {
+		if (!hasDomain(cur, "object")) return false
+		const k = path[i]
+		if (!propIsEnumerable.call(cur, k)) return false
+		cur = (cur as Record<PropertyKey, unknown>)[k]
+	}
+	return true
+}
+
+const compileOwnEnumerablePath = (
+	js: NodeCompiler,
+	path: readonly PropertyKey[]
+): string => {
+	const checks: string[] = []
+	let cur = "data"
+	for (let i = 0; i < path.length; i++) {
+		const k = path[i]
+		const keyExpr = typeof k === "symbol" ? js.ref(k) : JSON.stringify(k)
+		checks.push(
+			`${cur} !== null && (typeof ${cur} === "object" || typeof ${cur} === "function") && Object.prototype.propertyIsEnumerable.call(${cur}, ${keyExpr})`
+		)
+		cur = `${cur}${js.prop(k)}`
+	}
+	return `(${checks.join(" && ")})`
+}
 
 const readsPath = (path: array<PropertyKey>, data: unknown): boolean => {
 	let parent: any = data
@@ -652,22 +848,31 @@ const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
 const isArrayCase = (caseNode: BaseRoot | true): boolean =>
 	caseNode !== true && caseNode._in.extends($ark.kw.Array.internal)
 
+/**
+ * @internal a union's meta, labeled as its branches are where it has no
+ * label of its own: a value each branch labels alike is labeled so, as each
+ * would say, whether it fails at its discriminant or its key is missing
+ */
+export const metaLabeledAlike = (
+	meta: ArkEnv.meta,
+	branches: readonly BaseRoot[]
+): ArkEnv.meta => {
+	if (meta.label !== undefined) return meta
+	const label = branches[0]?.meta.label
+	return (
+			label === undefined ||
+				branches.some(branch => branch.meta.label !== label)
+		) ?
+			meta
+		:	{ ...meta, label }
+}
+
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,
 	path: array<PropertyKey>,
 	branches: readonly BaseRoot[]
 ): ArkEnv.meta => {
-	if (path.length === 0) {
-		if (meta.label !== undefined) return meta
-		// a value each branch labels alike is labeled so, as each would say
-		const label = branches[0]?.meta.label
-		return (
-				label === undefined ||
-					branches.some(branch => branch.meta.label !== label)
-			) ?
-				meta
-			:	{ ...meta, label }
-	}
+	if (path.length === 0) return metaLabeledAlike(meta, branches)
 	// the key it misses isn't the value a label names
 	const { expected, actual, label, ...rest } = meta
 	return rest
@@ -709,6 +914,8 @@ export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
 	cases: DiscriminatedCases<kind>
 	// the cyclic branch a case was pruned from, entered in its place
 	members?: { [caseKey in CaseKey<kind>]?: BaseRoot }
+	// whether a default branch was excluded from a case solely via own-enumerable-only checks
+	ownEnumerableDefault?: true
 }
 
 export type CaseContext = {

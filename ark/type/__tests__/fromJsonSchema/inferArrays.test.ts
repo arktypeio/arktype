@@ -93,8 +93,9 @@ contextualize(() => {
 		})
 
 		it("draft-07 items array next to prefixItems replaces it", () => {
-			// as the runtime reads it
+			// under draft-07, prefixItems is an unknown keyword so items array applies
 			const T = fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
 				type: "array",
 				prefixItems: [{ type: "string" }],
 				minItems: 1,
@@ -103,6 +104,26 @@ contextualize(() => {
 			attest(T.infer).type.toString.snap("[number, ...unknown[]]")
 			attest(T.allows([1, "x"])).equals(true)
 			attest(T.allows(["a"])).equals(false)
+		})
+
+		it("draft-07 ignores prefixItems alone and beside a schema items", () => {
+			const Alone = fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: [{ type: "string" }]
+			})
+			attest(Alone.infer).type.toString.snap("unknown[]")
+			attest(Alone.allows([1])).equals(true)
+
+			const WithItems = fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				items: { type: "number" }
+			})
+			attest(WithItems.infer).type.toString.snap("number[]")
+			attest(WithItems.allows([1, 2])).equals(true)
+			attest(WithItems.allows(["a", 2])).equals(false)
 		})
 	})
 

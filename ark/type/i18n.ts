@@ -5,6 +5,8 @@ export {
 	labelOf,
 	printedActualOf,
 	writeKeywordExpected,
+	type MissingBasis,
+	type MissingValue,
 	type PathGroup
 } from "@ark/schema/i18n"
 export {

@@ -174,10 +174,10 @@ export type describeObject<
 	o extends object,
 	opts extends DescribeOptions = {}
 > =
-	objectKindOf<o> extends string ?
+	objectKindOf<o> extends infer kind extends BuiltinObjectKind ?
 		[opts["includeArticles"]] extends [true] ?
-			objectKindDescriptions[objectKindOf<o>]
-		:	objectKindOf<o>
+			objectKindDescriptions[mostSpecificObjectKind<kind>]
+		:	mostSpecificObjectKind<kind>
 	: [opts["includeArticles"]] extends [true] ? domainDescriptions["object"]
 	: "object"
 
@@ -188,6 +188,17 @@ type instantiableObjectKind<data extends object> = {
 		kind
 	:	never
 }[keyof builtinConstructors]
+
+// structurally a Map is a WeakMap, a Set a WeakSet and a File a Blob, the only
+// builtins one of which is another, so a type matching both is described as
+// the narrower, as its prototype at runtime would be. Comparing each pair of
+// kinds matched would find the same, but costs more than a description should
+type mostSpecificObjectKind<kinds extends BuiltinObjectKind> = Exclude<
+	kinds,
+	| ("Map" extends kinds ? "WeakMap" : never)
+	| ("Set" extends kinds ? "WeakSet" : never)
+	| ("File" extends kinds ? "Blob" : never)
+>
 
 export const objectKindOf = <data extends object>(
 	data: data
@@ -336,7 +347,7 @@ export const platformDescriptions = {
 	Request: "a Request instance",
 	Response: "a Response instance",
 	URL: "a URL instance"
-}
+} as const satisfies Record<keyof platformConstructors, string>
 
 export const typedArrayDescriptions = {
 	Int8Array: "an Int8Array",
@@ -410,6 +421,22 @@ export const ancestorsOf = (o: object): Function[] => {
 export const isPlainObjectOrArray = (o: object): boolean => {
 	const proto = Object.getPrototypeOf(o)
 	return proto === Object.prototype || proto === null || Array.isArray(o)
+}
+
+/** JSON Schema's object type, which excludes arrays and functions */
+export const isNonArray = (data: object): boolean =>
+	typeof data !== "function" && !Array.isArray(data)
+
+/** JSON Schema `const` object own-key predicate factory */
+export const hasOwnKeys = (
+	keys: readonly string[]
+): ((data: object) => boolean) => {
+	const check = (data: object): boolean => keys.every(k => hasOwn(data, k))
+	Object.defineProperty(check, "name", {
+		value: "hasOwnKeys",
+		configurable: true
+	})
+	return check
 }
 
 export type normalizedKeyOf<t> =

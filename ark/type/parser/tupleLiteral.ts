@@ -44,6 +44,13 @@ export const parseTupleLiteral = (
 		const [valueNode, operator, possibleDefaultValue] =
 			!isArray(parsedProperty) ? [parsedProperty] : parsedProperty
 
+		// what's spread is its elements, which an optional or a default can't be
+		if (spread && operator) {
+			return throwParseError(
+				operator === "?" ? spreadOptionalMessage : spreadDefaultableMessage
+			)
+		}
+
 		// string defaults run no user code
 		if (
 			typeof def[i] === "string" &&
@@ -355,21 +362,28 @@ type nextValidatedElement<
 > =
 	next["kind"] extends SequencePhase.optionals ?
 		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
-		: s["phase"] extends SequencePhase.postfix ?
+		: isVariadic<s> extends true ?
 			ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
 		:	next["validated"]
 	: next["kind"] extends SequencePhase.defaultables ?
 		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
+		: isVariadic<s> extends true ?
+			ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
 		: s["phase"] extends SequencePhase.optionals ?
 			ErrorMessage<defaultablePostOptionalMessage>
-		: s["phase"] extends SequencePhase.postfix ?
-			ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
 		:	next["validated"]
 	: [s["phase"], next["spread"]] extends (
 		[SequencePhase.optionals | SequencePhase.defaultables, false]
 	) ?
-		ErrorMessage<postfixAfterOptionalOrDefaultableMessage>
+		isVariadic<s> extends true ?
+			ErrorMessage<postfixAfterOptionalOrDefaultableMessage>
+		:	ErrorMessage<requiredPostOptionalMessage>
 	:	next["validated"]
+
+// whether the elements parsed so far include a variadic one, as the runtime
+// checks an element against what's been appended before it
+type isVariadic<s extends SequenceParseState> =
+	number extends s["inferred"]["length"] ? true : false
 
 export const writeNonArraySpreadMessage = <operand extends string>(
 	operand: operand

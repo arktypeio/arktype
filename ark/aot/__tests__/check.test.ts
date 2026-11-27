@@ -58,12 +58,12 @@ export const Kind = type.declare<{ kind: "a" } | { kind: "b" }>().type(A, "|", B
 
 	it("accepts reading a validator's errors by path", () => {
 		const root = writeFixture({
-			"main.ts": `import { byAncestorPath, byPath, flatByPath, flatMessagesByPath, messageIn, type } from "arktype"
+			"main.ts": `import { byAncestorPath, byPath, flatByPath, flatMessagesByPath, lineOf, messageIn, type } from "arktype"
 const User = type({ name: "string" })
 export const read = (data: unknown) => {
 	const out = User(data)
 	return out instanceof type.errors ?
-			[byPath(out), flatByPath(out), flatMessagesByPath(out), byAncestorPath(out)]
+			[byPath(out), flatByPath(out), flatMessagesByPath(out), byAncestorPath(out), out.issues.map(lineOf)]
 		:	out
 }
 export const translate = (data: unknown) => {
@@ -560,7 +560,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"src/main.ts": `import "./config.ts"\nimport { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
 		})
 		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
-			"vite.config.ts:5:12  precompile.vite() sets config, so --check does too",
+			"vite.config.ts:5:12  precompile.vite() sets config, so ark check does too",
 			"src/main.ts:4:21  accepted",
 			"1 site in 2 files: 1 accepted (100.0%)"
 		])
@@ -575,12 +575,12 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		})
 		const result = runCli(root, "--check", "config.ts")
 		attest(`${result.status} ${result.stderr}`).snap(
-			'1 build.ts:5:25  --check can\'t read the `config` precompile.esbuild() is passed, so it can\'t check what the build does\n  Set config in ark.json (or package.json\'s "ark" key), as { "precompile": { "config": ... } }, which precompile.esbuild() reads too, or pass it to --check as --config.\n'
+			'1 build.ts:5:25  ark check can\'t read the `config` precompile.esbuild() is passed, so it can\'t check what the build does\n  Set config in ark.json (or package.json\'s "ark" key), as { "precompile": { "config": ... } }, which precompile.esbuild() reads too, or pass it to ark check as --config.\n'
 		)
 		attest(() =>
 			check(["config.ts"], { cwd: root, config: "config.ts" })
 		).throws.snap(
-			"Error: vitest.config.ts:3:28  precompile.vite() sets errors other than precompile.esbuild() at build.ts:5:25, so --check can't tell which build to check\n  Pass the one to check as --errors, or set it once in ark.json (or package.json's \"ark\" key)."
+			"Error: vitest.config.ts:3:28  precompile.vite() sets errors other than precompile.esbuild() at build.ts:5:25, so ark check can't tell which build to check\n  Pass the one to check as --errors, or set it once in ark.json (or package.json's \"ark\" key)."
 		)
 		attest(
 			check(["config.ts"], { cwd: root, config: "config.ts", errors: "first" })
@@ -609,7 +609,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"src/main.ts": `import { User } from "./schemas.ts"\nimport "./config.ts"\n\nconsole.log(User({ name: "a", extra: 1 }))\n`
 		})
 		attest(check(["src/**/*.ts"], { cwd: root }).lines).snap([
-			"vite.config.ts:3:28  precompile.vite() sets config, so --check does too",
+			"vite.config.ts:3:28  precompile.vite() sets config, so ark check does too",
 			'src/main.ts:1:1  import { User } from "./schemas.ts" loads src/schemas.ts, which creates a Type, before the config module src/config.ts runs configure()\n  unless the program loaded src/config.ts earlier, creating the Type throws\n  Import src/config.ts first, before any module that creates a Type, or set allowUnsafe: true to build anyway, with a warning.',
 			"src/schemas.ts:3:21  accepted",
 			"1 site in 3 files: 1 accepted (100.0%), 1 error outside a site"
@@ -657,12 +657,12 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 				`import { precompile } from "@ark/aot/unplugin"\n\nconst plugins = [precompile.vite]\n\nexport default { plugins: [plugins[0](${options})] }\n`
 			)
 		]).snap([
-			"webpack.config.cjs:3:30  precompile.webpack() sets config, errors, so --check does too",
-			"next.config.js:3:40  aot.precompile.webpack() sets config, errors, so --check does too",
-			"vite.config.ts:3:28  aot.precompile.vite() sets config, errors, so --check does too",
-			"vite.config.ts:3:21  precompile.vite() sets config, errors, so --check does too",
-			"next.config.js:2:44  the @ark/aot/turbopack loader sets config, errors, so --check does too",
-			'Error: vite.config.ts:1:1  --check can\'t read the options the plugin is passed, so it can\'t check what the build does\n  Set the options in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }, which the plugin reads too, or pass each to --check as a flag.'
+			"webpack.config.cjs:3:30  precompile.webpack() sets config, errors, so ark check does too",
+			"next.config.js:3:40  aot.precompile.webpack() sets config, errors, so ark check does too",
+			"vite.config.ts:3:28  aot.precompile.vite() sets config, errors, so ark check does too",
+			"vite.config.ts:3:21  precompile.vite() sets config, errors, so ark check does too",
+			"next.config.js:2:44  the @ark/aot/turbopack loader sets config, errors, so ark check does too",
+			'Error: vite.config.ts:1:1  ark check can\'t read the options the plugin is passed, so it can\'t check what the build does\n  Set the options in ark.json (or package.json\'s "ark" key), as { "precompile": { ... } }, which the plugin reads too, or pass each to ark check as a flag.'
 		])
 	})
 
@@ -750,5 +750,226 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(
 			bad.stderr.replace(/isn't JSON: .*/, "isn't JSON: <parse error>")
 		).equals(`${join(badRoot, "package.json")} isn't JSON: <parse error>\n`)
+	})
+
+	it("prints --version and emits structured JSON with --check --json", () => {
+		const aotVersion: string = JSON.parse(
+			readFileSync(fromHere("..", "package.json"), "utf8")
+		).version
+		const ver = runCli(cwd, "--version")
+		attest([ver.status, ver.stdout, ver.stderr]).equals([
+			0,
+			`${aotVersion}\n`,
+			""
+		])
+
+		const okRoot = writeFixture({
+			"main.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`
+		})
+		const ok = runCli(okRoot, "--check", "--json")
+		attest(ok.status).equals(0)
+		attest(ok.stderr).equals("")
+		attest(JSON.parse(ok.stdout)).snap({
+			files: 1,
+			sites: 1,
+			accepted: 1,
+			islands: 0,
+			rate: 100,
+			errors: 0,
+			errorsOutsideSites: 0,
+			diagnostics: []
+		})
+
+		const failRoot = writeFixture({
+			"main.ts": `import { type } from "arktype"\nexport const Bad = type("string & number")\nexport const Good = type("string")\n`
+		})
+		const failed = runCli(failRoot, "--check", "--json")
+		attest(failed.status).equals(1)
+		attest(failed.stderr).equals("")
+		attest(JSON.parse(failed.stdout)).snap({
+			files: 1,
+			sites: 2,
+			accepted: 1,
+			islands: 0,
+			rate: 50,
+			errors: 1,
+			errorsOutsideSites: 0,
+			diagnostics: [
+				{
+					severity: "error",
+					rule: "parse",
+					file: "main.ts",
+					line: 2,
+					column: 20,
+					start: 50,
+					end: 73,
+					message: 'type("string & number") throws a ParseError',
+					reasons: [
+						"Intersection of string and number results in an unsatisfiable type"
+					],
+					hint: "Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning."
+				}
+			]
+		})
+
+		// --fail-under works with --json too
+		const passUnder = runCli(
+			failRoot,
+			"--check",
+			"--json",
+			"--fail-under",
+			"50"
+		)
+		attest(passUnder.status).equals(0)
+		attest(JSON.parse(passUnder.stdout).rate).equals(50)
+
+		// --emit rejects --json
+		const emitJson = runCli(okRoot, "--emit", "--json")
+		attest(emitJson.status).equals(2)
+		attest(emitJson.stderr.split("\n")[0]).equals(
+			"ark emit does not take --json"
+		)
+	})
+
+	it("emits structured JSON on stdout for pre-check failures under --check --json", () => {
+		const okRoot = writeFixture({
+			"package.json": "{}",
+			"main.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`
+		})
+
+		const noSources = runCli(okRoot, "--check", "nothing/*.ts", "--json")
+		attest([noSources.status, noSources.stderr]).equals([1, ""])
+		attest(JSON.parse(noSources.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: writeNoSourcesMessage(["nothing/*.ts"], okRoot)
+				}
+			]
+		})
+
+		const missingTsconfig = runCli(
+			okRoot,
+			"--check",
+			"--tsconfig",
+			"nope.json",
+			"--json"
+		)
+		attest([missingTsconfig.status, missingTsconfig.stderr]).equals([1, ""])
+		attest(JSON.parse(missingTsconfig.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: writeMissingTsconfigMessage(join(okRoot, "nope.json"))
+				}
+			]
+		})
+
+		const badFlag = runCli(okRoot, "--check", "--fail-under", "most", "--json")
+		attest([badFlag.status, badFlag.stderr]).equals([2, ""])
+		attest(JSON.parse(badFlag.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: "--fail-under must be a percentage (was most)"
+				}
+			]
+		})
+
+		const brokenJsonRoot = writeFixture({
+			"package.json": "{}",
+			"ark.json": "{not json",
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const brokenJson = runCli(brokenJsonRoot, "--check", "--json")
+		attest([brokenJson.status, brokenJson.stderr]).equals([1, ""])
+		const brokenParsed = JSON.parse(brokenJson.stdout)
+		attest({
+			...brokenParsed,
+			diagnostics: brokenParsed.diagnostics.map(
+				(d: { severity: string; message: string }) => ({
+					...d,
+					message: d.message.replace(
+						/isn't JSON: .*/,
+						"isn't JSON: <parse error>"
+					)
+				})
+			)
+		}).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: `${join(brokenJsonRoot, "ark.json")} isn't JSON: <parse error>`
+				}
+			]
+		})
+
+		const invalidArkJsonRoot = writeFixture({
+			"package.json": "{}",
+			"ark.json": JSON.stringify({ precompile: { runtime: "bogus" } }),
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const invalidArkJson = runCli(invalidArkJsonRoot, "--check", "--json")
+		attest([invalidArkJson.status, invalidArkJson.stderr]).equals([2, ""])
+		attest(JSON.parse(invalidArkJson.stdout)).equals({
+			files: 0,
+			sites: 0,
+			accepted: 0,
+			islands: 0,
+			rate: 0,
+			errors: 1,
+			errorsOutsideSites: 1,
+			diagnostics: [
+				{
+					severity: "error",
+					message: `${join(invalidArkJsonRoot, "ark.json")}: precompile.runtime must be "arktype" (was "bogus")`
+				}
+			]
+		})
+	})
+
+	it("skips dangling symlinks and rejects empty --fail-under", () => {
+		const dir = writeFixture({
+			"package.json": "{}",
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		symlinkSync(join(dir, "missing.ts"), join(dir, "dangling.ts"))
+		const report = check([], { cwd: dir })
+		attest(report.errors).equals(0)
+		attest(report.accepted).equals(1)
+
+		const emptyFailUnder = runCli(dir, "--check", "--fail-under", "")
+		attest(emptyFailUnder.status).equals(2)
+		attest(
+			emptyFailUnder.stderr.includes("--fail-under must be a percentage")
+		).equals(true)
 	})
 })

@@ -69,6 +69,13 @@ describe("type assertions", () => {
 
 	it("equals", () => {
 		attest(o).equals({ ark: "type" })
+		attest(-0).equals(-0)
+		attest(+0).equals(+0)
+		attest(NaN).equals(NaN)
+		assert.throws(() => attest(-0).equals(+0), assert.AssertionError)
+		assert.throws(() => attest(+0).equals(-0), assert.AssertionError)
+		assert.throws(() => attest([-0]).equals([+0]), assert.AssertionError)
+		assert.throws(() => attest(-0).is(+0), assert.AssertionError)
 	})
 
 	it("object", () => {

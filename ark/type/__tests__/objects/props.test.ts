@@ -241,10 +241,109 @@ a must be a number (was missing)`)
 		attest<array<never>>(Tuple.props)
 		attest(Tuple.props).snap([])
 
+		const FixedTuple = type(["string", "number"])
+		attest<array<never>>(FixedTuple.props)
+		attest(FixedTuple.props).snap([])
+
+		const TupleWithKey = type(["string", "number"]).and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			TupleWithKey.props
+		)
+		attest<"foo">(TupleWithKey.props[0].key)
+		attest(snapshottableProps(TupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const OptionalTupleWithKey = type(["string", "number?"]).and({
+			foo: "string"
+		})
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			OptionalTupleWithKey.props
+		)
+		attest(snapshottableProps(OptionalTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const VariadicTupleWithKey = type(["string", "...", "number[]"]).and({
+			foo: "string"
+		})
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			VariadicTupleWithKey.props
+		)
+		attest(snapshottableProps(VariadicTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const ReadonlyTupleWithKey = type(["string", "number"])
+			.readonly()
+			.and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			ReadonlyTupleWithKey.props
+		)
+		attest(snapshottableProps(ReadonlyTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const EmptyTupleWithKey = type([]).and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			EmptyTupleWithKey.props
+		)
+		attest(snapshottableProps(EmptyTupleWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
 		const WithKey = type("string[]").and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(WithKey.props)
 		attest<"foo">(WithKey.props[0].key)
 		attest(snapshottableProps(WithKey.props)).snap([
 			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const WithZeroLength = type("string[]").and({ length: "0" })
+		attest<array<BaseTypeProp<"required", "length", 0, {}>>>(
+			WithZeroLength.props
+		)
+		attest(snapshottableProps(WithZeroLength.props)).snap([
+			{ kind: "required", key: "length", value: "0" }
+		])
+
+		const WithLength = type("string[]").and({ length: "1" })
+		attest<array<BaseTypeProp<"required", "length", 1, {}>>>(WithLength.props)
+		attest(snapshottableProps(WithLength.props)).snap([
+			{ kind: "required", key: "length", value: "1" }
+		])
+
+		const WithBoth = type("string[]").and({ foo: "string", length: "1" })
+		attest<"foo" | "length">(WithBoth.props[0].key)
+		attest(snapshottableProps(WithBoth.props)).snap([
+			{ kind: "required", key: "foo", value: "string" },
+			{ kind: "required", key: "length", value: "1" }
+		])
+
+		const D = type("Date")
+		attest<array<never>>(D.props)
+		attest(D.props).snap([])
+
+		const DateWithKey = type("Date").and({ foo: "string" })
+		attest<array<BaseTypeProp<"required", "foo", string, {}>>>(
+			DateWithKey.props
+		)
+		attest(snapshottableProps(DateWithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+
+		const BrandedArray = type("string[]#Tags")
+		attest<array<never>>(BrandedArray.props)
+		attest(BrandedArray.props).snap([])
+
+		const BrandedDate = type("Date#Created")
+		attest<array<never>>(BrandedDate.props)
+		attest(BrandedDate.props).snap([])
+
+		const BrandedObj = type({ a: "string" }).brand("User")
+		attest<array<BaseTypeProp<"required", "a", string, {}>>>(BrandedObj.props)
+		attest(snapshottableProps(BrandedObj.props)).snap([
+			{ kind: "required", key: "a", value: "string" }
 		])
 	})
 
@@ -483,6 +582,78 @@ a must be a number (was missing)`)
 					message: "must be 0n or 1n (was missing)"
 				}
 			])
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1789
+		it("uses a value's authored description when missing", () => {
+			const Thing = type({
+				a: type("string").describe("foo"),
+				b: ["string", "@", "bar"]
+			})
+			attest(Thing.array()([{}, { a: 1, b: 2 }]).toString()).snap(
+				`[0].a must be foo (was missing)
+[0].b must be bar (was missing)
+[1].a must be foo
+[1].b must be bar`
+			)
+
+			const Cases = type({
+				constrained: type("string > 3").describe("a username"),
+				selfConstrained: type("string > 3").describe("a handle", "self"),
+				union: type("string | number").describe("an id"),
+				selfUnion: type("string | number").describe("a key", "self"),
+				branchDescribed: type("string").describe("a code").or("number"),
+				unknown: type("unknown").describe("any payload"),
+				obj: type({ x: "number" }).describe("a point"),
+				keywordOverridden: type("string.email").describe("a work email"),
+				date: type("Date").describe("a birthday"),
+				morph: type("string")
+					.pipe(s => s.length)
+					.describe("a length"),
+				labeled: type("string").describe("a username").label("Username"),
+				messaged: type("string")
+					.describe("a username")
+					.message("Enter a username"),
+				// built-in keywords without user descriptions stay unchanged
+				email: "string.email",
+				int: "number.integer",
+				epoch: "number.epoch"
+			})
+			attest(Cases({}).toString()).snap(
+				`constrained must be a username (was missing)
+selfConstrained must be a handle (was missing)
+union must be an id (was missing)
+selfUnion must be a key (was missing)
+branchDescribed must be a number or a code (was missing)
+unknown must be any payload (was missing)
+obj must be a point (was missing)
+keywordOverridden must be a work email (was missing)
+date must be a birthday (was missing)
+morph must be a length (was missing)
+Username must be a username (was missing)
+messaged: Enter a username
+email must be a string (was missing)
+int must be a number (was missing)
+epoch must be a number (was missing)`
+			)
+
+			// outer "self" description overrides a described basis
+			const Outer = type("string")
+				.describe("inner desc")
+				.moreThanLength(3)
+				.describe("outer desc", "self")
+			attest(type({ a: Outer })({}).toString()).snap(
+				"a must be outer desc (was missing)"
+			)
+
+			// described recursive alias
+			const Rec = scope({
+				Node: { value: "string", next: ["Node", "@", "the next node"] }
+			}).export()
+			attest(Rec.Node({}).toString()).snap(
+				`value must be a string (was missing)
+next must be the next node (was missing)`
+			)
 		})
 	})
 })

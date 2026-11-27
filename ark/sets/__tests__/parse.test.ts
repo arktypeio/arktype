@@ -73,14 +73,62 @@ contextualize(() => {
 				$ref: "#/$defs/node"
 			}).expression
 		const expression = read()
-		attest(expression).snap("{ child?: synthetic1bpl2ea1nl2i12 } & isNonArray")
+		attest(expression).snap("{ child?: node } & isNonArray")
 		attest(read()).equals(expression)
+
+		// non-identifier and reserved/root cyclic refs fall back to synthetic hashes
+		const syntheticChild = /^{ child\?: synthetic[\da-z]+ } & isNonArray$/
+		attest(
+			syntheticChild.test(
+				parse({
+					$defs: {
+						"my-node": {
+							type: "object",
+							properties: { child: { $ref: "#/$defs/my-node" } }
+						}
+					},
+					$ref: "#/$defs/my-node"
+				}).expression
+			)
+		).equals(true)
+
+		attest(
+			syntheticChild.test(
+				parse({
+					$defs: {
+						string: {
+							type: "object",
+							properties: { child: { $ref: "#/$defs/string" } }
+						}
+					},
+					$ref: "#/$defs/string"
+				}).expression
+			)
+		).equals(true)
+
+		const rootSelfExpr = parse({
+			type: "object",
+			properties: { self: { $ref: "#" } }
+		}).expression
+		attest(
+			rootSelfExpr.startsWith("{ self?: { self?: synthetic") &&
+				rootSelfExpr.endsWith(" } & isNonArray } & isNonArray")
+		).equals(true)
 	})
 
 	it("reads object and array consts as structures", () => {
 		attest(parse({ const: { a: [1, "x"] } }).expression).snap(
-			'{ a: [1, "x"], + (undeclared): reject } & isNonArray'
+			'{ a: [1, "x"], + (undeclared): reject } & isNonArray & hasOwnKeys'
 		)
+		const ConstObj = parse({ const: { a: 1 } })
+		attest(ConstObj.allows({ a: 1 })).equals(true)
+		attest(ConstObj.allows(Object.create({ a: 1 }))).equals(false)
+		attest(
+			ConstObj.allows(Object.assign(Object.create(null), { a: 1 }))
+		).equals(true)
+		attest(
+			parse({ const: { a: 1, b: 2 } }).equals(parse({ const: { b: 2, a: 1 } }))
+		).equals(true)
 	})
 
 	it("keeps format as an annotation", () => {
@@ -176,6 +224,44 @@ contextualize(() => {
 			parse({ $schema: draft07, type: "object", unevaluatedProperties: false })
 				.expression
 		).snap("object & isNonArray")
+		// 2019-09 / 2020-12 validation keywords are unknown annotations in draft-07
+		const Draft07Prefix = parse({
+			$schema: draft07,
+			type: "array",
+			prefixItems: [{ type: "string" }]
+		})
+		attest(Draft07Prefix.allows([1])).equals(true)
+		attest(
+			parse({
+				$schema: draft07,
+				type: "array",
+				prefixItems: "annotation" as never
+			}).allows([1])
+		).equals(true)
+		const Draft07Deps = parse({
+			$schema: draft07,
+			type: "object",
+			dependentRequired: { a: ["b"] },
+			dependentSchemas: { a: { required: ["c"] } }
+		})
+		attest(Draft07Deps.allows({ a: 1 })).equals(true)
+		const Draft07Contains = parse({
+			$schema: draft07,
+			type: "array",
+			contains: { type: "number" },
+			minContains: 2,
+			maxContains: 1
+		})
+		attest(Draft07Contains.allows([1])).equals(true)
+		attest(Draft07Contains.allows([1, 2])).equals(true)
+		attest(Draft07Contains.allows([])).equals(false)
+		const Draft07ZeroMinContains = parse({
+			$schema: draft07,
+			type: "array",
+			contains: { type: "number" },
+			minContains: 0
+		})
+		attest(Draft07ZeroMinContains.allows([])).equals(false)
 		// its siblings' values are still checked, as a meta-schema would
 		attest(() =>
 			parse({
@@ -186,6 +272,32 @@ contextualize(() => {
 			})
 		).throws.snap(
 			"ParseError: #/minLength must be a non-negative integer (was -1)"
+		)
+		// 2019-09 ignores 2020-12's prefixItems and $dynamicRef, while enforcing 2019-09 keywords
+		const draft2019 = "https://json-schema.org/draft/2019-09/schema"
+		attest(
+			parse({
+				$schema: draft2019,
+				type: "array",
+				prefixItems: 5 as never,
+				items: [{ type: "number" }]
+			}).expression
+		).snap("[number?, ...unknown[]]")
+		attest(
+			parse({
+				$schema: draft2019,
+				type: "object",
+				$dynamicRef: "#foo"
+			} as never).expression
+		).snap("object & isNonArray")
+		attest(() =>
+			parse({
+				$schema: draft2019,
+				type: "array",
+				minContains: -1
+			})
+		).throws.snap(
+			"ParseError: #/minContains must be a non-negative integer (was -1)"
 		)
 	})
 
@@ -255,6 +367,38 @@ contextualize(() => {
 		attest(() => parse({ anyOf: [] })).throws.snap(
 			"ParseError: #/anyOf must be a non-empty array of schemas (was [])"
 		)
+	})
+
+	it("validates annotation value types with ParseError", () => {
+		attest(() =>
+			parse({ type: "string", description: 123 as never })
+		).throws.snap("ParseError: #/description must be a string (was 123)")
+		attest(() =>
+			parse({ type: "string", title: { bad: true } as never })
+		).throws.snap('ParseError: #/title must be a string (was {"bad":true})')
+		attest(() =>
+			parse({ type: "string", examples: { a: 1 } as never })
+		).throws.snap('ParseError: #/examples must be an array (was {"a":1})')
+		attest(() =>
+			parse({ type: "string", deprecated: "yes" as never })
+		).throws.snap('ParseError: #/deprecated must be a boolean (was "yes")')
+		attest(() =>
+			parse({
+				type: "object",
+				properties: { a: { type: "string", description: null as never } }
+			})
+		).throws.snap(
+			"ParseError: #/properties/a/description must be a string (was null)"
+		)
+		// undefined optional annotations are treated as absent
+		attest(
+			parse({
+				type: "string",
+				title: undefined,
+				description: undefined,
+				examples: undefined
+			}).expression
+		).snap("string")
 	})
 
 	it("reads back the nullable its openapi-3.0 target writes", () => {

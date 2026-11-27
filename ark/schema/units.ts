@@ -9,6 +9,7 @@ import {
 	isIpv4,
 	isIpv6,
 	isIso8601,
+	isIso8601Date,
 	isNumericString,
 	isUuid,
 	isValidDate,
@@ -44,7 +45,9 @@ import {
 	holdsOnlyIndices,
 	keepOwn,
 	mergeTransformed,
-	TransformErrors
+	setOwnValue,
+	TransformErrors,
+	transformKept
 } from "./shared/transform.ts"
 import {
 	addErrors,
@@ -68,7 +71,7 @@ import {
 	type TraverseTransform
 } from "./shared/traversal.ts"
 import { hasArkKind, isNode } from "./shared/utils.ts"
-import { arrayIndexMatcher } from "./structure/shared.ts"
+import { arrayIndexMatcher, arrayPathKeyOf } from "./structure/shared.ts"
 
 // leaves read no object property
 const isLeafIn = (node: BaseNode, byId: Record<string, BaseNode>): boolean => {
@@ -267,6 +270,10 @@ const bindUnit = (
 		}
 		// if node has already been bound to another scope or anonymous type, don't rebind it
 		if (node.unitFn && (!owningScope || node.$ !== owningScope)) continue
+		if (!Object.isExtensible(node)) {
+			node.c.preJit = undefined
+			continue
+		}
 		const [tAllows, tApply, tTransform] = compiledTraversals[i]
 		if (node.c.preJit) {
 			node.allows = node.c.preJit
@@ -307,6 +314,7 @@ const unitConstants = {
 	allowsInBranchBy,
 	ArkErrors,
 	arrayIndexMatcher,
+	arrayPathKeyOf,
 	callMorph,
 	copyDeclared,
 	copyOf,
@@ -316,6 +324,7 @@ const unitConstants = {
 	isIpv4,
 	isIpv6,
 	isIso8601,
+	isIso8601Date,
 	isNumericString,
 	isUuid,
 	isValidDate,
@@ -330,9 +339,11 @@ const unitConstants = {
 	printable,
 	rejected,
 	rejects,
+	setOwnValue,
 	timeOf,
 	transformed,
 	transformedInApply,
+	transformKept,
 	transformsValid,
 	TransformErrors
 }

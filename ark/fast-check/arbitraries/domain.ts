@@ -9,7 +9,9 @@ export const buildDomainArbitrary: BuildDomainArbitrary = {
 	number: node => buildNumberArbitrary(node),
 	string: node => buildStringArbitrary(node),
 	object: (node, ctx) =>
-		node.is("domain") ? fc.object() : buildStructureArbitrary(node, ctx),
+		node.is("domain") || !node.structure ?
+			fc.object()
+		:	buildStructureArbitrary(node, ctx),
 	symbol: () => fc.string().map(s => Symbol(s)),
 	bigint: () => fc.bigInt()
 }

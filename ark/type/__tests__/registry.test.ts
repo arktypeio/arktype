@@ -4,7 +4,7 @@ import { register } from "@ark/util"
 import { type } from "arktype"
 
 contextualize(() => {
-	const registeredIdCount = () => Object.keys($ark.nodesById).length
+	const registeredIdCount = () => $ark.nodesById.size
 
 	const assertNoRegistryGrowth = (instantiate: () => unknown) => {
 		// warm any caches

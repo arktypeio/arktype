@@ -50,7 +50,7 @@ const required = scope({
 		)
 
 		attest(inferred).snap({
-			ok: 'Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i"; }>',
+			ok: 'Regex<"ok" | "Ok" | "oK" | "OK", { flags: "i"; }>',
 			required: "{ name: string; }"
 		})
 	})

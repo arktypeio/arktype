@@ -18,7 +18,9 @@ import {
 	bundledSkillPath,
 	detectMigrationSource,
 	detectPackageManager,
-	runCli
+	resolveWindowsAgentCandidates,
+	runCli,
+	unwrapWindowsCmdShim
 } from "arktype/internal/cli.ts"
 
 const dirs: string[] = []
@@ -164,12 +166,15 @@ Options:
 				'import { writeFileSync } from "node:fs"; writeFileSync("args.json", JSON.stringify(process.argv.slice(2)));'
 		})
 
-		attest(invoke(["check", "src", "--fail-under", "90"], dir).code).equals(0)
+		attest(
+			invoke(["check", "src", "--fail-under", "90", "--json"], dir).code
+		).equals(0)
 		attest(JSON.parse(readFileSync(join(dir, "args.json"), "utf8"))).equals([
 			"--check",
 			"src",
 			"--fail-under",
-			"90"
+			"90",
+			"--json"
 		])
 
 		attest(invoke(["aot", "declare", "--checker", "tsgo"], dir).code).equals(0)
@@ -191,6 +196,7 @@ Options:
 		const first = invoke(["init"], dir)
 		attest(first.code).equals(0)
 		attest(JSON.parse(readFileSync(join(dir, "ark.json"), "utf8"))).equals({
+			$schema: "./node_modules/@ark/aot/ark.schema.json",
 			precompile: {}
 		})
 		attest(
@@ -226,6 +232,7 @@ Options:
 		const third = invoke(["init", "--force", "--no-skill"], dir)
 		attest(third.code).equals(0)
 		attest(JSON.parse(readFileSync(join(dir, "ark.json"), "utf8"))).equals({
+			$schema: "./node_modules/@ark/aot/ark.schema.json",
 			precompile: {}
 		})
 	})
@@ -259,6 +266,7 @@ Options:
 		attest(
 			JSON.parse(readFileSync(join(withAotOptIn, "ark.json"), "utf8"))
 		).equals({
+			$schema: "./node_modules/@ark/aot/ark.schema.json",
 			precompile: {}
 		})
 	})
@@ -267,9 +275,34 @@ Options:
 		attest(detectMigrationSource({ dependencies: { zod: "^3.23.0" } })).equals(
 			"zod"
 		)
-		attest(
-			detectMigrationSource({ dependencies: { arktype: "^2.1.0" } })
-		).equals("v2")
+		for (const spec of [
+			"^2.1.0",
+			"~2",
+			"^2",
+			"2",
+			"2.x",
+			"v2",
+			">=2 <3",
+			">= 2 < 3",
+			"workspace:^2"
+		]) {
+			attest(detectMigrationSource({ dependencies: { arktype: spec } })).equals(
+				"v2"
+			)
+		}
+		for (const spec of [
+			"^3.0.0-rc.2",
+			"^3.2.0",
+			"^20.0.0",
+			"<2.0.0",
+			"< 2.0.0",
+			">2",
+			"> 2.0.0"
+		]) {
+			attest(detectMigrationSource({ dependencies: { arktype: spec } })).equals(
+				undefined
+			)
+		}
 
 		const dir = tempProject({
 			"package.json": JSON.stringify({
@@ -635,5 +668,175 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		attest(normalize(resDir.err, { "<project>": dirIsDir })).snap(
 			"Cannot write <project>/ark.json: path is not a regular file.\n"
 		)
+	})
+
+	it("guards init, skill install, and migrate outside a project while allowing explicit --dir and --no-skill", () => {
+		const outside = tempProject({})
+		const initRes = invoke(["init"], outside)
+		attest(initRes.code).equals(1)
+		attest(normalize(initRes.err, { "<dir>": outside })).snap(
+			"No package.json found in <dir> or any parent directory. Run `ark init` inside a JavaScript/TypeScript project.\n"
+		)
+		attest(existsSync(join(outside, "ark.json"))).equals(false)
+		attest(existsSync(join(outside, ".agents"))).equals(false)
+
+		const skillRes = invoke(["skill", "install"], outside)
+		attest(skillRes.code).equals(1)
+		attest(normalize(skillRes.err, { "<dir>": outside })).snap(
+			"No package.json found in <dir> or any parent directory. Run `ark skill install` inside a project, or pass --dir <path>.\n"
+		)
+		attest(existsSync(join(outside, ".agents"))).equals(false)
+
+		// explicit --dir still works outside a project
+		const explicitSkill = invoke(
+			["skill", "install", "--dir", "my-skills"],
+			outside
+		)
+		attest(explicitSkill.code).equals(0)
+		attest(
+			existsSync(join(outside, "my-skills", "arktype", "SKILL.md"))
+		).equals(true)
+
+		const migrateRes = invoke(["migrate"], outside)
+		attest(migrateRes.code).equals(1)
+		attest(normalize(migrateRes.err, { "<dir>": outside })).snap(
+			"No package.json found in <dir> or any parent directory. Run `ark migrate` inside a project, or pass --no-skill.\n"
+		)
+
+		// --no-skill does not write to disk and still prints the prompt
+		const migrateNoSkill = invoke(["migrate", "zod", "--no-skill"], outside)
+		attest(migrateNoSkill.code).equals(0)
+		attest(migrateNoSkill.out.includes("from zod to ArkType 3")).equals(true)
+	})
+
+	it("unwraps Windows .cmd shims and resolves Windows PATH candidates without a shell", () => {
+		const dir = tempProject({
+			"npm-bin/claude": "#!/bin/sh\n",
+			"npm-bin/claude.cmd":
+				'@ECHO off\r\nendLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & "%_prog%"  "%dp0%\\node_modules\\@anthropic-ai\\claude-code\\cli.js" %*\r\n',
+			"npm-bin/node_modules/@anthropic-ai/claude-code/cli.js":
+				"console.log('ok')\n",
+			"pnpm-bin/codex.cmd":
+				'@SETLOCAL\r\n@IF EXIST "%~dp0\\node.exe" (\r\n  "%~dp0\\node.exe"  "%~dp0\\global\\5\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n) ELSE (\r\n  node  "%~dp0\\global\\5\\node_modules\\@openai\\codex\\bin\\codex.js" %*\r\n)\r\n',
+			"pnpm-bin/node.exe": "stub",
+			"pnpm-bin/global/5/node_modules/@openai/codex/bin/codex.js":
+				"console.log('ok')\n",
+			"fallback-bin/agent.cmd":
+				'@IF EXIST "%dp0%\\missing.js" (\r\n  node "%dp0%\\missing.js" %*\r\n) ELSE (\r\n  node "%dp0%\\dist\\real.js" %*\r\n)\r\n',
+			"fallback-bin/dist/real.js": "console.log('ok')\n",
+			"native-bin/claude.exe": "stub"
+		})
+		const fakeNode = "/fake/node"
+		attest(
+			unwrapWindowsCmdShim(join(dir, "fallback-bin", "agent.cmd"), fakeNode)
+		).equals({
+			command: fakeNode,
+			args: [join(dir, "fallback-bin", "dist", "real.js")]
+		})
+		attest(
+			unwrapWindowsCmdShim(join(dir, "npm-bin", "claude.cmd"), fakeNode)
+		).equals({
+			command: fakeNode,
+			args: [
+				join(
+					dir,
+					"npm-bin",
+					"node_modules",
+					"@anthropic-ai",
+					"claude-code",
+					"cli.js"
+				)
+			]
+		})
+		attest(
+			unwrapWindowsCmdShim(join(dir, "pnpm-bin", "codex.cmd"), fakeNode)
+		).equals({
+			command: fakeNode,
+			args: [
+				join(
+					dir,
+					"pnpm-bin",
+					"global",
+					"5",
+					"node_modules",
+					"@openai",
+					"codex",
+					"bin",
+					"codex.js"
+				)
+			]
+		})
+		attest(
+			resolveWindowsAgentCandidates(
+				"claude",
+				{
+					PATH: `"${join(dir, "npm-bin")}";${join(dir, "native-bin")}`,
+					PATHEXT: ".COM;.EXE;.BAT;.CMD"
+				},
+				fakeNode
+			)
+		).equals([
+			{
+				command: fakeNode,
+				args: [
+					join(
+						dir,
+						"npm-bin",
+						"node_modules",
+						"@anthropic-ai",
+						"claude-code",
+						"cli.js"
+					)
+				]
+			},
+			{
+				command: join(dir, "native-bin", "claude.exe"),
+				args: []
+			}
+		])
+		// explicit .cmd path works even if PATHEXT omits .CMD
+		attest(
+			resolveWindowsAgentCandidates(
+				join(dir, "npm-bin", "claude.cmd"),
+				{ PATH: "", PATHEXT: ".EXE" },
+				fakeNode
+			)
+		).equals([
+			{
+				command: fakeNode,
+				args: [
+					join(
+						dir,
+						"npm-bin",
+						"node_modules",
+						"@anthropic-ai",
+						"claude-code",
+						"cli.js"
+					)
+				]
+			}
+		])
+		// bare name with explicit .cmd works on PATH even if PATHEXT omits .CMD
+		attest(
+			resolveWindowsAgentCandidates(
+				"claude.cmd",
+				{ PATH: join(dir, "npm-bin"), PATHEXT: ".EXE" },
+				fakeNode
+			)
+		).equals([
+			{
+				command: fakeNode,
+				args: [
+					join(
+						dir,
+						"npm-bin",
+						"node_modules",
+						"@anthropic-ai",
+						"claude-code",
+						"cli.js"
+					)
+				]
+			}
+		])
 	})
 })

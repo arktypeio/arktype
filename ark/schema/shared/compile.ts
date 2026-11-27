@@ -243,6 +243,8 @@ export interface ReferenceOptions {
 export interface TransformKeyOptions {
 	/** the expression of the key a transformed value is written to */
 	keyExpr?: string
+	/** the expression of its path's key, if not keyExpr: an array's index's number */
+	pathKeyExpr?: string
 	condition?: string
 	onChange?: () => unknown
 }
@@ -575,9 +577,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 	): this {
 		const nodes = steps.map(step => step.node)
 		const keyExpr = opts?.keyExpr
+		const pathKeyExpr = opts?.pathKeyExpr ?? keyExpr
 		const assign = (assignee: string, node: BaseNode, arg: string) => {
-			const pushesKey = keyExpr !== undefined && node.tfCtx
-			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpr})`)
+			const pushesKey = pathKeyExpr !== undefined && node.tfCtx
+			if (pushesKey) this.line(`${this.ctx}.path.push(${pathKeyExpr})`)
 			// a step rejecting an earlier step's output transforms the input instead
 			const transformed =
 				arg === input ?
@@ -624,7 +627,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		if (!checksErrors && !opts?.onChange) return this
 		return this.if(this.cmpTfd(steps, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
-			this.if(isTransformErrors(), () => this.addMorphErrs(name, keyExpr))
+			this.if(isTransformErrors(), () => this.addMorphErrs(name, pathKeyExpr))
 			return opts?.onChange ? this.else(onChange) : this
 		})
 	}

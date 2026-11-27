@@ -1,4 +1,6 @@
+export { isCustomBoundUnit, type BoundUnit } from "./refinements/unit.ts"
 export { printedActualOf } from "./shared/enWriters.ts"
+export { authoredDescriptionOf } from "./shared/utils.ts"
 export {
 	actualAtPathOf,
 	describeCause,
@@ -10,3 +12,4 @@ export {
 } from "./shared/locale.ts"
 // installs the renderer of locales other than en
 export { normalizeLocale } from "./shared/render.ts"
+export type { MissingBasis, MissingValue } from "./structure/required.ts"

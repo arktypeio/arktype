@@ -140,4 +140,134 @@ contextualize(() => {
 		const ConstObj = fromJsonSchema({ const: { a: 1 } })
 		attest(ConstObj.allows(Object.assign(() => {}, { a: 1 }))).equals(false)
 	})
+
+	it("round-trips Object.prototype keys in const, enum and required through toJsonSchema", () => {
+		const CtorConst = fromJsonSchema({ const: { constructor: 1 } })
+		const written = CtorConst.toJsonSchema()
+		attest(written).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { constructor: { type: "number", const: 1 } },
+			required: ["constructor"],
+			additionalProperties: false
+		})
+		const RoundTripped = fromJsonSchema(written)
+		attest(RoundTripped.equals(CtorConst)).equals(true)
+		attest(RoundTripped.allows({})).equals(false)
+		attest(RoundTripped.allows({ constructor: 1 })).equals(true)
+		attest(RoundTripped.allows({ constructor: Object })).equals(false)
+		attest(RoundTripped.allows({ constructor: 1, extra: 2 })).equals(false)
+
+		const oasWritten = CtorConst.toJsonSchema({ target: "openapi-3.0" })
+		attest(oasWritten).snap({
+			type: "object",
+			properties: { constructor: { type: "number", enum: [1] } },
+			required: ["constructor"],
+			additionalProperties: false
+		})
+		attest(fromJsonSchema(oasWritten).equals(CtorConst)).equals(true)
+
+		const EnumProto = fromJsonSchema({
+			enum: [{ constructor: 1 }, { toString: "x" }]
+		})
+		const enumWritten = EnumProto.toJsonSchema()
+		attest(fromJsonSchema(enumWritten).equals(EnumProto)).equals(true)
+
+		const protoPayload = JSON.parse('{"__proto__":{"a":1}}')
+		const ProtoConst = fromJsonSchema({ const: protoPayload })
+		const protoWritten = ProtoConst.toJsonSchema()
+		const ProtoRoundTripped = fromJsonSchema(protoWritten)
+		attest(ProtoRoundTripped.toJsonSchema()).equals(protoWritten)
+		attest(ProtoConst.extends(ProtoRoundTripped)).equals(true)
+		attest(ProtoRoundTripped.allows(protoPayload)).equals(true)
+		attest(ProtoRoundTripped.allows({})).equals(false)
+		attest(
+			ProtoConst.allows(
+				Object.defineProperty({}, "__proto__", {
+					value: Object.create({ a: 1 }),
+					enumerable: true
+				})
+			)
+		).equals(false)
+	})
+
+	it("enforces own keys in const objects and round-trips through toJsonSchema", () => {
+		const ConstObj = fromJsonSchema({ const: { a: 1, b: { c: 2 } } })
+		for (let pass = 0; pass < 3; pass++) {
+			attest(ConstObj.allows({ a: 1, b: { c: 2 } })).equals(true)
+			attest(
+				ConstObj.allows(
+					Object.assign(Object.create(null), {
+						a: 1,
+						b: Object.assign(Object.create(null), { c: 2 })
+					})
+				)
+			).equals(true)
+			attest(
+				ConstObj.allows(
+					Object.assign(Object.create({ a: 1 }), { a: 1, b: { c: 2 } })
+				)
+			).equals(true)
+			attest(ConstObj.allows(Object.create({ a: 1, b: { c: 2 } }))).equals(
+				false
+			)
+			attest(
+				ConstObj.allows(Object.assign(Object.create({ b: { c: 2 } }), { a: 1 }))
+			).equals(false)
+			attest(ConstObj.allows({ a: 1, b: Object.create({ c: 2 }) })).equals(
+				false
+			)
+		}
+		attest(ConstObj.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {
+				a: { type: "number", const: 1 },
+				b: {
+					type: "object",
+					properties: { c: { type: "number", const: 2 } },
+					required: ["c"],
+					additionalProperties: false
+				}
+			},
+			required: ["a", "b"],
+			additionalProperties: false
+		})
+	})
+
+	it("scales linearly for large object enums", () => {
+		const LargeEnum = fromJsonSchema({
+			enum: Array.from({ length: 1000 }, (_, i) => ({
+				id: i,
+				name: `item${i}`
+			}))
+		})
+		for (let pass = 0; pass < 3; pass++) {
+			attest(LargeEnum.allows({ id: 0, name: "item0" })).equals(true)
+			attest(LargeEnum.allows({ id: 999, name: "item999" })).equals(true)
+			attest(LargeEnum.allows({ id: 0, name: "item1" })).equals(false)
+			attest(LargeEnum.allows({ id: 1000, name: "item1000" })).equals(false)
+			attest(LargeEnum.allows(Object.create({ id: 0, name: "item0" }))).equals(
+				false
+			)
+		}
+		const enumDisc =
+			LargeEnum.internal.is("union") ? LargeEnum.internal.discriminant : null
+		attest(enumDisc?.kind).equals("unit")
+		attest(enumDisc?.path).equals(["id"])
+
+		// objects differing in a single property collapse in one pass
+		const SinglePropEnum = fromJsonSchema({
+			enum: Array.from({ length: 1000 }, (_, i) => ({ id: i, tag: "same" }))
+		})
+		attest(SinglePropEnum.internal.branches.length).equals(1)
+		for (let pass = 0; pass < 3; pass++) {
+			attest(SinglePropEnum.allows({ id: 0, tag: "same" })).equals(true)
+			attest(SinglePropEnum.allows({ id: 999, tag: "same" })).equals(true)
+			attest(SinglePropEnum.allows({ id: 1000, tag: "same" })).equals(false)
+			attest(
+				SinglePropEnum.allows(Object.create({ id: 0, tag: "same" }))
+			).equals(false)
+		}
+	})
 })

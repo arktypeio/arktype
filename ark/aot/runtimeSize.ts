@@ -1,6 +1,6 @@
 import type { StandaloneModules } from "arktype/internal/standalone.ts"
 import { readFileSync } from "node:fs"
-import { createRequire } from "node:module"
+import { createRequire, isBuiltin } from "node:module"
 import { visitorKeys, type Node } from "oxc-parser"
 import { SourceModule } from "./module.ts"
 import { typeKeys, type Binding } from "./scope.ts"
@@ -288,8 +288,10 @@ const resolvedFileOf = (
 		if (virtualSources.has(program + specifier)) return program + specifier
 		importer = import.meta.url
 	}
+	if (isBuiltin(specifier)) return
 	try {
-		return createRequire(importer).resolve(specifier)
+		const resolved = createRequire(importer).resolve(specifier)
+		return isBuiltin(resolved) ? undefined : resolved
 	} catch {
 		// e.g. a package without a require condition, whose code isn't counted
 		return

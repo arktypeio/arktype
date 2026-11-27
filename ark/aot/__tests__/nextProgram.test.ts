@@ -30,7 +30,6 @@ const project = (files: Record<string, string> = {}, root?: string) =>
 	writeFixture(
 		{
 			"node_modules/next/package.json": '{ "name": "next" }',
-			"node_modules/.bin/next": "",
 			"src/user.ts":
 				'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
 			"app/page.ts":
@@ -57,15 +56,12 @@ const load = async (
 		opts = {},
 		source = readFileSync(join(dir, file), "utf8"),
 		resolved = {},
-		arktypeFrom,
 		read = {},
 		sameBuild = false
 	}: {
 		opts?: PrecompilePluginOptions
 		source?: string
 		resolved?: Resolved
-		// a directory arktype/runtime resolves otherwise from, as a nested install's
-		arktypeFrom?: string | undefined
 		// next.config, as its wrapper reads it before Turbopack starts, or false
 		// for one exporting its config bare
 		read?: NextConfigLike | false
@@ -95,8 +91,6 @@ const load = async (
 					return join(dir, answer)
 				}
 				if (request.startsWith(".")) return resolvePath(context, request)
-				if (request === "arktype/runtime" && context === arktypeFrom)
-					return join(dir, "node_modules/arktype/runtime.js")
 				// bundled by Next, as the loader's check that it's bundled asks
 				if (request === "arktype/runtime" || request.startsWith("next/"))
 					return runtimeFile
@@ -117,7 +111,7 @@ const load = async (
 const runtimeFile = join(import.meta.dirname, "../../type/runtime.ts")
 
 const unitsDirIn = (dir: string) => {
-	const ark = join(dir, "node_modules/.bin/.ark")
+	const ark = join(dir, "node_modules/.cache/ark-units")
 	return join(ark, readdirSync(ark)[0])
 }
 
@@ -408,7 +402,7 @@ Type
 					"next.config doesn't export its config through withPrecompile, which reads the project before Turbopack starts"
 				)
 			])
-			attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+			attest(out?.includes("node_modules/.cache/ark-units")).equals(false)
 			// once a build
 			attest((await load(dir, "src/user.ts", { read: false })).warnings).equals(
 				[]
@@ -561,7 +555,7 @@ Type
 				const dir = project(files)
 				const { out, warnings } = await load(dir, "src/user.ts")
 				attest(warnings).equals([writeUnreadProgramMessage(reason)])
-				attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+				attest(out?.includes("node_modules/.cache/ark-units")).equals(false)
 				// once a build
 				attest(
 					(await load(dir, "src/user.ts", { sameBuild: true })).warnings
@@ -569,30 +563,72 @@ Type
 			})
 		}
 
+		it("writes units under the nearest existing node_modules/.cache/ark-units when the app has no local node_modules", async () => {
+			const root = writeFixture({
+				"node_modules/next/package.json": '{ "name": "next" }',
+				"apps/web/src/user.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				"apps/web/app/page.ts":
+					'import { User } from "../src/user.ts"\n\nexport const GET = (data: unknown) => Response.json(User.allows(data))\n'
+			})
+			const app = join(root, "apps/web")
+			const { out, warnings } = await load(app, "src/user.ts")
+			attest(warnings).equals([])
+			const specifier =
+				/from "((?:\.{2}\/){3}node_modules\/\.cache\/ark-units\/[^"]+)"/.exec(
+					out!
+				)?.[1]
+			attest(specifier !== undefined).equals(true)
+			attest(existsSync(join(app, "src", specifier!))).equals(true)
+			attest(dirname(join(app, "src", specifier!))).equals(unitsDirIn(root))
+			// warm build still uses the workspace root's node_modules even though
+			// the first build created apps/web/node_modules/.cache/ark-programs
+			const second = await load(app, "src/user.ts")
+			attest(second.warnings).equals([])
+			attest(second.out).equals(out)
+		})
+
+		it("writes units under the app's own node_modules/.cache/ark-units without needing .bin", async () => {
+			const root = writeFixture({
+				"apps/web/node_modules/next/package.json": '{ "name": "next" }',
+				"apps/web/src/user.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+				"apps/web/app/page.ts":
+					'import { User } from "../src/user.ts"\n\nexport const GET = (data: unknown) => Response.json(User.allows(data))\n'
+			})
+			const app = join(root, "apps/web")
+			const { out, warnings } = await load(app, "src/user.ts")
+			attest(warnings).equals([])
+			const specifier =
+				/from "(\.\.\/node_modules\/\.cache\/ark-units\/[^"]+)"/.exec(out!)?.[1]
+			attest(specifier !== undefined).equals(true)
+			attest(existsSync(join(app, "src", specifier!))).equals(true)
+			attest(dirname(join(app, "src", specifier!))).equals(unitsDirIn(app))
+		})
+
 		it("writes each module on its own, given another arktype beside the files it would write", async () => {
 			const root = writeFixture({
-				"node_modules/.bin/next": "",
-				"apps/web/node_modules/next/package.json": '{ "name": "next" }',
-				// the app's own, where the units resolve the root's
-				"apps/web/node_modules/arktype/package.json":
+				"shared/node_modules/arktype/package.json":
 					'{ "name": "arktype", "exports": { "./runtime": "./runtime.js" } }',
-				"apps/web/node_modules/arktype/runtime.js": "",
+				"shared/node_modules/arktype/runtime.js": "",
+				"shared/cache/.keep": "",
+				"apps/web/node_modules/next/package.json": '{ "name": "next" }',
 				"apps/web/src/user.ts":
 					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
 			})
-			const { out, warnings } = await load(
-				join(root, "apps/web"),
-				"src/user.ts",
-				{
-					arktypeFrom: root
-				}
+			const app = join(root, "apps/web")
+			symlinkSync(
+				join(root, "shared/cache"),
+				join(app, "node_modules/.cache"),
+				"junction"
 			)
+			const { out, warnings } = await load(app, "src/user.ts")
 			attest(warnings).equals([
 				writeUnreadProgramMessage(
-					"../../node_modules/.bin resolves another arktype"
+					"node_modules/.cache/ark-units resolves another arktype"
 				)
 			])
-			attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+			attest(out?.includes("node_modules/.cache/ark-units")).equals(false)
 		})
 
 		it("fails the build where prune: true says it must", async () => {
@@ -612,7 +648,7 @@ Type
 				opts: { prune: false }
 			})
 			attest(warnings).equals([])
-			attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+			attest(out?.includes("node_modules/.cache/ark-units")).equals(false)
 		})
 	})
 

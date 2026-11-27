@@ -32,6 +32,9 @@
 	"files": [
 		"out"
 	],
+	"engines": {
+		"node": ">=22.12.0"
+	},
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "node ../repo/testPackage.ts"

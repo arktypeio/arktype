@@ -88,14 +88,30 @@ export const isIoFinal = (): boolean =>
 const uncheckedAssertions: (() => void)[] = []
 
 let uncheckedKeys: Record<string, true> = {}
+let uncheckedSeq = 0
+
+/** how many deferred checks have been queued so far */
+export const uncheckedQueued = (): number => uncheckedSeq
 
 // a check can resolve the alias whose union queued it, so a keyed check is queued once
 export const queueUnchecked = (assert: () => void, key?: string): void => {
+	uncheckedSeq++
 	if (key !== undefined) {
 		if (uncheckedKeys[key]) return
 		uncheckedKeys[key] = true
 	}
 	uncheckedAssertions.push(assert)
+}
+
+/**
+ * marks a node created while a deferred check is pending so it isn't served
+ * unchecked from nodesByKey if that check throws or is discarded
+ */
+export const markUnchecked = (node: BaseNode): void => {
+	node.c.unchecked = (node.c.unchecked ?? 0) + 1
+	queueUnchecked(() => {
+		node.c.unchecked!--
+	})
 }
 
 let assertingUnchecked = false
@@ -105,16 +121,28 @@ export const assertUnchecked = (): void => {
 	// runs in the outer loop
 	if (!isResolutionFinal() || assertingUnchecked) return
 	assertingUnchecked = true
+	let passed = false
 	try {
 		for (let i = 0; i < uncheckedAssertions.length; i++)
 			uncheckedAssertions[i]()
+		passed = true
 	} finally {
 		assertingUnchecked = false
-		discardUnchecked()
+		discardUnchecked(passed)
 	}
 }
 
-const discardUnchecked = (): void => {
+let discards = 0
+
+/**
+ * how many times checks were discarded that hadn't all passed. Whatever was
+ * cached while they waited is left unchecked, as nothing will queue them again
+ * for a result that's read from a cache
+ */
+export const uncheckedDiscards = (): number => discards
+
+const discardUnchecked = (passed?: boolean): void => {
+	if (!passed && uncheckedAssertions.length) discards++
 	uncheckedAssertions.length = 0
 	uncheckedKeys = {}
 }
@@ -135,10 +163,16 @@ export const resolving = <t>(resolve: () => t): t => {
 export const defining = <t>(define: () => t): t => {
 	if (isResolutionFinal()) discardUnchecked()
 	inProgress.definitions++
+	let defined = false
 	try {
-		return define()
+		const result = define()
+		defined = true
+		return result
 	} finally {
 		inProgress.definitions--
+		// nor is its error another Type's, which whatever resolves next would
+		// throw if the checks waited for the next definition to discard them
+		if (!defined && isResolutionFinal()) discardUnchecked()
 	}
 }
 
@@ -223,6 +257,28 @@ export type DescribeBranchesOptions = {
 
 // what 2.x's slot says where a cast or JavaScript still passes it
 export const removedProblemMessage = "problem was removed in 3.0; write message"
+
+export const removedCloneMessage =
+	"clone was removed in 3.0; remove it, or set mutatesInput to write into the input"
+
+export const writeInvalidMetaMessage = (meta: string): string =>
+	`Meta must be a string, an object or a function (was ${meta})`
+
+// a user-authored description on a value, distinct from a built-in keyword's
+// phrase or a node whose `expected` explicitly overrides its description
+// (e.g. fromJsonSchema description annotations)
+export const authoredDescriptionOf = (
+	meta:
+		| {
+				readonly description?: string
+				readonly expected?: unknown
+				readonly keyword?: string
+		  }
+		| undefined
+): string | undefined =>
+	meta?.keyword === undefined && meta?.expected === undefined ?
+		meta?.description
+	:	undefined
 
 export const describeBranches = (
 	descriptions: readonly string[],

@@ -182,4 +182,36 @@ contextualize(() => {
 			"sym:key": 1
 		} as never)
 	})
+
+	it("handles circular values with quoteKeys: false and constructor getters with ownDataOnly", () => {
+		const cyc: Record<string, unknown> = { a: 1 }
+		cyc.self = cyc
+		attest(printable(cyc, { quoteKeys: false })).snap("{a: 1, self: (cycle)}")
+		attest(printable([1, 2], { quoteKeys: false })).snap("[1, 2]")
+
+		const throwingCtor = Object.defineProperty({ a: 1 }, "constructor", {
+			get() {
+				throw new Error("ctor-boom")
+			},
+			enumerable: false
+		})
+		attest(printable(throwingCtor, { ownDataOnly: true })).snap('{"a":1}')
+
+		class Custom {}
+		const customThrowingCtor = Object.defineProperty(
+			new Custom(),
+			"constructor",
+			{
+				get() {
+					throw new Error("ctor-boom")
+				},
+				enumerable: false
+			}
+		)
+		attest(printable(customThrowingCtor, { ownDataOnly: true })).snap("Custom")
+
+		class SubArray extends Array {}
+		attest(printable(new SubArray(), { ownDataOnly: true })).snap("[]")
+		attest(printable(() => [], { ownDataOnly: true })).snap("Function(fn)")
+	})
 })

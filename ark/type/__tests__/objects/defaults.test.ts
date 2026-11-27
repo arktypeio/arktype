@@ -3,7 +3,11 @@ import {
 	registeredReference,
 	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
-import { deepClone } from "@ark/util"
+import {
+	deepClone,
+	writeInvalidDateMessage,
+	writeMalformedNumericLiteralMessage
+} from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
@@ -508,11 +512,46 @@ contextualize(() => {
 				.type.errors("Default value true must be assignable to number")
 		})
 
+		it("incorrect default type for a branded or piped base", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "string#id = 5" }))
+				.throws.snap("ParseError: Default for foo must be a string")
+				.type.errors("Default value 5 must be assignable to string#id")
+			// @ts-expect-error
+			attest(() => type({ foo: "string.trim |> string.lower = 5" }))
+				.throws.snap("ParseError: Default for foo must be a string")
+				.type.errors(
+					"Default value 5 must be assignable to string.trim |> string.lower"
+				)
+		})
+
 		it("non-literal", () => {
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", bar: "unknown = number" })
 			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("number"))
+		})
+
+		it("number literal TypeScript can't narrow", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "number = 1.50" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("1.50", "number")
+			)
+			// malformed before it's unassignable, as parsing reads it first
+			// @ts-expect-error
+			attest(() => type({ foo: "string = 0x10" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10", "number")
+			)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "number = 9007199254740993" })
+			).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("9007199254740993", "number")
+			)
+			// @ts-expect-error
+			attest(() => type({ foo: "bigint = 0x10n" })).throwsAndHasTypeError(
+				writeMalformedNumericLiteralMessage("0x10n", "bigint")
+			)
 		})
 
 		it("operand that sets no root", () => {
@@ -697,6 +736,230 @@ contextualize(() => {
 			attest(() => type({ foo: "number = []" }))
 				.throws.snap("ParseError: Default for foo must be a number")
 				.type.errors("Default value [] must be assignable to number")
+		})
+
+		it("unit-literal array defaults via string syntax", () => {
+			const SingleQuoted = type({ hosts: "string[] = ['localhost']" })
+			attest(SingleQuoted.t).type.toString.snap(
+				'{ hosts: Default<string[], ["localhost"]> }'
+			)
+			attest<{ hosts?: string[] }>(SingleQuoted.inferIn)
+			attest<{ hosts: string[] }>(SingleQuoted.infer)
+			attest(SingleQuoted({})).equals({ hosts: ["localhost"] })
+			attest(SingleQuoted({ hosts: ["a"] })).equals({ hosts: ["a"] })
+
+			const DoubleQuoted = type({ hosts: 'string[] = ["a", "b"]' })
+			attest(DoubleQuoted.t).type.toString.snap(
+				'{ hosts: Default<string[], ["a", "b"]> }'
+			)
+			attest(DoubleQuoted({})).equals({ hosts: ["a", "b"] })
+
+			const Ports = type({ ports: "number[] = [3000, 8080]" })
+			attest(Ports.t).type.toString.snap(
+				"{ ports: Default<number[], [3000, 8080]> }"
+			)
+			attest(Ports({})).equals({ ports: [3000, 8080] })
+
+			const Nums = type({ nums: "number[] = [-1, 0, 3.14]" })
+			attest(Nums.t).type.toString.snap(
+				"{ nums: Default<number[], [-1, 0, 3.14]> }"
+			)
+			attest(Nums({})).equals({ nums: [-1, 0, 3.14] })
+
+			const Bigints = type({ bigs: "bigint[] = [-5n, 0n]" })
+			attest(Bigints.t).type.toString.snap(
+				"{ bigs: Default<bigint[], [-5n, 0n]> }"
+			)
+			attest(Bigints({})).equals({ bigs: [-5n, 0n] })
+
+			const Flags = type({ flags: "boolean[] = [true, false]" })
+			attest(Flags.t).type.toString.snap(
+				"{ flags: Default<boolean[], [true, false]> }"
+			)
+			attest(Flags({})).equals({ flags: [true, false] })
+
+			const Mixed = type({
+				items:
+					"(string | number | null | undefined | bigint)[] = ['a', 1, null, undefined, 2n]"
+			})
+			attest(Mixed.t).type.toString.snap(`{
+	items: Default<
+		(string | number | bigint | null | undefined)[],
+		["a", 1, null, undefined, 2n]
+	>
+}`)
+			attest(Mixed({})).equals({ items: ["a", 1, null, undefined, 2n] })
+
+			const Spaced = type({
+				a: "string[] = [ 'a' , 'b' ]",
+				b: "string[] = [ ]"
+			})
+			attest(Spaced.t).type.toString.snap(`{
+	a: Default<string[], ["a", "b"]>
+	b: Default<string[], []>
+}`)
+			attest(Spaced({})).equals({ a: ["a", "b"], b: [] })
+
+			const SpecialChars = type({
+				items: "string[] = ['a, b', 'c]d', 'it\\'s', \"x\\\"y\"]"
+			})
+			attest(SpecialChars.t).type.toString.snap(`{
+	items: Default<string[], ["a, b", "c]d", "it's", 'x"y']>
+}`)
+			attest(SpecialChars({})).equals({
+				items: ["a, b", "c]d", "it's", 'x"y']
+			})
+
+			attest(SingleQuoted.toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					hosts: {
+						type: "array",
+						items: { type: "string" },
+						default: ["localhost"]
+					}
+				}
+			})
+		})
+
+		it("unit-literal array default returns a fresh copy each call", () => {
+			const O = type({ hosts: "string[] = ['localhost']" })
+			const a = O.assert({})
+			a.hosts.push("mutated")
+			const b = O.assert({})
+			attest(a.hosts !== b.hosts).equals(true)
+			attest(b.hosts).equals(["localhost"])
+		})
+
+		it("unit-literal Date array default returns fresh array and Dates each call", () => {
+			const O = type({ dates: "Date[] = [d'2025-01-01']" })
+			attest(O.t).type.toString.snap("{ dates: Default<Date[], [Date]> }")
+			const a = O.assert({})
+			const b = O.assert({})
+			attest(a.dates !== b.dates).equals(true)
+			attest(a.dates[0] !== b.dates[0]).equals(true)
+			attest(a.dates[0].toISOString()).equals("2025-01-01T00:00:00.000Z")
+		})
+
+		it("unit-literal array default in tuple", () => {
+			const T = type(["string", "string[] = ['localhost']"])
+			attest(T(["ok"])).equals(["ok", ["localhost"]])
+		})
+
+		it("unit-literal array default validates against base Type at definition time", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					nums: "number[] = ['a']"
+				})
+			)
+				.throws.snap("ParseError: Default for nums[0] must be a number")
+				.type.errors("Default value ['a'] must be assignable to number[]")
+
+			attest(() =>
+				type({
+					items: "string[] >= 2 = ['onlyOne']"
+				})
+			).throws.snap("ParseError: Default for items must be at least 2 items")
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					name: "string = ['a']"
+				})
+			)
+				.throws.snap("ParseError: Default for name must be a string")
+				.type.errors("Default value ['a'] must be assignable to string")
+		})
+
+		it("unit-literal array default rejects invalid syntax and non-unit elements", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a',]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a',]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = [,]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("[,]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a' 'b']"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a' 'b']"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = [string]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("[string]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a', foo]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a', foo]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "unknown[] = [[]]"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("[[]]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a'"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a'"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "number[] = [01]"
+				})
+			)
+				.throws.snap(
+					"ParseError: '01' was parsed as a number but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation"
+				)
+				.type.errors(writeNonLiteralDefaultMessage("[01]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "number[] = [-0]"
+				})
+			)
+				.throws.snap(
+					"ParseError: '-0' was parsed as a number but could not be narrowed to a literal value. Avoid unnecessary leading or trailing zeros and other abnormal notation"
+				)
+				.type.errors(writeNonLiteralDefaultMessage("[-0]"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a',,'b']"
+				})
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("['a',,'b']"))
+
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "string[] = ['a']x"
+				})
+			)
+				.throws(writeUnexpectedCharacterMessage("x"))
+				.type.errors(writeNonLiteralDefaultMessage("['a']x"))
 		})
 
 		it("empty object default via string syntax", () => {
@@ -1236,5 +1499,176 @@ baz[0] must be a number`)
 
 		attest<number>(t.defaulted)
 		attest<number | undefined>(t.nested?.defaulted)
+	})
+
+	it("rejects invalid date literal inside array default at runtime", () => {
+		attest(() => type({ dates: "Date[] = [d'not-a-date']" })).throws(
+			writeInvalidDateMessage("not-a-date")
+		)
+	})
+
+	it("a default isn't checked against what no data reaches with it", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// no data holds both a `c` of 1 and one of "a"
+			const L = $.type({ c: "1", b: "false = false" })
+			const R = $.type({ c: "'a' = 'a'", "b?": "0" })
+			// whichever is intersected first, though only R's keys meet `b` before `c`
+			attest(L.or("0").and(R.or("0")).expression).equals("0")
+			attest(R.or("0").and(L.or("0")).expression).equals("0")
+			attest(() => L.and(R)).throws(
+				'ParseError: Intersection at c of 1 and "a" results in an unsatisfiable type'
+			)
+			attest(() => R.and(L)).throws(
+				'ParseError: Intersection at c of "a" and 1 results in an unsatisfiable type'
+			)
+			// nor are two defaults that differ
+			const One = $.type({ z: "1", b: "number = 1" })
+			const Two = $.type({ "z?": "2", b: "number = 2" })
+			attest(One.or("0").and(Two.or("0")).expression).equals("0")
+			attest(Two.or("0").and(One.or("0")).expression).equals("0")
+
+			// data without `c` reaches both of these, so `b` can't default
+			const Open = $.type({ "c?": "1", b: "false = false" })
+			attest(() => Open.or("0").and($.type({ "c?": "'a'", "b?": "0" }))).throws(
+				"ParseError: Default for b must be never"
+			)
+		}
+	})
+
+	it("an index signature checks the default of a key it matches", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// as it checks a value the data holds at the key
+			attest(() =>
+				$.type({ "[string]": "number > 0", count: "number = 0" })
+			).throws("ParseError: Default for count must be positive")
+			attest(() =>
+				$.type({ count: "number = 0" }).and({ "[string]": "number > 0" })
+			).throws("ParseError: Default for count must be positive")
+			// with no value both allow, the key allows nothing
+			attest(() =>
+				$.type({ "[string]": "string", count: "number = 0" })
+			).throws("ParseError: Default for count must be never")
+			attest(() =>
+				$.type({ "[string]": "string" }).and({ count: "number = 0" })
+			).throws("ParseError: Default for count must be never")
+			// what a morph of the signature's is given
+			attest(() =>
+				$.type({
+					"[string]": "string.numeric.parse",
+					count: "string = 'five'"
+				})
+			).throws(
+				"ParseError: Default for count must be a well-formed numeric string"
+			)
+
+			// one its signatures allow, or whose key they don't match, is kept
+			const T = $.type({
+				"[string]": "number >= 0",
+				"[/^x/]": "string",
+				"[symbol]": "string",
+				count: "number = 0"
+			})
+			attest(T({})).equals({ count: 0 })
+			attest(T({ count: -1 }).toString()).equals("count must be non-negative")
+			// as is a key without one, which then allows nothing
+			attest(
+				$.type({ "[string]": "string", "count?": "number" }).expression
+			).equals("{ [string]: string, count?: never }")
+		}
+	})
+
+	it("a default a cyclic value rejects is rejected each time it's defined", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		// checked once node resolves, which is after its prop is created
+		const define = () =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0]
+			})
+		attest(define).throws("Default for a must be an object")
+		attest(define).throws("Default for a must be an object")
+		// @ts-expect-error
+		attest(() => $.type({ a: "node = 0" })).throws(
+			"Default for a must be an object"
+		)
+
+		// index signature with cyclic target must also reject on both 1st and 2nd call
+		const defineIndexed = () =>
+			$.type({
+				"[string]": "node",
+				a: "unknown = 0"
+			})
+		attest(defineIndexed).throws("Default for a must be an object")
+		attest(defineIndexed).throws("Default for a must be an object")
+
+		// @ts-expect-error
+		const defineElement = () => $.type([["node", "=", 0]])
+		attest(defineElement).throws("Default must be an object")
+		attest(defineElement).throws("Default must be an object")
+	})
+
+	it("a default is checked where the definition it was first in threw before it was", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		attest(() =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0],
+				b: ["null", "&", "string"]
+			})
+		).throws("Intersection of null and string results in an unsatisfiable type")
+		attest(() =>
+			$.type({
+				// @ts-expect-error
+				a: ["node", "=", 0]
+			})
+		).throws("Default for a must be an object")
+	})
+
+	it("a default a cyclic value rejects is rejected each time it's intersected with it", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		// the intersection is cached before node resolves, which is when its
+		// default is checked
+		const define = () =>
+			$.type([{ "a?": "node | number" }, "&", { a: ["unknown", "=", "x"] }])
+		attest(define).throws("Default for a must be a number or an object")
+		attest(define).throws("Default for a must be a number or an object")
+
+		// or where the definition it was first in threw before it was checked
+		const nested = [
+			{ "b?": "node | string" },
+			"&",
+			{ b: ["unknown", "=", 0] }
+		] as const
+		attest(() => $.type({ nested, c: ["null", "&", "string"] })).throws(
+			"Intersection of null and string results in an unsatisfiable type"
+		)
+		attest(() => $.type(nested)).throws(
+			"Default for b must be a string or an object"
+		)
+
+		// one it allows is the same Type each time
+		const T = $.type([
+			{ "a?": "node | number" },
+			"&",
+			{ a: ["unknown", "=", 0] }
+		])
+		attest(T({})).equals({ a: 0 })
+		attest(
+			$.type([
+				{ "a?": "node | number" },
+				"&",
+				{ a: ["unknown", "=", 0] }
+			]).equals(T)
+		).equals(true)
+	})
+
+	it("a default a cyclic value allows is defined again as the same Type", () => {
+		const $ = scope({ node: { "next?": "node" } })
+		const T = $.type({ a: ["node | number", "=", 0] })
+		attest(T.expression).snap("{ a: number | { next?: $node } = 0 }")
+		attest(T({})).equals({ a: 0 })
+		attest($.type({ a: ["node | number", "=", 0] }).equals(T)).equals(true)
 	})
 })

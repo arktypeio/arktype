@@ -34,6 +34,7 @@ import {
 	type dict,
 	type listable,
 	type mutable,
+	type omit,
 	type requireKeys,
 	returnsReports
 } from "@ark/util"
@@ -44,13 +45,19 @@ import type {
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
-import type { BaseParseContext, BaseParseOptions, NodeId } from "./parse.ts"
+import type { BaseParseContext, BaseParseOptions } from "./parse.ts"
 import type { AliasNode } from "./roots/alias.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
+import type {
+	Discriminant,
+	DiscriminantCases,
+	DiscriminantErrorContext
+} from "./roots/union.ts"
 import type { BaseScope } from "./scope.ts"
+import type { StandardSchemaV1 } from "./shared/standardSchema.ts"
 import { canJit, tryJit, type NodeCompiler } from "./shared/compile.ts"
 import type {
 	ArkEnv,
@@ -108,13 +115,14 @@ import {
 import {
 	composing,
 	hasArkKind,
-	inProgress,
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
 	printSelfAsThis,
 	removedProblemMessage,
-	withoutHoleNames
+	resolving,
+	withoutHoleNames,
+	writeInvalidMetaMessage
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -174,8 +182,16 @@ const callableOf = (cache: NodeCache) =>
 		pipedFromCtx?: Traversal | undefined,
 		onFail?: ArkErrors.Handler | null
 	) => {
-		if (pipedFromCtx)
-			return pipe(siteTraversalOf(pipedFromCtx), cache.self, data)
+		if (pipedFromCtx) {
+			const ctx = siteTraversalOf(pipedFromCtx)
+			const { lbl } = ctx
+			if (lbl !== undefined) ctx.lbl = undefined
+			try {
+				return pipe(ctx, cache.self, data)
+			} finally {
+				if (lbl !== undefined) ctx.lbl = lbl
+			}
+		}
 
 		const rootApply = cache.rootApply
 		return rootApply === undefined ?
@@ -200,6 +216,8 @@ class NodeCache {
 	replacedRefs: boolean | undefined
 	/** whether it's what its scope's nodesByKey holds for its inner and meta */
 	key: string | undefined
+	/** how many checks made as it's created still wait for an alias to resolve */
+	unchecked: number | undefined
 	/** the node a Scope bound it from, whose id, inner and meta it keeps */
 	boundFrom: BaseNode | undefined
 	/** whether every alias it reaches has resolved */
@@ -234,6 +252,21 @@ class NodeCache {
 	/** the `allows` a Type has while it defers compiling until it's used */
 	preJit: BaseNode["allows"] | undefined
 	isReusableLeaf: boolean | undefined
+	unitBranches: (Unit.Node | Morph.Node)[] | undefined
+	joined: ReadonlySet<BaseRoot> | undefined
+	disc: Discriminant | null | undefined
+	discCases: DiscriminantCases | undefined
+	missLists: boolean | undefined
+	discDesc: string | undefined
+	discMeta: ArkEnv.meta | undefined
+	missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
+	travMorphs: array<Morph | BaseRoot> | undefined
+	errorCtx: unknown
+	standard: StandardSchemaV1.ArkTypeProps | undefined
+	keyof: BaseRoot | undefined
+	resolution: BaseRoot | undefined
+	aliasTarget: BaseRoot | undefined
+	aliasResolve?: () => BaseRoot
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
 	declare applyInPlace?: TraverseApply
@@ -541,7 +574,7 @@ export abstract class BaseNode<
 		const entersAlias =
 			this.isCyclic &&
 			(this.c.isAliasResolution ||
-				isNode($ark.nodesById[this.id]) ||
+				isNode($ark.nodesById.get(this.id)) ||
 				(this.is("intersection") && !!this.structure?.props.length))
 		return isResolutionFinal() ?
 				(this.c.entersAlias = entersAlias)
@@ -552,7 +585,7 @@ export abstract class BaseNode<
 	get trackedId(): string {
 		if (this.c.trackedId) return this.c.trackedId
 		if (!isResolutionFinal()) return this.id
-		if (this.is("alias") || isNode($ark.nodesById[this.id]))
+		if (this.is("alias") || isNode($ark.nodesById.get(this.id)))
 			return (this.c.trackedId = this.id)
 		const alias = referencesThroughAliases(this.references).find(
 			reference =>
@@ -609,7 +642,8 @@ export abstract class BaseNode<
 						reached.set(operand.id, operand)
 					continue
 				}
-				const registered = $ark.nodesById[reference.reference as NodeId]
+				const registered =
+					$ark.nodesById.get(reference.reference) ?? reference.target
 				const resolution =
 					isNode(registered) ? registered
 					: !reference.isIo ? reference.resolution
@@ -626,7 +660,7 @@ export abstract class BaseNode<
 
 	// entered directly, it keys its output by id as an alias resolving to it does
 	get tfsById(): boolean {
-		return this.hasAlias && $ark.nodesById[this.id] !== undefined
+		return this.hasAlias && $ark.nodesById.get(this.id) !== undefined
 	}
 
 	/** whether transforming data needs `ctx`: a morph reading it, an alias, or a `ctx` narrow choosing a branch */
@@ -804,11 +838,11 @@ export abstract class BaseNode<
 	}
 
 	deferJit(): void {
-		if (this.c.preJit) return
+		if (this.c.preJit || !Object.isExtensible(this)) return
 		const allows = (this.c.preJit = this.allows)
 		// keeps what compiled, as a detached reference can call this after
 		let compiled: BaseNode["allows"] | undefined
-		this.allows = data => {
+		const wrapper: BaseNode["allows"] = data => {
 			if (compiled !== undefined) return compiled(data)
 			if (this.c.preJit) {
 				if (this.checksUncompiled) {
@@ -817,8 +851,10 @@ export abstract class BaseNode<
 				}
 				this.$.jit(this)
 			}
-			return (compiled = this.allows)(data)
+			// if the node was frozen before jit ran, this.allows wasn't overwritten
+			return (compiled = this.allows === wrapper ? allows : this.allows)(data)
 		}
+		this.allows = wrapper
 	}
 
 	initRootApply(): RootApply {
@@ -985,9 +1021,14 @@ export abstract class BaseNode<
 	}
 
 	get description(): string {
-		return (this.c.description ??=
-			this.meta?.description ??
-			composing(() => this.$.cfg[this.kind].description(this as never)))
+		if (this.c.description !== undefined) return this.c.description
+		if (this.meta?.description !== undefined)
+			return (this.c.description = this.meta.description)
+		const configured = this.$.cfg[this.kind].description
+		return (this.c.description =
+			typeof configured === "string" ? configured : (
+				composing(() => configured(this as never))
+			))
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -1281,14 +1322,13 @@ export abstract class BaseNode<
 		| Extract<ReturnType<mapper>, null> {
 		const ctx = this._tfContext(opts)
 		if (!ctx.throughAliases) return this._tf(mapper, ctx) as never
-		// an alias to a resolution still transforming resolves once the transform returns
-		inProgress.resolutions++
+		// an alias to a resolution still transforming resolves once the transform
+		// returns, as do the checks a union it built left for then
 		let transformed: BaseNode | null
 		try {
-			transformed = this._tf(mapper, ctx)
+			transformed = resolving(() => this._tf(mapper, ctx))
 		} finally {
-			inProgress.resolutions--
-			for (const id in ctx.synth) delete $ark.nodesById[ctx.synth[id].id]
+			for (const id in ctx.synth) $ark.nodesById.delete(ctx.synth[id].id)
 		}
 		if (!transformed || opts?.names) return transformed as never
 		// again, now that synthetics have printed their names
@@ -1434,12 +1474,22 @@ export abstract class BaseNode<
 			// a morph's only child is the head of its pipeline
 			if (k === "morphs") {
 				const { head, piped } = this as {} as Morph.Node
-				const transformed = head?._tf(mapper, ctx)
-				if (transformed) return [k, [transformed, ...piped]]
+				const transformedHead = head?._tf(mapper, ctx)
+				const transformedPiped =
+					ctx.throughMorphs ?
+						piped.map(step =>
+							hasArkKind(step, "root") ?
+								(step._tf(mapper, ctx) ?? $ark.kw.unknown)
+							:	step
+						)
+					:	piped
+				if (transformedHead) return [k, [transformedHead, ...transformedPiped]]
 				// a pruned head accepts anything, so what it piped to isn't promoted
 				return [
 					k,
-					hasArkKind(piped[0], "root") ? [$ark.kw.unknown, ...piped] : piped
+					hasArkKind(transformedPiped[0], "root") ?
+						[$ark.kw.unknown, ...transformedPiped]
+					:	transformedPiped
 				]
 			}
 			const children = v as listable<BaseNode>
@@ -1472,6 +1522,14 @@ export abstract class BaseNode<
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
+
+		// a cast or JavaScript can pass anything, which spreading would drop
+		if (
+			typeof meta !== "string" &&
+			typeof meta !== "function" &&
+			(typeof meta !== "object" || meta === null || Array.isArray(meta))
+		)
+			throwParseError(writeInvalidMetaMessage(printable(meta)))
 
 		// 2.x's slot, which a cast or JavaScript still passes
 		if (typeof meta === "object" && "problem" in meta)
@@ -1512,10 +1570,14 @@ export abstract class BaseNode<
 				})) satisfies DeepNodeTransformation
 
 		if (normalized.boundary === "self") {
-			return this.$.node(
+			const configured = this.$.node(
 				this.kind,
 				mapper(this.kind, { ...this.inner, meta: this.meta }) as never
-			) as never
+			)
+			return (
+				this.isRoot() ?
+					this.$.fin(configured as never)
+				:	configured) as never
 		}
 
 		const rawSelected = this._select(normalized)
@@ -1523,14 +1585,16 @@ export abstract class BaseNode<
 
 		const shouldTf: ShouldTransformFn =
 			normalized.boundary === "child" ?
-				(node, ctx) => ctx.root.children.includes(node as never)
+				(node, ctx) =>
+					node === ctx.root || ctx.root.children.includes(node as never)
 			: normalized.boundary === "shallow" ? node => node.kind !== "structure"
 			: () => true
 
 		return this.$.fin(
 			this.transform(mapper, {
 				shouldTf,
-				selected
+				selected,
+				throughMorphs: normalized.boundary !== "shallow"
 			}) as never
 		)
 	}
@@ -1701,6 +1765,8 @@ const simulatedEntriesOf = (node: BaseNode): BaseNode["kv"] =>
 		node.kv.filter(([k]) => k !== "minVariadicLength")
 	: node.is("structure") && node.inner.order ?
 		node.kv.filter(([k]) => k !== "order")
+	: node.kind !== "unit" && "unit" in node.inner ?
+		node.kv.filter(([k]) => k !== "unit")
 	:	node.kv
 
 let isSubsuming = false
@@ -1710,6 +1776,8 @@ const isSubsumed = (
 	other: BaseRoot,
 	s: SimulationState
 ): boolean => {
+	if (branch.is("morph") && other.is("morph") && !branch.sameMorphs(other))
+		return false
 	let intersection: BaseRoot | Disjoint
 	isSubsuming = true
 	try {
@@ -2086,6 +2154,8 @@ export type DeepNodeTransformOptions = {
 	reduced?: boolean
 	selected?: readonly BaseNode[] | undefined
 	names?: Record<string, string>
+	/** whether to also transform root schemas piped after a morph */
+	throughMorphs?: boolean
 }
 
 export type ShouldTransformFn = (

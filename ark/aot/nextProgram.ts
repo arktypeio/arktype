@@ -51,18 +51,24 @@ import { createAsyncPrecompiler } from "./worker.ts"
 // a build's modules import and every module's answer: what Turbopack restores
 // is then what this build's read wrote, and a file the read changed invalidates
 // what reads it, as any changed source does. The units go in
-// node_modules/.bin/.ark, odd as that is for modules, as a build resolves them
-// from there, and Turbopack denies .next
-const binOf = (root: string): string | undefined => {
+// node_modules/.cache/ark-units, where a build resolves them and Turbopack
+// doesn't deny them as it does .next
+const nodeModulesOf = (root: string): string | undefined => {
+	let cacheOnly: string | undefined
 	for (let dir = root; ; dir = dirname(dir)) {
-		const bin = join(dir, "node_modules/.bin")
-		if (existsSync(bin)) return bin
-		if (dir === dirname(dir)) return
+		const modules = join(dir, "node_modules")
+		if (existsSync(modules)) {
+			// skip a node_modules created only for .cache/ark-programs so warm builds
+			// keep resolving the same package-manager node_modules as cold builds
+			if (readdirSync(modules).some(name => name !== ".cache")) return modules
+			cacheOnly ??= modules
+		}
+		if (dir === dirname(dir)) return cacheOnly
 	}
 }
 
 export const isProgramUnit = (id: string): boolean =>
-	/[/\\]node_modules[/\\]\.bin[/\\]\.ark[/\\]/.test(id)
+	/[/\\]node_modules[/\\]\.cache[/\\]ark-units[/\\]/.test(id)
 
 // one module as a build's read wrote it, which its own loader call answers from
 export interface ProgramAnswer extends RenderedDiagnostics {
@@ -94,8 +100,13 @@ const programsDirOf = (root: string) =>
 
 // one for each project and option set, kept from build to build so an answer
 // Turbopack's cache holds a module's output against stays the file it read
-const programDirOf = (root: string, opts: PrecompilePluginOptions): string =>
-	join(programsDirOf(root), hashOf(JSON.stringify(opts)))
+const programDirOf = (root: string, opts: PrecompilePluginOptions): string => {
+	const normalized =
+		opts.cwd !== undefined && realPathOf(opts.cwd) === realPathOf(root) ?
+			(({ cwd: _, ...rest }) => rest)(opts)
+		:	opts
+	return join(programsDirOf(root), hashOf(JSON.stringify(normalized)))
+}
 
 export const doneFileOf = (dir: string): string => join(dir, "done.json")
 
@@ -138,6 +149,8 @@ const readProgram = async (
 	opts: PrecompilePluginOptions,
 	{ aliases, problem }: ReadSettings
 ): Promise<ProgramDone> => {
+	// find the nearest existing node_modules before creating node_modules/.cache/ark-programs
+	const modules = nodeModulesOf(root)
 	const dir = programDirOf(root, opts)
 	mkdirSync(dir, { recursive: true })
 	// another option set's, whose answers a module's cached output may name
@@ -148,7 +161,7 @@ const readProgram = async (
 	const done =
 		problem ?
 			refusalOf(problem)
-		:	await readAndWrite(root, opts, dir, treeOf(root), aliases).catch(
+		:	await readAndWrite(root, opts, dir, treeOf(root), aliases, modules).catch(
 				(e): ProgramDone => refusalOf(`reading it threw ${String(e)}`)
 			)
 	// its warnings aside, which each build reports anew
@@ -399,7 +412,7 @@ const withUnitFiles = (
 			/\\/g,
 			"/"
 		)
-		return JSON.stringify(path.startsWith(".") ? path : `./${path}`)
+		return JSON.stringify(/^\.\.?(?:\/|$)/.test(path) ? path : `./${path}`)
 	})
 
 const readAndWrite = async (
@@ -407,7 +420,8 @@ const readAndWrite = async (
 	opts: PrecompilePluginOptions,
 	dir: string,
 	{ scripts, foreign }: Tree,
-	aliases: Record<string, unknown>
+	aliases: Record<string, unknown>,
+	modules: string | undefined
 ): Promise<ProgramDone> => {
 	checkArktypeVersion()
 	if (foreign) {
@@ -415,16 +429,24 @@ const readAndWrite = async (
 			`${printablePathOf(root, foreign)} may import what it can't see`
 		)
 	}
-	const bin = binOf(root)
-	if (!bin) return refusalOf("no node_modules/.bin can hold its modules")
+	if (!modules) return refusalOf("no node_modules can hold its modules")
+	const cacheDir = join(modules, ".cache")
+	const unitsRoot = join(cacheDir, "ark-units")
+	const unitsDir = join(unitsRoot, hashOf(root))
 	const host = createNodeHost(opts)
 	// a unit imports arktype's runtime from there, which must be the program's
-	const [fromUnits, fromRoot] = [dirname(dirname(bin)), root].map(from =>
+	const unitsFrom =
+		existsSync(unitsRoot) ? realPathOf(unitsRoot)
+		: existsSync(cacheDir) ? join(realPathOf(cacheDir), "ark-units")
+		: join(realPathOf(modules), ".cache/ark-units")
+	const [fromUnits, fromRoot] = [unitsFrom, root].map(from =>
 		host.resolve("arktype/runtime", join(from, "index.js"))
 	)
-	if (fromUnits !== fromRoot)
-		return refusalOf(`${printablePathOf(root, bin)} resolves another arktype`)
-	const unitsDir = join(bin, ".ark", hashOf(root))
+	if (!fromRoot || fromUnits !== fromRoot) {
+		return refusalOf(
+			`${printablePathOf(root, unitsRoot)} resolves another arktype`
+		)
+	}
 	const transformedFilter = transformedFilterOf(
 		optedInPackagesOf(root, opts.dependencies)
 	)
@@ -674,8 +696,9 @@ export const readProjectWith = async (
 	opts: PrecompilePluginOptions
 }> => {
 	const read = nextConfigReadOf(config, isOwnLoader)
+	const raw = given ?? ("options" in read ? read.options : {})
 	const opts = resolvedOptionsOf(
-		withSettingsFile(given ?? ("options" in read ? read.options : {})),
+		withSettingsFile(raw.cwd !== undefined ? raw : { ...raw, cwd: root }),
 		true
 	)
 	if (!readsWith(opts)) return { refused: undefined, warnings: [], opts }

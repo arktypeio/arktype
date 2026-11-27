@@ -38,8 +38,10 @@ const hasFiniteMember = (node: BaseNode, resolving: Set<string>): boolean => {
 	}
 	if (node.is("union"))
 		return node.children.some(child => hasFiniteMember(child, resolving))
-	if (node.is("morph"))
-		return !node.head || hasFiniteMember(node.head, resolving)
+	if (node.is("morph")) {
+		const input = node.declaredIn ?? node.head
+		return !input || hasFiniteMember(input, resolving)
+	}
 	if (!node.is("intersection") || !node.structure) return true
 	const structure = node.structure
 	const minLength =

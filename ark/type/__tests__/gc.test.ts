@@ -78,6 +78,23 @@ contextualize(() => {
 		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
 	})
 
+	it("symbols a type's meta is keyed by or holds", async () => {
+		const create = (): Record<string, WeakRef<object>> => {
+			const key = Symbol("gcMetaKey")
+			const held = Symbol("gcMetaValue")
+			type("string").configure({ [key]: true, held } as never)
+			return {
+				key: new WeakRef(key as never),
+				held: new WeakRef(held as never)
+			}
+		}
+		const refs = create()
+		// V8 holds the one symbol a read was keyed by until it's keyed by another
+		create()
+		for (const ref of Object.values(refs)) await collectTarget(ref)
+		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
+	})
+
 	it("values captured by a type compiled with one it references", async () => {
 		const Inner = type({ inner: "string" })
 		const capture = () => {
@@ -206,5 +223,49 @@ contextualize(() => {
 		const ref = create()
 		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1773
+	it("collects dynamically created recursive this and cyclic scope types", async () => {
+		const createThis = () => {
+			const T = type({ gcThisKey: "string", "children?": "this[]" })
+			// exercise both cold and JIT-compiled paths
+			attest(
+				T.allows({ gcThisKey: "a", children: [{ gcThisKey: "b" }] })
+			).equals(true)
+			attest(T.allows({ gcThisKey: "a", children: [{ gcThisKey: 1 }] })).equals(
+				false
+			)
+			return new WeakRef(T)
+		}
+		const createCyclicScope = () => {
+			const $ = scope({
+				node: { gcScopeKey: "string", "next?": "other" },
+				other: { gcOtherKey: "number", "back?": "node" }
+			})
+			const types = $.export()
+			attest(
+				types.node.allows({
+					gcScopeKey: "a",
+					next: { gcOtherKey: 1, back: { gcScopeKey: "b" } }
+				})
+			).equals(true)
+			attest(
+				types.node.allows({
+					gcScopeKey: "a",
+					next: { gcOtherKey: "bad" }
+				})
+			).equals(false)
+			return [new WeakRef($), new WeakRef(types.node), new WeakRef(types.other)]
+		}
+		const thisRef = createThis()
+		const scopeRefs = createCyclicScope()
+		for (const ref of [thisRef, ...scopeRefs]) await collectTarget(ref)
+		attest(thisRef.deref()).equals(undefined)
+		attest(scopeRefs.map(r => r.deref())).equals([
+			undefined,
+			undefined,
+			undefined
+		])
 	})
 })

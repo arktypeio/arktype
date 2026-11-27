@@ -9,12 +9,13 @@ import {
 	statSync,
 	writeFileSync
 } from "node:fs"
-import { dirname, join, relative } from "node:path"
+import { dirname, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { threadId } from "node:worker_threads"
 import {
 	arkPackageName,
 	packageRootOf,
+	projectOf,
 	readFile,
 	type PrecompileHost
 } from "./host.ts"
@@ -133,27 +134,43 @@ export const fingerprintOfCode = (): string => (fingerprint ??= fingerprintOf())
 export const mtimeOf = (file: string): number =>
 	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
 
-// a cache's answers outlive the build: one in node_modules/.cache/ark where
-// the build runs, as Vite keeps its own, for each version of the code, which
-// replaces those of others. Like Vite's, whoever writes it writes the bundle,
-// so it's restored only from a build as trusted as the one reading it
+// a cache's answers outlive the build: one in node_modules/.cache/ark under
+// the project's root, as Vite keeps its own, for each version of the code,
+// keeping a few recent siblings so distinct Node runtimes (like Electron's
+// ESLint server and a CLI's Node) don't thrash each other's cache. Like Vite's,
+// whoever writes it writes the bundle, so it's restored only from a build as
+// trusted as the one reading it
 export class AnswerCache {
 	dir: string
 
 	// past which those written longest ago go
 	static maxEntries = 50_000
 
+	// distinct runtime/code fingerprints kept side by side before pruning oldest
+	static maxVersions = 4
+
 	constructor(cwd: string) {
 		const version = fingerprintOfCode()
-		const root = join(cwd, "node_modules", ".cache", "ark")
+		const resolvedCwd = resolve(cwd)
+		const project = projectOf(resolvedCwd)
+		const base =
+			existsSync(join(project, "package.json")) ? project : resolvedCwd
+		const root = join(base, "node_modules", ".cache", "ark")
 		this.dir = join(root, version)
-		if (existsSync(root)) {
-			for (const name of readdirSync(root)) {
-				if (name !== version && isHash(name))
-					rmSync(join(root, name), { recursive: true, force: true })
-			}
-		}
 		mkdirSync(this.dir, { recursive: true })
+		const siblings = readdirSync(root).filter(
+			name => name !== version && isHash(name)
+		)
+		const maxSiblings = Math.max(0, AnswerCache.maxVersions - 1)
+		if (siblings.length > maxSiblings) {
+			const paths = siblings.map(name => join(root, name))
+			const mtimes = Object.fromEntries(
+				paths.map(path => [path, mtimeOf(path)])
+			)
+			paths.sort((l, r) => mtimes[l] - mtimes[r])
+			for (const path of paths.slice(0, paths.length - maxSiblings))
+				rmSync(path, { recursive: true, force: true })
+		}
 		const names = readdirSync(this.dir)
 		if (names.length > AnswerCache.maxEntries) {
 			const paths = names.map(name => join(this.dir, name))

@@ -11,6 +11,8 @@ description: Install ArkType, define a Type and precompile it in your bundler.
 
 `arktype` defines and validates Types. [`@ark/aot`](/docs/precompile), a dev dependency, precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL: every Type works without it.
 
+Run `npx arktype init` to detect your tooling, create `ark.json` (with `"$schema"` for editor completion) and install the bundled [agent skill](/docs/agents).
+
 ## Define a Type
 
 ```ts title="src/user.ts"

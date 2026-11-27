@@ -32,9 +32,11 @@ type TupleLengthOption = {
 
 export const spreadVariadicElements = (
 	elementArbitraries: fc.Arbitrary<unknown>[],
-	tupleElements: SequenceTuple,
-	refinements: fc.ArrayConstraints
+	node: nodeOfKind<"sequence">,
+	refinements: fc.ArrayConstraints,
+	ctx: Ctx
 ): fc.Arbitrary<unknown[]> => {
+	const tupleElements = node.tuple
 	const omittableCount = tupleElements.filter(isOmittable).length
 	const options: TupleLengthOption[] = []
 
@@ -91,12 +93,17 @@ export const spreadVariadicElements = (
 		)
 	}
 
-	return fc.constantFrom(...options).chain(({ end, variadicConstraints }) => {
+	const optionArbitraries = options.map(({ end, variadicConstraints }) => {
 		const tupleArbitraries = tupleElements
 			.slice(0, end)
 			.map((element, i) =>
 				element.kind === "variadic" ?
-					fc.array(elementArbitraries[i], variadicConstraints)
+					getPossiblyWeightedArray(
+						fc.array(elementArbitraries[i], variadicConstraints),
+						node,
+						variadicConstraints ?? {},
+						ctx
+					)
 				:	elementArbitraries[i]
 			)
 		return fc
@@ -107,4 +114,14 @@ export const spreadVariadicElements = (
 				)
 			)
 	})
+
+	return (
+		optionArbitraries.length === 1 ? optionArbitraries[0]
+		: ctx.tieStack.length ?
+			fc.oneof(
+				{ maxDepth: 4, depthIdentifier: ctx.depthIdentifier },
+				...optionArbitraries
+			)
+		:	fc.oneof(...optionArbitraries)
+	)
 }

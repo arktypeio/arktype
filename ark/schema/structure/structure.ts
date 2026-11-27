@@ -69,12 +69,12 @@ import {
 	isResolutionFinal,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
-import type { Index } from "./index.ts"
+import { writeInvalidPropertyKeyMessage, type Index } from "./index.ts"
 import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
-import { arrayIndexMatcher, maxArrayLength } from "./shared.ts"
+import { arrayIndexMatcher, arrayPathKeyOf, maxArrayLength } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
@@ -519,16 +519,42 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	pick(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
-		return this.$.node("structure", this.filterKeys("pick", keys))
+		const inner = this.filterKeys("pick", keys)
+		delete inner.sequence
+		return this.$.node("structure", inner)
 	}
 
 	omit(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
-		return this.$.node("structure", this.filterKeys("omit", keys))
+		const inner = this.filterKeys("omit", keys)
+		delete inner.sequence
+		return this.$.node("structure", inner)
 	}
 
 	// a prop changing kind would move to its kind's canonical place
-	optionalize(): StructureNode {
+	optionalize(...keys: KeyOrKeyNode[]): StructureNode {
+		if (keys.length) {
+			this.assertHasKeys(keys)
+			if (!this.required?.length) return this
+			const nextRequired: Required.Node[] = []
+			const nextOptional: Optional.Node[] =
+				this.optional ? [...this.optional] : []
+			let changed = false
+			for (const prop of this.required) {
+				if (keys.some(k => typeOrTermExtends(prop.key, k))) {
+					nextOptional.push(this.$.node("optional", prop.inner))
+					changed = true
+				} else nextRequired.push(prop)
+			}
+			if (!changed) return this
+			const { required: _, optional: __, ...inner } = this.inner
+			return this.$.node("structure", {
+				...inner,
+				...(nextRequired.length ? { required: nextRequired } : {}),
+				optional: nextOptional,
+				order: this.keyOrder
+			})
+		}
 		const { required, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
@@ -540,7 +566,34 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	require(): StructureNode {
+	require(...keys: KeyOrKeyNode[]): StructureNode {
+		if (keys.length) {
+			this.assertHasKeys(keys)
+			if (!this.optional?.length) return this
+			const nextRequired: Required.Node[] =
+				this.required ? [...this.required] : []
+			const nextOptional: Optional.Node[] = []
+			let changed = false
+			for (const prop of this.optional) {
+				if (keys.some(k => typeOrTermExtends(prop.key, k))) {
+					nextRequired.push(
+						this.$.node("required", {
+							key: prop.key,
+							value: prop.requiredValue
+						})
+					)
+					changed = true
+				} else nextOptional.push(prop)
+			}
+			if (!changed) return this
+			const { required: _, optional: __, ...inner } = this.inner
+			return this.$.node("structure", {
+				...inner,
+				required: nextRequired,
+				...(nextOptional.length ? { optional: nextOptional } : {}),
+				order: this.keyOrder
+			})
+		}
 		const { optional, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
@@ -652,23 +705,25 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			const keys = this.index ? ownKeysOf(data) : Object.keys(data)
+			const isArray = Array.isArray(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
 
 				if (this.index) {
+					const pathKey = isArray ? arrayPathKeyOf(k) : k
 					for (const node of this.index) {
 						if (node.allowsKey(k, ctx)) {
 							if (trav === "Allows") {
 								const result = travKey(
-									k,
+									pathKey,
 									() => node.value.tAllows(data[k as never], ctx),
 									ctx
 								)
 								if (!result) return false
 							} else {
 								travKey(
-									k,
+									pathKey,
 									() =>
 										applyValue(
 											node.value,
@@ -710,8 +765,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const errN = ctx.errN
 		const copies = !this.writesInto(ctx)
 		let out: any = data
-		const tfKey = (k: Key, value: unknown, node: BaseNode, input = value) => {
-			let transformed = travKey(k, () => transform(ctx, node, input), ctx)
+		const tfKey = (
+			k: Key,
+			value: unknown,
+			node: BaseNode,
+			input = value,
+			pathKey: PropertyKey = k
+		) => {
+			let transformed = travKey(pathKey, () => transform(ctx, node, input), ctx)
 			if (input !== value)
 				transformed = mergeTransformed(input, value, transformed)
 			if (Object.is(transformed, value)) return value
@@ -756,6 +817,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		if (this.index) {
 			const keys = ownKeysOf(data)
+			const isArray = Array.isArray(data)
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
 				if (hasIndexedProp && k in this.byKey) continue
@@ -773,7 +835,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						k,
 						value,
 						node.value,
-						value === input || node.value.allows(value) ? value : input
+						value === input || node.value.allows(value) ? value : input,
+						isArray ? arrayPathKeyOf(k) : k
 					)
 				}
 			}
@@ -798,13 +861,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
 			if (prop.holdsValue(data)) this.tfSharedKey(data, prop.key, ctx)
-		for (const k of ownKeysOf(data))
-			if (!(k in this.byKey)) this.tfSharedKey(data, k, ctx)
+		const isArray = Array.isArray(data)
+		for (const k of ownKeysOf(data)) {
+			if (!(k in this.byKey))
+				this.tfSharedKey(data, k, ctx, isArray ? arrayPathKeyOf(k) : k)
+		}
 		return !ctx.failFast || ctx.errN === errN
 	}
 
 	/** transforms a key's value through each constraint transforming it: its prop or the index signatures it matches */
-	private tfSharedKey(data: object, k: Key, ctx: InternalTraversal): void {
+	private tfSharedKey(
+		data: object,
+		k: Key,
+		ctx: InternalTraversal,
+		pathKey: PropertyKey = k
+	): void {
 		const prop = this.byKey[k]
 		if (prop && !this.tfsOf(prop).length) return
 		const constraints: BaseNode[] = prop ? [prop.value] : []
@@ -818,7 +889,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (
 			!steps.length ||
 			!travKey(
-				k,
+				pathKey,
 				() => constraints.every(n => allowsInBranch(ctx, n, input)),
 				ctx
 			)
@@ -832,7 +903,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const stepInput =
 				value === input || step.node.allows(value) ? value : input
 			const transformed = travKey(
-				k,
+				pathKey,
 				() => transform(ctx, step.node, stepInput),
 				ctx
 			)
@@ -1030,9 +1101,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence) js.check(this.sequence)
 
 		if (this.index) {
-			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.jsEntry(js.const("k", "keys[i]"), "string")
-			)
+			js.const("keys", "Object.keys(data)")
+				.const("isArray", "Array.isArray(data)")
+				.for("i < keys.length", () =>
+					this.jsEntry(js.const("k", "keys[i]"), "string")
+				)
 			if (this.indexSyms) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
 					this.jsEntry(js, "symbol")
@@ -1163,13 +1236,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			})
 		}
 		if (transformedIndex.length) {
+			js.const("isArray", "Array.isArray(data)")
 			this.jsForOwnKeys(js, "data", () => {
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.byKey)}`, () => js.line("continue"))
 				const tfKey = (steps: TransformStep[]) =>
 					js.const("value", "data[k]").tfKey("transformed", "value", steps, {
 						keyExpr: "k",
-						onChange: () => this.jsCopy(js).line("out[k] = transformed")
+						pathKeyExpr: jsArrayPathKey(js),
+						onChange: () =>
+							this.jsCopy(js).line(
+								`${js.ref(setOwnValue)}(out, k, transformed)`
+							)
 					})
 				if (transformedIndex.length === 1) {
 					return js.if(
@@ -1211,7 +1289,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			`${keys.map(k => `!(${js.serialize(k)} in data) && `).join("")}${this.jsShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype`,
 			() => {
 				js.const("out", "{ ...data }")
-				for (const prop of this.defaultable) compileDefault(js, prop, "out")
+				for (const prop of this.defaultable)
+					compileDefault(js, prop, "out", true)
 				return this.jsDeclaredCopy(js, keys).return("out")
 			}
 		)
@@ -1224,7 +1303,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		let first = options?.first === true
 		for (const node of this.defaultable) {
 			js.if(`!(${node.jsHoldsValue(js, "data")})`, () =>
-				compileDefault(this.jsCopy(js, { first }), node, "out")
+				compileDefault(
+					this.jsCopy(js, { first }),
+					node,
+					"out",
+					!node.defaultsUndefined
+				)
 			)
 			first = false
 		}
@@ -1454,7 +1538,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				literalOf(slots, () => "null")
 			)
 			for (const prop of literal)
-				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop)))
+				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop), true))
 		}
 		const copies =
 			this.declaresKey("__proto__") ?
@@ -1484,11 +1568,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 		for (const prop of added) {
 			const store = () =>
-				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop)))
+				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop), true))
 			if (prop.is("required")) store()
 			else {
 				js.if(prop.jsHoldsValue(js, "data"), store)
-				if (prop.hasDef()) js.else(() => compileDefault(js, prop, "result"))
+				if (prop.hasDef())
+					js.else(() => compileDefault(js, prop, "result", true))
 			}
 		}
 		for (const prop of this.protoProps) {
@@ -1505,7 +1590,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				() =>
 					js.if(
 						`!(k in ${js.ref(this.byKey)}) && (${this._jsDeclaresKey(js)})`,
-						() => js.line("result[k] = out[k]")
+						() => js.line(`${js.ref(setOwnValue)}(result, k, out[k])`)
 					),
 				"outKeys",
 				"outSymbols"
@@ -1551,7 +1636,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.index) {
 			for (const node of this.index) {
 				js.if(js.allows(node.signature, "k"), () =>
-					js.travKey("k", "data[k]", node.value)
+					js.travKey(
+						keyDomain === "string" ? jsArrayPathKey(js) : "k",
+						"data[k]",
+						node.value
+					)
 				)
 			}
 		}
@@ -1580,6 +1669,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js
 	}
 }
+
+// `k` as its path names it, where a loop over data's keys has declared isArray
+const jsArrayPathKey = (js: NodeCompiler): string =>
+	`(isArray ? ${js.ref(arrayPathKeyOf)}(k) : k)`
 
 const defaultableMorphsCache = new WeakCache<Morph>()
 
@@ -1633,25 +1726,37 @@ const getPossibleMorph = (
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
-// assigning "__proto__" invokes Object.prototype's setter instead of defining an own key
+// assigning "__proto__" or an inherited accessor/read-only property invokes
+// prototype setters or throws instead of defining an own key
 const jsSetOwnProp = (
 	js: NodeCompiler,
 	target: string,
 	key: Key,
-	value: string
+	value: string,
+	isPlain = false
 ): string =>
 	key === "__proto__" ?
 		`Object.defineProperty(${target}, "__proto__", { value: ${value}, writable: true, enumerable: true, configurable: true })`
-	:	`${target}${js.prop(key)} = ${value}`
+	: key in Object.prototype ?
+		`${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
+	: isPlain ? `${target}${js.prop(key)} = ${value}`
+	: `Object.getPrototypeOf(${target}) === Object.prototype ? (${target}${js.prop(key)} = ${value}) : ${js.ref(setOwnValue)}(${target}, ${js.serialize(key)}, ${value})`
 
 export const compileDefault = (
 	js: NodeCompiler,
 	node: Optional.Node.withDefault,
-	out: string
+	out: string,
+	isPlain = false
 ): NodeCompiler => {
 	if (hasPlainDefault(node)) {
 		return js.line(
-			jsSetOwnProp(js, out, node.key, serializeDefault(js, node.default))
+			jsSetOwnProp(
+				js,
+				out,
+				node.key,
+				serializeDefault(js, node.default),
+				isPlain
+			)
 		)
 	}
 	return compileDefaultMorph(
@@ -1780,6 +1885,20 @@ export const normalizeIndex = (
 		k => k.is("unit")
 	)
 
+	for (const n of enumerableBranches) {
+		if (typeof n.unit !== "string" && typeof n.unit !== "symbol")
+			throwParseError(writeInvalidPropertyKeyMessage(signature.expression))
+	}
+
+	if (
+		nonEnumerableBranches.length &&
+		!signature.equals($ark.kw.string) &&
+		!signature.equals($ark.kw.symbol) &&
+		!signature.equals($ark.kw.key) &&
+		!signature.extends($ark.kw.key)
+	)
+		throwParseError(writeInvalidPropertyKeyMessage(signature.expression))
+
 	if (!enumerableBranches.length) {
 		return {
 			index: $.node("index", { signature: signature as Index.KeyNode, value })
@@ -1825,4 +1944,4 @@ export const writeDuplicateKeyMessage = <key extends Key>(
 ): writeDuplicateKeyMessage<key> => `Duplicate key ${printable(key) as never}`
 
 export type writeDuplicateKeyMessage<key extends Key> =
-	`Duplicate key '${describe<key>}'`
+	`Duplicate key ${describe<key>}`

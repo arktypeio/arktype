@@ -55,6 +55,8 @@ export class RuntimeState {
 	groups: BranchState[] = []
 	// a right bound's root and the operand it bounded, until the next operand
 	rightBounded: { root: BaseRoot; operand: BaseRoot } | undefined
+	// whether the operand immediately before a finalizer was right-bounded
+	trailingRightBounded = false
 
 	/** what it's parsing, scanned up to its next token */
 	sc: Scanner
@@ -90,6 +92,7 @@ export class RuntimeState {
 	finalize(finalizer: FinalizingLookahead): void {
 		if (this.groups.length) return this.error(writeUnclosedGroupMessage(")"))
 
+		this.trailingRightBounded = this.rightBounded?.root === this.root
 		this.finalizeBranches()
 		this.finalizer = finalizer
 	}

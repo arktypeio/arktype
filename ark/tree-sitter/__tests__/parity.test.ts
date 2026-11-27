@@ -5,6 +5,7 @@ import {
 	readExpected,
 	readSource
 } from "@ark/editor-conformance/highlighting/check.ts"
+import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { Language, Parser, Query } from "web-tree-sitter"
@@ -17,7 +18,8 @@ import {
 	defaultLanguages,
 	ecmaInjections,
 	helixTargetOptions,
-	runTarget
+	runTarget,
+	treeSitterCli
 } from "tree-sitter-arktype/test/target.ts"
 
 const modules = (path: string) =>
@@ -26,6 +28,16 @@ const modules = (path: string) =>
 contextualize(() => {
 	it("src/ and the .wasm are built from the current grammar", () => {
 		attest(isBuildCurrent()).equals(true)
+	})
+
+	it("invokes tree-sitter-cli via node rather than a POSIX .bin shim", () => {
+		attest(treeSitterCli.endsWith("cli.js")).equals(true)
+		const version = execFileSync(
+			process.execPath,
+			[treeSitterCli, "--version"],
+			{ encoding: "utf8" }
+		)
+		attest(version.trim().startsWith("tree-sitter ")).equals(true)
 	})
 
 	const summarize = (result: ReturnType<typeof checkTarget>) => ({

@@ -85,10 +85,10 @@ contextualize(() => {
 			const loginIssuesJson = JSON.stringify(loginResult.issues)
 			attest(loginIssuesJson.includes(secret)).equals(false)
 			attest(loginIssuesJson).snap(
-				'[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]'
+				'[{"code":"minLength","path":["password"],"expected":"at least 12 characters","message":"must be at least 12 characters"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]'
 			)
 			attest(JSON.stringify(loginResult)).equals(
-				`{"issues":${loginIssuesJson},"message":"password must be at least length 12\\namount must be a number"}`
+				`{"issues":${loginIssuesJson},"message":"password must be at least 12 characters\\namount must be a number"}`
 			)
 
 			// errors: "none" (UndetailedErrors) also serializes out.issues and res.issues safely on BigInt
@@ -265,7 +265,7 @@ contextualize(() => {
 			).throws(`ParseError: ${writeInvalidRangeRuleMessage("min", spoofedObj)}`)
 			attest(() =>
 				type.schema({ domain: "number", min: spoofedObj as never })
-			).throws(`ParseError: ${writeInvalidRangeRuleMessage("min", undefined)}`)
+			).throws.snap("ParseError: Key valueOf is not valid on min schema")
 
 			attest(() =>
 				type.schema({

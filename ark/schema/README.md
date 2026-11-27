@@ -19,4 +19,4 @@ In this system, `L` extends/subtypes/is assignable to `R` if and only if the int
 
 ## Docs
 
-`arktype/schema` isn't semver-stable: an export can change or go in any release. See [arktype.io/docs/internals](https://arktype.io/docs/internals) for its node kinds, schemas, `rootSchema` and `schemaScope`, and how it relates to `arksets` and `arktype`.
+`arktype/schema` isn't semver-stable: an export can change or go in any release. See [arktype.io/docs/internals](https://arktype.io/docs/internals) for its node kinds, schemas, `rootSchema` and `schemaScope`, and how it relates to the set algebra and `arktype`.

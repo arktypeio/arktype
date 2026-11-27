@@ -33,6 +33,9 @@ type("string.uuid") // UUID
 type("string.url") // parsable URL
 type("string.url.http") // http:// or https:// URL
 type("string.nonblank") // non-whitespace string (without trimming)
+type("string.boolean") // "true" | "false"
+type("string.boolean.parse") // morph: "true" | "false" → boolean
+type("string.date.iso.date") // calendar-valid YYYY-MM-DD date string
 type("string.trim") // morph: trims whitespace
 type("string.json.parse") // morph: string → parsed JSON
 type("string.date.parse") // morph: string → Date
@@ -63,7 +66,8 @@ type("number % 2") // divisible by 2
 const User = type({
 	name: "string",
 	"email?": "string.email", // optional: '?' goes on the key
-	age: "number >= 0 = 0" // defaultable, so optional in the input
+	age: "number >= 0 = 0", // defaultable, so optional in the input
+	roles: "string[] = ['member']" // fresh array per call for unit-literal defaults
 })
 
 // index signatures (Record types)
@@ -125,6 +129,7 @@ const User = type({
 const Admin = User.and({ role: "'admin'" })
 const Guest = type({ name: "string" }).or({ token: "string" })
 const Draft = User.partial()
+const OptionalName = User.partial("name")
 const Name = User.pick("name")
 ```
 

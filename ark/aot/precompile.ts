@@ -5,6 +5,7 @@ import {
 	holeNameMarker,
 	writeMissingImportMessage,
 	writePrecompiledUnits,
+	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
 	type ErrorDetail,
@@ -105,6 +106,7 @@ import {
 	type Rule
 } from "./diagnostics.ts"
 import { chainOf, DynamicValue } from "./dynamic.ts"
+import { resolveDroppedNarrowDiagnostics } from "./droppedNarrow.ts"
 import { declaredNameOf } from "./holeNames.ts"
 import {
 	bakeAt,
@@ -343,6 +345,7 @@ import {
 import {
 	commaAfter,
 	firstStatementOf,
+	formatImportName,
 	importsEndOf,
 	inlineModules,
 	keepImportedModules,
@@ -387,6 +390,9 @@ export * from "./presets.ts"
 export * from "./settings.ts"
 export * from "./strategies.ts"
 
+const holdsDefaultsOrAlias = (node: BaseNode): boolean =>
+	holdsDefaults(node) || node.is("alias")
+
 export type PrecompileMode = "standalone" | "cache"
 
 export interface PrecompileOptions extends InterpreterOptions {
@@ -429,6 +435,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	prune?: boolean | undefined
 	/** warn rather than fail where the output may throw at runtime */
 	allowUnsafe?: boolean | undefined
+	/** false silences dropped-narrow warnings when a structural operation drops a root .narrow() */
+	droppedNarrow?: boolean | undefined
 	/** packages that don't opt in, precompiled ("aot") or run on arktype */
 	dependencies?: DependencyModes | undefined
 	/**
@@ -764,6 +772,7 @@ export class Precompiler {
 	private configures: boolean
 	private shadow: boolean
 	private allowUnsafe: boolean
+	private droppedNarrow: boolean
 	// e.g. `{"members":{"meta":false}}`, so shadow mode skips the meta
 	private shadowContract: string | undefined
 	private members: ValidatorMembers
@@ -864,6 +873,7 @@ export class Precompiler {
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
 		this.allowUnsafe = !!opts.allowUnsafe
+		this.droppedNarrow = opts.droppedNarrow !== false
 		this.members = opts.members ?? {}
 		this.errors = opts.errors
 		this.variant = runtimeVariantOf(opts)
@@ -1444,9 +1454,7 @@ export class Precompiler {
 			const collectIn = (root: BaseRoot) => {
 				if (seen.has(root)) return
 				seen.add(root)
-				for (const node of root.selectReferences(
-					node => holdsDefaults(node) || node.is("alias")
-				)) {
+				for (const node of root.selectReferences(holdsDefaultsOrAlias)) {
 					if (node.is("alias")) collectIn(node.resolution)
 					else collectDefaults(node as never, collected)
 				}
@@ -1527,7 +1535,9 @@ export class Precompiler {
 				this.declaresOnly(target.module)
 			) {
 				alias = `${name}_${aliases.size}`
-				;(imports[target.module.id] ??= []).push(`${target.name} as ${alias}`)
+				;(imports[target.module.id] ??= []).push(
+					`${formatImportName(target.name)} as ${alias}`
+				)
 			}
 			aliases.set(binding, alias)
 			return alias
@@ -2311,7 +2321,11 @@ export class Precompiler {
 					target.kind === "binding" || target.kind === "expression" ?
 						this.interpreter.exportValue(target).value
 					:	undefined
-				if (target.kind !== "namespace" && !isBakeable(value)) continue
+				if (
+					target.kind !== "namespace" &&
+					(!isBakeable(value) || this.isExportNonExtensible(target))
+				)
+					continue
 				for (const reference of binding.references) {
 					// an export is read by the modules importing it
 					const [, parent] = operatorOf(reference.id)
@@ -2355,7 +2369,7 @@ export class Precompiler {
 							exported.kind === "binding" || exported.kind === "expression" ?
 								this.interpreter.exportValue(exported).value
 							:	undefined
-						if (isBakeable(value))
+						if (isBakeable(value) && !this.isExportNonExtensible(exported))
 							seeds.push({ runtime, node: parent!, held: validatorHeld, value })
 						break
 					}
@@ -2415,6 +2429,96 @@ export class Precompiler {
 			:	undefined
 	}
 
+	private isNonExtensibleCall(node: Node, module: SourceModule): boolean {
+		const unwrapped = unwrapChain(node)
+		if (unwrapped.type !== "CallExpression") return false
+		const callee = unwrapChain(unwrapped.callee)
+		if (callee.type !== "MemberExpression") return false
+		const obj = unwrapChain(callee.object)
+		if (obj.type !== "Identifier" || module.scopes.byId.get(obj)?.binding)
+			return false
+		const name = memberNameOf(callee)
+		return (
+			obj.name === "Object" &&
+			(name === "freeze" || name === "seal" || name === "preventExtensions")
+		)
+	}
+
+	private isBindingNonExtensible(
+		binding: Binding,
+		module: SourceModule,
+		seen = new Set<Binding>()
+	): boolean {
+		if (seen.has(binding)) return false
+		seen.add(binding)
+		for (const reference of binding.references) {
+			const [operand, parent] = operatorOf(reference.id)
+			if (
+				parent?.type === "CallExpression" &&
+				parent.arguments[0] === operand &&
+				this.isNonExtensibleCall(parent, module)
+			)
+				return true
+			if (
+				parent?.type === "VariableDeclarator" &&
+				parent.init === operand &&
+				parent.id.type === "Identifier"
+			) {
+				const alias = module.scopes.bindingsById.get(parent.id)
+				if (alias && this.isBindingNonExtensible(alias, module, seen))
+					return true
+			}
+		}
+		const init =
+			binding.declaration.type === "VariableDeclarator" ?
+				binding.declaration.init
+			:	undefined
+		return !!init && this.isNodeNonExtensible(init, module, seen)
+	}
+
+	private isNodeNonExtensible(
+		node: Node,
+		module: SourceModule,
+		seen = new Set<Binding>()
+	): boolean {
+		const unwrapped = unwrapChain(node)
+		if (this.isNonExtensibleCall(unwrapped, module)) return true
+		if (unwrapped.type === "Identifier") {
+			const binding = module.scopes.byId.get(unwrapped)?.binding
+			if (binding) return this.isBindingNonExtensible(binding, module, seen)
+		}
+		return false
+	}
+
+	private isExportNonExtensible(target: ImportTarget): boolean {
+		if (target.kind === "binding")
+			return this.isBindingNonExtensible(target.binding, target.module)
+		if (target.kind === "expression")
+			return this.isNodeNonExtensible(target.node, target.module)
+		return false
+	}
+
+	private isSiteNonExtensible(site: Span, module: SourceModule): boolean {
+		const node = nodeAt(module, site)
+		if (!node) return false
+		const [operand, parent] = operatorOf(node)
+		if (
+			parent?.type === "CallExpression" &&
+			parent.arguments[0] === operand &&
+			this.isNonExtensibleCall(parent, module)
+		)
+			return true
+		if (
+			parent?.type === "VariableDeclarator" &&
+			parent.init === operand &&
+			parent.id.type === "Identifier"
+		) {
+			const binding = module.scopes.bindingsById.get(parent.id)
+			return !!binding && this.isBindingNonExtensible(binding, module)
+		}
+		return false
+	}
+
 	// the Types a module exports, by name, as an import of it whole reads them
 	private validatorExportsOf(
 		module: SourceModule,
@@ -2440,7 +2544,8 @@ export class Precompiler {
 				continue
 			}
 			const value = this.exportedValueOf(module, name)
-			if (isBakeable(value)) result[name] = value
+			if (isBakeable(value) && !this.isExportNonExtensible(exported))
+				result[name] = value
 		}
 		return result
 	}
@@ -3355,7 +3460,7 @@ export class Precompiler {
 				.map(
 					([specifier, locals]) =>
 						`\nimport { ${Object.keys(locals)
-							.map(name => `${name} as ${locals[name]}`)
+							.map(name => `${formatImportName(name)} as ${locals[name]}`)
 							.join(", ")} } from ${JSON.stringify(specifier)}`
 				)
 				.join(""),
@@ -3517,7 +3622,7 @@ export class Precompiler {
 					inserted +=
 						name === "default" ?
 							`\nimport ${locals[name]} from ${from}`
-						:	`\nimport { ${name} as ${locals[name]} } from ${from}`
+						:	`\nimport { ${formatImportName(name)} as ${locals[name]} } from ${from}`
 				}
 			}
 		}
@@ -4207,7 +4312,9 @@ export class Precompiler {
 				// a frozen validator takes no member its importer bakes
 				...(!this.standalone.freeze && {
 					importersBake: (exporter, name, value) =>
-						isBakeable(value) && this.exportedValueOf(exporter, name) === value,
+						isBakeable(value) &&
+						this.exportedValueOf(exporter, name) === value &&
+						!this.isExportNonExtensible(this.graph.exportOf(exporter, name)),
 					equalsBake: isBakeable
 				})
 			}
@@ -4231,8 +4338,12 @@ export class Precompiler {
 			const members = baked.get(siteKeyOf(module.id, site))
 			if (!members) continue
 			// its equal in another module may be created first, so it's baked as
-			// what reads that is
-			if (readsAlone && isBakeable(site.value)) {
+			// what reads that is — unless this module makes it non-extensible
+			if (
+				readsAlone &&
+				isBakeable(site.value) &&
+				!this.isSiteNonExtensible(site, module)
+			) {
 				const bake: ImportedBake = {
 					name: `bake${bakes.length}`,
 					baked: { bakes: site.value, ...members },
@@ -5869,6 +5980,7 @@ export class Precompiler {
 			const candidate = candidatesBySite.get(site)
 			return !!candidate && !!this.heldParamOf(candidate.state)
 		}
+		const seenDropped = new Set<string>()
 		return {
 			sites: sites
 				.filter(
@@ -5877,9 +5989,15 @@ export class Precompiler {
 				)
 				.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics
-				.filter(
-					diagnostic => diagnostic.file !== module.id || !isQuiet(diagnostic)
-				)
+				.filter(diagnostic => {
+					if (diagnostic.file === module.id && isQuiet(diagnostic)) return false
+					if (diagnostic.rule === "dropped-narrow") {
+						const key = `${diagnostic.file}:${diagnostic.start}:${diagnostic.end}:${diagnostic.message}`
+						if (seenDropped.has(key)) return false
+						seenDropped.add(key)
+					}
+					return true
+				})
 				.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(module.id)
 		}
@@ -7201,6 +7319,19 @@ export class Precompiler {
 					// arktype throws it too, so it fails with runtime: "arktype" as well
 					this.allowUnsafe ? hint : withAllowUnsafe(hint),
 					this.allowUnsafe ? "warning" : "error"
+				)
+			)
+		}
+		if (
+			this.droppedNarrow &&
+			!site.parseError &&
+			candidate.state.droppedNarrows.length
+		) {
+			result.push(
+				...resolveDroppedNarrowDiagnostics(
+					candidate.state,
+					module,
+					this.diagnostic.bind(this)
 				)
 			)
 		}
@@ -8597,7 +8728,12 @@ export class Precompiler {
 			reasons,
 			hint:
 				rule === "syntax" ? undefined
-				: this.mode === "cache" && rule !== "copies" && rule !== "parse" ?
+				: (
+					this.mode === "cache" &&
+					rule !== "copies" &&
+					rule !== "parse" &&
+					rule !== "dropped-narrow"
+				) ?
 					cacheHint
 				:	(hint ?? hintsByRule[rule]) || undefined
 		}

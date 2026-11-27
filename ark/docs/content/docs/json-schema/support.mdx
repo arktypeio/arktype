@@ -17,7 +17,7 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-Of OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, only `nullable` is read: beside a `type`, `nullable: true` adds `null` to that type as ajv reads it, so a sibling `enum` must list `null` too; without a `type` — beside `allOf`, `anyOf`, `oneOf`, `$ref`, `enum`, `const`, or any other subschema — `nullable: true` unions the schema with `null`. `example` is ignored, and a boolean `exclusiveMinimum` throws.
+Of OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, `nullable` and boolean `exclusiveMinimum` / `exclusiveMaximum` (beside `minimum` / `maximum`) are read: beside a `type`, `nullable: true` adds `null` to that type as ajv reads it, so a sibling `enum` must list `null` too; without a `type` — beside `allOf`, `anyOf`, `oneOf`, `$ref`, `enum`, `const`, or any other subschema — `nullable: true` unions the schema with `null`. `example` is ignored.
 
 `fromJsonSchema` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
@@ -73,11 +73,11 @@ T(0)
 
 ## Numbers
 
-| keyword                                | support   | notes                                         |
-| -------------------------------------- | --------- | --------------------------------------------- |
-| `minimum`, `maximum`                   | supported |                                               |
-| `exclusiveMinimum`, `exclusiveMaximum` | supported | a number. Draft 4's boolean form throws       |
-| `multipleOf`                           | supported | an integer. Any other positive number, opaque |
+| keyword                                | support   | notes                                                                        |
+| -------------------------------------- | --------- | ---------------------------------------------------------------------------- |
+| `minimum`, `maximum`                   | supported |                                                                              |
+| `exclusiveMinimum`, `exclusiveMaximum` | supported | a number, or a boolean beside `minimum` / `maximum` (draft-04 / OpenAPI 3.0) |
+| `multipleOf`                           | supported | an integer. Any other positive number, opaque                                |
 
 ## Arrays
 

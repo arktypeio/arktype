@@ -84,6 +84,9 @@ export interface GenericAst<
 	t: this
 }
 
+const openInstancesByGeneric = new WeakMap<object, number>()
+const frozenMemoByGeneric = new WeakMap<object, Record<PropertyKey, unknown>>()
+
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown
@@ -100,7 +103,6 @@ export class GenericRoot<
 	description: string
 	alias: string | undefined
 	private instantiations: Record<string, BaseRoot | NodeId> = {}
-	private openInstances = 0
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
@@ -124,7 +126,7 @@ export class GenericRoot<
 						!(isResolvable(arg) && isResolvable(this.constraints[i]))
 				)
 			) {
-				const depth = this.openInstances
+				const depth = openInstancesByGeneric.get(this) ?? 0
 				return this.arg$.lazilyResolve(
 					() => this.instantiate(key, argNodes, depth),
 					`${this.id}<${key}>`,
@@ -149,20 +151,20 @@ export class GenericRoot<
 	}
 
 	get id(): NodeId {
-		return this.memo("id", registerNodeId(this.alias ?? "generic"))
+		return this.memo("id", () => registerNodeId(this.alias ?? "generic"))
 	}
 
 	get baseInstance(): BaseRoot {
 		return this.memo(
 			"baseInstance",
-			this(...(this.constraints as any)) as never
+			() => this(...(this.constraints as any)) as never
 		)
 	}
 
 	private instantiate(
 		key: string,
 		argNodes: GenericArgResolutions<any>,
-		depth = this.openInstances
+		depth = openInstancesByGeneric.get(this) ?? 0
 	): BaseRoot {
 		const instantiation = this.instantiations[key]
 		if (typeof instantiation === "string") {
@@ -181,7 +183,7 @@ export class GenericRoot<
 			return instantiation
 		}
 		this.checkArgs(argNodes)
-		const open = this.openInstances
+		const open = openInstancesByGeneric.get(this) ?? 0
 		if (
 			Math.max(open, depth) === maxOpenInstantiations ||
 			((open || depth) &&
@@ -197,7 +199,7 @@ export class GenericRoot<
 		const id = registerNodeId(this.alias ?? "generic")
 		const mark = $ark.reached?.mark()
 		this.instantiations[key] = id
-		this.openInstances = Math.max(open, depth) + 1
+		openInstancesByGeneric.set(this, Math.max(open, depth) + 1)
 		try {
 			const node =
 				this.defIsLazy() ?
@@ -214,7 +216,7 @@ export class GenericRoot<
 			delete this.instantiations[key]
 			throw e
 		} finally {
-			this.openInstances = open
+			openInstancesByGeneric.set(this, open)
 		}
 	}
 
@@ -250,38 +252,46 @@ export class GenericRoot<
 
 	protected memo<name extends keyof this>(
 		name: name,
-		value: this[name]
+		compute: () => this[name]
 	): this[name] {
-		Object.defineProperty(this, name, { value })
-		return value
+		if (Object.isExtensible(this)) {
+			const value = compute()
+			Object.defineProperty(this, name, { value })
+			return value
+		}
+		let cache = frozenMemoByGeneric.get(this)
+		if (!cache) frozenMemoByGeneric.set(this, (cache = {}))
+		if (name in cache) return cache[name] as this[name]
+		return (cache[name] = compute()) as this[name]
 	}
 
 	get json(): JsonStructure {
-		return this.memo("json", {
+		return this.memo("json", () => ({
 			params: this.params.map(param =>
 				param[1].isUnknown() ? param[0] : [param[0], param[1].json]
 			),
 			body: snapshot(this.bodyDef) as never
-		})
+		}))
 	}
 
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
 		return this.memo(
 			"params",
-			this.paramDefs.map(param =>
-				typeof param === "string" ?
-					[param, intrinsic.unknown]
-				:	[param[0], this.$.parseDef(param[1])]
-			) as never
+			() =>
+				this.paramDefs.map(param =>
+					typeof param === "string" ?
+						[param, intrinsic.unknown]
+					:	[param[0], this.$.parseDef(param[1])]
+				) as never
 		)
 	}
 
 	get names(): genericParamNames<params> {
-		return this.memo("names", this.params.map(e => e[0]) as never)
+		return this.memo("names", () => this.params.map(e => e[0]) as never)
 	}
 
 	get constraints(): { [i in keyof params]: BaseRoot } {
-		return this.memo("constraints", this.params.map(e => e[1]) as never)
+		return this.memo("constraints", () => this.params.map(e => e[1]) as never)
 	}
 
 	get internal(): this {

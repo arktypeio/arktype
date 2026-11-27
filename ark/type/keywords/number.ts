@@ -63,18 +63,20 @@ export const number: number.module = keywordModule(
 	}
 ) as never
 
+type number$ = {
+	root: number
+	epoch: number
+	integer: number
+	safe: number
+	NaN: number
+	Infinity: number
+	NegativeInfinity: number
+}
+
 export declare namespace number {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<number$>
 
-	export type $ = {
-		root: number
-		epoch: number
-		integer: number
-		safe: number
-		NaN: number
-		Infinity: number
-		NegativeInfinity: number
-	}
+	export type $ = number$
 }

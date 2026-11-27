@@ -1,10 +1,13 @@
-import type {
-	arkKind,
-	BaseParseContext,
-	GenericAst,
-	resolvableReferenceIn
+import {
+	hasArkKind,
+	type arkKind,
+	type BaseParseContext,
+	type BaseRoot,
+	type GenericAst,
+	type resolvableReferenceIn
 } from "@ark/schema"
 import {
+	hasOwn,
 	Scanner,
 	throwInternalError,
 	throwParseError,
@@ -22,6 +25,7 @@ import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { InferredAst, inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
 import type {
+	BranchOperator,
 	Comparator,
 	InvertedComparators,
 	MaxComparator,
@@ -29,23 +33,53 @@ import type {
 } from "./reduce/shared.ts"
 import type { s, StaticState } from "./reduce/static.ts"
 import type { EnclosingQuote } from "./shift/operand/enclosed.ts"
-import type { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
+import { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
+import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import { parseDefault } from "./shift/operator/default.ts"
 import {
 	writeUnexpectedCharacterMessage,
 	type parseOperator
 } from "./shift/operator/operator.ts"
 
+// a generic's parameter or `this` is what its name references ahead of a
+// keyword or private alias, as an expression resolves it and as parseString
+// infers it. Only a public alias is found first, which ark's own aren't to a
+// definition checked in it, where each is a keyword
+const isArg = (name: string, ctx: BaseParseContext): boolean =>
+	ctx.args !== undefined &&
+	hasOwn(ctx.args, name) &&
+	(ctx.$.isBuiltin || !ctx.$.exportedNames.includes(name))
+
+// a generic found this way is missing its args, as it is to parseString, even
+// if a parameter shares its name. Left to an expression, that name would
+// resolve to the parameter
+const maybeResolveReference = (
+	name: string,
+	ctx: BaseParseContext
+): BaseRoot | undefined => {
+	if (isArg(name, ctx)) return
+	const resolution = ctx.$.maybeResolve(name)
+	if (hasArkKind(resolution, "generic")) {
+		return throwParseError(
+			writeInvalidGenericArgCountMessage(name, resolution.names, [])
+		)
+	}
+	return resolution
+}
+
 export const parseString = (
 	def: string,
 	ctx: BaseParseContext
 ): InnerParseResult => {
-	const aliasResolution = ctx.$.maybeResolveRoot(def)
+	const aliasResolution = maybeResolveReference(def, ctx)
 	if (aliasResolution) return aliasResolution
 
 	if (def.endsWith("[]")) {
-		const possibleElementResolution = ctx.$.maybeResolveRoot(def.slice(0, -2))
+		const possibleElementResolution = maybeResolveReference(
+			def.slice(0, -2),
+			ctx
+		)
 		if (possibleElementResolution) return possibleElementResolution.rawArray()
 	}
 
@@ -53,7 +87,14 @@ export const parseString = (
 
 	const node = fullStringParse(s)
 
-	if (s.finalizer === ">") throwParseError(writeUnexpectedCharacterMessage(">"))
+	if (s.finalizer === ">") {
+		const beforeGt = s.sc.scanned.trimEnd().slice(0, -1).trimEnd()
+		throwParseError(
+			s.trailingRightBounded || beforeGt.endsWith(">") ?
+				writeUnexpectedCharacterMessage(">")
+			:	writeMissingRightOperandMessage(">")
+		)
+	}
 
 	return node
 }
@@ -350,6 +391,33 @@ type next<s extends StaticState, $, args> =
 export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends "" ? s["root"]
 	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
-	: s["finalizer"] extends "?" ? [s["root"], "?"]
+	: s["finalizer"] extends "?" ?
+		// as at runtime, nothing but whitespace may follow an optional
+		Scanner.skipWhitespace<s["unscanned"]> extends `${infer next}${string}` ?
+			ErrorMessage<writeUnexpectedCharacterMessage<next>>
+		:	[s["root"], "?"]
 	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
+	: s["finalizer"] extends ">" ? finalizeTrailingGt<s>
 	: ErrorMessage<writeUnexpectedCharacterMessage<s["finalizer"] & string>>
+
+type finalizeTrailingGt<s extends StaticState> =
+	Scanner.skipWhitespace<s["unscanned"]> extends "" ?
+		s["scanned"] extends `${infer before}>` ?
+			trimTrailingSpace<before> extends `${string}>` ?
+				ErrorMessage<writeUnexpectedCharacterMessage<">">>
+			: trimTrailingSpace<before> extends `${string})` ?
+				ErrorMessage<writeMissingRightOperandMessage<">">>
+			: trailingAst<s["root"]> extends readonly [unknown, Comparator, unknown] ?
+				ErrorMessage<writeUnexpectedCharacterMessage<">">>
+			:	ErrorMessage<writeMissingRightOperandMessage<">">>
+		:	ErrorMessage<writeUnexpectedCharacterMessage<">">>
+	:	ErrorMessage<writeUnexpectedCharacterMessage<">">>
+
+type trimTrailingSpace<s extends string> =
+	s extends `${infer rest}${WhitespaceChar}` ? trimTrailingSpace<rest> : s
+
+type trailingAst<ast> =
+	ast extends readonly [unknown, BranchOperator, infer r] ? trailingAst<r>
+	: ast extends readonly ["keyof", infer r] ? trailingAst<r>
+	: ast extends readonly [infer l, "#", unknown] ? trailingAst<l>
+	: ast

@@ -26,6 +26,7 @@ import {
 } from "@ark/schema/internal"
 
 import { writesInPlace } from "@ark/schema/mutatesInput"
+import { jsonSchemaPredicateKeywords } from "arksets/internal"
 import {
 	appendStringifiedKey,
 	arkKindOf,
@@ -2723,15 +2724,20 @@ return namespace`
 		const write = (opts: TracedOptions) =>
 			root.toJsonSchema(target ? { target, ...opts } : opts)
 		let trace: FallbackTrace | undefined
+		let thrown: unknown
 		try {
 			assertBakeableJsonSchema(root)
 			trace = this.baking.write(() =>
-				traceFallbacks(root, (fallback, writers) =>
-					write({ fallback, [unionJsonSchemaWritersKey]: writers })
-				)
+				traceFallbacks(root, (fallback, writers) => {
+					try {
+						return write({ fallback, [unionJsonSchemaWritersKey]: writers })
+					} catch (e) {
+						throw (thrown = e)
+					}
+				})
 			)
 		} catch (e) {
-			if (e instanceof ParseError) return
+			if (e === thrown || e instanceof ParseError) return
 			throw e
 		}
 		if (!trace) return
@@ -2885,7 +2891,11 @@ return namespace`
 		}
 	}
 
-	writeData(value: unknown, opts: WriteDataOptions = {}): string {
+	writeData(
+		value: unknown,
+		opts: WriteDataOptions = {},
+		seen = new Set<object>()
+	): string {
 		if (
 			opts.values &&
 			(typeof value === "function" ||
@@ -2912,6 +2922,11 @@ return namespace`
 			return printablePrimitive(value)
 		const written = opts.parts?.writtenAs(value as object)
 		if (written) return written
+		if (seen.has(value as object)) {
+			return throwParseError(
+				writeUnprecompilableMessage("cyclic introspection data")
+			)
+		}
 		const prototype = hasDomain(value, "object") && prototypeOf(value)
 		const isPlainArray = prototype === Array.prototype && Array.isArray(value)
 		if (
@@ -2928,17 +2943,22 @@ return namespace`
 				)
 			)
 		}
+		seen.add(value as object)
 		let text: string
-		if (isPlainArray)
-			text = `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
-		else {
-			const entries = Object.entries(value as object).map(
-				// a __proto__ key would set an object literal's prototype
-				([k, v]) =>
-					`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
-			)
-			if (prototype === null) entries.unshift("__proto__: null")
-			text = `{ ${entries.join(", ")} }`
+		try {
+			if (isPlainArray)
+				text = `[${(value as unknown[]).map(v => this.writeData(v, opts, seen)).join(", ")}]`
+			else {
+				const entries = Object.entries(value as object).map(
+					// a __proto__ key would set an object literal's prototype
+					([k, v]) =>
+						`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts, seen)}`
+				)
+				if (prototype === null) entries.unshift("__proto__: null")
+				text = `{ ${entries.join(", ")} }`
+			}
+		} finally {
+			seen.delete(value as object)
 		}
 		return opts.parts ? opts.parts.add(text, value as object) : text
 	}
@@ -3385,14 +3405,15 @@ return namespace`
 		parts: (string | BaseRoot)[]
 	): string {
 		const imports: Record<string, string[]> = {}
-		const body = parts
-			.map(part => {
-				if (typeof part === "string") return JSON.stringify(part)
-				const name = this.stringModuleOf(part, kind)
-				imports[this.specifierOf(name)] = [name]
-				return `${name}()`
-			})
-			.join(" + ")
+		const body =
+			parts
+				.map(part => {
+					if (typeof part === "string") return JSON.stringify(part)
+					const name = this.stringModuleOf(part, kind)
+					imports[this.specifierOf(name)] = [name]
+					return `${name}()`
+				})
+				.join(" + ") || '""'
 		const name = `${kind}${hashOf(body)}`
 		this.share(
 			name,
@@ -3442,8 +3463,11 @@ return namespace`
 				registered ? `"$ark." + runtime.baseNameOf(${hole})`
 				: predicate ? `runtime.describePredicate({ predicate: ${hole} })`
 				: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
-				: this.classes.has(named) ? `runtime.functionNameOf(${hole})`
-				: `runtime.baseNameOf(${hole})`
+				: this.classes.has(named) ?
+					s.slice(0, match.index).endsWith("an instance of ") ?
+						`(runtime.functionNameOf(${hole}) || "an anonymous class")`
+					:	`runtime.functionNameOf(${hole})`
+				:	`runtime.baseNameOf(${hole})`
 			)
 			start = match.index + match[0].length
 		}
@@ -3582,7 +3606,7 @@ return namespace`
 	// what a node reading its ctx is told apart by
 	writeShapeFlags(node: BaseRoot, unit: RootUnit): string {
 		const entries = shapeFlags.flatMap(flag =>
-			flag !== "allowsCtx" && node[flag] ? [`${flag}: true`] : []
+			flag !== "allowsCtx" && holdsFlag(node, flag) ? [`${flag}: true`] : []
 		)
 		if (node.hasAlias) {
 			entries.unshift(
@@ -3615,7 +3639,7 @@ return namespace`
 				)},`
 			:	""
 		const flags = shapeFlags.flatMap(flag =>
-			node[flag] ? [`\n\t${flag}: true,`] : []
+			holdsFlag(node, flag) ? [`\n\t${flag}: true,`] : []
 		)
 		// read past allows only by a cycle or a ctx-reading predicate
 		const traverses = node.hasAlias || node.allowsCtx || node.checksCtx
@@ -3682,9 +3706,16 @@ return namespace`
 		}
 		if (typeof value === "function") {
 			const name = functionNameOf(value)
-			return Reflect.get(globalThis, name) === value ?
-					`globalThis[${JSON.stringify(name)}]`
-				:	throwParseError(writeUnprecompilableMessage(printable(value)))
+			if (Reflect.get(globalThis, name) === value)
+				return `globalThis[${JSON.stringify(name)}]`
+			const jsonSchemaFeature = jsonSchemaPredicateKeywords.get(value)
+			return throwParseError(
+				writeUnprecompilableMessage(
+					jsonSchemaFeature ?
+						`fromJsonSchema's ${jsonSchemaFeature}`
+					:	printable(value)
+				)
+			)
 		}
 		if (failureSites.has(value)) return this.emitSite(value)
 		// keys read only with `in`, so emitted without their props
@@ -4017,6 +4048,15 @@ const shapeFlags = [
 	"reportsPred"
 ] as const
 
+// whether a node's shape is written holding a flag. That its transform's
+// keyed by id is whether an alias resolves to it, which a node equal to it,
+// written as the same unit, may differ in: only a transform reads it, so it's
+// left out where there's none and the two are written alike
+const holdsFlag = (
+	node: BaseRoot,
+	flag: (typeof shapeFlags)[number]
+): boolean => (flag === "tfsById" ? node.tfs && node.tfsById : node[flag])
+
 const isAny = (): boolean => true
 
 // a registry name's count is how many values the process named alike before
@@ -4037,7 +4077,7 @@ export const uncountedJsonOf = (json: unknown): unknown => {
 	const uncounted = (json: unknown): unknown => {
 		if (typeof json === "string") {
 			const id = json.slice(registryName.length + 1)
-			if (!json.startsWith(`${registryName}.`) || !$ark.nodesById[id as NodeId])
+			if (!json.startsWith(`${registryName}.`) || !$ark.nodesById.get(id))
 				return json.replace(countedReference, "$1")
 			let written = renumbered.get(id)
 			if (!written) {

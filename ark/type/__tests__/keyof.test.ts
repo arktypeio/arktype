@@ -26,6 +26,30 @@ contextualize(() => {
 		attest(T.json).equals(type("'a'|'b'").json)
 	})
 
+	it("all-optional and empty object literals", () => {
+		const Opt = type({ "a?": "string" }).keyof()
+		attest<"a">(Opt.infer)
+		attest(Opt.json).equals(type("'a'").json)
+
+		const Partial = type({ a: "string", b: "number" }).partial().keyof()
+		attest<"a" | "b">(Partial.infer)
+		attest(Partial.json).equals(type("'a' | 'b'").json)
+
+		const Empty = type({})
+		attest(() => Empty.keyof()).throws(
+			writeUnsatisfiableExpressionError("keyof {}")
+		)
+		const emptyLiteralKeyof = () => Empty.keyof().infer
+		attest<() => never>(emptyLiteralKeyof)
+
+		const OmittedEmpty = type({ a: "string" }).omit("a")
+		attest(() => OmittedEmpty.keyof()).throws(
+			writeUnsatisfiableExpressionError("keyof {}")
+		)
+		const emptyKeyof = () => OmittedEmpty.keyof().infer
+		attest<() => never>(emptyKeyof)
+	})
+
 	it("overlapping union", () => {
 		const T = type({ a: "number", b: "boolean" })
 			.or({ b: "number", c: "string" })
@@ -57,6 +81,42 @@ contextualize(() => {
 		// @ts-expect-error
 		attest(() => type("keyof undefined")).throwsAndHasTypeError(
 			writeNonStructuralOperandMessage("keyof", "undefined")
+		)
+	})
+
+	it("branded non-object", () => {
+		// @ts-expect-error
+		attest(() => type("keyof string#id")).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "string")
+		)
+	})
+
+	it("non-object tuple expression", () => {
+		// @ts-expect-error
+		attest(() => type(["keyof", "string"])).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "string")
+		)
+		// @ts-expect-error
+		attest(() => type(["keyof", "number#id"])).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "number")
+		)
+	})
+
+	it("morph", () => {
+		// @ts-expect-error
+		attest(() => type("keyof string.numeric.parse"))
+			.throws("keyof operand must be an object (was (In: ")
+			.type.errors("keyof operand must be an object (was Function)")
+		// @ts-expect-error
+		attest(() => type(["keyof", "string.json.parse"]))
+			.throws("keyof operand must be an object (was (In: string) => Out<")
+			.type.errors("keyof operand must be an object (was Function)")
+	})
+
+	it("any", () => {
+		// @ts-expect-error
+		attest(() => type("keyof unknown.any")).throwsAndHasTypeError(
+			writeNonStructuralOperandMessage("keyof", "unknown")
 		)
 	})
 
@@ -107,6 +167,14 @@ contextualize.each(
 			const T = $.type("keyof bc & string")
 			attest<"b" | "c">(T.t)
 			attest(T.json).equals(type("===", "b", "c").json)
+		})
+
+		it("branded object", $ => {
+			const T = $.type("keyof ab#id")
+			attest<"a" | "b">(T.t)
+			attest(T.json).equals(type("===", "a", "b").json)
+			const Tuple = $.type(["keyof", "ab#id"])
+			attest<"a" | "b">(Tuple.t)
 		})
 
 		it("union precedence", $ => {

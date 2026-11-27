@@ -7,6 +7,7 @@ import type {
 	FailureContext,
 	FailureSite,
 	MissingText,
+	ReadableIssue,
 	SiteContext
 } from "./issues.ts"
 import { bracketsKeys } from "./issueFeatures.ts"
@@ -96,8 +97,20 @@ export const pathOf = (issue: {
 // wherever an issue is, it says only that data is invalid
 export const messageOf = (): string => "is invalid"
 
+let formatArkError: ((error: ReadableIssue) => string | undefined) | undefined
+
+export const registerErrorLineFormatter = (
+	formatter: (error: ReadableIssue) => string | undefined
+): void => {
+	formatArkError = formatter
+}
+
 // an issue's line of a summary: that it's invalid, after its path
-export const lineOf = (issue: ArkIssue): string => {
+export const lineOf = (issue: ReadableIssue): string => {
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== undefined) return formatted
+	}
 	const at = pathOf(issue)
 	return (at && at + " ") + (issue.message ?? "is invalid")
 }

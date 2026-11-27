@@ -525,9 +525,13 @@ must be a digit`)
 		const out = T({ s: "b" }) as ArkErrors
 		attest(out.summary).snap(`s must be own
 s must be matched by ^a
-s must be at least length 5`)
+s must be at least 5 characters`)
 		attest(flatMessagesByPath(out)).snap({
-			s: ["must be own", "must be matched by ^a", "must be at least length 5"]
+			s: [
+				"must be own",
+				"must be matched by ^a",
+				"must be at least 5 characters"
+			]
 		})
 	})
 
@@ -1056,12 +1060,12 @@ s must be at least length 5`)
 				{ "kind?": "'b'" },
 				{ a: "number", kind: "1" },
 				{ kind: "'b'" },
-				{ kind: "number", "+": "delete" }
+				type({ kind: "number" }).pipe(o => o)
 			)
 		).throws(
 			writeIndiscriminableMorphMessage(
 				"{ a: number, kind: 1 }",
-				"{ kind: number, + (undeclared): delete }"
+				"(In: { kind: number }) => Out<unknown>"
 			)
 		)
 	})
@@ -1140,6 +1144,38 @@ s must be at least length 5`)
 		)
 	})
 
+	it("morphs with disjoint inputs are disjoint", () => {
+		const X = type("'x'").pipe(() => 1)
+		const Y = type("'y'").pipe(() => 2)
+
+		attest(X.overlaps(Y)).equals(false)
+		attest(X.extends(Y)).equals(false)
+		attest(X.or(Y).extends(X)).equals(false)
+		attest(X.extends(X.or(Y))).equals(true)
+		attest(() => X.and(Y)).throws.snap(
+			'ParseError: Intersection of "x" and "y" results in an unsatisfiable type'
+		)
+	})
+
+	it("objects disjoint at a key are disjoint whatever morphs they hold", () => {
+		const Measured = type({ a: type("string").pipe(s => s.length), k: "'a'" })
+		const Trimmed = type({ a: type("string").pipe(s => s.trim()), k: "'b'" })
+
+		attest(Measured.overlaps(Trimmed)).equals(false)
+		attest(Measured.extends(Trimmed)).equals(false)
+		attest(() => Measured.and(Trimmed)).throws.snap(
+			'ParseError: Intersection at k of "a" and "b" results in an unsatisfiable type'
+		)
+		attest(() =>
+			type({ k: "'a'", z: type("string").pipe(s => s.length) }).and({
+				k: "'b'",
+				z: type("string").pipe(s => s.trim())
+			})
+		).throws.snap(
+			'ParseError: Intersection at k of "a" and "b" results in an unsatisfiable type'
+		)
+	})
+
 	it("union helper undiscriminated", () => {
 		attest(() =>
 			type("string")
@@ -1160,7 +1196,7 @@ s must be at least length 5`)
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: (In: unknown) => To<number % 1>
 Right: null
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
 
 		const Narrowed = type("string.integer.parse | number.integer | null")
 		attest<number | null>(Narrowed.infer)
@@ -1168,6 +1204,45 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 
 		const Piped = type("unknown").pipe(v => (v === null ? v : Number(v)))
 		attest(Piped(null)).equals(null)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1613
+	it("indeterminate union error identifies conflicting morph paths and names", () => {
+		const AnonA = type("string").pipe(val => val)
+		const AnonB = type("string").pipe(val => val)
+		attest(() => AnonA.array().or(AnonB.array())).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: (In: string) => Out<unknown>[]
+Right: (In: string) => Out<unknown>[]
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at [number] (distinct morphs with identical expressions)`)
+
+		const toPlayerId = (val: string) => val
+		const toLocationId = (val: string) => val
+		const PlayerSchema = type("string").pipe(toPlayerId)
+		const LocationSchema = type("string").pipe(toLocationId)
+		attest(() => PlayerSchema.array().or(LocationSchema.array())).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: (In: string) => Out<unknown>[]
+Right: (In: string) => Out<unknown>[]
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at [number]: toLocationId vs toPlayerId`)
+
+		attest(() => type({ a: "string", x: "string = 'foo'" }).or({ b: "string" }))
+			.throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: string, x: string = "foo" }
+Right: { b: string }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at x`)
+
+		attest(() => type(["string", "number = 1"]).or(["string", "number = 2"]))
+			.throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: [string, number = 1]
+Right: [string, number = 2]
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at [1]`)
 	})
 
 	it("allows undiscriminated union if morphs are equal", () => {
@@ -1231,7 +1306,179 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string.date) => Out<Date> | false | true }
 Right: { foo: (In: string) => Out<number | string | { [string]: $jsonData } & isPlainObjectOrArray | false | null | true> | false | true }
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.
+Conflicting morph at foo: parseDate vs parseJson`)
+	})
+
+	it("a morph with no input is narrowed by what it's intersected with", () => {
+		const stringify = (data: unknown) => `${data}`
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Stringify = $.schema({ morphs: [stringify] })
+			const T = Stringify.and("number")
+			attest(T.json).equals({
+				morphs: ["number", registeredReference(stringify)]
+			})
+			attest($.type("number").and(Stringify).equals(T)).equals(true)
+			attest(T(1) as unknown).equals("1")
+			attest(T(1) as unknown).equals("1")
+			attest(T("1").toString()).equals("must be a number")
+			// unknown narrows it no further
+			attest(Stringify.and("unknown").json).equals(Stringify.json)
+			attest(Stringify.extends("unknown")).equals(true)
+			attest(() => Stringify.or("string")).throws(
+				writeIndiscriminableMorphMessage(
+					"string",
+					"(In: unknown) => Out<unknown>"
+				)
+			)
+		}
+	})
+
+	it("a morph on another branch of a key's union leaves what the branches share", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Parsed = $.type({ n: "string.numeric.parse | number" })
+			// each allows { n: number } and neither transforms it, so the one
+			// allowing more is the union
+			const T = $.type({ n: "number" }).or(Parsed)
+			attest(T.equals(Parsed)).equals(true)
+			attest(Parsed.or({ n: "number" }).equals(Parsed)).equals(true)
+			for (let call = 0; call < 3; call++) {
+				attest(T({ n: 1 })).equals({ n: 1 })
+				attest(T({ n: "2" })).equals({ n: 2 })
+				attest(T({ n: "two" }).toString()).equals(
+					"n must be a well-formed numeric string"
+				)
+			}
+		}
+	})
+
+	it("a union is determinate however its branches were grouped", () => {
+		const measure = (s: string) => s.length
+		const Zero = type({ n: "0" })
+		const Measured = type({ n: ["string", "=>", measure] })
+		const T = Zero.or(Zero).or(Measured)
+		attest(T.expression).snap("{ n: (In: string) => Out<unknown> | 0 }")
+		attest(Zero.or(Zero.or(Measured)).equals(T)).equals(true)
+
+		const double = (n: number) => n * 2
+		const Doubled = type({ n: ["number", "=>", double] })
+		const Missing = type({ n: "undefined" }).or({ "n?": "undefined" })
+		attest(
+			Doubled.or({ n: "undefined" }).or({ "n?": "undefined" }).expression
+		).snap("{ n?: (In: number) => Out<unknown> | undefined }")
+		attest(
+			Doubled.or({ n: "undefined" })
+				.or({ "n?": "undefined" })
+				.equals(Doubled.or(Missing))
+		).equals(true)
+	})
+
+	it("branches alike only at a case's value are checked as they are", () => {
+		const measure = (s: string) => s.length
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// pruned of k, the first would transform what the second allows
+			const T = $.type({
+				k: [["'long'", "=>", measure], "|", "'a'"],
+				y: "string"
+			})
+				.or({ k: "'a'", z: "1" })
+				.or({ k: "'c'" })
+			for (let call = 0; call < 3; call++) {
+				attest(T({ k: "a", y: "", z: 1 })).equals({ k: "a", y: "", z: 1 })
+				attest(T({ k: "a", z: 1 })).equals({ k: "a", z: 1 })
+				attest(T({ k: "long", y: "" })).equals({ k: 4, y: "" })
+				attest(T({ k: "c" })).equals({ k: "c" })
+				attest(T({ k: "a" }).toString()).equals(
+					"y must be a string or z must be 1"
+				)
+			}
+		}
+	})
+
+	it("a morph applying to some of what branches share is indeterminate", () => {
+		const measure = (s: string) => s.length
+		const Measured = type({ n: [["string", "=>", measure], "|", "0"] })
+		const Either = type({ n: "string | 0" })
+		attest(() => Either.or(Measured)).throws(
+			writeIndiscriminableMorphMessage(Either.expression, Measured.expression)
+		)
+		// a default is given to data the other branch allows without its key
+		const Defaulted = type({
+			n: [["string", "=>", measure], "|", "0"],
+			unit: "string = 'px'"
+		})
+		const Zero = type({ n: "0" })
+		attest(() => Zero.or(Defaulted)).throws(
+			writeIndiscriminableMorphMessage(Defaulted.expression, Zero.expression)
+		)
+		// and a branch deleting undeclared keys deletes those of data the other keeps
+		const Stripped = type({
+			n: [["string", "=>", measure], "|", "0"],
+			"+": "delete"
+		})
+		attest(() => Zero.or(Stripped)).throws(
+			writeIndiscriminableMorphMessage(Zero.expression, Stripped.expression)
+		)
+	})
+
+	it("one morph each branch applies to different inputs of a key is indeterminate", () => {
+		const measure = (v: string | number) => `${v}`.length
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// both measure n, but only the second measures a number
+			const Strings = $.type({ n: [["string", "=>", measure], "|", "number"] })
+			const Numbers = $.type({ n: ["number", "=>", measure] })
+			const indeterminate = writeIndiscriminableMorphMessage(
+				Strings.expression,
+				Numbers.expression
+			)
+			attest(() => Strings.or(Numbers)).throws(indeterminate)
+			attest(() => Numbers.or(Strings)).throws(indeterminate)
+
+			// with a shared default, must still throw indeterminate rather than
+			// short-circuiting and dropping Numbers
+			const StringsDef = $.type({
+				n: [["string", "=>", measure], "|", "number"],
+				opt: "string = 'x'"
+			})
+			const NumbersDef = $.type({
+				n: ["number", "=>", measure],
+				opt: "string = 'x'"
+			})
+			attest(() => StringsDef.or(NumbersDef)).throws(
+				writeIndiscriminableMorphMessage(
+					StringsDef.expression,
+					NumbersDef.expression
+				)
+			)
+			attest(() => NumbersDef.or(StringsDef)).throws(
+				writeIndiscriminableMorphMessage(
+					StringsDef.expression,
+					NumbersDef.expression
+				)
+			)
+
+			// measured wherever both allow it, the narrower is the wider's
+			const Wider = $.type({ n: ["string", "=>", measure] })
+			const Narrower = $.type({ n: ["'a' | 'b'", "=>", measure], id: "string" })
+			attest(Narrower.or(Wider).equals(Wider)).equals(true)
+
+			// what neither measures, only one of them allows
+			const T = $.type({
+				n: [["string", "=>", measure], "|", "0"],
+				a: "1"
+			}).or({ n: [["string", "=>", measure], "|", "1"], b: "1" })
+			for (let call = 0; call < 3; call++) {
+				attest(T({ n: "ab", a: 1, b: 1 })).equals({ n: 2, a: 1, b: 1 })
+				attest(T({ n: 0, a: 1, b: 1 })).equals({ n: 0, a: 1, b: 1 })
+				attest(T({ n: 0, b: 1 }).toString()).equals(
+					"a must be 1 or n must be 1"
+				)
+			}
+		}
 	})
 
 	it("multiple chained pipes", () => {
@@ -1728,5 +1975,53 @@ Item[1].Meta must be an object (was missing)`)
 			// @ts-expect-error
 			type("string").pipe(...badTailRest)
 		).type.errors("Type 'number' is not assignable to type 'string'")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1778
+	it("tracks aliases and otherRefs in middle piped nodes", () => {
+		const Cyclic = scope({ N: { a: "string", "b?": "N" } }).export().N
+		const m = type("string.json.parse").pipe(Cyclic, x => x)
+		attest(m.internal.hasAlias).equals(true)
+		attest(m.internal.otherRefs.includes(Cyclic.internal)).equals(true)
+		attest(m('{"a":"hi","b":{"a":"nested"}}')).equals({
+			a: "hi",
+			b: { a: "nested" }
+		})
+		attest(m('{"a":"hi","b":{"a":1}}').toString()).snap("b.a must be a string")
+	})
+
+	it("preserves declaredIn when piping a morph with declaredIn", () => {
+		const DateTime = type("string.date.parse").pipe(d => d.getTime())
+		attest(DateTime.in.allows("2025-01-01")).equals(true)
+		attest(DateTime.in.allows("not-a-date")).equals(false)
+		attest(DateTime("2025-01-01T00:00:00.000Z")).equals(
+			Date.parse("2025-01-01T00:00:00.000Z")
+		)
+
+		const UrlHost = type("string.url.parse").pipe(u => u.hostname)
+		attest(UrlHost.in.allows("https://arktype.io")).equals(true)
+		attest(UrlHost.in.allows("not-a-url")).equals(false)
+		attest(UrlHost("https://arktype.io/docs")).equals("arktype.io")
+	})
+
+	it("rejects non-function, non-Type operands in .pipe() and .pipe.try()", () => {
+		attest(() =>
+			(type("string.trim") as any).pipe("string.integer.parse")
+		).throws.snap(
+			'ParseError: pipe operand must be a function or Type (was "string.integer.parse"). To pipe to a definition, use .to() instead.'
+		)
+		attest(() =>
+			(type("string") as any).pipe((s: string) => s, { a: "string" })
+		).throws.snap(
+			'ParseError: pipe operand must be a function or Type (was {"a":"string"}). To pipe to a definition, use .to() instead.'
+		)
+		attest(() => (type("string") as any).pipe(null)).throws.snap(
+			"ParseError: pipe operand must be a function or Type (was null). To pipe to a definition, use .to() instead."
+		)
+		attest(() =>
+			(type("string.trim") as any).pipe.try("string.integer.parse")
+		).throws.snap(
+			'ParseError: pipe operand must be a function or Type (was "string.integer.parse"). To pipe to a definition, use .to() instead.'
+		)
 	})
 })

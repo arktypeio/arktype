@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
-import { scope, type } from "arktype"
+import { fromJsonSchema, scope, type } from "arktype"
 import { type Arbitrary, assert, property, sample } from "fast-check"
 import { describe } from "mocha"
 
@@ -98,6 +98,53 @@ contextualize(() => {
 				"No values within range -1 - 6 divisible by 5 satisfy != constraints."
 			)
 		})
+		it("infinite bounds", () => {
+			for (const T of [
+				type("number").atLeast(Number.NEGATIVE_INFINITY),
+				type("number").atMost(Number.POSITIVE_INFINITY),
+				type("number").moreThan(Number.NEGATIVE_INFINITY),
+				type("number").lessThan(Number.POSITIVE_INFINITY),
+				type("number")
+					.atLeast(Number.NEGATIVE_INFINITY)
+					.atMost(Number.POSITIVE_INFINITY),
+				type.schema({
+					domain: { domain: "number", numberAllowsInfinity: true },
+					min: { rule: Number.NEGATIVE_INFINITY, exclusive: true }
+				}),
+				type.schema({
+					domain: { domain: "number", numberAllowsInfinity: true },
+					max: { rule: Number.POSITIVE_INFINITY, exclusive: true }
+				}),
+				type.schema({
+					domain: { domain: "number", numberAllowsInfinity: true },
+					min: Number.POSITIVE_INFINITY
+				}),
+				type.schema({
+					domain: { domain: "number", numberAllowsInfinity: true },
+					max: Number.NEGATIVE_INFINITY
+				})
+			])
+				assertProperty(arkToArbitrary(T), T)
+
+			attest(() =>
+				arkToArbitrary(type("number").atLeast(Number.POSITIVE_INFINITY))
+			).throws("No number satisfies >=Infinity")
+			attest(() =>
+				arkToArbitrary(type("number").atMost(Number.NEGATIVE_INFINITY))
+			).throws("No number satisfies <=-Infinity")
+			attest(() =>
+				arkToArbitrary(type("number").moreThan(Number.MAX_VALUE))
+			).throws(`No number satisfies >${Number.MAX_VALUE}`)
+		})
+		it("one-sided integer and divisor ranges outside safe integers", () => {
+			for (const T of [
+				type("number.integer >= 9007199254741000"),
+				type("number.integer <= -9007199254741000"),
+				type("number % 7 >= 9007199254741000"),
+				type("number % 7 <= -9007199254741000")
+			])
+				assertProperty(arkToArbitrary(T), T)
+		})
 	})
 
 	describe("string", () => {
@@ -137,11 +184,14 @@ contextualize(() => {
 			assertProperty(arbitrary, T)
 		})
 		// their patterns have no lookahead, which fast-check can't generate from
-		it("numeric and ISO date keywords", () => {
+		it("numeric, boolean, and ISO date keywords", () => {
 			for (const T of [
 				type("string.numeric"),
 				type("string.integer"),
-				type("string.date.iso")
+				type("string.boolean"),
+				type("string.boolean.parse"),
+				type("string.date.iso"),
+				type("string.date.iso.date")
 			])
 				assertProperty(arkToArbitrary(T), T)
 		})
@@ -176,6 +226,36 @@ contextualize(() => {
 			const T = type("unknown")
 			const arbitrary = arkToArbitrary(T)
 			return assertProperty(arbitrary, T)
+		})
+		it("unknown with predicate and oneOf", () => {
+			const NonNull = type.unknown.narrow(x => x !== null)
+			assertProperty(arkToArbitrary(NonNull), NonNull)
+
+			const OneOf = fromJsonSchema({ oneOf: [{}, { type: "null" }] })
+			assertProperty(arkToArbitrary(OneOf), OneOf)
+		})
+		it("parse keywords and morph declaredIn", () => {
+			for (const T of [
+				type("string.url"),
+				type("string.url.http"),
+				type("string.url.parse"),
+				type("string.date"),
+				type("string.date.parse"),
+				type("string.json"),
+				type("string.json.parse")
+			])
+				assertProperty(arkToArbitrary(T), T)
+
+			const Declared = type.schema({
+				declaredIn: type(/^[a-z]+$/).internal,
+				morphs: ["string", (s: string) => s.toUpperCase()]
+			})
+			assertProperty(arkToArbitrary(Declared), Declared)
+			attest(
+				sample(arkToArbitrary(Declared), 20).every(
+					s => typeof s === "string" && /^[a-z]+$/.test(s)
+				)
+			).equals(true)
 		})
 		it("unknown[]", () => {
 			const T = type("unknown[]")
@@ -528,6 +608,24 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("empty array with additional props", () => {
+			const Empty = type("string[] == 0").and({ foo: "number" })
+			assertProperty(arkToArbitrary(Empty), Empty)
+
+			const EmptyTuple = type([]).and({ foo: "string", "bar?": "boolean" })
+			assertProperty(arkToArbitrary(EmptyTuple), EmptyTuple)
+		})
+		it("cyclic variadic tuple", () => {
+			const { t }: { t: type.Any } = scope({
+				t: ["string", "...", "t[]"]
+			} as never).export() as never
+			assertProperty(arkToArbitrary(t), t)
+
+			const { opt }: { opt: type.Any } = scope({
+				opt: ["string", "number?", "...", "opt[]"]
+			} as never).export() as never
+			assertProperty(arkToArbitrary(opt), opt)
+		})
 		it("recursive array with minLength", () => {
 			const $ = scope({
 				tree: { children: "tree[] >= 1 | null" },
@@ -607,6 +705,57 @@ contextualize(() => {
 				type.instanceOf(Error).and({ message: "string" })
 			])
 				assertProperty(arkToArbitrary(T), T)
+		})
+		it("divisor ranges abutting MAX_SAFE_INTEGER or spanning power-of-2 binades", () => {
+			for (const T of [
+				type("number % 2 >= 9007199254740991"),
+				type("number % 2 >= 9007199254740991 & number <= 9007199254740996"),
+				type("number % 4 >= 18014398509481982 & number <= 18014398509481984")
+			])
+				assertProperty(arkToArbitrary(T), T)
+		})
+		it("handles narrowed object, __proto__ keys, /i negated charsets, bounded NaN, and binary-tree cycles", () => {
+			assertProperty(
+				arkToArbitrary(type("object").narrow(o => typeof o === "object")),
+				type("object")
+			)
+			const WithProto = type({ __proto__: "string", a: "number" })
+			assertProperty(arkToArbitrary(WithProto), WithProto)
+			const NegI = type(/^[^a]+$/i)
+			assertProperty(arkToArbitrary(NegI), NegI)
+			const Pos = type.schema({
+				domain: { domain: "number", numberAllowsNaN: true },
+				min: { rule: 0, exclusive: true }
+			})
+			assertProperty(arkToArbitrary(Pos), Pos)
+			const Tree = type({ val: "number", "left?": "this", "right?": "this" })
+			assertProperty(arkToArbitrary(Tree), Tree)
+			const $ = scope({ node: [["node"], "|", ["node?"]] } as never)
+			const Node = $.type("node" as never)
+			assertProperty(arkToArbitrary(Node), Node)
+
+			const sym = Symbol("k")
+			const WithSym = type({ [sym]: "string", a: "number" })
+			assertProperty(arkToArbitrary(WithSym), WithSym)
+
+			const PipedJson = type("string.json.parse").pipe(v => v)
+			assertProperty(arkToArbitrary(PipedJson), PipedJson)
+
+			const PipedDate = type("string.date.parse").pipe(d => d.getTime())
+			assertProperty(arkToArbitrary(PipedDate), PipedDate)
+
+			const UserNamedParseJson = type("number").pipe(function parseJson(n) {
+				return n
+			})
+			assertProperty(arkToArbitrary(UserNamedParseJson), UserNamedParseJson)
+
+			const OptNever = type({ "a?": "never", b: "string" })
+			assertProperty(arkToArbitrary(OptNever), OptNever)
+
+			const UrlCaseInsensitive = type("string.url").and(
+				new RegExp("^HTTP:", "i")
+			)
+			assertProperty(arkToArbitrary(UrlCaseInsensitive), UrlCaseInsensitive)
 		})
 	})
 })

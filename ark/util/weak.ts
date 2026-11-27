@@ -28,4 +28,12 @@ export class WeakCache<v extends object> {
 		this.refs.set(key, { deref: () => value })
 		return value
 	}
+
+	delete(key: string): boolean {
+		return this.refs.delete(key)
+	}
+
+	get size(): number {
+		return this.refs.size
+	}
 }

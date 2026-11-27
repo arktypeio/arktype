@@ -1,4 +1,10 @@
-import type { ErrorMessage, Scanner } from "@ark/util"
+import type {
+	contains,
+	ErrorMessage,
+	parseNonNegativeInteger,
+	Scanner
+} from "@ark/util"
+import type { UnicodeFlag } from "./regex.ts"
 import type { Control, ReferenceNode, s, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
@@ -6,9 +12,32 @@ export type parseEscape<s extends State, unscanned extends string> =
 		char extends NonZeroDigit ? parseNumericBackreference<s, unscanned>
 		: char extends "k" ? parseNamedBackreference<s, nextUnscanned>
 		: char extends UnicodePropertyChar ?
-			parseUnicodeProperty<s, char, nextUnscanned>
+			contains<s["flags"], UnicodeFlag> extends true ?
+				parseUnicodeProperty<s, char, nextUnscanned>
+			: nextUnscanned extends `{${infer body}}${string}` ?
+				isQuantifierBody<body> extends true ?
+					parseSingleEscapedCharacter<s, char, nextUnscanned>
+				:	s.error<writeUnicodePropertyRequiresFlagMessage<char>>
+			:	parseSingleEscapedCharacter<s, char, nextUnscanned>
 		:	parseSingleEscapedCharacter<s, char, nextUnscanned>
 	:	s.error<trailingBackslashMessage>
+
+type isQuantifierBody<body extends string> =
+	body extends `${infer l extends `${number}`},${infer r extends `${number}`}` ?
+		[parseNonNegativeInteger<l>, parseNonNegativeInteger<r>] extends (
+			[never, unknown] | [unknown, never]
+		) ?
+			false
+		:	true
+	: body extends `${infer l extends `${number}`},` ?
+		[parseNonNegativeInteger<l>] extends [never] ?
+			false
+		:	true
+	: body extends `${infer l extends `${number}`}` ?
+		[parseNonNegativeInteger<l>] extends [never] ?
+			false
+		:	true
+	:	false
 
 type parseNumericBackreference<
 	s extends State,
@@ -18,12 +47,20 @@ type parseNumericBackreference<
 	Scanner.shiftUntilNot<fullUnscanned, StringDigit> extends (
 		Scanner.shiftResult<infer ref, infer remaining>
 	) ?
-		s.shiftQuantifiable<s, ReferenceNode<ref>, remaining>
+		s.shiftQuantifiable<
+			s,
+			ReferenceNode<ref, s["caseInsensitive"] extends false ? false : true>,
+			remaining
+		>
 	:	never
 
 type parseNamedBackreference<s extends State, unscanned extends string> =
 	unscanned extends `<${infer ref}>${infer following}` ?
-		s.shiftQuantifiable<s, ReferenceNode<ref>, following>
+		s.shiftQuantifiable<
+			s,
+			ReferenceNode<ref, s["caseInsensitive"] extends false ? false : true>,
+			following
+		>
 	:	s.error<missingBackreferenceNameMessage>
 
 type parseUnicodeProperty<
@@ -31,8 +68,10 @@ type parseUnicodeProperty<
 	char extends UnicodePropertyChar,
 	unscanned extends string
 > =
-	unscanned extends `{${string}}${infer following}` ?
-		s.shiftQuantifiable<s, string, following>
+	unscanned extends `{${infer prop}}${infer following}` ?
+		prop extends "" ?
+			s.error<writeInvalidUnicodePropertyMessage<char>>
+		:	s.shiftQuantifiable<s, string, following>
 	:	s.error<writeInvalidUnicodePropertyMessage<char>>
 
 type parseSingleEscapedCharacter<
@@ -81,13 +120,23 @@ export const writeInvalidUnicodePropertyMessage = <
 	char extends UnicodePropertyChar
 >(
 	char: char
-): writeInvalidUnicodePropertyMessage<char> =>
-	`\\${char} must be followed by a property like \\${char}{Emoji_Presentation}`
+): string =>
+	`\\\\${char} must be followed by a property like \\\\${char}{Emoji_Presentation}`
 
 export type writeInvalidUnicodePropertyMessage<
 	char extends UnicodePropertyChar
 > =
 	`\\${char} must be followed by a property like \\${char}{Emoji_Presentation}`
+
+export const writeUnicodePropertyRequiresFlagMessage = <
+	char extends UnicodePropertyChar
+>(
+	char: char
+): string => `\\\\${char}{...} requires the 'u' or 'v' flag`
+
+export type writeUnicodePropertyRequiresFlagMessage<
+	char extends UnicodePropertyChar
+> = `\\${char}{...} requires the 'u' or 'v' flag`
 
 export const writeUnnecessaryEscapeMessage = <char extends string>(
 	char: char
@@ -124,3 +173,55 @@ export type UnicodePropertyChar = "p" | "P"
 export type NonZeroDigit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 
 export type StringDigit = "0" | NonZeroDigit
+
+export type HexDigit =
+	| StringDigit
+	| "a"
+	| "b"
+	| "c"
+	| "d"
+	| "e"
+	| "f"
+	| "A"
+	| "B"
+	| "C"
+	| "D"
+	| "E"
+	| "F"
+
+export type isAsciiDigits<s extends string> =
+	s extends StringDigit ? true
+	: s extends `${infer head}${infer tail}` ?
+		head extends StringDigit ?
+			isAsciiDigits<tail>
+		:	false
+	:	false
+
+export type isHexDigits<s extends string> =
+	s extends `${HexDigit}${infer rest}` ?
+		rest extends "" ?
+			true
+		:	isHexDigits<rest>
+	:	false
+
+export type shiftTwoHexDigits<s extends string> =
+	s extends `${infer h1}${infer h2}${infer rest}` ?
+		h1 extends HexDigit ?
+			h2 extends HexDigit ?
+				rest
+			:	null
+		:	null
+	:	null
+
+export type shiftFourHexDigits<s extends string> =
+	s extends `${infer h1}${infer h2}${infer h3}${infer h4}${infer rest}` ?
+		h1 extends HexDigit ?
+			h2 extends HexDigit ?
+				h3 extends HexDigit ?
+					h4 extends HexDigit ?
+						rest
+					:	null
+				:	null
+			:	null
+		:	null
+	:	null

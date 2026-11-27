@@ -3,6 +3,7 @@ import {
 	envHasCsp,
 	hasDomain,
 	hasOwn,
+	holdsWeakly,
 	printable,
 	throwParseError,
 	type ArkRegistry,
@@ -17,8 +18,8 @@ import type { RootApplyRuntime } from "./shared/rootApply.ts"
 import type { BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
-	configureAfterTypeMessage,
 	configureLocale,
+	writeConfigureAfterTypeMessage,
 	type ActualConfig,
 	type ArkErrorCode,
 	type ArkErrors,
@@ -28,6 +29,7 @@ import {
 import {
 	isNodeKind,
 	nodeKinds,
+	type DescriptionConfig,
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
@@ -38,7 +40,8 @@ import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
 import type { InPlaceTransforms } from "./shared/transform.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
-import { removedProblemMessage } from "./shared/utils.ts"
+import { removedCloneMessage, removedProblemMessage } from "./shared/utils.ts"
+export { removedCloneMessage } from "./shared/utils.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
@@ -47,6 +50,8 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
 	cfg?: ResolvedConfig
+	/** the first Type that froze `cfg`, for configure() ordering diagnostics */
+	cfgFrozenBy?: string | (() => string | undefined) | undefined
 	nodesById: typeof nodesById
 	sets?: SetEngine
 	encode?: (node: BaseRoot) => BaseRoot
@@ -82,7 +87,7 @@ export interface CacheReach {
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	show<
 		{
-			description?: DescriptionWriter<kind>
+			description?: DescriptionConfig<kind>
 		} & (kind extends ArkErrorCode ? ErrorConfig<kind> : {})
 	>
 >
@@ -182,8 +187,50 @@ export const assertNoProblemConfig = (
 	}
 }
 
+const maxFirstTypeLength = 80
+
+const previewExpression = (expression: string): string =>
+	expression.length > maxFirstTypeLength ?
+		`${expression.slice(0, maxFirstTypeLength - 3)}...`
+	:	expression
+
+const formatFirstType = (expression: string, alias?: string): string => {
+	const preview = previewExpression(expression)
+	return alias && alias !== preview ? `${alias} (${preview})` : preview
+}
+
+let bootstrapping = 0
+
+/** @internal suppresses recording internal intrinsic/bootstrap nodes as the user's first Type */
+export const whileBootstrapping = <t>(fn: () => t): t => {
+	bootstrapping++
+	try {
+		return fn()
+	} finally {
+		bootstrapping--
+	}
+}
+
+/** @internal records the first Type that froze `$ark.cfg` for configure() errors */
+export const recordFirstType = (
+	node: BaseRoot,
+	deferred?: boolean,
+	alias?: string
+): void => {
+	if (bootstrapping || !$ark.cfg || $ark.cfgFrozenBy !== undefined) return
+	if (deferred) {
+		// deferred Type: avoid settling unless configure() fails, and don't retain it for GC
+		const ref = holdsWeakly ? new WeakRef(node) : undefined
+		$ark.cfgFrozenBy = () => {
+			const live = ref?.deref()
+			return live ? formatFirstType(live.expression, alias) : undefined
+		}
+	} else $ark.cfgFrozenBy = formatFirstType(node.expression, alias)
+}
+
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	assertNoProblemConfig(config)
+	if ("clone" in config) throwParseError(removedCloneMessage)
 	// a misspelled option would otherwise be kept and never read
 	for (const k in config) {
 		if (isNodeKind(k) || hasOwn(optionNames, k)) continue
@@ -208,8 +255,18 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	if ($ark.cfg) {
 		// a config file evaluated again, as after a test runner resets modules,
 		// can reapply what's set, which changes nothing
-		if (!isSameConfig(merged, $ark.config))
-			return throwParseError(configureAfterTypeMessage)
+		if (!isSameConfig(merged, $ark.config)) {
+			const frozenBy = $ark.cfgFrozenBy
+			let firstType: string | undefined
+			if (typeof frozenBy === "function") {
+				try {
+					firstType = frozenBy()
+				} catch {
+					firstType = undefined
+				}
+			} else firstType = frozenBy
+			return throwParseError(writeConfigureAfterTypeMessage(firstType))
+		}
 	} else Object.assign($ark.config, merged)
 	// what was passed, as a precompiled program's configure() returns, rather
 	// than $ark.config, whose writes would skip this validation
@@ -218,6 +275,7 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 
 /** $ark.config merged over base, with its static locale */
 export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
+	$ark.cfgFrozenBy = undefined
 	const resolved = mergeConfigs(
 		// probed as the config is fixed, so configuring jitless after import skips it
 		{ ...base, jitless: $ark.config.jitless ?? envHasCsp() },

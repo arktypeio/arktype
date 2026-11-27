@@ -1,3 +1,4 @@
+import type { BoundUnit } from "../refinements/unit.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import { compileObjectLiteral } from "../shared/implement.ts"
 import type { InternalTraversal } from "../shared/traversal.ts"
@@ -7,21 +8,21 @@ export abstract class InternalBasis<
 	d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseRoot<d> {
 	abstract override jsCond(js: NodeCompiler, data: string): string
+	readonly boundUnit: BoundUnit | undefined = undefined
 	declare structure: undefined
 
 	tApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.tAllows(data, ctx)) ctx.nodeError(this.errorCtx as never, data)
 	}
 
-	private _errorCtx: d["errorCtx"] | undefined
 	// frozen when created, as a missing value shares it
 	get errorCtx(): d["errorCtx"] {
-		return (this._errorCtx ??= Object.freeze({
+		return (this.c.errorCtx ??= Object.freeze({
 			code: this.kind,
 			description: this.description,
 			meta: this.meta,
 			...this.inner
-		}))
+		})) as d["errorCtx"]
 	}
 
 	get jsErrorCtx(): string {

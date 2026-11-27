@@ -15,6 +15,7 @@ import {
 	allowsUntracked,
 	appliesValues,
 	ArkErrors,
+	arrayPathKeyOf,
 	copyOf,
 	describePredicate,
 	discriminatesBooleans,
@@ -29,8 +30,10 @@ import {
 	pipeTransformed,
 	runtimeConfig,
 	runtimeScope,
+	setOwnValue,
 	silentCtx,
 	siteOf,
+	stops,
 	transformedInApply,
 	TransformErrors,
 	transformIfAllowed,
@@ -170,8 +173,6 @@ export const narrowedWithCtx = ((
 	return checker
 }) satisfies Fn
 
-const stops = () => true
-
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
 	if (ctx._e === stops) return checker(data, ctx)
 	const { chkOnly, _e, failsUnion } = ctx
@@ -286,7 +287,8 @@ export const aliasedMember = ((checker: Checker, id: string): Checker => {
 
 // a structure read by Allows alone, as a root is, where a narrow's read after it
 export const holdingAlias = ((checker: Checker): Checker => {
-	const node = { tAllows: allowsReadingCtx(checker) } as never
+	// its scope's config is what continues data past the depth an Allows tracks
+	const node = { tAllows: allowsReadingCtx(checker), $: runtimeScope } as never
 	checker.a = data =>
 		allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig)
 	return checker
@@ -487,19 +489,21 @@ export const lessThan = ((
 
 export const minLength = ((
 	rule: number,
-	description = rule === 1 ? "non-empty" : `at least length ${rule}`
+	description = rule === 1 ? "non-empty" : `at least ${rule} characters`
 ): Check =>
 	check("minLength", description, data => data.length >= rule)) satisfies Fn
 
 export const maxLength = ((
 	rule: number,
-	description = `at most length ${rule}`
+	description = `at most ${rule} character${rule === 1 ? "" : "s"}`
 ): Check =>
 	check("maxLength", description, data => data.length <= rule)) satisfies Fn
 
 export const exactLength = ((
 	rule: number,
-	description = `exactly length ${rule}`
+	description = rule === 0 ? "empty" : (
+		`exactly ${rule} character${rule === 1 ? "" : "s"}`
+	)
 ): Check =>
 	check("exactLength", description, data => data.length === rule)) satisfies Fn
 
@@ -557,8 +561,14 @@ export const arrayOf = ((
 	max?: number,
 	min?: number
 ): Checker => {
-	const tooLong = max === undefined ? arrayCheck : maxLength(max)
-	const tooShort = min === undefined ? arrayCheck : minLength(min)
+	const tooLong =
+		max === undefined ? arrayCheck : (
+			maxLength(max, `at most ${max} item${max === 1 ? "" : "s"}`)
+		)
+	const tooShort =
+		min === undefined ? arrayCheck : (
+			minLength(min, min === 1 ? "non-empty" : `at least ${min} items`)
+		)
 	const within = elementsOf(element)
 	const checker: Checker = (data: any, ctx) =>
 		!Array.isArray(data) ? !failsAt(ctx as never, arrayCheck, data)
@@ -767,8 +777,11 @@ export const recordOf = ((value: Checker): Checker => {
 	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
-		for (const k of Object.keys(data))
-			if (failsValue(ctx, value, data, k, data[k])) return false
+		const isArray = Array.isArray(data)
+		for (const k of Object.keys(data)) {
+			const pathKey = isArray ? arrayPathKeyOf(k) : k
+			if (failsValue(ctx, value, data, pathKey, data[k])) return false
+		}
 		return true
 	}
 	checker.description = objectCheck.description
@@ -791,12 +804,17 @@ export const indexed = ((
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
 		if (!walks(data, ctx)) return false
+		const isArray = Array.isArray(data)
 		for (const k of [
 			...Object.keys(data),
 			...Object.getOwnPropertySymbols(data)
 		]) {
+			const pathKey = isArray ? arrayPathKeyOf(k) : k
 			for (const [key, value] of signatures) {
-				if (matchesKey(key, k, ctx) && failsValue(ctx, value, data, k, data[k]))
+				if (
+					matchesKey(key, k, ctx) &&
+					failsValue(ctx, value, data, pathKey, data[k])
+				)
 					return false
 			}
 			if (
@@ -835,7 +853,7 @@ const writtenProps = (declared: Props, changing: Props, data: any): any => {
 		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
 		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
 			if (out === data) out = copyOf(data)
-			out[k] = value
+			setOwnValue(out, k, value)
 		}
 	}
 	if (out !== data)
@@ -875,7 +893,7 @@ const writtenValues = (
 		const value = values.transformed(checker.t, data[k], k)
 		if (Object.is(value, data[k])) continue
 		if (out === data) out = copyOf(data)
-		out[k] = value
+		setOwnValue(out, k, value)
 	}
 	if (defaults && !values.failed()) {
 		for (const k in changing) {
@@ -884,7 +902,7 @@ const writtenValues = (
 			if (out === data) out = copyOf(data)
 			// a default is written even where it's undefined
 			if (checker.w) values.defaulted(checker.w, out)
-			else out[k] = checker.d![0]
+			else setOwnValue(out, k, checker.d![0])
 		}
 	}
 	if (out !== data)
@@ -1022,10 +1040,18 @@ type SitedWrite = (
 ) => any
 
 // what a shape keeping the keys it doesn't declare writes: its own text's
-// result, then where data's copied, each key it declares that the copy lacks
+// result on a plain object, else its own fallback using setOwnValue, then where
+// data's copied, each key it declares that the copy lacks
 const sitedKeeps =
-	(declared: Props, checkers: readonly Checker[], write: SitedWrite) =>
+	(
+		declared: Props,
+		checkers: readonly Checker[],
+		write: SitedWrite,
+		fallback: (data: any, values?: WrittenValues) => any
+	) =>
 	(data: any, values?: WrittenValues): any => {
+		if (Object.getPrototypeOf(data) !== Object.prototype)
+			return fallback(data, values)
 		const out = write(data, checkers, values, copyOf)
 		if (out !== data)
 			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
@@ -1051,7 +1077,10 @@ export const sitedProps = ((
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
-		const written = sitedKeeps(declared, checkers, write)
+		const changing = changingIn(declared)
+		const written = sitedKeeps(declared, checkers, write, data =>
+			writtenProps(declared, changing, data)
+		)
 		checker.t = data => written(data)
 	}
 	return checker
@@ -1077,19 +1106,17 @@ export const sited = ((
 	if (!write) return checker
 	const checkers = Object.values(declared)
 	const changing = changingIn(declared)
-	const keeps = sitedKeeps(declared, checkers, write)
+	const fallback = (data: any, values?: WrittenValues) =>
+		values ?
+			writtenValues(declared, changing, data, values)
+		:	writtenProps(declared, changing, data)
+	const keeps = sitedKeeps(declared, checkers, write, fallback)
 	const written = (data: any, values?: WrittenValues) =>
 		writes < 3 ? keeps(data, values)
 			// an instance is copied, keeping its prototype
 		: Object.getPrototypeOf(data) === Object.prototype ?
 			write(data, checkers, values, copyOf)
-		:	deletes(
-				declared,
-				data,
-				values ?
-					writtenValues(declared, changing, data, values)
-				:	writtenProps(declared, changing, data)
-			)
+		:	deletes(declared, data, fallback(data, values))
 	checker.t =
 		writes % 2 ?
 			data => written(data)
@@ -1238,6 +1265,9 @@ const freed = (values: Written) => {
 // what holds an alias transforms with a ctx, whichever value transforms
 const readingValues = (t: Transform, held: readonly Checker[], withCtx?: 1) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	// a default a function writes may fail as a morph may, so what holds one
+	// is applied as what holds a morph is
+	if (held.some(({ w }) => w)) t.e = applyMorphAt
 	return holdingMorphs(t, held)
 }
 

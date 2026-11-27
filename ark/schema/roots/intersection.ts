@@ -283,7 +283,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			if (this.inner.predicate && this.structure.tfs) {
 				if (!allowsInBranch(ctx, this.structure, data)) {
 					this.structure.tApply(data as never, ctx)
-					return
+					if (ctx.errN > errN) return
 				}
 			} else {
 				this.structure.tApply(data as never, ctx)
@@ -423,13 +423,16 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return
 		}
 		// read only where a later check follows one that can add issues
-		if ((structure && !structure.tfs) || predicates.length > 1)
-			js.initErrCount()
+		if (structure || predicates.length > 1) js.initErrCount()
 		if (structure) {
 			// transformed only if the predicates allow it
-			if (structure.tfs)
-				js.if(`!${js.allows(structure)}`, () => js.return(js.inv(structure)))
-			else {
+			if (structure.tfs) {
+				js.if(`!${js.allows(structure)}`, () =>
+					js
+						.if(`!${js.inv(structure)}`, () => js.return(false))
+						.if("ctx.errN > errN", () => js.return(true))
+				)
+			} else {
 				js.if(`!${js.inv(structure)}`, () => js.return(false)).if(
 					"ctx.errN > errN",
 					() => js.return(true)

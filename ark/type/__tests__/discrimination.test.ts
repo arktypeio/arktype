@@ -1002,7 +1002,7 @@ contextualize(() => {
 		it("reaches a default case at its own value", () => {
 			const T = $.type("'a' | 'b' | 'c'").or("string > 5")
 			attest(T("d").toString()).snap(
-				'must be "a", "b", "c" or at least length 6'
+				'must be "a", "b", "c" or at least 6 characters'
 			)
 		})
 
@@ -1148,7 +1148,7 @@ contextualize(() => {
 				"w?": "string"
 			})
 			attest(T({ v: { k: "c" } }).toString()).snap(
-				'v.k must be "a", "b" or at least length 5'
+				'v.k must be "a", "b" or at least 5 characters'
 			)
 		})
 
@@ -1391,6 +1391,304 @@ nested.z must be removed`)
 				.or({ k: "'b'|'c'" })
 			attest(T({ k: 1, j: "b" }).toString()).snap('j must be "a"')
 			attest(T.allows({ k: 1, j: "a", x: 1, y: 2, z: 3 })).equals(true)
+		}
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1778
+	it("maintains JIT/jitless parity on +: reject and index signatures for inherited and non-enumerable keys", () => {
+		class WithSizeGetter {
+			get size() {
+				return 0
+			}
+		}
+		const nonEnumSize = Object.defineProperty({}, "size", {
+			value: 0,
+			enumerable: false
+		})
+		const protoSize = Object.create({ size: 0 })
+		const protoTag = Object.create({ tag: "a" })
+
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const U = $.type({ size: "0", x: "string" })
+				.or({ size: "1" })
+				.or({ "+": "reject" })
+			const inputs: [unknown, boolean][] = [
+				[new Map(), true],
+				[new Set(), true],
+				[new WithSizeGetter(), true],
+				[nonEnumSize, true],
+				[protoSize, true],
+				[{ size: 0, x: "ok" }, true],
+				[{ size: 1 }, true],
+				[{}, true],
+				[{ size: 0 }, false],
+				[{ size: 2 }, false]
+			]
+			// verify cold (call 1) and warm (post-JIT call 2+)
+			for (let pass = 0; pass < 3; pass++) {
+				for (const [input, expected] of inputs) {
+					attest(U.allows(input)).equals(expected)
+					attest(!(U(input) instanceof type.errors)).equals(expected)
+				}
+			}
+
+			// transforming branch + "+": "reject"
+			const Tf = $.type({ size: "0", x: "string.trim" })
+				.or({ size: "1" })
+				.or({ "+": "reject" })
+			for (let pass = 0; pass < 3; pass++) {
+				const m = new Map()
+				attest(Tf(m)).is(m)
+				attest(Tf({ size: 0, x: " hi " })).equals({ size: 0, x: "hi" })
+				attest(Tf({ size: 0 }) instanceof type.errors).equals(true)
+			}
+
+			// index signature branch with inherited discriminant key
+			const Idx = $.type({ tag: "'a'", x: "string" })
+				.or({ tag: "'b'" })
+				.or("Record<string, number>")
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Idx.allows(protoTag)).equals(true)
+				attest(!(Idx(protoTag) instanceof type.errors)).equals(true)
+				attest(Idx.allows({ tag: "a" })).equals(false)
+				attest(Idx.allows({ tag: "a", x: "ok" })).equals(true)
+			}
+
+			// nested path with "+": "reject"
+			const Nested = $.type({ a: { size: "0", x: "string" } })
+				.or({ a: { size: "1" } })
+				.or({ a: { "+": "reject" } })
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Nested.allows({ a: new Map() })).equals(true)
+				attest(Nested.allows({ a: { size: 0 } })).equals(false)
+				attest(Nested.allows({ a: { size: 0, x: "ok" } })).equals(true)
+			}
+		}
+	})
+
+	it("discriminates large covering unions via the fast path", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const branches = Array.from({ length: 24 }, (_, i) =>
+				$.type({ kind: `'v${i}'`, payload: i % 2 === 0 ? "string" : "number" })
+			)
+			const Large = branches
+				.slice(1)
+				.reduce<type.Any>((acc, b) => acc.or(b), branches[0])
+			const largeDisc =
+				Large.internal.is("union") ? Large.internal.discriminant : null
+			attest(largeDisc?.kind).equals("unit")
+			attest(largeDisc?.path).equals(["kind"])
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Large.allows({ kind: "v0", payload: "ok" })).equals(true)
+				attest(Large.allows({ kind: "v23", payload: 42 })).equals(true)
+				attest(Large.allows({ kind: "v23", payload: "bad" })).equals(false)
+				attest(Large.allows({ kind: "v99", payload: 0 })).equals(false)
+			}
+
+			// mixed depth-0 covering domain union (objects + primitives)
+			const Mixed = Large.or("string").or("null")
+			const mixedDisc =
+				Mixed.internal.is("union") ? Mixed.internal.discriminant : null
+			attest(mixedDisc?.kind).equals("domain")
+			attest(mixedDisc?.path).equals([])
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Mixed.allows("hi")).equals(true)
+				attest(Mixed.allows(null)).equals(true)
+				attest(Mixed.allows({ kind: "v2", payload: "ok" })).equals(true)
+				attest(Mixed.allows(123)).equals(false)
+			}
+		}
+	})
+
+	it("keeps basis beside predicates when pruning discriminants", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({
+				a: $.type("string").narrow(s => s.length > 1),
+				b: "1"
+			})
+				.or({ a: "number" })
+				.or({ a: "null | 'x'", b: "1" })
+
+			for (let pass = 0; pass < 3; pass++) {
+				attest(T.allows({ a: "xy", b: 1 })).equals(true)
+				attest(T.allows({ a: "x", b: 1 })).equals(true)
+				attest(T.allows({ a: null, b: 1 })).equals(true)
+				attest(T.allows({ a: 42 })).equals(true)
+				attest(T.allows({ a: "y", b: 1 })).equals(false)
+				attest(T.allows({ a: "xy", b: 2 })).equals(false)
+				attest(T.allows({ a: true, b: 1 })).equals(false)
+			}
+
+			const Obj = $.type({ a: "'foo'" })
+				.narrow(o => o.a.length === 3)
+				.or({ a: "'bar'" })
+				.or($.type("null").or({ a: "'foo'", b: "1" }))
+
+			for (let pass = 0; pass < 3; pass++) {
+				attest(Obj.allows({ a: "foo" })).equals(true)
+				attest(Obj.allows({ a: "bar" })).equals(true)
+				attest(Obj.allows(null)).equals(true)
+				attest(Obj.allows({ a: "baz" })).equals(false)
+				attest(Obj.allows(42)).equals(false)
+			}
+		}
+	})
+
+	it("doesn't prune a key whose name begins the discriminant's", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ data: "object", dataType: "'x'" }).or({
+				data: "object",
+				dataType: "'y'",
+				y: "number"
+			})
+			// uncompiled, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				attest(T.allows({ data: 5, dataType: "x" })).equals(false)
+				attest(T.allows({ data: {}, dataType: "x" })).equals(true)
+			}
+			attest(T({ data: 5, dataType: "x" }).toString()).snap(
+				"data must be an object"
+			)
+
+			const Structured = $.type({ data: { a: "string" }, dataType: "'x'" }).or({
+				data: { a: "string" },
+				dataType: "'y'",
+				y: "number"
+			})
+			for (let pass = 0; pass < 2; pass++)
+				attest(Structured.allows({ data: null, dataType: "x" })).equals(false)
+			attest(Structured({ data: 5, dataType: "x" }).toString()).snap(
+				"data must be an object"
+			)
+		}
+	})
+
+	it("case relates a unit to a narrowed type by the basis it keeps", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type("'a' | null")
+				.pipe(v => v)
+				.or("string.url")
+				.or("number")
+			// discriminated uncompiled by data no branch allows, then compiled
+			for (let pass = 0; pass < 2; pass++) {
+				attest(T(undefined)?.toString()).snap(
+					'must be a number, a string, "a" or null'
+				)
+				attest(T("b")?.toString()).snap('must be a URL string, "a" or null')
+				attest(T(null)).equals(null)
+				attest(T("a")).equals("a")
+				attest(T("https://arktype.io")).equals("https://arktype.io")
+			}
+
+			// a predicate that would allow the unit doesn't overlap its branch
+			const NotA = $.type("'a' | null")
+				.pipe(v => v)
+				.or($.type("string").narrow(s => s !== "a"))
+				.or("number")
+			attest(NotA(undefined)?.toString()).snap(
+				'must be a number, a string, "a" or null'
+			)
+			attest(NotA("b")).equals("b")
+
+			// an object's predicate above the discriminant
+			const Above = $.type({
+				o: $.type({ k: "'a'" }).narrow(o => o.k.length === 1),
+				"a?": "1"
+			})
+				.or({ o: { k: "'b'" }, "b?": "1" })
+				.or({ o: $.type({ k: "'a'", x: "1" }).or("null"), "c?": "1" })
+			for (let pass = 0; pass < 2; pass++) {
+				attest(Above(0).toString()).snap("must be an object")
+				attest(Above.allows({ o: null })).equals(true)
+				attest(Above.allows({ o: { k: "a" } })).equals(true)
+				attest(Above.allows({ o: { k: "c" } })).equals(false)
+			}
+		}
+
+		const isLong = (s: string) => s.length > 1
+		const Narrowed = type("string").narrow(isLong).or("symbol")
+		attest(discriminantJsonOf(Narrowed.internal.assertIs("union"))).equals({
+			kind: "domain",
+			path: [],
+			cases: {
+				'"string"': {
+					domain: "string",
+					predicate: [registeredReference(isLong)]
+				},
+				'"symbol"': true
+			}
+		})
+		// a length implies the basis pruned from it
+		const Bounded = type("string > 1").or("symbol")
+		attest(discriminantJsonOf(Bounded.internal.assertIs("union"))).snap({
+			kind: "domain",
+			path: [],
+			cases: { '"string"': { minLength: 2 }, '"symbol"': true }
+		})
+	})
+
+	it("a case's branch isn't found to overlap a morph's input of another domain", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			// an object's case holds the morph for its Date, whose input also
+			// allows a number, which an object pruned of its basis still isn't
+			const T = $.type("string")
+				.or({ c: "0" })
+				.or($.type("number | d'2000-01-01'").pipe(v => [v]))
+			// nor is it a number in a range
+			const Ranged = $.type("string")
+				.or({ c: "0" })
+				.or($.type("number > 0 | d'2000-01-01'").pipe(v => [v]))
+			for (let i = 0; i < 3; i++) {
+				attest(T({ c: 0 })).equals({ c: 0 })
+				attest(T(1)).equals([1])
+				attest(T("a")).equals("a")
+				attest(T({ c: 1 }).toString()).equals(
+					"c must be 0 or must be 2000-01-01"
+				)
+				attest(Ranged({ c: 0 })).equals({ c: 0 })
+				attest(Ranged(1)).equals([1])
+				attest(Ranged(0).toString()).equals(
+					"must be a string, an object or positive"
+				)
+			}
+			attest(T.allows(new Date("2000-01-01"))).equals(true)
+			attest(T.allows(new Date(0))).equals(false)
+		}
+	})
+
+	it("a morph whose input reaches another branch's case is still indeterminate", () => {
+		attest(() =>
+			type("string")
+				.or({ c: "0" })
+				.or(type("number | Date").pipe(v => [v]))
+		).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { c: 0 }
+Right: (In: number | Date) => Out<unknown>
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
+	})
+
+	it("isolates contextual case errors before falling back on ownEnumerableDefault in allows and apply", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const a = $.type({
+				kind: "'a'",
+				x: $.type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+			})
+			const b = $.type({ kind: "'b'", y: "string" })
+			const fb = $.type({ "+": "reject", x: "number", z: "string = 'ok'" })
+			const u = a.or(b).or(fb)
+			const data = Object.assign(Object.create({ kind: "a" }), { x: -1 })
+			for (let i = 0; i < 3; i++) {
+				attest(u.allows(data)).equals(true)
+				attest(u(data)).equals({ x: -1, z: "ok" })
+			}
 		}
 	})
 })

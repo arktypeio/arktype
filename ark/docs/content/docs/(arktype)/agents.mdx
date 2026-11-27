@@ -13,13 +13,13 @@ The ArkType [skill](https://github.com/arktypeio/arktype/blob/main/ark/type/skil
 npx skills add arktypeio/arktype
 ```
 
-This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
+This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`: run `npx arktype skill install` (or `npx arktype init`, which also writes `ark.json`) to install the bundled copy matching your installed version, or link it with tools like [skills-npm](https://github.com/antfu/skills-npm).
 
 Agents read two references the skill links when a task needs them: the [migration guide](/docs/migrating), when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema, and a precompile guide with the setup for each bundler, Next.js and test runner and the fix for each build error. To upgrade from ArkType 2, the skill sends them to [Upgrading](/docs/upgrading): ask for `Upgrade this project to ArkType 3`.
 
 ## Migrate from Zod
 
-With the skill installed, migrate in one prompt:
+With the skill installed — or run `npx arktype migrate` to install the bundled skill and print a prompt tailored to your project — migrate in one prompt:
 
 ```
 Migrate this project from Zod to ArkType.

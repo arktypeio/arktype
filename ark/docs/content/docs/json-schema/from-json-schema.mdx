@@ -128,7 +128,9 @@ const User = fromJsonSchema({ ...openApi, $ref: "#/components/schemas/User" })
 User.allows({ name: "Ada" }) // true
 ```
 
-OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and infers it there too. A `nullable` without a `type`, like one beside a `$ref`, throws a `ParseError`, as ajv does.
+OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and infers it there too. Draft-04 and OpenAPI 3.0 boolean `exclusiveMinimum` and `exclusiveMaximum` (beside `minimum`/`maximum`) are supported as well.
+
+A static `fromJsonSchema` call — including `"object"` schemas — precompiles in a standalone [`@ark/aot`](/docs/precompile) build like `type()`.
 
 A schema's `description` is kept on `T.description` and metadata so it round-trips through `toJsonSchema()`, without replacing validation error `expected` phrasing.
 
@@ -161,7 +163,7 @@ fromJsonSchema({ type: "string", pattern: "[" })
 fromJsonSchema({ $ref: "https://example.com/user.json" })
 ```
 
-Of the keywords it can't read, `$dynamicRef`, `$recursiveRef`, `unevaluatedItems`, `unevaluatedProperties` and a draft-04 boolean `exclusiveMinimum` or `exclusiveMaximum` are type errors too.
+Of the keywords it can't read, `$dynamicRef`, `$recursiveRef`, `unevaluatedItems` and `unevaluatedProperties` are type errors too.
 
 One check is deliberately stricter than JSON Schema: a `required` key a schema's own `properties` don't declare is a type error where nothing else could declare it. That's a schema with no `patternProperties`, composition keyword, `$ref` or dependent schema, whose `additionalProperties` is absent or `false`, reached from the root only through the `properties`, `additionalProperties`, `items` or `prefixItems` of schemas like it. JSON Schema reads the key as required with any value, but it's usually a typo.
 

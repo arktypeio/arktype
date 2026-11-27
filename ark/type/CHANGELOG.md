@@ -1,5 +1,47 @@
 # arktype
 
+## Unreleased
+
+### New string keywords
+
+Added `string.boolean` (`"true" | "false"`), `string.boolean.parse` (`"true" | "false"` to `boolean`), and `string.date.iso.date` (calendar-valid `YYYY-MM-DD`, emitting `format: "date"` in JSON Schema).
+
+### Selective `.partial()` / `.required()`, `Module.infer` / `Scope.infer`, and array literal defaults
+
+- `.partial(...keys)` and `.required(...keys)` now accept specific keys to make optional or required instead of transforming every key (#1454).
+- Added `Module.infer<typeof M>`, `Module.infer.In<typeof M>`, `Scope.infer<typeof $>` and `Scope.infer.In<typeof $>` to infer all exported aliases of a `Module` or `Scope` at once, recursing into nested submodules (#1591).
+- Unit-literal array defaults now work in string syntax (e.g. `"string[] = ['localhost']"`), returning a fresh array on each validation (#1661).
+
+### Basis-derived bound units and error formatting
+
+- Length bounds now derive human-readable units from their basis (`characters` for strings, `items` for arrays — e.g. `"string >= 5"` reports `must be at least 5 characters` and `"string[] <= 10"` reports `must be at most 10 items`), length/numeric bound schemas support explicit custom `unit` values (with unit-aware `actual` values and German `de` locale support) (#1811).
+- Exported non-mutating `lineOf(error)` (and in `arktype/runtime` for standalone builds) to format a single `ArkError` as its `summary` line.
+- Preserved `.label()` on morph output checks, `.encode`, and post-morph `.narrow()` predicates (including `onUndeclaredKey: "delete"` objects, defaulted objects, and piped/parsed fields like `type("string.trim").to("string > 0").label("Full name")`) across dynamic and standalone builds, and resolved shared labels on missing required union keys.
+- Reported numeric array index paths on index signatures across cold, JIT, and standalone paths (#1785), honored user-authored `.describe()` on missing required property errors, fixed anonymous class error spacing, and stringified symbol paths in multi-disjoint errors.
+- Added English and German locale phrases for `Array.index` (`"an array index"` / `"ein Array-Index"`) and restored `Locale<string>` on `summaryIn`/`messageIn` (#1782).
+- Calling `configure()` after a Type has already been created now names the first Type created, and trailing `>` comparators (e.g. `type("Date >")`, `type("number >")`) report `Token '>' requires a right operand` (#1213).
+
+### Commutative join for overlapping delete-only object unions
+
+Overlapping unions whose only morph is deleting undeclared keys (`"+": "delete"` or `configure({ onUndeclaredKey: "delete" })`) now join keys declared by any matching branch commutatively (including an object beside an array, `Date`, or `"+": "ignore"` branch), rather than throwing or depending on branch order (#1752). Overlapping unions involving defaults, user morphs, or recursive types still throw a `ParseError` explaining which branches or keys conflict.
+
+### Codecs and JSON Schema
+
+- Preserved built-in codec output domains across `.to()` when calling `.encode`, preserved `.label()` metadata on `.encode`, and returned `ArkErrors` instead of throwing on circular `JSON.stringify` inputs.
+- Static `fromJsonSchema` object schemas now precompile in `@ark/aot` standalone builds (keywords requiring runtime predicates still need `// @ark-runtime` or `runtime: "arktype"`).
+- Preserved readable `$defs` / `definitions` / `components.schemas` names in cyclic `fromJsonSchema` expressions instead of `synthetic<hash>` (#1774).
+- Supported draft-04 / OpenAPI 3.0 boolean `exclusiveMinimum` and `exclusiveMaximum`, enforced own-property checks in `const`, handled circular objects and sparse arrays safely in `uniqueItems`, aligned static/runtime draft validation and 2020-12 exclusive bounds, handled non-finite `±Infinity` bounds cleanly in `toJsonSchema()`, and hardened JSON Schema round-trips.
+
+### Type inference, declarations, algebra, and runtime fixes
+
+- Eliminated consumer `.d.ts` internal path leaks and exported missing public helper types (`ToJsonSchemaError`, `ReadableIssue`, `ReadableErrors`, `TypeMeta`, `NodeKind`, `NodeSelector`, `PathedIssue`, `RootModule`, `ArkScopeConfig`, `FromJsonSchema`, `RegexParser`, `CodecParser`, and more) (#1777).
+- Fixed cyclic `Allows` vs `Apply` state isolation (including cyclic + `ctx`-narrow + morph + filter soundness), safely defined own properties over inherited accessors and frozen prototypes during copies/transforms (including strict CommonJS frozen inputs), preserved `Array` prototype and empty tuple length in `.partial()` / `.required()` with extra props, fixed `"child"` selector configuration, `"self"` / `jsonSchema` JIT finalization, deep `.onDeepUndeclaredKey()` / selector configuration through `.to()` morph pipelines, selective `scope.export()` / `scope.import()` `Object.prototype` leaks, preserved `this` binding in `type.fn`, prevented `notEqualLength: 0` schema crashes, rejected non-function/non-Type operands in `.pipe()` / `.pipe.try()`, allowed `nearestFloat(±Infinity)` (#1782), and guarded null-prototype schema inputs.
+- Collected cyclic Types in GC via `WeakCache` and `WeakMap` symbol naming (#1773), supported `Object.freeze`/`seal`/`preventExtensions` on unread/eager/precompiled Types (#1751), aligned 17 deferred-vs-eager building edge cases, and hardened standalone AOT baking (including baseless length `toJsonSchema` throwers and anonymous class `expression: ""` / `Type<>`).
+- Aligned 17 static/runtime parse-parity edge cases (including normalizing `Record<'a' | 'b', T>` literal keys to named props and inferring `object` for `distill.In<object>`), fixed 10 ambient/private-submodule/generic shadowing resolution bugs, and fixed 13 set-algebra soundness, cache-poisoning, and tuple-intersection bugs (including merged morph head-splitting and disjoint morph inputs in `extract`/`exclude`, #1755).
+- Fixed recursive readonly array distillation (#1787), `ObjectType` / `ArrayType` / `DateType` / `type({}).keyof()` / generic constraint defaults & morphs (#1779), optional/variadic/readonly tuple elements and union distribution in `type.declare` (#1776), `match` scaling past ~46 cases, `.in()` narrowing, and `match.in().at(key, cases)` literal key inference (#1775, #1288), contextual parameter inference for scoped tuple morphs (#1624), and `.matching()` brand/literal preservation.
+- Eliminated quadratic union/enum scaling (#1774, #1652), tightened `string.email` (#1762), rejected ASCII spaces/control characters in `string.url.http`, fixed union discriminant pruning beside `.narrow()` predicates and non-key unit index signatures (#1778), and fixed date/key expression edge cases (#1771, #1780).
+- Polished `ark init` (writes `"$schema"` into `ark.json`, requires a `package.json` root) and `ark migrate` detection (#1782).
+
 ## 3.0.0-rc.12
 
 ### A label names its value in what a narrow says it must be
@@ -266,7 +308,7 @@ Each failed check is its own error, so nothing raised `intersection`. It's no lo
 
 ### Summary
 
-This release is a major version. The entries below are its changes in full, in no order. The [upgrade guide](https://arktype.io/docs/upgrading) has a checklist of every breaking change with what to write instead, and the [announcement](https://arktype.io/blog/3.0) has the reasons.
+This release is a major version. The entries below are its changes in full, in no order. The [upgrade guide](https://arktype.io/docs/upgrading) has a checklist of every breaking change with what to write instead, and the [announcement](https://arktype.io/docs/blog/3.0) has the reasons.
 
 New:
 

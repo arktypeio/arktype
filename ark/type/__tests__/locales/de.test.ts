@@ -1,5 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
-import { messageIn, scope, type, type ArkErrors, type Locale } from "arktype"
+import {
+	fromJsonSchema,
+	lineOf,
+	messageIn,
+	scope,
+	type,
+	type ArkErrors,
+	type Locale
+} from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 import { de } from "arktype/locales/de"
 import { en } from "arktype/locales/en"
@@ -234,6 +242,7 @@ contextualize(() => {
 			"actual suppressed array ← [0]": "muss mindestens 2 Elemente enthalten",
 			"configured writer reading the description ← 3":
 				"muss more than 5 (!) sein",
+			'Array.index ← "x"': "muss ein Array-Index sein",
 			'number.epoch ← "x"': "muss ein Unix-Zeitstempel als Zahl sein",
 			"object.json ← Map": "muss ein einfaches Objekt oder Array sein",
 			'string.alpha ← " x"': "muss rein alphabetisch sein",
@@ -246,6 +255,7 @@ contextualize(() => {
 			'string.date ← "x"': "muss ein parsbares Datum sein",
 			'string.date.iso ← "x"':
 				"muss ein Datum oder Zeitpunkt nach ISO 8601 sein",
+			'string.date.iso.date ← "x"': "muss ein Datum nach ISO 8601 sein",
 			'string.date.parse ← "x"': "muss ein parsbares Datum sein",
 			'string.digits ← "x"': "muss eine Ziffernfolge (0-9) sein",
 			'string.email ← "x"': "muss eine E-Mail-Adresse sein",
@@ -504,5 +514,203 @@ b: muss ausgefüllt sein`)
 				deDescribed
 			)
 		).snap("a fehlt (muss ein x sein)")
+	})
+
+	it("uses authored descriptions for missing required properties", () => {
+		const T = type({
+			a: type("string").describe("ein Benutzername"),
+			b: type("string > 3").describe("ein Kürzel", "self"),
+			c: type("unknown").describe("eine Nutzlast"),
+			d: type("string").describe("ein Code").or("number"),
+			e: type("string").describe("ein Benutzername").label("Benutzername")
+		})
+		attest((T({}) as ArkErrors).summaryIn(de)).snap(
+			`a fehlt (muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein)
+b fehlt (muss ein Wert gemäß der Beschreibung „ein Kürzel“ sein)
+c fehlt (muss ein Wert gemäß der Beschreibung „eine Nutzlast“ sein)
+d fehlt (muss eine Zahl oder ein Wert gemäß der Beschreibung „ein Code“ sein)
+Benutzername fehlt (muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein)`
+		)
+		const deDescribed: Locale = { ...de, cite: text => text }
+		attest((T({}) as ArkErrors).summaryIn(deDescribed)).snap(
+			`a fehlt (muss ein Benutzername sein)
+b fehlt (muss ein Kürzel sein)
+c fehlt (muss eine Nutzlast sein)
+d fehlt (muss eine Zahl oder ein Code sein)
+Benutzername fehlt (muss ein Benutzername sein)`
+		)
+
+		// outer "self" description overrides a described basis
+		const Outer = type("string")
+			.describe("inner desc")
+			.moreThanLength(3)
+			.describe("outer desc", "self")
+		attest((type({ a: Outer })({}) as ArkErrors).summaryIn(de)).snap(
+			"a fehlt (muss ein Wert gemäß der Beschreibung „outer desc“ sein)"
+		)
+
+		// described recursive alias
+		const Rec = scope({
+			Node: { value: "string", next: ["Node", "@", "the next node"] }
+		}).export()
+		attest((Rec.Node({}) as ArkErrors).summaryIn(de)).snap(
+			`value fehlt (muss eine Zeichenkette sein)
+next fehlt (muss ein Wert gemäß der Beschreibung „the next node“ sein)`
+		)
+
+		// fromJsonSchema doc annotation piped through a morph stays structural
+		const PipedJson = type({
+			tax_exempt: fromJsonSchema({
+				type: "string",
+				enum: ["none", "exempt"],
+				description: "Doc text."
+			} as const).pipe(s => s)
+		})
+		attest((PipedJson({}) as ArkErrors).summary).snap(
+			'tax_exempt must be "exempt" or "none" (was missing)'
+		)
+		attest((PipedJson({}) as ArkErrors).summaryIn(de)).snap(
+			'tax_exempt fehlt (muss "exempt" oder "none" sein)'
+		)
+	})
+
+	it("formats individual errors with lineOf in the active locale", () => {
+		const T = type({
+			name: type("string").configure({ title: "Name" }),
+			price: type("number > 0").label("Stückpreis"),
+			note: type("string").message("Pflichtfeld"),
+			items: "number[]"
+		})
+		const input = { name: 1, price: 0, note: 1, items: ["x"] }
+		withConfig({ locale: de }, () => {
+			const out = T(input) as ArkErrors
+			attest(out.issues.map(lineOf).join("\n")).equals(out.summary)
+			attest(out.issues.map(lineOf)).snap([
+				"name („Name“) muss eine Zeichenkette sein",
+				"Stückpreis muss positiv sein",
+				"note: Pflichtfeld",
+				"items[0] muss eine Zahl sein"
+			])
+		})
+		// also with a dynamic locale function, even if the selected locale changes later
+		let active: Locale = de
+		withConfig({ locale: () => active }, () => {
+			const out = T(input) as ArkErrors
+			const issues = out.issues
+			const summary = out.summary
+			active = en
+			attest(issues.map(lineOf).join("\n")).equals(summary)
+		})
+	})
+
+	it("describes an anonymous class naturally", () => {
+		const Anon = (() => class {})()
+		const T = type.instanceOf(Anon)
+		attest((T({}) as ArkErrors).summaryIn(de)).snap(
+			"muss eine Instanz einer anonymen Klasse sein"
+		)
+		attest((type({ a: T })({}) as ArkErrors).summaryIn(de)).snap(
+			"a fehlt (muss eine Instanz einer anonymen Klasse sein)"
+		)
+	})
+
+	it("respects custom bound units", () => {
+		const sekunde = { singular: "Sekunde", plural: "Sekunden" } as const
+		const byte = "Byte"
+		const MoreThan5 = type.number.moreThan({ rule: 5, unit: sekunde })
+		const AtLeast0 = type.number.atLeast({ rule: 0, unit: sekunde })
+		const MoreThan0 = type.number.moreThan({ rule: 0, unit: sekunde })
+		const AtMost1 = type.number.atMost({ rule: 1, unit: sekunde })
+		const AtMost0 = type.number.atMost({ rule: 0, unit: sekunde })
+		const LessThan0 = type.number.lessThan({ rule: 0, unit: sekunde })
+		const Not5 = type.number
+			.lessThan({ rule: 5, unit: sekunde })
+			.or(type.number.moreThan({ rule: 5, unit: sekunde }))
+		const Not1 = type.number
+			.lessThan({ rule: 1, unit: sekunde })
+			.or(type.number.moreThan({ rule: 1, unit: sekunde }))
+		const Min3Bytes = type.string.atLeastLength({ rule: 3, unit: byte })
+		const Min1Byte = type.string.atLeastLength({ rule: 1, unit: byte })
+		const Max2Bytes = type.string.atMostLength({ rule: 2, unit: byte })
+		const Max0Bytes = type.string.atMostLength({ rule: 0, unit: byte })
+		const Exact0Bytes = type.string.exactlyLength({ rule: 0, unit: byte })
+		const Exact1Byte = type.string.exactlyLength({ rule: 1, unit: byte })
+		const Not2Bytes = type.string
+			.lessThanLength({ rule: 2, unit: byte })
+			.or(type.string.moreThanLength({ rule: 2, unit: byte }))
+		const ArrMin2 = type("number[]").atLeastLength({
+			rule: 2,
+			unit: { singular: "Eintrag", plural: "Einträge" }
+		})
+
+		const errs = [
+			MoreThan5(5),
+			AtLeast0(-1),
+			MoreThan0(0),
+			AtMost1(2),
+			AtMost0(1),
+			LessThan0(0),
+			Not5(5),
+			Not1(1),
+			Min3Bytes("ab"),
+			Min1Byte(""),
+			Max2Bytes("abc"),
+			Max0Bytes("a"),
+			Exact0Bytes("a"),
+			Exact1Byte("ab"),
+			Not2Bytes("ab"),
+			ArrMin2([1])
+		] as ArkErrors[]
+
+		attest(errs.map(e => e.summaryIn(de))).snap([
+			"muss größer als 5 Sekunden sein",
+			"muss mindestens 0 Sekunden sein",
+			"muss größer als 0 Sekunden sein",
+			"muss höchstens 1 Sekunde sein",
+			"muss höchstens 0 Sekunden sein",
+			"muss kleiner als 0 Sekunden sein",
+			"muss ungleich 5 Sekunden sein",
+			"muss ungleich 1 Sekunde sein",
+			"muss mindestens 3 Bytes lang sein",
+			"muss mindestens 1 Byte lang sein",
+			"muss höchstens 2 Bytes lang sein",
+			"muss genau 0 Bytes lang sein",
+			"muss genau 0 Bytes lang sein",
+			"muss genau 1 Byte lang sein",
+			"darf nicht 2 Bytes lang sein",
+			"muss mindestens 2 Einträge lang sein"
+		])
+
+		const DescribedMin = type.number
+			.atLeast({ rule: 5, unit: sekunde })
+			.configure({
+				description: "ein langer Timeout",
+				message: ctx => `${ctx.actual} ist nicht ${ctx.expected}`
+			})
+		const DescribedMax = type.number
+			.atMost({ rule: 5, unit: sekunde })
+			.configure({
+				description: "ein kurzer Timeout",
+				message: ctx => `${ctx.actual} ist nicht ${ctx.expected}`
+			})
+		const DescribedNot1 = type.number
+			.lessThan({ rule: 1, unit: sekunde })
+			.or(type.number.moreThan({ rule: 1, unit: sekunde }))
+			.configure({
+				description: "nicht eine Sekunde",
+				message: ctx => `${ctx.actual} ist nicht ${ctx.expected}`
+			})
+		attest((DescribedMin(1) as ArkErrors).summaryIn(de)).snap(
+			"1 Sekunde ist nicht ein Wert gemäß der Beschreibung „ein langer Timeout“"
+		)
+		attest((DescribedMin(1.5) as ArkErrors).summaryIn(de)).snap(
+			"1,5 Sekunden ist nicht ein Wert gemäß der Beschreibung „ein langer Timeout“"
+		)
+		attest((DescribedMax(10) as ArkErrors).summaryIn(de)).snap(
+			"10 Sekunden ist nicht ein Wert gemäß der Beschreibung „ein kurzer Timeout“"
+		)
+		attest((DescribedNot1(1) as ArkErrors).summaryIn(de)).snap(
+			"1 Sekunde ist nicht ein Wert gemäß der Beschreibung „nicht eine Sekunde“"
+		)
 	})
 })

@@ -25,10 +25,12 @@ import {
 	pruneBeforePluginMessage,
 	writePruneHostMessage
 } from "@ark/aot/internal/settings.ts"
+import { configs } from "@ark/aot/eslint"
 import { precompile as bunPlugin } from "@ark/aot/bun"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { Linter } from "eslint"
 import { noIssueFeatures } from "arktype/internal/standalone.ts"
 import { rspack } from "@rspack/core"
 import {
@@ -708,13 +710,95 @@ tag\`\${User}\`.assert({})`)
 			).snap(
 				"the validator at types.ts:3:21 is lost where main.ts:4:7 passes it to a template tag"
 			)
+			attest(await droppedReading(`console.log(String.raw\`\${User}\`)`)).snap([
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
+		})
+
+		it("joining an array holding it", async () => {
+			attest(await droppedReading(`console.log([User].join())`)).snap([
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
+			attest(await droppedReading(`console.log([User].join(", "))`)).snap([
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
 		})
 
 		it("a mapper Array.from passes it", async () => {
 			attest(
 				await droppedReading(`Array.from([User], t => t.assert({}))`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(`Array.from([User], t => t)[0].assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(`Array.from([1], () => User)[0].assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`Array.from({ length: 1, 0: User }).map(t => t.assert({}))`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`Array.from({ length: 1, 0: User }, undefined).map(t => t.assert({}))`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`console.log(Array.from({ length: 1, 0: User }).join())`
+				)
+			).snap(["assert", "meta", "~standard", "withContext"])
+			attest(
+				await droppedReading(
+					`declare const fn: (t: typeof User) => unknown\nArray.from([User], fn)`
+				)
 			).snap(
-				"the validator at types.ts:3:21 is lost where main.ts:3:1 maps it with a function the build can't follow"
+				"the validator at types.ts:3:21 is lost where main.ts:4:20 passes it to a callback the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`Array.from([1], function (this: any) { return this.assert({}) }, User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:66 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const args: any = [[1], function (this: any) { return this.assert({}) }, User]\n;(Array.from as any)(...args)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:22 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const rest: any = [function (this: any) { return this.assert({}) }, User]\n;(Array.from as any)([1], ...rest)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:27 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const head: any = [[1], function (this: any) { return this.assert({}) }]\n;(Array.from as any)(...head, User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:31 passes it to Array.from, which the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const head: any = [[1], function (this: any) { return this().assert({}) }]\n;(Array.from as any)(...head, () => User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:31 returns it from a function whose calls the build can't follow"
 			)
 		})
 
@@ -1032,6 +1116,55 @@ o.m()`
 ;(f as any).call = (t: unknown) => t
 const o = { s: User, self() { return f.call(this) } }
 o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const f = function (): any { return 0 }
+const g: any = f
+g.call = (t: unknown) => t
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const patch = (fn: any) => { fn.call = (t: unknown) => t }
+const f = function (): any { return 0 }
+patch(f)
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const g = function f(): any {
+	;(f as any).call = (t: unknown) => t
+	return 0
+}
+g()
+const o = { s: User, self() { return g.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const g = function f(): any {
+	const o = { s: User, self() { return f.call(this) } }
+	return o.self()
+}
+;(g as any).call = (t: unknown) => t
+g().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import f from "./helper.ts"
+import f2 from "./helper.ts"
+;(f2 as any).call = (t: unknown) => t
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`,
+					{ "/helper.ts": `export default (): any => 0` }
 				)
 			).snap(["meta", "~standard", "methods", "withContext"])
 			attest(
@@ -2056,7 +2189,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		}
 
 		it("sizes them where they're compiled for speed with optimize unset", async () => {
-			attest(await timesFrom({})).snap("1.3")
+			attest(await timesFrom({})).snap("1.2")
 		})
 
 		it("doesn't under the smallest preset, which writes them as checkers", async () => {
@@ -2092,7 +2225,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		it("writes them for size where a browser loads the bundle, as optimize: size would", async () => {
 			const [warnings, js] = await built({})
 			attest(warnings).snap([
-				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.3 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.1 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 			])
 			const [setWarnings, setJs] = await built({
 				optimize: "size",
@@ -2300,6 +2433,66 @@ console.log(READ, String(User({ name: 5 })))
 				const pruned = await bundle({ preset })
 				attest(run(pruned)).equals(run(whole))
 				attest(pruned.includes("~standard")).equals(false)
+			}
+		})
+
+		it("prints a Type's expression when an array holding it is joined", async () => {
+			const joinedRoot = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"\nconsole.log([type({ t1: "string" })].join())\n`
+				},
+				tempPath("joined")
+			)
+			const options: BuildOptions = {
+				entryPoints: [join(joinedRoot, "main.ts")],
+				absWorkingDir: joinedRoot
+			}
+			for (const preset of ["smallest", undefined] as const) {
+				const pruned = await bundle({ cwd: joinedRoot, preset }, options)
+				attest(run(pruned)).equals("Type<{ t1: string }>\n")
+				attest(pruned.includes("~standard")).equals(false)
+			}
+		})
+
+		it("prunes when bundling a Node builtin package like events", async () => {
+			const eventsRoot = writeFixture(
+				{
+					"node_modules/events/package.json": JSON.stringify({
+						name: "events",
+						main: "./events.js"
+					}),
+					"node_modules/events/events.js": `function EventEmitter() {}
+EventEmitter.prototype.listeners = function () { return [] }
+module.exports = EventEmitter
+module.exports.EventEmitter = EventEmitter
+`,
+					"main.ts": `import { EventEmitter } from "events"
+import { type } from "arktype"
+
+const User = type({ name: "string" })
+console.log(new EventEmitter().listeners("x").length, User.allows({ name: "Ada" }))
+`
+				},
+				tempPath("events")
+			)
+			for (const platform of ["browser", "node"] as const) {
+				const buildOptions: BuildOptions = {
+					entryPoints: [join(eventsRoot, "main.ts")],
+					absWorkingDir: eventsRoot,
+					platform
+				}
+				attest(
+					await warningsOf(
+						{ cwd: eventsRoot, preset: undefined, prune: true },
+						buildOptions
+					)
+				).equals([])
+				const pruned = await bundle(
+					{ cwd: eventsRoot, preset: undefined, prune: true },
+					buildOptions
+				)
+				attest(pruned.includes("~standard")).equals(false)
+				attest(run(pruned)).equals("0 true\n")
 			}
 		})
 
@@ -2576,11 +2769,127 @@ if (out instanceof type.errors) {
 			attest(run(written))
 				.snap(`email: must be an email address|["first-name"]: must be a string|items[0].id: must be even|items[1].id: must be a number
 email: pattern,minLength|["first-name"]: domain|items[0].id: divisor|items[1].id: domain
-{"email":["must be an email address","must be at least length 11"],"[\\"first-name\\"]":["must be a string"],"items[0].id":["must be even"],"items[1].id":["must be a number"]}
+{"email":["must be an email address","must be at least 11 characters"],"[\\"first-name\\"]":["must be a string"],"items[0].id":["must be even"],"items[1].id":["must be a number"]}
 : 5|email: 2|["first-name"]: 1|items: 2|items[0]: 1|items[0].id: 1|items[1]: 1|items[1].id: 1
 `)
 			// the same as arktype reads its own errors
 			attest(run(written)).equals(runPlain(files))
+		})
+
+		it("formats each error line with lineOf as arktype does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { firstIssue, lineOf, type } from "arktype"
+import * as ark from "arktype"
+
+const Root = type("string")
+const Order = type({
+	name: type("string").describe("a customer name"),
+	"first-name": "string",
+	note: type("string").message("Enter a note"),
+	price: type("number > 0").label("Unit price"),
+	billing: {
+		price: type("number > 0").label("Unit price")
+	},
+	items: type({
+		id: "number % 2",
+		price: type("number > 0").label("Unit price")
+	}).array(),
+	branch: type({ a: "string" }).or({ b: "number" })
+})
+
+const rootOut = Root(1)
+if (rootOut instanceof type.errors)
+	console.log(lineOf(firstIssue(rootOut)) === rootOut.summary, lineOf(rootOut.issues[0]))
+
+const out = Order({
+	"first-name": 1,
+	note: 2,
+	price: 0,
+	billing: { price: 0 },
+	items: [{ id: 3, price: 0 }],
+	branch: {}
+})
+if (out instanceof type.errors) {
+	const lines = out.issues.map(ark.lineOf)
+	console.log(lines.join("\\n") === out.summary)
+	console.log(lines.join("\\n"))
+}
+`
+				},
+				tempPath("prunedLineOf")
+			)
+			const written = await bundle(
+				{ preset: undefined },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(written)).snap(`true must be a string
+true
+name must be a customer name (was missing)
+["first-name"] must be a string
+note: Enter a note
+Unit price must be positive
+billing: Unit price must be positive
+items[0].id must be even
+items[0]: Unit price must be positive
+branch.a must be a string or branch.b must be a number
+`)
+			// identical to dynamic arktype
+			attest(run(written)).equals(runPlain(files))
+
+			// also matches under smallest preset (issuesLean + checkers)
+			const smallestWritten = await bundle(
+				{ preset: "smallest" },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(smallestWritten)).equals(run(written))
+		})
+
+		it("formats each error line with lineOf under reduced error modes", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { firstIssue, lineOf, type } from "arktype"
+import * as ark from "arktype"
+
+const Root = type("string")
+const Order = type({
+	price: type("number > 0").label("Unit price"),
+	name: type("string").describe("a customer name")
+})
+
+const rootOut = Root(1)
+if (rootOut instanceof type.errors)
+	console.log(lineOf(firstIssue(rootOut)) === rootOut.summary, lineOf(rootOut.issues[0]))
+
+const out = Order({ price: 0 })
+if (out instanceof type.errors) {
+	const lines = out.issues.map(ark.lineOf)
+	console.log(lines.join("\\n") === out.summary)
+	console.log(lines.join("\\n"))
+}
+`
+				},
+				tempPath("prunedLineOfReduced")
+			)
+			// errors: "first" formats the first issue identically to summary
+			const firstWritten = await bundle(
+				{ preset: undefined, errors: "first" },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(firstWritten)).snap(`true must be a string
+true
+Unit price must be positive
+`)
+
+			// errors: "none" formats the undetailed issue identically to summary
+			const noneWritten = await bundle(
+				{ preset: undefined, errors: "none" },
+				{ entryPoints: [join(files, "main.ts")] }
+			)
+			attest(run(noneWritten)).snap(`true is invalid
+true
+is invalid
+`)
 		})
 
 		it("builds a regex from a pattern known only at runtime as arktype does", async () => {
@@ -2651,8 +2960,8 @@ console.log(JSON.stringify(Login["~standard"].validate({ password: "long-enough-
 			attest(defaultPruned).equals(unpruned)
 			attest(smallestPruned).equals(unpruned)
 			attest(defaultPruned)
-				.snap(`{"issues":[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}],"message":"password must be at least length 12\\namount must be a number"}
-[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]
+				.snap(`{"issues":[{"code":"minLength","path":["password"],"expected":"at least 12 characters","message":"must be at least 12 characters"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}],"message":"password must be at least 12 characters\\namount must be a number"}
+[{"code":"minLength","path":["password"],"expected":"at least 12 characters","message":"must be at least 12 characters"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]
 true hunter2 true
 {"value":{"password":"long-enough-pw","amount":1}}
 `)
@@ -6108,7 +6417,7 @@ export const shown = type({ shown: "string" })
 						return warnings
 					}
 					attest(await warningsOf({ target: "web" })).equals([
-						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.3 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.1 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 					])
 					// a server's are left compiled
 					attest(await warningsOf({ target: "node" })).equals([])
@@ -6651,6 +6960,146 @@ console.log(String(User({ name: 5 })))
 					"0 sites in 0 files: 0 accepted (100.0%)\n"
 				])
 			}
+		})
+	})
+
+	describe("fromJsonSchema and Object.freeze/seal on Types", () => {
+		it("precompiles fromJsonSchema and Object.freeze/seal cleanly across speed, smallest, prune, ark check and eslint", async () => {
+			const main = `import { fromJsonSchema, type } from "arktype"
+
+export const Tags = fromJsonSchema({
+	type: "array",
+	items: { type: "string" }
+})
+export const FrozenA = Object.freeze(type({ a: "string" }))
+const T = type({ b: "number" })
+export const FrozenB = Object.freeze(T)
+export const SealedB = Object.seal(T)
+export const NonExtB = Object.preventExtensions(T)
+
+const out = Tags(["a", "b"])
+const mapped = out instanceof type.errors ? [] : out.map(s => s.toUpperCase())
+const bad = Tags["~standard"].validate([1])
+const issues = "issues" in bad && bad.issues ? bad.issues.map(i => i.message) : []
+const stdSchema = Tags["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+const directSchema = Tags.toJsonSchema()
+
+console.log(
+	JSON.stringify({
+		mapped,
+		issues,
+		stdType: stdSchema.type,
+		directType: directSchema.type,
+		aOk: FrozenA({ a: "hi" }),
+		aBad: FrozenA({ a: 1 }) instanceof type.errors,
+		bOk: FrozenB({ b: 42 }),
+		bBad: FrozenB({ b: "x" }) instanceof type.errors,
+		sealedOk: SealedB.allows({ b: 1 }),
+		nonExtOk: NonExtB.allows({ b: 2 }),
+		isFrozen: Object.isFrozen(FrozenA),
+		isSealed: Object.isSealed(SealedB),
+		isExtensible: Object.isExtensible(NonExtB)
+	})
+)
+`
+			const root = writeFixture(
+				{ "package.json": `{"type":"module"}`, "main.ts": main },
+				tempPath("prune", "fromJsonSchema-freeze")
+			)
+			const expected = runPlain(root)
+			attest(JSON.parse(expected)).snap({
+				mapped: ["A", "B"],
+				issues: ["must be a string"],
+				stdType: "array",
+				directType: "array",
+				aOk: { a: "hi" },
+				aBad: true,
+				bOk: { b: 42 },
+				bBad: true,
+				sealedOk: true,
+				nonExtOk: true,
+				isFrozen: true,
+				isSealed: true,
+				isExtensible: false
+			})
+			for (const opts of [
+				{ prune: true },
+				{ preset: "smallest", prune: true }
+			] as PrecompileUnpluginOptions[]) {
+				const { outputFiles } = await build({
+					entryPoints: [join(root, "main.ts")],
+					bundle: true,
+					write: false,
+					format: "esm",
+					conditions: ["ark-ts", "production"],
+					logLevel: "silent",
+					plugins: [
+						precompile.esbuild({
+							cwd: root,
+							conditions: ["ark-ts", "production"],
+							...opts
+						})
+					]
+				})
+				attest(run(outputFiles![0].text)).equals(expected)
+			}
+			const check = runCli(root, "--check", "--prune")
+			attest([check.status, check.stderr]).equals([0, ""])
+			const linted = new Linter({ configType: "flat", cwd: root }).verify(
+				main,
+				[configs.recommended],
+				{ filename: join(root, "main.ts") }
+			)
+			attest(linted).equals([])
+		}).timeout(120_000)
+
+		it("bakes introspection in the defining module when an exported Type is frozen/sealed under freeze: false per-module mode", () => {
+			const files = {
+				"/a.ts": `import { type } from "arktype"
+export const FrozenUser = Object.freeze(type({ name: "string" }))
+const Base = type({ count: "number" })
+Object.seal(Base)
+export const SealedCount = Base
+export const NonExtFlag = type({ ok: "boolean" })
+Object.preventExtensions(NonExtFlag)
+`,
+				"/b.ts": `import { FrozenUser, NonExtFlag, SealedCount } from "./a.ts"
+console.log(JSON.stringify({
+	frozen: FrozenUser.toJsonSchema().type,
+	sealed: SealedCount.toJsonSchema().type,
+	nonExt: NonExtFlag.toJsonSchema().type,
+	ok: FrozenUser.allows({ name: "Ada" })
+}))
+`
+			}
+			const compiler = new Precompiler(memoryHost(files), {
+				cwd: "/",
+				freeze: false,
+				inline: true
+			})
+			const outA = compiler.precompile(files["/a.ts"], "/a.ts")
+			const outB = compiler.precompile(files["/b.ts"], "/b.ts")
+			attest([outA.diagnostics, outB.diagnostics]).equals([[], []])
+			// importer must not emit a deferred bakeInto wrapper for frozen/sealed/non-extensible exports
+			attest(outB.code.includes("bakeInto")).equals(false)
+			const dir = writeFixture(
+				{
+					"package.json": `{"type":"module"}`,
+					"a.js": outA.code,
+					"b.js": outB.code.replace("./a.ts", "./a.js")
+				},
+				tempPath("prune", "freeze-false-per-module")
+			)
+			const res = spawnSync(
+				process.execPath,
+				["--conditions", "ark-ts", join(dir, "b.js")],
+				{ cwd: dir, encoding: "utf8" }
+			)
+			attest([res.status, res.stderr, JSON.parse(res.stdout)]).equals([
+				0,
+				"",
+				{ frozen: "object", sealed: "object", nonExt: "object", ok: true }
+			])
 		})
 	})
 })

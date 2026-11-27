@@ -10,6 +10,9 @@ import {
 } from "./host.ts"
 import type { Rule } from "./diagnostics.ts"
 
+export const droppedNarrowHint =
+	"Derive from the base properties and apply .narrow() to the result, or put // @ark-allow-drop-narrow on the line before it if dropping it is intended."
+
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`The config module ${path} can't be read. Name a module that exists as the build's config.`
 
@@ -272,7 +275,8 @@ export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	unsupported:
 		"Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.",
 	parse: "Fix the definition, which throws the same ParseError at runtime.",
-	copies: copiesHint
+	copies: copiesHint,
+	"dropped-narrow": droppedNarrowHint
 }
 
 export const codecsImportHint =
@@ -453,7 +457,7 @@ const textHints: [
 			`Precompile ${name} with the program: in ark.json (or package.json's "ark" key), set "precompile": { "dependencies": { "${name}": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.`
 	],
 	[
-		/^`(.+)` is a package --emit leaves to Node, though (?:it|(.+)) imports arktype$/,
+		/^`(.+)` is a package ark emit leaves to Node, though (?:it|(.+)) imports arktype$/,
 		(specifier, name = specifier) =>
 			`Bundle the program with arktype's plugin, which precompiles ${name} with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.`
 	],
@@ -490,6 +494,10 @@ const textHints: [
 	[
 		/^the Standard Schema .+ can't be precompiled to a standalone validator$/,
 		"Define the schema with ArkType, which the build precompiles, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
+	],
+	[
+		/^fromJsonSchema's .+ can't be precompiled to a standalone validator$/,
+		`Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`
 	],
 	[
 		/writer, which reads each branch's errors/,

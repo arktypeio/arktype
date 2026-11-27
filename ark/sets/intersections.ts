@@ -1,12 +1,18 @@
 import {
 	$ark,
 	Disjoint,
+	isCustomBoundUnit,
 	isIoFinal,
 	isNode,
+	isResolutionFinal,
+	reachesDefault,
 	rootKinds,
+	sameBoundUnit,
+	uncheckedDiscards,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
+	type BoundUnit,
 	type InternalNodeIntersection,
 	type IntersectionContext,
 	type Morph,
@@ -18,6 +24,7 @@ import {
 } from "@ark/schema"
 import type { TypeGuard } from "@ark/util"
 import { setImplementationsByKind } from "./kinds.ts"
+import { isDeferredUnitIntersection } from "./roots/unit.ts"
 
 type IntersectionCache = WeakMap<
 	BaseScope,
@@ -28,7 +35,11 @@ type IntersectionCache = WeakMap<
 >
 
 // a result belongs to the scope that parsed it
-const intersectionCache: IntersectionCache = new WeakMap()
+let intersectionCache: IntersectionCache = new WeakMap()
+
+// a result cached while a check waited is served without queueing the check
+// again, so once checks are discarded that hadn't passed, none is kept
+let checkedAsOf = 0
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -54,6 +65,10 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		r: BaseNode,
 		ctx: IntersectionContext
 	): BaseNode | Disjoint | null => {
+		if (checkedAsOf !== uncheckedDiscards()) {
+			intersectionCache = new WeakMap()
+			checkedAsOf = uncheckedDiscards()
+		}
 		let cacheByOperator = intersectionCache.get(ctx.$)
 		if (!cacheByOperator) {
 			intersectionCache.set(
@@ -64,7 +79,16 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		const cacheByL = cacheByOperator[ctx.pipe ? "|>" : "&"]
 		let cacheByR = cacheByL.get(l)
 		const cached = cacheByR?.get(r)
-		if (cached !== undefined) {
+		// a unit's intersection deferred while an alias could be unresolved stands
+		// for neither operand, so once they've resolved it's decided instead
+		if (
+			cached !== undefined &&
+			!(
+				isNode(cached) &&
+				isDeferredUnitIntersection(cached) &&
+				isResolutionFinal()
+			)
+		) {
 			$ark.reached?.cached(cacheByR!, r)
 			return cached as never
 		}
@@ -72,10 +96,11 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 
 		const isPureIntersection = !ctx.pipe || (!l.alters && !r.alters)
 
-		if (isPureIntersection && l.equals(r)) return l
+		if (isPureIntersection && l.equals(r) && sameBoundUnits(l, r)) return l
 
 		let result =
-			isPureIntersection ? _intersectNodes(l, r, ctx)
+			isPureIntersection ?
+				(disjointInputsOf(l, r, ctx) ?? _intersectNodes(l, r, ctx))
 			: l.hasKindIn(...rootKinds) ?
 				// if l is a RootNode, r will be as well
 				_pipeNodes(l, r as never, ctx)
@@ -86,9 +111,19 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 			// returning the original reference
 			result =
 				$ark.sets!.disjointOf?.(result) ??
-				(l.equals(result) && listsKeysAlike(l, result) ? l
-				: r.equals(result) && listsKeysAlike(r, result) ? r
-				: result)
+				((
+					l.equals(result) &&
+					listsKeysAlike(l, result) &&
+					sameBoundUnits(l, result)
+				) ?
+					l
+				: (
+					r.equals(result) &&
+					listsKeysAlike(r, result) &&
+					sameBoundUnits(r, result)
+				) ?
+					r
+				:	result)
 		}
 
 		if (!cacheByR) cacheByL.set(l, (cacheByR = new WeakMap()))
@@ -96,6 +131,26 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		$ark.reached?.store(mark, cacheByR, r)
 		return result as never
 	}) as never
+
+// no data reaches both of two Types whose inputs are disjoint, so they are
+// disjoint whatever morphs or defaults they hold. Morphs must be the same,
+// and a default one that what it meets allows, only for data reaching both,
+// but are compared wherever two meet, which can be at a key intersected
+// before the one the inputs are disjoint at
+const disjointInputsOf = (
+	l: BaseNode,
+	r: BaseNode,
+	ctx: IntersectionContext
+): Disjoint | undefined => {
+	if (!l.isRoot() || !r.isRoot()) return
+	if (!(l.hasMorph && r.hasMorph) && !reachesDefault(l) && !reachesDefault(r))
+		return
+	const lIn = l._in
+	const rIn = r._in
+	if (lIn === l && rIn === r) return
+	const inputs = intersectOrPipeNodes(lIn, rIn, ctx)
+	if (inputs instanceof Disjoint) return inputs
+}
 
 // equal nodes can list their outputs' keys in different orders
 export const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
@@ -105,6 +160,20 @@ export const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
 			(prop, i) => prop.key !== (r as Structure.Node).inOrder[i].key
 		) &&
 		l.children.every((child, i) => listsKeysAlike(child, r.children[i])))
+
+export const boundUnitOf = (node: BaseNode): BoundUnit | undefined =>
+	node.kind !== "unit" ? (node.inner as { unit?: BoundUnit }).unit : undefined
+
+export const hasCustomBoundUnit = (node: BaseNode): boolean =>
+	isCustomBoundUnit(boundUnitOf(node)) || node.children.some(hasCustomBoundUnit)
+
+// equal nodes can carry different bound units, since unit is unserialized
+export const sameBoundUnits = (l: BaseNode, r: BaseNode): boolean =>
+	l === r ||
+	(l.kind !== r.kind || l.children.length !== r.children.length ?
+		!hasCustomBoundUnit(l) && !hasCustomBoundUnit(r)
+	:	sameBoundUnit(boundUnitOf(l), boundUnitOf(r)) &&
+		l.children.every((child, i) => sameBoundUnits(child, r.children[i])))
 
 const _intersectNodes = (
 	l: BaseNode,

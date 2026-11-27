@@ -137,7 +137,7 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 
 registerDescriber(describeDiscriminant)
 
-export const en: Locale.Complete = {
+export const en: Locale.Complete<string> = {
 	...(flatMorph(nodeImplementationsByKind, (kind, { ownErr, defaults }) =>
 		ownErr ? [kind, enWritersOf(kind, defaults)] : []
 	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
@@ -246,7 +246,10 @@ const hasInstance = Function.prototype[Symbol.hasInstance]
 for (const kind of rootKinds) {
 	Object.defineProperty(nodeClassesByKind[kind], Symbol.hasInstance, {
 		value(this: Function, v: unknown) {
-			if (typeof v === "function") void (v as { kind?: unknown }).kind
+			if (typeof v === "function") {
+				const internal = (v as { internal?: unknown }).internal
+				if (internal !== undefined) v = internal
+			}
 			return hasInstance.call(this, v)
 		}
 	})

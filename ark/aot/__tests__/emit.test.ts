@@ -260,7 +260,7 @@ contextualize(() => {
 			tempPath("emitDependency")
 		)
 		attest(emitPrecompiled({ cwd: dir }).errors).snap([
-			"src/main.ts:4:13  type({ name: Length }) can't be precompiled yet\n  `Length` (src/main.ts:4:26) is not static, so the site holds it as a Standard Schema, which a standalone validator can't receive yet\n  `schemas` is a package --emit leaves to Node, though it imports arktype\n  Bundle the program with arktype's plugin, which precompiles schemas with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
+			"src/main.ts:4:13  type({ name: Length }) can't be precompiled yet\n  `Length` (src/main.ts:4:26) is not static, so the site holds it as a Standard Schema, which a standalone validator can't receive yet\n  `schemas` is a package ark emit leaves to Node, though it imports arktype\n  Bundle the program with arktype's plugin, which precompiles schemas with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
 		])
 	})
 

@@ -92,4 +92,54 @@ contextualize(() => {
 		const String = type("(number % 2)#even")
 		attest<typeof Fluent>(String).is(Fluent)
 	})
+
+	it("preserves variant methods on branded types", () => {
+		const Id = type("string#Id").atLeastLength(1)
+		attest<Brand<string, "Id">>(Id.infer)
+		attest<string>(Id.inferIn)
+		attest<Brand<string, "Id">>(Id.assert("abc"))
+		attest(Id("abc") as unknown).equals("abc")
+		attest(Id("").toString()).snap("must be non-empty")
+
+		// as a pattern intersected in a definition is
+		const A = type("string#id").matching("^a")
+		const Expected = type("string#id & /^a/")
+		attest<typeof Expected.t>(A.t)
+		attest(A.expression).snap("/^a/")
+
+		const Cents = type("number#Cents").moreThan(0)
+		attest<Brand<number, "Cents">>(Cents.infer)
+		attest<number>(Cents.inferIn)
+		attest<Brand<number, "Cents">>(Cents.assert(5))
+		attest(Cents(5) as unknown).equals(5)
+		attest(Cents(0).toString()).snap("must be positive")
+
+		const Tags = type("string[]#Tags").atLeastLength(1)
+		attest<Brand<string[], "Tags">>(Tags.infer)
+		attest<Brand<string[], "Tags">>(Tags.assert(["a"]))
+		attest(Tags(["a"]) as unknown).equals(["a"])
+		attest(Tags([]).toString()).snap("must be non-empty")
+
+		const Created = type("Date#Created").atOrAfter(new Date(0))
+		attest<Brand<Date, "Created">>(Created.infer)
+
+		const User = type({ id: "string", name: "string" }).brand("User")
+		attest<{ id: string }>(User.pick("id").infer)
+
+		// branded non-string/number primitives and branded primitive unions resolve to BaseType, not ObjectType
+		const Flag = type("boolean#Flag")
+		attest<Brand<true, "Flag"> | Brand<false, "Flag">>(Flag.infer)
+		// @ts-expect-error
+		attest(() => Flag.pick).type.errors("Property 'pick' does not exist")
+
+		const Amt = type("bigint#Amt")
+		attest<Brand<bigint, "Amt">>(Amt.infer)
+		// @ts-expect-error
+		attest(() => Amt.pick).type.errors("Property 'pick' does not exist")
+
+		const IdOrCents = type("string#Id | number#Cents")
+		attest<Brand<string, "Id"> | Brand<number, "Cents">>(IdOrCents.infer)
+		// @ts-expect-error
+		attest(() => IdOrCents.pick).type.errors("Property 'pick' does not exist")
+	})
 })

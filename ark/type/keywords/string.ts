@@ -13,6 +13,7 @@ import {
 	flatMorph,
 	ipv4Matcher,
 	ipv6Matcher,
+	iso8601DateMatcher,
 	iso8601Matcher,
 	numericStringMatcher,
 	uuidMatcher,
@@ -32,6 +33,7 @@ import {
 	isRegexPattern,
 	lowercaseString,
 	normalizationsByForm,
+	parseBoolean,
 	parseDate,
 	parseEpoch,
 	parseInteger,
@@ -91,7 +93,7 @@ const stringIntegerRoot = cached(() =>
 	regexStringNode(wellFormedIntegerMatcher, "string.integer")
 )
 
-const safeInteger = cached(() =>
+export const safeInteger = cached(() =>
 	node("intersection", {
 		domain: node("domain", { domain: "number" }),
 		divisor: node("divisor", { rule: 1 }),
@@ -114,15 +116,17 @@ export const stringInteger: stringInteger.module = keywordModule(
 	}
 ) as never
 
+type stringInteger$ = {
+	root: string
+	parse: (In: string) => To<number>
+}
+
 export declare namespace stringInteger {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<stringInteger$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<number>
-	}
+	export type $ = stringInteger$
 }
 
 const hex = () => regexStringNode(/^[\dA-Fa-f]+$/, "string.hex")
@@ -147,18 +151,53 @@ const base64: base64.module = keywordModule(
 	}
 ) as never
 
+type base64$ = {
+	root: string
+	url: string
+}
+
 declare namespace base64 {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<base64$>
 
-	export type $ = {
-		root: string
-		url: string
-	}
+	export type $ = base64$
 }
 
-const preformattedCapitalize = cached(() =>
+const stringBooleanRoot = cached(() =>
+	node("union", {
+		branches: [node("unit", { unit: "false" }), node("unit", { unit: "true" })]
+	})
+)
+
+export const stringBoolean: stringBoolean.module = keywordModule(
+	{
+		root: stringBooleanRoot,
+		parse: () =>
+			node("morph", {
+				morphs: [stringBooleanRoot(), parseBoolean],
+				declaredOut: intrinsic.boolean
+			})
+	},
+	{
+		name: "string.boolean"
+	}
+) as never
+
+type stringBoolean$ = {
+	root: "true" | "false"
+	parse: (In: "true" | "false") => To<boolean>
+}
+
+export declare namespace stringBoolean {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<stringBoolean$>
+
+	export type $ = stringBoolean$
+}
+
+export const preformattedCapitalize = cached(() =>
 	regexStringNode(/^(?:[^a-z][\S\s]*)?$/, "string.capitalize.preformatted")
 )
 
@@ -176,15 +215,17 @@ export const capitalize: capitalize.module = keywordModule(
 	}
 ) as never
 
+type capitalize$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace capitalize {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<capitalize$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = capitalize$
 }
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isCreditCard.js
@@ -248,7 +289,7 @@ export type DateOptions = {
 	format?: DateFormat
 }
 
-export { iso8601Matcher }
+export { iso8601DateMatcher, iso8601Matcher }
 
 type ParsedDayParts = {
 	y?: string
@@ -335,9 +376,16 @@ const isoRoot = cached(() =>
 	}).internal.assertIs("intersection")
 )
 
+const isoDate = cached(() =>
+	regexStringNode(iso8601DateMatcher, "string.date.iso.date", {
+		format: "date"
+	})
+)
+
 const iso: Module<stringDate.iso.$> = keywordModule(
 	{
 		root: isoRoot,
+		date: isoDate,
 		parse: () =>
 			node("morph", {
 				morphs: [isoRoot(), parseIsoDate],
@@ -366,45 +414,50 @@ export const stringDate: stringDate.module = keywordModule(
 	}
 ) as never
 
+type stringDateIso$ = {
+	root: string
+	date: string
+	parse: (In: string) => To<Date>
+}
+
+type stringDateEpoch$ = {
+	root: string
+	parse: (In: string) => To<Date>
+}
+
+type stringDate$ = {
+	root: string
+	parse: (In: string) => To<Date>
+	iso: Submodule<stringDateIso$>
+	epoch: Submodule<stringDateEpoch$>
+}
+
 export declare namespace stringDate {
 	export type module = Module<stringDate.submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<stringDate$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<Date>
-		iso: iso.submodule
-		epoch: epoch.submodule
-	}
+	export type $ = stringDate$
 
 	export namespace iso {
-		export type submodule = Submodule<$>
+		export type submodule = Submodule<stringDateIso$>
 
-		export type $ = {
-			root: string
-			parse: (In: string) => To<Date>
-		}
+		export type $ = stringDateIso$
 	}
 
 	export namespace epoch {
-		export type submodule = Submodule<$>
+		export type submodule = Submodule<stringDateEpoch$>
 
-		export type $ = {
-			root: string
-			parse: (In: string) => To<Date>
-		}
+		export type $ = stringDateEpoch$
 	}
 }
 
 const email = () =>
 	regexStringNode(
-		// considered https://colinhacks.com/essays/reasonable-email-regex but it includes a lookahead
-		// which breaks some integrations e.g. fast-check
-
-		// regex based on:
-		// https://www.regular-expressions.info/email.html
-		/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
+		// lookahead-free (RE2 & fast-check safe) dot-atom local part and RFC 1123 domain labels:
+		// rejects leading/trailing/consecutive dots and leading/trailing domain hyphens while
+		// allowing apostrophes (RFC 5322 atext) and punycode labels (xn--)
+		/^[\w%'+-]+(?:\.[\w%'+-]+)*@[\dA-Za-z](?:[\dA-Za-z-]*[\dA-Za-z])?(?:\.[\dA-Za-z](?:[\dA-Za-z-]*[\dA-Za-z])?)*\.[A-Za-z]{2,}$/,
 		"string.email",
 		{ format: "email" }
 	)
@@ -420,16 +473,18 @@ export const ip: ip.module = keywordModule(
 	}
 ) as never
 
+type ip$ = {
+	root: string
+	v4: string
+	v6: string
+}
+
 export declare namespace ip {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<ip$>
 
-	export type $ = {
-		root: string
-		v4: string
-		v6: string
-	}
+	export type $ = ip$
 }
 
 const jsonRoot = () =>
@@ -455,18 +510,20 @@ export const json: stringJson.module = keywordModule(
 	}
 ) as never
 
+type stringJson$ = {
+	root: string
+	parse: (In: string) => To<Json>
+}
+
 export declare namespace stringJson {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<stringJson$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<Json>
-	}
+	export type $ = stringJson$
 }
 
-const preformattedLower = cached(() =>
+export const preformattedLower = cached(() =>
 	regexStringNode(/^[^A-Z]*$/, "string.lower.preformatted")
 )
 
@@ -484,22 +541,24 @@ const lower: lower.module = keywordModule(
 	}
 ) as never
 
+type lower$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace lower {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<lower$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = lower$
 }
 
 export const normalizedForms = ["NFC", "NFD", "NFKC", "NFKD"] as const
 
 export type NormalizedForm = (typeof normalizedForms)[number]
 
-const preformattedNodes = flatMorph(
+export const preformattedNodes = flatMorph(
 	normalizedForms,
 	(i, form) =>
 		[
@@ -585,53 +644,48 @@ export const normalize: normalize.module = keywordModule(
 	}
 ) as never
 
+type normalizeForm$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
+type normalize$ = {
+	root: (In: string) => To<string>
+	NFC: Submodule<normalizeForm$>
+	NFD: Submodule<normalizeForm$>
+	NFKC: Submodule<normalizeForm$>
+	NFKD: Submodule<normalizeForm$>
+}
+
 export declare namespace normalize {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<normalize$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		NFC: NFC.submodule
-		NFD: NFD.submodule
-		NFKC: NFKC.submodule
-		NFKD: NFKD.submodule
-	}
+	export type $ = normalize$
 
 	export namespace NFC {
-		export type submodule = Submodule<$>
+		export type submodule = Submodule<normalizeForm$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeForm$
 	}
 
 	export namespace NFD {
-		export type submodule = Submodule<$>
+		export type submodule = Submodule<normalizeForm$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeForm$
 	}
 
 	export namespace NFKC {
-		export type submodule = Submodule<$>
+		export type submodule = Submodule<normalizeForm$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeForm$
 	}
 
 	export namespace NFKD {
-		export type submodule = Submodule<$>
+		export type submodule = Submodule<normalizeForm$>
 
-		export type $ = {
-			root: (In: string) => To<string>
-			preformatted: string
-		}
+		export type $ = normalizeForm$
 	}
 }
 
@@ -672,15 +726,17 @@ export const stringNumeric: stringNumeric.module = keywordModule(
 	}
 ) as never
 
+type stringNumeric$ = {
+	root: string
+	parse: (In: string) => To<number>
+}
+
 export declare namespace stringNumeric {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<stringNumeric$>
 
-	export type $ = {
-		root: string
-		parse: (In: string) => To<number>
-	}
+	export type $ = stringNumeric$
 }
 
 const regex = () =>
@@ -691,7 +747,7 @@ const semverMatcher =
 
 const semver = () => regexStringNode(semverMatcher, "string.semver")
 
-const preformattedTrim = cached(() =>
+export const preformattedTrim = cached(() =>
 	regexStringNode(
 		// no leading or trailing whitespace
 		/^\S[\S\s]*\S$|^\S?$/,
@@ -713,18 +769,20 @@ const trim: trim.module = keywordModule(
 	}
 ) as never
 
+type trim$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 export declare namespace trim {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<trim$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = trim$
 }
 
-const preformattedUpper = cached(() =>
+export const preformattedUpper = cached(() =>
 	regexStringNode(/^[^a-z]*$/, "string.upper.preformatted")
 )
 
@@ -742,15 +800,17 @@ const upper: upper.module = keywordModule(
 	}
 ) as never
 
+type upper$ = {
+	root: (In: string) => To<string>
+	preformatted: string
+}
+
 declare namespace upper {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<upper$>
 
-	export type $ = {
-		root: (In: string) => To<string>
-		preformatted: string
-	}
+	export type $ = upper$
 }
 
 const urlRoot = cached(() =>
@@ -758,8 +818,10 @@ const urlRoot = cached(() =>
 	predicateStringNode(isParsableUrl, "string.url", { format: "uri" })
 )
 
-// http(s), cased without the i flag, which JSON Schema's pattern can't write
-const httpUrlMatcher = /^[Hh][Tt]{2}[Pp][Ss]?:\/\//
+// http(s), cased without the i flag, which JSON Schema's pattern can't write,
+// then no space or control character, which a URL parser would strip or encode
+// eslint-disable-next-line no-control-regex
+const httpUrlMatcher = /^[Hh][Tt]{2}[Pp][Ss]?:\/\/[^\x00- \x7f]*$/
 
 // a URL a browser opens as a page, unlike mailto:, javascript: or ftp:
 const httpUrl = cached(() =>
@@ -783,6 +845,8 @@ const httpUrl = cached(() =>
 	})
 )
 
+export const urlProto = cached(() => node("proto", { proto: URL }))
+
 export const url: url.module = keywordModule(
 	{
 		root: urlRoot,
@@ -791,7 +855,7 @@ export const url: url.module = keywordModule(
 			node("morph", {
 				declaredIn: urlRoot(),
 				morphs: [intrinsic.string, parseUrl],
-				declaredOut: node("proto", { proto: URL })
+				declaredOut: urlProto()
 			})
 	},
 	{
@@ -799,16 +863,18 @@ export const url: url.module = keywordModule(
 	}
 ) as never
 
+type url$ = {
+	root: string
+	http: string
+	parse: (In: string) => To<URL>
+}
+
 export declare namespace url {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<url$>
 
-	export type $ = {
-		root: string
-		http: string
-		parse: (In: string) => To<URL>
-	}
+	export type $ = url$
 }
 
 const uuidVersions = [1, 2, 3, 4, 5, 6, 7, 8] as const
@@ -839,22 +905,24 @@ export const uuid: uuid.module = keywordModule(
 	}
 ) as never
 
+type uuid$ = {
+	root: string
+	v1: string
+	v2: string
+	v3: string
+	v4: string
+	v5: string
+	v6: string
+	v7: string
+	v8: string
+}
+
 export declare namespace uuid {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<uuid$>
 
-	export type $ = {
-		root: string
-		v1: string
-		v2: string
-		v3: string
-		v4: string
-		v5: string
-		v6: string
-		v7: string
-		v8: string
-	}
+	export type $ = uuid$
 
 	export namespace $ {
 		export type flat = {}
@@ -869,6 +937,7 @@ export const string: string.module = keywordModule(
 		hex,
 		base58: () => regexStringNode(/^[1-9A-HJ-NP-Za-km-z]+$/, "string.base58"),
 		base64,
+		boolean: stringBoolean,
 		capitalize,
 		creditCard,
 		date: stringDate,
@@ -894,35 +963,38 @@ export const string: string.module = keywordModule(
 	}
 ) as never
 
+type string$ = {
+	root: string
+	alpha: string
+	alphanumeric: string
+	hex: string
+	base58: string
+	base64: Submodule<base64$>
+	boolean: Submodule<stringBoolean$>
+	capitalize: Submodule<capitalize$>
+	creditCard: string
+	date: Submodule<stringDate$>
+	digits: string
+	email: string
+	integer: Submodule<stringInteger$>
+	ip: Submodule<ip$>
+	json: Submodule<stringJson$>
+	lower: Submodule<lower$>
+	normalize: Submodule<normalize$>
+	nonblank: string
+	numeric: Submodule<stringNumeric$>
+	regex: string
+	semver: string
+	trim: Submodule<trim$>
+	upper: Submodule<upper$>
+	url: Submodule<url$>
+	uuid: Submodule<uuid$>
+}
+
 export declare namespace string {
 	export type module = Module<string.submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<string$>
 
-	export type $ = {
-		root: string
-		alpha: string
-		alphanumeric: string
-		hex: string
-		base58: string
-		base64: base64.submodule
-		capitalize: capitalize.submodule
-		creditCard: string
-		date: stringDate.submodule
-		digits: string
-		email: string
-		integer: stringInteger.submodule
-		ip: ip.submodule
-		json: stringJson.submodule
-		lower: lower.submodule
-		normalize: normalize.submodule
-		nonblank: string
-		numeric: stringNumeric.submodule
-		regex: string
-		semver: string
-		trim: trim.submodule
-		upper: upper.submodule
-		url: url.submodule
-		uuid: uuid.submodule
-	}
+	export type $ = string$
 }

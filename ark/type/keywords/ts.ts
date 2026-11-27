@@ -3,6 +3,8 @@ import {
 	intrinsic,
 	isResolvable,
 	node,
+	normalizeIndex,
+	rootSchemaScope,
 	type BaseRoot
 } from "@ark/schema"
 import {
@@ -75,13 +77,15 @@ export const unknown: Module<unknown.$> = keywordModule(
 	}
 ) as never
 
-export declare namespace unknown {
-	export type submodule = Submodule<$>
+type unknown$ = {
+	root: unknown
+	any: any
+}
 
-	export type $ = {
-		root: unknown
-		any: any
-	}
+export declare namespace unknown {
+	export type submodule = Submodule<unknown$>
+
+	export type $ = unknown$
 }
 
 export const json: Module<json.$> = keywordModule(
@@ -98,14 +102,16 @@ export const json: Module<json.$> = keywordModule(
 	}
 ) as never
 
-export declare namespace json {
-	export type submodule = Submodule<$>
+type json$ = {
+	// only plain objects and arrays, so a primitive JSON value isn't one
+	root: JsonStructure
+	stringify: (In: JsonStructure) => To<string>
+}
 
-	export type $ = {
-		// only plain objects and arrays, so a primitive JSON value isn't one
-		root: JsonStructure
-		stringify: (In: JsonStructure) => To<string>
-	}
+export declare namespace json {
+	export type submodule = Submodule<json$>
+
+	export type $ = json$
 }
 
 export const object: Module<object.$> = keywordModule(
@@ -118,13 +124,15 @@ export const object: Module<object.$> = keywordModule(
 	}
 ) as never
 
-export declare namespace object {
-	export type submodule = Submodule<$>
+type object$ = {
+	root: object
+	json: Submodule<json$>
+}
 
-	export type $ = {
-		root: object
-		json: json.submodule
-	}
+export declare namespace object {
+	export type submodule = Submodule<object$>
+
+	export type $ = object$
 }
 
 export class RecordHkt extends Hkt<[Key, unknown]> {
@@ -138,12 +146,11 @@ export class RecordHkt extends Hkt<[Key, unknown]> {
 
 const Record = cached(() =>
 	genericNode(["K", intrinsic.key], "V")(
+		// as TypeScript's Record and an object literal's index key, a literal
+		// key is a required prop rather than an index signature
 		args => ({
 			domain: "object",
-			index: {
-				signature: args.K,
-				value: args.V
-			}
+			...normalizeIndex(args.K as never, args.V, rootSchemaScope)
 		}),
 		RecordHkt
 	)

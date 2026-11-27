@@ -25,6 +25,8 @@ const told: Record<string, string> = {
 		show(type({ k: Templated }), { k: 1 }, {})
 		show(type({ k: type("string").configure({ message: ctx => \`Enter \${ctx.expected}\` }) }), { k: 1 })
 		show(type({ k: type("number").configure({ actual: "wrong" }) }), { k: "a" })
+		show(type({ k: type("null").configure({ actual: "wrong" }) }), { k: "a" })
+		show(type({ k: type("1").configure({ actual: "wrong" }).label("K") }), { k: 2 })
 		show(type({ k: type("number").configure({ actual: data => typeof data }) }), { k: "a" })
 		show(type({ k: type("string").configure({ expected: "text" }) }), { k: 1 }, {})
 	`,
@@ -44,6 +46,12 @@ const told: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => ctx.reject({ expected: "shorter", actual: "long" })) }), { k: "a" })
 		show(type({ k: type("string").narrow((s, ctx) => ctx.reject({ message: "Too long" })) }), { k: "a" })
 	`,
+	"says what a configured actual says the value was where a narrow or a keyword's check fails": `
+		const short = (s: string) => s.length < 3
+		show(type({ k: type("string").narrow(short).configure({ actual: "long" }) }), { k: "abc" }, { k: 1 })
+		show(type({ k: type("string.date").configure({ actual: "wrong" }).label("When") }), { k: "!!" })
+		show(type("string.normalize.NFC.preformatted").configure({ actual: "wrong" }), "e\\u0301")
+	`,
 	"lists a union's errors whose messages begin as arktype's own, and says a sentence they share": `
 		const AsDefault = type("string").configure({ message: "must be a string" })
 		const Enter = type("string").configure({ message: "Enter text" })
@@ -58,6 +66,15 @@ const told: Record<string, string> = {
 		show(type({ k: Either.configure({ message: "must be E" }) }), { k: {} })
 		show(type({ k: Either.configure({ message: "Pick one" }) }), { k: {} })
 	`,
+	"says what a union's configured actual says the value was where its message is its own": `
+		const Either = type({ a: "string" }).or({ b: "string" })
+		show(type({ k: Either.describe("E").configure({ actual: "odd" }) }), { k: 1 }, { k: {} })
+		show(type({ k: Either.configure({ expected: "E", actual: data => typeof data }) }), { k: 1 })
+		show(type({ k: Either.configure({ actual: "odd" }) }), { k: 1 }, { k: {} })
+		show(type({ k: type("1 | 2").configure({ actual: data => typeof data }) }), { k: 3 })
+		show(type({ k: type("string | number[]").describe("S").configure({ actual: data => typeof data }) }), { k: null })
+		show(type("1 | 2").configure({ actual: data => typeof data }), 3)
+	`,
 	"keeps each through a pipe and the validator a morph calls": `
 		const AsDefault = type("string").configure({ message: "must be a string" })
 		const Enter = type("string").configure({ message: "Enter text" })
@@ -65,6 +82,23 @@ const told: Record<string, string> = {
 		show(type({ p: type("string").pipe(s => type({ k: AsDefault })(JSON.parse(s))) }), { p: '{"k":1}' })
 		show(type({ p: type("string").pipe(s => type({ k: Enter })(JSON.parse(s))) }), { p: '{"k":1}' })
 		show(type({ p: type("string.json.parse").to({ k: Enter }) }), { p: '{"k":1}' })
+	`,
+	"uses an authored description when a required property is missing": `
+		const Thing = type({
+			a: type("string").describe("foo"),
+			b: ["string", "@", "bar"],
+			c: type("string > 3").describe("a username"),
+			d: type("string | number").describe("an id"),
+			e: type("unknown").describe("any payload"),
+			f: type("string").describe("a username").label("Username"),
+			g: type("string").describe("a username").message("Enter a username"),
+			h: "string.email"
+		})
+		show(Thing, {}, { a: 1, b: 2, c: "x", d: true, e: 1, f: 1, g: 1, h: "bad" })
+	`,
+	"writes Array.index keyword phrase in standalone builds": `
+		show(type("Array.index"), "0", "-1", "x", 5)
+		show(type({ i: "Array.index" }), {}, { i: "x" }, { i: 5 })
 	`
 }
 
@@ -168,6 +202,39 @@ const labeled: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ expected: "between 0 and 100", actual: "200" })).label("Pct") }), { k: "200" })
 		show(type({ k: type("string").narrow((s, ctx) => pct(s) || ctx.reject({ message: "Pct is out of range" })).label("Pct") }), { k: "200" })
 		show(type({ k: type({ a: "string" }).narrow((o, ctx) => pct(o.a) || ctx.reject({ expected: "between 0 and 100", relativePath: ["a"] })).label("Pct") }), { k: { a: "200" } })
+	`,
+	"names a value by its label in morph output checks and post-morph narrows": `
+		const DeleteRange = type({ "+": "delete", start: "string", end: "string" })
+			.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+			.label("Date range")
+		show(DeleteRange, { start: "2", end: "1" }, { start: "2", end: "1", extra: true }, { start: 1, end: "2" }, null)
+		standard(DeleteRange, { start: "2", end: "1" })
+		const DefaultedCfg = type({ a: "string = 'x'" })
+			.narrow((r, ctx) => r.a.length > 1 || ctx.mustBe("long enough"))
+			.label("Config")
+		show(DefaultedCfg, {}, { a: 1 }, null)
+		const Form = type({
+			name: type("string.trim").to("string > 0").label("Full name"),
+			port: type("string.integer.parse").to("1 <= number <= 65535").label("Port")
+		})
+		show(Form, { name: "   ", port: "99999" }, { name: 1, port: "abc" }, {})
+		standard(Form, { name: "   ", port: "99999" })
+		const Payload = type("string.json.parse").to({ name: "string" }).label("Payload")
+		show(Payload, "{}", "123", "bad")
+		const BeforeTo = type("string.trim").label("Before").to("string > 0")
+		show(BeforeTo, 1, "   ")
+		const BeforeNarrow = type({ "+": "delete", start: "string", end: "string" })
+			.label("Before")
+			.narrow((r, ctx) => r.end >= r.start || ctx.mustBe("valid range"))
+		show(BeforeNarrow, null, { start: "2", end: "1" })
+		const Relative = type({ "+": "delete", start: "string", end: "string" })
+			.narrow((r, ctx) => r.end >= r.start || ctx.reject({ expected: "valid range", relativePath: ["start"] }))
+			.label("Date range")
+		show(Relative, { start: "2", end: "1" })
+		const Custom = type({ "+": "delete", start: "string", end: "string" })
+			.narrow((r, ctx) => r.end >= r.start || ctx.reject({ message: "Custom sentence" }))
+			.label("Date range")
+		show(Custom, { start: "2", end: "1" })
 	`
 }
 
@@ -182,6 +249,24 @@ const labeledWritten: Record<string, string> = {
 const writtenConfig = `import { configure } from "arktype/config"
 
 configure({ min: { expected: ctx => \`over \${ctx.rule}\` } })
+`
+
+// what a union's value was is written by a function configured for its codes
+const actualWritten: Record<string, string> = {
+	"says what a function configured for a union's code says the value was": `
+		const Either = type({ a: "string" }).or({ b: "string" })
+		show(type({ k: Either.describe("E") }), { k: 1 }, { k: {} })
+		show(type({ k: "1 | 2" }), { k: 3 })
+		show(type({ kind: "'a'" }).or({ kind: "'b'", a: "string" }), {})
+	`
+}
+
+const actualConfig = `import { configure } from "arktype/config"
+
+configure({
+	union: { actual: data => typeof data },
+	discriminant: { actual: data => typeof data }
+})
 `
 
 const appOf = (
@@ -373,6 +458,16 @@ console.log(JSON.stringify({
 		{
 			"config.ts": writtenConfig,
 			"main.ts": appOf(labeledWritten, 'import "./config.ts"\n')
+		},
+		{ config: "config.ts" }
+	)
+
+	itWritesAsArktype(
+		"an actual a function configured for a union's code writes",
+		actualWritten,
+		{
+			"config.ts": actualConfig,
+			"main.ts": appOf(actualWritten, 'import "./config.ts"\n')
 		},
 		{ config: "config.ts" }
 	)

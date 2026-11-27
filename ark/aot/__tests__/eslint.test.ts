@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { configs } from "@ark/aot/eslint"
+import { closePrecompilers, configs } from "@ark/aot/eslint"
 import { Linter } from "eslint"
 import { readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
@@ -242,4 +242,57 @@ export const T = type({ a: "string" })`
 			"3:1-3:79 configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n`process` is a global the build does not read\nThe configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 		])
 	})
+
+	it("reports invalid ark.json as a lint diagnostic without crashing and recovers when fixed", () => {
+		const dir = writeFixture({
+			"package.json": "{}",
+			"ark.json": '{ "precompile": {',
+			"main.ts": ""
+		})
+		const code = `import { type } from "arktype"\nexport const User = type({ name: "string" })`
+		const filename = join(dir, "main.ts")
+		const ark = join(dir, "ark.json")
+
+		// syntactically invalid ark.json reports a lint diagnostic instead of throwing
+		const syntaxMessages = new Linter({ configType: "flat", cwd: dir }).verify(
+			code,
+			[configs.recommended],
+			{ filename }
+		)
+		attest(syntaxMessages.length).equals(1)
+		attest(syntaxMessages[0].ruleId).equals("@ark/aot/precompilable")
+		attest(syntaxMessages[0].severity).equals(2)
+		attest(syntaxMessages[0].message.includes("isn't JSON")).equals(true)
+
+		// schema-invalid ark.json reports a lint diagnostic instead of throwing
+		writeFileSync(ark, JSON.stringify({ precompile: { optimize: "small" } }))
+		const schemaMessages = new Linter({ configType: "flat", cwd: dir }).verify(
+			code,
+			[configs.recommended],
+			{ filename }
+		)
+		attest(schemaMessages.length).equals(1)
+		attest(schemaMessages[0].ruleId).equals("@ark/aot/precompilable")
+		attest(
+			schemaMessages[0].message.includes(
+				'precompile.optimize must be "size" or "speed"'
+			)
+		).equals(true)
+
+		// recovers cleanly once ark.json is valid again
+		writeFileSync(ark, JSON.stringify({ precompile: { optimize: "size" } }))
+		attest(lint(code, {}, filename, dir)).equals([])
+	}).timeout(60_000)
+
+	it("evicts old precompiler workers once distinct option sets exceed the LRU cap", () => {
+		const code = `import { type } from "arktype"\nexport const User = type({ name: "string" })`
+		const dir = writeFixture({ "package.json": "{}", "main.ts": code })
+		const filename = join(dir, "main.ts")
+		for (let i = 1; i <= 6; i++)
+			attest(lint(code, { bakedLimit: i * 1000 }, filename, dir)).equals([])
+		// revisiting an evicted config still succeeds cleanly
+		attest(lint(code, { bakedLimit: 1000 }, filename, dir)).equals([])
+	}).timeout(120_000)
+
+	after(() => closePrecompilers())
 })

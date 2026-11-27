@@ -1,7 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
+import { fromHere } from "@ark/fs"
 import {
 	$ark,
 	configureAfterTypeMessage,
+	removedCloneMessage,
+	writeConfigureAfterTypeMessage,
 	writeMissingImportMessage,
 	rootSchema,
 	type StandardSchemaV1
@@ -9,7 +12,11 @@ import {
 import { configure, messageIn, scope, type } from "arktype"
 import "arktype/errors"
 import { en } from "arktype/locales/en"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 import { withConfig } from "./locales/withConfig.ts"
+
+const execFileAsync = promisify(execFile)
 
 // each issue's message, as a Standard Schema consumer reads it
 const standardMessagesOf = (T: type.Any, data: unknown) =>
@@ -148,6 +155,21 @@ contextualize(() => {
 		attest(() =>
 			scope({}, { domain: { problem: "was terrible" } } as never)
 		).throws.snap("ParseError: problem was removed in 3.0; write message")
+	})
+
+	it("meta that's not a string, an object or a function", () => {
+		// @ts-expect-error
+		attest(() => type(["string", "@", 5]))
+			.throws.snap(
+				"ParseError: Meta must be a string, an object or a function (was 5)"
+			)
+			.type.errors("not assignable")
+		attest(() => type("string").configure(null as never)).throws.snap(
+			"ParseError: Meta must be a string, an object or a function (was null)"
+		)
+		attest(() => type("string", "@", ["a"] as never)).throws.snap(
+			'ParseError: Meta must be a string, an object or a function (was ["a"])'
+		)
 	})
 
 	it("node writer config works on nested constraint", () => {
@@ -665,16 +687,91 @@ age must be non-negative`)
 	})
 
 	describe("onUndeclaredKey", () => {
-		it("delete fails on an indiscriminable union", () => {
+		// https://github.com/arktypeio/arktype/issues/1752
+		it("delete keeps each key a branch of a union allowing the data declares", () => {
+			for (const jitless of [true, false]) {
+				// run jitless first with a distinct key so precompiled units from
+				// compiled tests don't bind under jitless (pnpm testCache)
+				const Contents = withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}, { jitless })
+						.type({ href: "string", "text?": "string" })
+						.or({ href: "string", "blob?": "string" })
+				)
+				// the first data is checked uncompiled
+				attest(Contents({ href: "a" })).equals({ href: "a" })
+				attest(Contents.precompilation === undefined).equals(jitless)
+				attest(Contents({ href: "a" })).equals({ href: "a" })
+				attest(Contents({ href: "a", text: "t" })).equals({
+					href: "a",
+					text: "t"
+				})
+				attest(Contents({ href: "a", blob: "b" })).equals({
+					href: "a",
+					blob: "b"
+				})
+				attest(Contents({ href: "a", text: "t", blob: "b" })).equals({
+					href: "a",
+					text: "t",
+					blob: "b"
+				})
+				attest(Contents({ href: "a", text: 1, blob: "b" })).equals({
+					href: "a",
+					blob: "b"
+				})
+				attest(Contents({ href: "a", z: 1 })).equals({ href: "a" })
+			}
+		})
+
+		it("delete keeps an object beside an array of it", () => {
+			const OneOrMany = withConfig({ onUndeclaredKey: "delete" }, () => {
+				const Item = scope({}).type({ id: "string" })
+				return Item.or(Item.array())
+			})
+			attest(OneOrMany({ id: "a", z: 1 })).equals({ id: "a" })
+			attest(OneOrMany([{ id: "a", z: 1 }])).equals([{ id: "a" }])
+			// an array holding the object's key is both
+			const both = OneOrMany(
+				Object.assign([{ id: "a", z: 1 }], { id: "b", z: 1 })
+			)
+			attest(both).equals(Object.assign([{ id: "a" }], { id: "b" }))
+		})
+
+		it("delete is indeterminate in a union beside a morph", () => {
 			attest(() =>
 				withConfig({ onUndeclaredKey: "delete" }, () =>
-					scope({}).type([{ a: "string" }, "|", { b: "boolean" }])
+					scope({}).type([
+						{ a: "string.trim", "x?": "1" },
+						"|",
+						{ a: "string.trim", "y?": "2" }
+					])
 				)
 			).throws
 				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { a: string, + (undeclared): delete }
-Right: { b: boolean, + (undeclared): delete }
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+Left: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, x?: 1, + (undeclared): delete }
+Right: { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/>, y?: 2, + (undeclared): delete }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
+		})
+
+		it("delete still rejects overlapping unions with conflicting user morphs or defaults", () => {
+			attest(() =>
+				withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}).type({ a: "string", x: "string.trim" }).or({ b: "string" })
+				)
+			).throws("Conflicting morph at x")
+			attest(() =>
+				withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}).type({ a: "string = 'foo'" }).or({ a: "string = 'bar'" })
+				)
+			).throws("Conflicting morph at a")
+			attest(() =>
+				withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({
+						Tree: "Branch | Leaf",
+						Branch: { label: "string.trim", children: "Tree[]" },
+						Leaf: { label: "string" }
+					}).export()
+				)
+			).throws("Conflicting morph")
 		})
 
 		it("delete discriminates a union", () => {
@@ -685,6 +782,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 					{ kind: "'b'", b: "boolean" }
 				])
 			)
+			attest(O.internal.is("union") && O.internal.ordered).equals(undefined)
 			attest(O.in.expression).snap(
 				'{ a: string, kind: "a", + (undeclared): ignore } | { b: boolean, kind: "b", + (undeclared): ignore }'
 			)
@@ -693,32 +791,34 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		})
 
 		// the ignoring branch's input took the config's delete back once it
-		// held a morph, so the branches looked disjoint
-		it("an explicit ignore fails an indeterminate union", () => {
-			const [optional, required] = withConfig(
+		// held a morph, so the branches looked disjoint and data both allow was
+		// transformed by one
+		it("an explicit ignore keeps what a deleting branch of its union would delete", () => {
+			const [Optional, Required] = withConfig(
 				{ onUndeclaredKey: "delete" },
 				() => {
 					const C = scope({}).type({ provider: "string" })
 					return [
-						() => C.or({ "+": "ignore", uses: "string", "o?": C }),
-						() => C.or({ "+": "ignore", uses: "string", o: C })
+						C.or({ "+": "ignore", uses: "string", "o?": C }),
+						C.or({ "+": "ignore", uses: "string", o: C })
 					]
 				}
 			)
-			attest(optional).throws(
-				"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
-			)
-			attest(required).throws("is indeterminate")
+			const both = () => ({
+				provider: "p",
+				uses: "u",
+				o: { provider: "q", z: 1 },
+				z: 1
+			})
+			const kept = { provider: "p", uses: "u", o: { provider: "q" }, z: 1 }
+			attest(Optional(both())).equals(kept)
+			attest(Required(both())).equals(kept)
+			// only the deleting branch allows it
+			attest(Optional({ provider: "p", z: 1 })).equals({ provider: "p" })
 			const C = type({ "+": "delete", provider: "string" })
-			attest(() => C.or({ "+": "ignore", uses: "string", "o?": C })).throws(
-				"is indeterminate"
+			attest(C.or({ "+": "ignore", uses: "string", "o?": C })(both())).equals(
+				kept
 			)
-			attest(() =>
-				withConfig({ onUndeclaredKey: "delete" }, () => {
-					const D = scope({}).type({ provider: "string" })
-					return D.or({ uses: "string", "o?": D })
-				})
-			).throws("is indeterminate")
 		})
 
 		it("an explicit ignore stays ignore in what's built from it", () => {
@@ -731,6 +831,95 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			)
 			const out: unknown = I.partial()({ a: "x", z: 1 } as never)
 			attest(out).snap({ a: "x", z: 1 })
+		})
+
+		it("an explicit ignore stays ignore in tuples that meet at more than one length", () => {
+			for (const jitless of [false, true]) {
+				for (const onUndeclaredKey of ["delete", "reject"] as const) {
+					const [Open, Configured] = withConfig({ onUndeclaredKey }, () => {
+						const $ = scope({}, { jitless })
+						const Leading = $.type(["0", "...", "number[]"])
+						const Trailing = $.type(["...", "number[]", "0"])
+						return [
+							Leading.onUndeclaredKey("ignore").and(
+								Trailing.onUndeclaredKey("ignore")
+							),
+							Leading.and(Trailing)
+						]
+					})
+					const data = () => Object.assign([0], { extra: 1 })
+					attest(Open.expression).equals("[0, ...number[], 0] | [0]")
+					attest(Open(data()) as unknown).equals(data())
+					attest(Open(data()) as unknown).equals(data())
+					// tuples left to the config still follow it
+					const configured: unknown = Configured(data())
+					if (onUndeclaredKey === "delete") attest(configured).equals([0])
+					else {
+						attest(String(configured)).equals(
+							"must be at least 2 items or extra must be removed"
+						)
+					}
+				}
+			}
+		})
+
+		it("delete keeps a branch of a union at a case of a key it doesn't declare", () => {
+			for (const jitless of [false, true]) {
+				const Event = withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}, { jitless })
+						.type({ kind: "'a'", a: "string" })
+						.or({ kind: "'b'", b: "number" })
+						.or({ id: "string" })
+				)
+				// only the last branch allows it, deleting the `kind` the others read.
+				// The first data is checked uncompiled
+				attest(Event({ kind: "a", a: 1, id: "x" })).equals({ id: "x" })
+				attest(Event({ kind: "a", a: 1, id: "x" })).equals({ id: "x" })
+				attest(Event({ kind: "a", id: "x" })).equals({ id: "x" })
+				// each branch allowing the data keeps the keys it declares
+				attest(Event({ kind: "a", a: "s", id: "x", z: 1 })).equals({
+					kind: "a",
+					a: "s",
+					id: "x"
+				})
+				attest(Event({ kind: "b", b: 1, a: "s" })).equals({ kind: "b", b: 1 })
+				attest(Event({ kind: "a", a: 1 }).toString()).equals(
+					"a must be a string or id must be a string"
+				)
+
+				// as it does one nested under a key
+				const Nested = withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}, { jitless })
+						.type({ o: { kind: "'a'", a: "string" } })
+						.or({ o: { kind: "'b'" } })
+						.or({ o: { id: "string" } })
+				)
+				attest(Nested({ o: { kind: "a", id: "x" } })).equals({ o: { id: "x" } })
+			}
+		})
+
+		it("a branch with its own rule for undeclared keys stays at a case of a key it doesn't declare", () => {
+			for (const jitless of [false, true]) {
+				for (const onUndeclaredKey of ["delete", "reject"] as const) {
+					const [Ignoring, Deleting] = withConfig({ onUndeclaredKey }, () => {
+						const $ = scope({}, { jitless })
+						const Kinds = $.type({ kind: "'a'", a: "string" }).or({
+							kind: "'b'",
+							b: "number"
+						})
+						return [
+							Kinds.or({ "+": "ignore", id: "string" }),
+							Kinds.or({ "+": "delete", id: "string" })
+						]
+					})
+					// no branch reading `kind` allows an `a` of 1
+					const data = () => ({ kind: "a", a: 1, id: "x" })
+					attest(Ignoring(data())).equals(data())
+					attest(Ignoring(data())).equals(data())
+					attest(Deleting(data())).equals({ id: "x" })
+					attest(Deleting(data())).equals({ id: "x" })
+				}
+			}
 		})
 	})
 
@@ -1008,6 +1197,96 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		)
 	})
 
+	it("configure after a type names the first Type that froze config", async function () {
+		this?.timeout?.(30_000)
+		const errorAfter = async (setup: string): Promise<string> => {
+			const { stdout } = await execFileAsync(
+				process.execPath,
+				[
+					"--conditions",
+					"ark-ts",
+					"--input-type=module",
+					"-e",
+					`import { configure, scope, type } from "arktype"\n${setup}\ntry { configure({ numberAllowsNaN: true }) } catch (e) { console.log(e.message) }`
+				],
+				{ cwd: fromHere(".."), encoding: "utf8" }
+			)
+			return stdout.trimEnd()
+		}
+
+		const [deferred, scoped, truncated, { stdout: gcStdout }] =
+			await Promise.all([
+				errorAfter(`type({ firstUserName: "string", firstUserAge: "number" })`),
+				errorAfter(`scope({ Account: { accountId: "string" } }).export()`),
+				errorAfter(
+					`type({ veryLongPropertyNameOne: "string", veryLongPropertyNameTwo: "number", veryLongPropertyNameThree: "boolean" })`
+				),
+				// if the deferred first Type is GC'd before configure(), fall back cleanly
+				// without leaking internal deferred cache keys
+				execFileAsync(
+					process.execPath,
+					[
+						"--expose-gc",
+						"--conditions",
+						"ark-ts",
+						"--input-type=module",
+						"-e",
+						`import { configure, type } from "arktype"
+const create = () => new WeakRef(type({ gcOnlyKeyOne: "string", gcOnlyKeyTwo: "number" }))
+const ref = create()
+for (let i = 0; i < 20 && ref.deref(); i++) {
+	await new Promise(r => setTimeout(r, 0))
+	global.gc()
+	await new Promise(r => setTimeout(r, 0))
+}
+try {
+	configure({ numberAllowsNaN: true })
+} catch (e) {
+	console.log(JSON.stringify({ collected: !ref.deref(), message: e.message }))
+}`
+					],
+					{ cwd: fromHere(".."), encoding: "utf8" }
+				)
+			])
+
+		attest(deferred).equals(
+			writeConfigureAfterTypeMessage(
+				"{ firstUserAge: number, firstUserName: string }"
+			)
+		)
+		attest(scoped).equals(
+			writeConfigureAfterTypeMessage("Account ({ accountId: string })")
+		)
+		attest(truncated).snap(
+			"configure() must be called before any Type is created, so import the module calling it before any module that creates one (first Type created: { veryLongPropertyNameOne: string, veryLongPropertyNameThree: boolean, veryLo...)"
+		)
+
+		const gcResult = JSON.parse(gcStdout.trimEnd()) as {
+			collected: boolean
+			message: string
+		}
+		attest(gcResult.collected).equals(true)
+		attest(gcResult.message).equals(configureAfterTypeMessage)
+	})
+
+	it("rejects removed 2.x clone option in configure() and scope()", () => {
+		attest(() =>
+			// @ts-expect-error
+			configure({ clone: false })
+		)
+			.throws(removedCloneMessage)
+			.type.errors(removedCloneMessage)
+		attest(() =>
+			// @ts-expect-error
+			configure({ clone: true })
+		)
+			.throws(removedCloneMessage)
+			.type.errors(removedCloneMessage)
+		attest(() => scope({}, { clone: false } as never)).throws(
+			removedCloneMessage
+		)
+	})
+
 	it("an error's actual describes its data, which its message leaves out", () => {
 		const error = (type({ age: "number" })({ age: "5" }) as type.errors)
 			.issues[0]
@@ -1028,7 +1307,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			password: "ez123"
 		})
 
-		attest(out.toString()).snap("password must be at least length 8")
+		attest(out.toString()).snap("password must be at least 8 characters")
 	})
 
 	it("docs message example", () => {
@@ -1041,9 +1320,9 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const out1 = User("ez123")
 		attest(out1.toString()).snap("a string isn't an object")
 		// but `.configure` only applies shallowly, so the nested error isn't changed!
-		// ArkErrors: password must be at least length 8
+		// ArkErrors: password must be at least 8 characters
 		const out2 = User({ password: "ez123" })
-		attest(out2.toString()).snap("password must be at least length 8")
+		attest(out2.toString()).snap("password must be at least 8 characters")
 	})
 
 	describe("select", () => {
@@ -1176,6 +1455,76 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 						method: ""
 					})
 				).completions({ "": ["assertFilter", "assertFind", "filter", "find"] })
+			})
+
+			// https://github.com/arktypeio/arktype/issues/1778
+			it("does not leak symbol-keyed meta through the schema node cache", () => {
+				const sym = Symbol("metaTag")
+				const WithDescAndSym = type("string").configure({
+					description: "symTestDesc",
+					[sym]: "v"
+				} as any)
+				const WithDescOnly = type("string").configure({
+					description: "symTestDesc"
+				})
+				attest((WithDescAndSym.meta as any)[sym]).equals("v")
+				attest((WithDescOnly.meta as any)[sym]).equals(undefined)
+				attest(WithDescAndSym === WithDescOnly).equals(false)
+
+				// symbol-only meta (no string keys) also keeps its symbol and never pollutes plain string
+				const SymOnly = type("string").configure({ [sym]: "only" } as any)
+				const Plain = type("string")
+				attest((SymOnly.meta as any)[sym]).equals("only")
+				attest((Plain.meta as any)[sym]).equals(undefined)
+				attest(SymOnly === Plain).equals(false)
+			})
+
+			it("configures child boundary and deep morph output targets", () => {
+				const ChildDesc = type("string > 2").describe("CUSTOM", "child")
+				attest(ChildDesc.internal.children.map(c => c.description)).equals([
+					"CUSTOM",
+					"CUSTOM"
+				])
+				const ChildMin = type("string > 2").configure(
+					{ message: "CUSTOM" },
+					{ boundary: "child", kind: "minLength" }
+				)
+				attest(ChildMin("a").toString()).snap("CUSTOM")
+
+				// deep selector configure and onDeepUndeclaredKey reach piped .to(...) outputs
+				const Piped = type("string.json.parse").to({ a: "string > 2" })
+				const ConfiguredPiped = Piped.configure(
+					{ message: "TOO_SHORT" },
+					"minLength"
+				)
+				attest(ConfiguredPiped('{"a":"x"}').toString()).snap("a: TOO_SHORT")
+
+				const StrictJson = type("string.json.parse")
+					.to({ a: "string" })
+					.onDeepUndeclaredKey("reject")
+				attest(StrictJson('{"a":"ok","extra":1}').toString()).snap(
+					"extra must be removed"
+				)
+				const DeletedJson = type("string.json.parse")
+					.to({ a: "string" })
+					.onDeepUndeclaredKey("delete")
+				attest(DeletedJson('{"a":"ok","extra":1}')).equals({ a: "ok" })
+			})
+
+			it("self and jsonSchema configure have compiled code once used", () => {
+				const SelfCfg = type("string > 2").configure(
+					{ description: "X" },
+					"self"
+				)
+				const JsonSchemaCfg = type("string > 2").configure({
+					jsonSchema: { format: "custom" }
+				})
+				SelfCfg("abc")
+				SelfCfg("a")
+				JsonSchemaCfg("abc")
+				JsonSchemaCfg("a")
+				attest(SelfCfg.precompilation).satisfies("string")
+				attest(JsonSchemaCfg.precompilation).satisfies("string")
 			})
 		})
 	})

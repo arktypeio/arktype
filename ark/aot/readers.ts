@@ -995,8 +995,11 @@ class Follow {
 				if (parent.tag !== operand) return
 				return
 			case "TemplateLiteral":
-				// a tag is passed each expression as it is, not as a string
-				if (parent.parent?.type === "TaggedTemplateExpression")
+				// a tag is passed each expression as it is, not as a string, except String.raw
+				if (
+					parent.parent?.type === "TaggedTemplateExpression" &&
+					globalNameOf(parent.parent.tag, module) !== "String.raw"
+				)
 					return lose("passes it to a template tag")
 				return this.convert(held, parent, module)
 			case "BinaryExpression":
@@ -1260,6 +1263,10 @@ class Follow {
 		const returns = arrayMethods[name]
 		if (returns === "unfollowed")
 			return this.lose(call, module, `reduces it with .${name}`)
+		if (returns === "convert") {
+			this.convert(held, call, module)
+			return
+		}
 		if (returns === "flat") {
 			// flattens each leading array of its elements, to any depth, where one
 			// flattened fewer times than the call's depth may be held deeper than it is
@@ -1300,9 +1307,10 @@ class Follow {
 		held: Held,
 		wrap: readonly Key[] | undefined,
 		index = 0,
-		flattens = false
+		flattens = false,
+		argIndex = 0
 	): void {
-		const [callback] = call.arguments
+		const callback = call.arguments[argIndex]
 		if (!callback || callback.type === "SpreadElement") return
 		const value = this.valueOf(callback, module)
 		if (value?.kind !== "function") {
@@ -1312,8 +1320,20 @@ class Follow {
 				"passes it to a callback the build can't follow"
 			)
 		}
+		if (readsArguments(value.fn)) {
+			return this.lose(
+				callback,
+				module,
+				"passes it to a function reading arguments"
+			)
+		}
 		const param = runtimeParamsOf(value.fn)[index]
-		if (param) this.bindPattern(param, value.module, held)
+		if (param?.type === "RestElement") {
+			this.bindPattern(param.argument, value.module, {
+				...held,
+				path: [anyKey, ...held.path]
+			})
+		} else if (param) this.bindPattern(param, value.module, held)
 		if (wrap) {
 			this.addEntry(
 				value.fn,
@@ -1449,6 +1469,12 @@ class Follow {
 				:	[]
 			)
 		}
+		if (
+			globalNameOf(callee, module) === "Array.from" &&
+			index === 1 &&
+			parent.arguments[0]?.type !== "SpreadElement"
+		)
+			return [{ call: parent, module, wrap: [anyKey] }]
 		const value = this.valueOf(callee, module)
 		if (value?.kind !== "function") return
 		const param = runtimeParamsOf(value.fn)[index]
@@ -1720,6 +1746,14 @@ class Follow {
 			case "String":
 				this.convert(held, call, module)
 				return true
+			case "String.raw":
+				if (index === 0) {
+					if (call.arguments[0]?.type === "SpreadElement")
+						this.convert(held, call, module)
+					if (held.path[0] === "raw" || held.path[0] === anyKey)
+						this.convert({ ...held, path: held.path.slice(1) }, call, module)
+				} else this.convert(held, call, module)
+				return true
 			case "Reflect.get": {
 				if (index !== 0) return true
 				const [, key] = call.arguments
@@ -1780,22 +1814,59 @@ class Follow {
 				return true
 			case "Object.freeze":
 			case "Object.seal":
+			case "Object.preventExtensions":
+				if (index === 0) {
+					if (isValue && !this.readers.program.whole)
+						this.lose(call, module, `prevents extensions with ${name}`)
+					this.push(call, module, held)
+				}
+				return true
 			case "Promise.resolve":
 				if (index === 0) this.push(call, module, held)
 				return true
-			case "Array.from":
-				if (index === 0) {
-					this.push(call, module, held)
-					// a map function is passed each element
-					if (call.arguments[1] && !isValue) {
-						this.lose(
-							call,
-							module,
-							"maps it with a function the build can't follow"
-						)
-					}
+			case "Array.from": {
+				if (
+					call.arguments
+						.slice(0, index + 1)
+						.some(arg => arg.type === "SpreadElement")
+				)
+					return false
+				if (index === 1) return isValue
+				if (index !== 0) return false
+				if (call.type !== "CallExpression") return true
+				const arrayHeld: Held =
+					held.path.length ?
+						{ ...held, path: [anyKey, ...held.path.slice(1)] }
+					:	held
+				if (call.arguments.length < 2) {
+					this.push(call, module, arrayHeld)
+					return true
 				}
+				if (isValue) return true
+				if (call.arguments[1].type === "SpreadElement") {
+					this.lose(
+						call.arguments[1],
+						module,
+						"passes it to a callback the build can't follow"
+					)
+					return true
+				}
+				if (isUndefinedExpression(call.arguments[1], module)) {
+					this.push(call, module, arrayHeld)
+					return true
+				}
+				// a map function is passed each element
+				this.callback(
+					call,
+					module,
+					{ ...held, path: held.path.slice(1) },
+					[anyKey],
+					0,
+					false,
+					1
+				)
 				return true
+			}
 			case "Object.values":
 			case "Object.entries":
 				if (isValue)
@@ -1825,6 +1896,9 @@ class Follow {
 				if (isValue && this.isComparison(call.arguments[index], held, module))
 					this.lose(call, module, "compares it")
 				return true
+			case "Object.isFrozen":
+			case "Object.isSealed":
+			case "Object.isExtensible":
 			case "Array.isArray":
 			case "Boolean":
 			case "Number.isFinite":
@@ -2172,7 +2246,7 @@ const entryHeldOf = (held: Held, entry: Entry): Held =>
 // what each array method returns of its receiver: itself, an element or what its callback maps
 const arrayMethods: Record<
 	string,
-	"holder" | "element" | "mapped" | "none" | "flat" | "unfollowed"
+	"holder" | "element" | "mapped" | "none" | "flat" | "convert" | "unfollowed"
 > = Object.assign(Object.create(null), {
 	filter: "holder",
 	slice: "holder",
@@ -2198,7 +2272,7 @@ const arrayMethods: Record<
 	reduce: "unfollowed",
 	reduceRight: "unfollowed",
 	flat: "flat",
-	join: "none"
+	join: "convert"
 })
 
 // e.g. `JSON.stringify`, where no binding shadows the global
@@ -2440,16 +2514,23 @@ const comparesIdentity = (read: Node, module: SourceModule): boolean => {
 	return false
 }
 
+const isUndefinedExpression = (node: Node, module: SourceModule): boolean => {
+	const expression = unwrapExpression(node) as Node
+	return (
+		(expression.type === "UnaryExpression" && expression.operator === "void") ||
+		(expression.type === "Identifier" &&
+			expression.name === "undefined" &&
+			!module.scopes.byId.get(expression)?.binding)
+	)
+}
+
 // e.g. `null` or `"a"`, which no Type is, so comparing one to it tells nothing of identity
 const isPrimitiveLiteral = (node: Node, module: SourceModule): boolean => {
 	const expression = unwrapExpression(node) as Node
 	return (
 		expression.type === "Literal" ||
 		expression.type === "TemplateLiteral" ||
-		(expression.type === "UnaryExpression" && expression.operator === "void") ||
-		(expression.type === "Identifier" &&
-			expression.name === "undefined" &&
-			!module.scopes.byId.get(expression)?.binding)
+		isUndefinedExpression(expression, module)
 	)
 }
 

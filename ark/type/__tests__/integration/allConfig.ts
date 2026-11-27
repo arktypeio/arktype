@@ -146,6 +146,9 @@ configure({
 		"string.base64.url": {
 			description: "configured"
 		},
+		"string.boolean.parse": {
+			description: "configured"
+		},
 		"string.capitalize.preformatted": {
 			description: "configured"
 		},
@@ -153,6 +156,9 @@ configure({
 			description: "configured"
 		},
 		"string.date.parse": {
+			description: "configured"
+		},
+		"string.date.iso.date": {
 			description: "configured"
 		},
 		"string.date.iso.parse": {

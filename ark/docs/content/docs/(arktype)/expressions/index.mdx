@@ -654,6 +654,9 @@ const SpecialString = type("string").configure({
 // .describe() is shorthand for a description
 const SpecialNumber = type("number").describe("a special number")
 
+// .label() names a field in built-in messages and writes JSON Schema `title`
+const UnitPrice = type("number > 0").label("Unit price")
+
 // ArkErrors: must be a special number
 SpecialNumber("five")
 ```
@@ -860,4 +863,4 @@ const types = scope({
 }).export()
 ```
 
-Define recursive Types once, at module scope: each stays in memory for the life of the process.
+Define recursive Types once at module scope so they aren't recreated on each call.

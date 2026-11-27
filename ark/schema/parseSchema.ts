@@ -18,15 +18,18 @@ import {
 	type listable,
 	type show
 } from "@ark/util"
-import { constraintInputOf, type Constraint } from "./constraint.ts"
+import {
+	constraintInputOf,
+	type BaseConstraint,
+	type Constraint
+} from "./constraint.ts"
 import type { nodeOfKind, Prerequisite, reducibleKindOf } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import {
 	compareInnerKeys,
 	nodesById,
 	writeInvalidSchemaMessage,
-	type BaseParseOptions,
-	type NodeId
+	type BaseParseOptions
 } from "./parse.ts"
 import type { Predicate } from "./predicate.ts"
 import { writeInvalidRangeRuleMessage } from "./refinements/range.ts"
@@ -36,6 +39,7 @@ import type { Morph } from "./roots/morph.ts"
 import { BaseRoot } from "./roots/root.ts"
 import { writeForeignArkMessage, type BaseScope } from "./scope.ts"
 import type { ArkEnv, TypeMeta } from "./shared/declare.ts"
+import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
 	structureKeys,
@@ -204,8 +208,13 @@ export const parseNodeSchema = <kind extends NodeKind>(
 	opts?: BaseParseOptions
 ): nodeOfKind<reducibleKindOf<kind>> => {
 	// a sequence's schema may be its variadic element
-	if (isNode(schema) && !(kind === "sequence" && schema.isRoot()))
-		return $.node(kind, schema as never, opts) as never
+	if (isNode(schema) && !(kind === "sequence" && schema.isRoot())) {
+		return $.node(
+			kind,
+			(schema.isRoot() ? schema.internal : schema) as never,
+			opts
+		) as never
+	}
 	const input = readers[kind](schema, $, opts)
 	return isNode(input) ?
 			($.node(input.kind, input as never, opts) as never)
@@ -254,7 +263,10 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 
 	const schemaKeys = Object.keys(schema)
 
-	if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
+	if (
+		schemaKeys.length === 0 ||
+		schemaKeys.some(k => hasOwn(constraintKeys, k))
+	)
 		return "intersection"
 	if ("proto" in schema) return "proto"
 	if ("domain" in schema) return "domain"
@@ -308,7 +320,7 @@ const readers: Record<NodeKind, SchemaReader> = {
 		if (opts?.reduced || !input.reference.startsWith("$")) return input
 		const registered =
 			input.reference.startsWith("$ark.") ?
-				nodesById[input.reference.slice(5) as NodeId]
+				nodesById.get(input.reference.slice(5))
 			:	undefined
 		return hasArkKind(registered, "root") ? registered : (
 				$.resolveRoot(input.reference.slice(1))
@@ -347,20 +359,20 @@ const readers: Record<NodeKind, SchemaReader> = {
 	intersection: (schema: dict, $) => {
 		const { structure, ...flattened } = schema
 		const structureSchema: dict = (structure as dict | undefined) ?? {}
-		const input: dict = {}
+		// without a prototype, a key like __proto__ is kept to be rejected
+		const input: dict = Object.create(null)
 		for (const k of keysInParseOrder(flattened)) {
 			const v = flattened[k]
-			if (k in structureKeys) {
+			if (hasOwn(structureKeys, k)) {
 				if (structure) {
 					throwParseError(
 						`Flattened structure key ${k} cannot be specified alongside a root 'structure' key.`
 					)
 				}
 				structureSchema[k] = v
-			} else if (k in constraintKeys) {
-				const constraint = parseConstraint(k as ConstraintKind, v, $)
-				if (constraint) input[k] = constraint
-			} else if (k === "domain" || k === "proto")
+			} else if (hasOwn(constraintKeys, k))
+				addConstraints(input, k as ConstraintKind, v, $)
+			else if (k === "domain" || k === "proto")
 				input[k] = parseNodeSchema(k, v, $)
 			else input[k] = v
 		}
@@ -372,14 +384,13 @@ const readers: Record<NodeKind, SchemaReader> = {
 		return input
 	},
 	structure: (schema: dict, $) => {
-		const input: dict = {}
+		const input: dict = Object.create(null)
 		for (const k of keysInParseOrder(schema)) {
 			const v = schema[k]
 			if (k === "sequence") input[k] = parseNodeSchema(k, v, $)
-			else if (k in constraintKeys) {
-				const constraint = parseConstraint(k as ConstraintKind, v, $)
-				if (constraint) input[k] = constraint
-			} else input[k] = v
+			else if (hasOwn(constraintKeys, k))
+				addConstraints(input, k as ConstraintKind, v, $)
+			else input[k] = v
 		}
 		return input
 	},
@@ -451,20 +462,29 @@ const lookupBuiltinProto = (name: string, schema: unknown): Constructor =>
 		builtinConstructors[name as BuiltinObjectKind]
 	:	throwParseError(writeInvalidSchemaMessage(schema))
 
-const parseConstraint = (
+const addConstraints = (
+	input: dict,
 	kind: ConstraintKind,
 	schema: unknown,
 	$: BaseScope
-): listable<BaseNode> | undefined => {
-	if (isArray(schema)) {
-		// empty lists are omitted
-		if (schema.length === 0) return
-		return schema.map(s => parseNodeSchema(kind, s, $))
+): void => {
+	const items = isArray(schema) ? schema : [schema]
+	for (const item of items) {
+		const constraint: BaseNode = parseNodeSchema(kind, item, $)
+		// a constraint reducing to a root, like unknown for minLength: 0, is trivially satisfied
+		if (constraint.isRoot()) continue
+		const ck = constraint.kind
+		if (constraint.canStack()) {
+			input[ck] =
+				input[ck] ? [...(input[ck] as BaseNode[]), constraint] : [constraint]
+		} else if (input[ck]) {
+			const merged = (input[ck] as BaseConstraint).intersect(
+				constraint as BaseConstraint
+			)
+			if (merged instanceof Disjoint) return merged.throw()
+			if (merged) input[ck] = merged
+		} else input[ck] = constraint
 	}
-	const constraint: BaseNode = parseNodeSchema(kind, schema, $)
-	// a constraint reducing to a root, like unknown for minLength: 0, is trivially satisfied
-	if (constraint.isRoot()) return
-	return constraint.canStack() ? [constraint] : constraint
 }
 
 const isExpandedSequenceSchema = (

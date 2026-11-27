@@ -177,11 +177,19 @@ const formatSeconds = (totalSeconds: number): string => {
 	return `${seconds}s`
 }
 
-class ProgressDisplay {
+const canRewriteStdoutLine = (): boolean =>
+	Boolean(
+		process.stdout?.isTTY &&
+			typeof process.stdout.clearLine === "function" &&
+			typeof process.stdout.cursorTo === "function"
+	)
+
+export class ProgressDisplay {
 	private totalItems: number
 	private processedItems: number = 0
 	private startTime: number = 0
 	private timerId?: NodeJS.Timeout
+	private stopped: boolean = false
 	private barWidth: number = 30 // Width of the progress bar itself
 
 	constructor(totalItems: number) {
@@ -194,21 +202,25 @@ class ProgressDisplay {
 
 		this.startTime = Date.now()
 		this.processedItems = 0
+		this.stopped = false
+		if (!canRewriteStdoutLine()) return
 		this.render() // Initial render
 		// Update every second for elapsed time and ETA
 		this.timerId = setInterval(() => this.render(), 1000)
 	}
 
 	update(processedCount: number): void {
-		if (this.totalItems === 0) return
+		if (this.totalItems === 0 || this.stopped) return
 
 		this.processedItems = Math.min(processedCount, this.totalItems)
-		this.render() // Re-render on each item processed for immediate feedback
-
-		if (this.processedItems >= this.totalItems) this.stop() // Automatically stop if all items are processed
+		if (this.processedItems >= this.totalItems) {
+			this.stop() // Automatically stop if all items are processed
+			return
+		}
+		if (canRewriteStdoutLine()) this.render() // Re-render on each item processed for immediate feedback
 	}
 
-	private render(): void {
+	private render(final = false): void {
 		if (this.totalItems === 0 && this.processedItems === 0 && !this.startTime)
 			return // Avoid rendering if not started for 0 items
 
@@ -236,35 +248,55 @@ class ProgressDisplay {
 
 		const summary = `${this.processedItems}/${this.totalItems} entries (${percent.toFixed(0)}%)`
 		const timeInfo = `${formattedElapsed} elapsed${etaStr}`
+		const line = `Processing: ${bar} ${summary} | ${timeInfo}`
 
-		process.stdout.clearLine(0) // Clear the current line
-		process.stdout.cursorTo(0) // Move cursor to the beginning of the line
-		process.stdout.write(`Processing: ${bar} ${summary} | ${timeInfo}`)
+		if (canRewriteStdoutLine()) {
+			process.stdout.clearLine(0) // Clear the current line
+			process.stdout.cursorTo(0) // Move cursor to the beginning of the line
+			process.stdout.write(line)
+		} else if (final) process.stdout?.write(`${line}\n`)
 	}
 
 	stop(): void {
+		if (this.stopped) return
+		this.stopped = true
 		if (this.timerId) {
 			clearInterval(this.timerId)
 			this.timerId = undefined as never
 		}
 		if (this.totalItems > 0) {
 			this.processedItems = this.totalItems // Ensure final state is 100%
-			this.render() // Final render
-			process.stdout.write("\n") // Move to the next line
+			this.render(true) // Final render
+			if (canRewriteStdoutLine()) process.stdout?.write("\n") // Move to the next line
 		}
 	}
+}
+
+export const resolveTraceTsconfig = (
+	packageDir: string,
+	configTsconfig: string | null | undefined,
+	cwd: string = process.cwd()
+): string | undefined => {
+	const cwdDefault = resolve(cwd, "tsconfig.json")
+	if (configTsconfig && resolve(cwd, configTsconfig) !== cwdDefault) {
+		const relativeToPackage = resolve(packageDir, configTsconfig)
+		return existsSync(relativeToPackage) ? relativeToPackage : (
+				resolve(cwd, configTsconfig)
+			)
+	}
+	const packageTsconfig = join(packageDir, "tsconfig.json")
+	return existsSync(packageTsconfig) ? packageTsconfig : undefined
 }
 
 export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = resolve(args[0] ?? process.cwd())
 	const config = getConfig()
+	const tsconfig = resolveTraceTsconfig(packageDir, config.tsconfig)
 
-	if (!config.tsconfig) {
+	if (!tsconfig) {
 		// This message should go to console.error and also be captured if needed,
 		// but since it exits, direct console.error is fine.
-		console.error(
-			`attest trace must be run from a directory with a tsconfig.json file`
-		)
+		console.error(`attest trace requires a tsconfig.json file in ${packageDir}`)
 		process.exit(1)
 	}
 
@@ -277,7 +309,7 @@ export const trace = async (args: string[]): Promise<void> => {
 	initialMessages.push(`⏳ Gathering type trace data for ${packageDir}...`)
 	outputCapture.write(initialMessages[0]) // This goes to console and buffer
 
-	const tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
+	const tracingOutput = generateTraceData(traceDir, tsconfig, packageDir)
 
 	const traceFile = join(traceDir, "trace.json")
 
@@ -319,7 +351,7 @@ const generateTraceData = (
 	try {
 		const output = getDiagnosticTscOutput(
 			packageDir,
-			`--project ${tsconfigPath} --generateTrace ${traceDir}`
+			`--project "${tsconfigPath}" --generateTrace "${traceDir}"`
 		)
 		process.stdout.write(output) // Display tsc output directly
 		return output
@@ -499,6 +531,25 @@ const calculateSelfTimes = (call: CallRange): number => {
 	return call.duration
 }
 
+export const parseCallSite = (
+	callSite: string
+): { path: string; pos: number; end: number } => {
+	const colonIndex = callSite.lastIndexOf(":")
+	if (colonIndex <= 0 || colonIndex === callSite.length - 1)
+		throw new Error(`Invalid callSite format: ${callSite}`)
+	const path = callSite.slice(0, colonIndex)
+	const positionRange = callSite.slice(colonIndex + 1)
+	const [posStr, endStr] = positionRange.split("-")
+	const pos = parseInt(posStr, 10)
+	const end = parseInt(endStr, 10)
+	if (isNaN(pos) || isNaN(end)) {
+		throw new Error(
+			`Invalid position in callSite: ${callSite}. Pos: ${posStr}, End: ${endStr}`
+		)
+	}
+	return { path, pos, end }
+}
+
 const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	if (!ctx.functionStats[call.typeId]) {
 		ctx.functionStats[call.typeId] = {
@@ -513,17 +564,7 @@ const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	}
 
 	const stats = ctx.functionStats[call.typeId]
-	const [filePath, positionRange] = call.callSite.split(":")
-	if (!filePath || !positionRange)
-		throw new Error(`Invalid callSite format: ${call.callSite}`)
-	const [posStr, endStr] = positionRange.split("-")
-	const pos = parseInt(posStr, 10)
-	const end = parseInt(endStr, 10)
-	if (isNaN(pos) || isNaN(end)) {
-		throw new Error(
-			`Invalid position in callSite: ${call.callSite}. Pos: ${posStr}, End: ${endStr}`
-		)
-	}
+	const { path: filePath, pos, end } = parseCallSite(call.callSite)
 
 	stats.detailedCallSites.push({
 		path: filePath,

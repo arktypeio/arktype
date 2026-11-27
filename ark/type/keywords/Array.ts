@@ -1,8 +1,15 @@
-import { genericNode, intrinsic, rootSchema } from "@ark/schema"
+import {
+	genericNode,
+	intrinsic,
+	rootSchema,
+	type GenericAst
+} from "@ark/schema"
+import { arrayIndexMatcher } from "@ark/schema/runtime"
 import { Hkt, liftArray, type Digit } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
+import { regexStringNode } from "./string.ts"
 
 class liftFromHkt extends Hkt<[element: unknown]> {
 	declare body: liftArray<this[0]> extends infer lifted ?
@@ -27,7 +34,7 @@ export const arkArray: arkArray.module = keywordModule(
 	{
 		root: () => intrinsic.Array,
 		readonly: "root",
-		index: () => intrinsic.nonNegativeIntegerString,
+		index: () => regexStringNode(arrayIndexMatcher, "Array.index"),
 		liftFrom
 	},
 	{
@@ -35,17 +42,19 @@ export const arkArray: arkArray.module = keywordModule(
 	}
 ) as never
 
+type arkArray$ = {
+	root: unknown[]
+	readonly: readonly unknown[]
+	index: NonNegativeIntegerString
+	liftFrom: GenericAst<readonly [["element", unknown]], liftFromHkt, {}, {}>
+}
+
 export declare namespace arkArray {
 	export type module = Module<submodule>
 
-	export type submodule = Submodule<$>
+	export type submodule = Submodule<arkArray$>
 
-	export type $ = {
-		root: unknown[]
-		readonly: readonly unknown[]
-		index: NonNegativeIntegerString
-		liftFrom: ReturnType<typeof liftFrom>["t"]
-	}
+	export type $ = arkArray$
 }
 
 export type NonNegativeIntegerString =

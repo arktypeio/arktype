@@ -16,12 +16,12 @@ To move a whole project off Zod, or another library below, work through it in th
    - If `package.json` sets `"sideEffects": false`, list the config file there instead, like `"sideEffects": ["./src/arktype.config.ts"]`. A bundler otherwise drops the import, and the built app runs without the config while unbundled tests pass.
    - Migrating from another library? Set what its column of [Defaults that differ](#defaults-that-differ) says instead.
 3. **Convert each schema in place,** using the [tables](#zod). Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. The migrated schemas should accept, reject and return what the old ones did:
-   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. A union throws a `ParseError` saying it's indeterminate where one of its objects overlaps another branch, like a second object with no literal key to tell them apart, or an array of the same object: write it as [Unions of objects](#unions-of-objects) shows. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](#composing-objects).
+   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. Where objects of a union overlap, like two with no literal key to tell them apart, data both accept keeps the keys of each, where Zod returns the first match's, and the union throws a `ParseError` saying it's indeterminate if one has a default, a transform at a key or a recursive type: [Unions of objects](#unions-of-objects) shows both. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](#composing-objects).
    - **Optional keys.** Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"` and a `z.any()` key is `"key?": "unknown.any"`; from 4.4, only `.optional()` and defaults let a key be missing, so they stay `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, as does `.partial()` on a key with a default, so it's `key: T.default(x)`. In Zod 3 neither does: write the first as `"key?": "T"`, and for the second, call `.partial()` on a Type of the keys without their defaults, and `.merge()` the defaults into the full object. `"unknown.any"` infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - **Coercions and refinements,** literally, as in [Coercion is a parse](#coercion-is-a-parse). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema, with its `path` as `relativePath`. A `.refine()` that only rejects a literal, like `z.boolean().refine(v => v, "Accept the terms")`, becomes that literal with a `message`; [Refinements](#refinements) has both.
    - **Custom messages,** each as a `message`, as in [Custom messages](#custom-messages): a message beside a check goes beside the same check, so `.min(1, "Name is required")` is `type.string.atLeastLength(1, "Name is required")`, a check without a method, like `.email("...")`'s, names its code, as in `.message("...", "pattern")`, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.mustBe()`, to `ctx.error()` as a string, to `.describe()` or as `expected`, each of which writes `must be` before it.
    - **Descriptions.** A `.describe(text)` on a schema given to a model or an OpenAPI generator, like a tool's `inputSchema`, stays one, as [Descriptions](#descriptions) shows, so the JSON Schema they read keeps it. Anywhere else it's a comment.
-   - **Strings.** Zod 4's `.url()` accepts what `URL.canParse` accepts and returns the string trimmed, and by 4.6 without the tabs and line breaks inside it, which 4.1 kept. `string.url` checks with `URL.canParse` too but returns the string as given, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`. From Zod 4.5, `.min()`, `.max()` and `.length()` count code points, so an emoji counts once, where ArkType's bounds count UTF-16 code units, as `.length` does: where text may hold such characters, check the count in a `.narrow()`, as in [Defaults that differ](#defaults-that-differ). `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
+   - **Strings.** Zod 4's `.url()` accepts what `URL.canParse` accepts and returns the string trimmed, and by 4.6 without the tabs and line breaks inside it, which 4.1 kept. `string.url` checks with `URL.canParse` too but returns the string as given, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`. From Zod 4.5, `.min()`, `.max()` and `.length()` count code points, so an emoji counts once, where ArkType's bounds count UTF-16 code units, as `.length` does: where text may hold such characters, check the count in a `.narrow()`, as in [Defaults that differ](#defaults-that-differ).
    - **Arrays as objects.** `z.object()` and `z.record()` reject an array, which ArkType accepts as a `Record`, or as an object whose declared keys are all optional. Where every key is optional, reject arrays with a `.narrow()`, as in [Defaults that differ](#defaults-that-differ).
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws a `TraversalError`. In a `catch`, `e instanceof ZodError` becomes `e instanceof TraversalError`, imported from `arktype`, `e.name === "ZodError"` becomes `e.name === "TraversalError"`, and `e.issues` becomes `e.arkErrors.issues`. A handler that sent the error whole, like `res.json(e)`, sent Zod's issues with it, where a `TraversalError` serializes as its `name` alone: send each issue's `path` and `message`.
@@ -30,7 +30,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - An issue also holds the rejected value as `data`, which Zod's leaves out unless `reportInput` is set. Where code logs issues or returns them to a client, as `c.json(result.error)` does, send each issue's `path` and `message` instead, so a password that failed a check isn't written out.
    - `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
    - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodType`, `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. One typed by what its schema returns, like `<T>(schema: z.ZodType<T>): T` or a `class Repo<T>`, keeps `T` and names what it calls: `schema: { assert: (data: unknown) => T }`, or `schema: (data: unknown) => T | ArkErrors` where it calls the Type. Every Type whose output is `T` fits, and call sites keep their type arguments. A `type.Any<T>` isn't that: its `T` isn't the output type once a Type has a default or a transform. Where the helper needs the Type itself, use `<S extends type.Any>(schema: S): S["infer"]`; there `schema(data)` is `any`, so annotate it: `const out: S["infer"] | type.errors = schema(data)`. A function that builds a schema from another, like `<T extends z.ZodType>(s: T) => s.nullable()`, becomes a generic, like `type("<t>", "t | null")`, as in [Schema factories](#schema-factories). Written as a method call on a `type.Any` parameter, `s.or("null")` type-checks and infers `any`.
-   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. A `.strict()` object's unrecognized key is a form error in Zod, and in ArkType an error at that key, `must be removed`. Group `out.issues` the same way, which also works in a [precompiled](https://arktype.io/docs/precompile) build, where `flatByPath` isn't available, and build `z.treeifyError(error)`'s tree from each issue's `path`:
+   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. A `.strict()` object's unrecognized key is a form error in Zod, and in ArkType an error at that key, `must be removed`. Group `out.issues` the same way, and build `z.treeifyError(error)`'s tree from each issue's `path`:
 
 ```ts
 // error.flatten() or z.flattenError(error)
@@ -212,7 +212,8 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.startsWith("a")`, `.endsWith("a")`, `.includes("a")` | `/^a/`, `/a$/`, `/a/`, escaping regex characters                                     |
 | `z.ipv4()`, `z.ipv6()`, `.ip()` (Zod 3)                | `"string.ip.v4"`, `"string.ip.v6"`, `"string.ip"`                                    |
 | `z.creditCard()`                                       | `"string.creditCard"`, which rejects spaces and hyphens                              |
-| `z.iso.datetime()`, `.datetime()`, `z.iso.date()`      | `"string.date.iso"`, which accepts more; see [Dates and formats](#dates-and-formats) |
+| `z.iso.date()`                                         | `"string.date.iso.date"`                                                             |
+| `z.iso.datetime()`, `.datetime()`                      | `"string.date.iso"`, which accepts more; see [Dates and formats](#dates-and-formats) |
 | `.trim()`, `.toLowerCase()`, `.toUpperCase()`          | `"string.trim"`, `"string.lower"`, `"string.upper"`                                  |
 | `.trim().min(1)`, a check after a transform            | `type("string.trim").to("string >= 1")`                                              |
 
@@ -232,30 +233,30 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 
 ### Objects
 
-| Zod                                                     | ArkType                                                                                            |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `z.object({ ... })`                                     | `type({ ... })`, nested objects as plain objects                                                   |
-| `.optional()` on a property                             | `"key?": "T"`, or `key: T.optional()` for a Type in a variable                                     |
-| `.optional()` anywhere else                             | `"T \| undefined"` or `T.or("undefined")`                                                          |
-| `.exactOptional()`, `.exactPartial()`                   | `"key?": "T"`, `.partial()`, without `exactOptionalPropertyTypes: false` in the config             |
-| `.nullable()`, `.nullish()`                             | `"T \| null"`, `"key?": "T \| null"`                                                               |
-| `.default(x)` on a property                             | `key: "number = 0"` or `key: T.default(x)`                                                         |
-| `.default([])`, `.default({})`                          | `key: "string[] = []"`, `key: "object = {}"`, or `key: T.default(() => [])` for a Type: a function |
-| `.default(x)` anywhere else, like one env variable's    | `type("T \| undefined").pipe(v => v ?? x)`: a default belongs to a key                             |
-| `.catch(x)`                                             | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#fallbacks)                        |
-| `.extend({ ... })`, `.safeExtend({ ... })`, `.merge(B)` | `.merge({ ... })`, `.merge(B)`                                                                     |
-| `.pick({ a: true })`, `.omit({ a: true })`              | `.pick("a")`, `.omit("a")`                                                                         |
-| `.partial()`, `.required()`, `.keyof()`                 | same names                                                                                         |
-| `.required()` on a key with a default                   | `.required()`, which rejects `undefined` there where Zod's still fills in the default              |
-| `.deepPartial()` (Zod 3), `z.deepPartial(T)`            | no equivalent: call `.partial()` on each nested object's Type                                      |
-| any of those on a schema with a `.refine()`             | on the object before its `.narrow()`, see [Composing objects](#composing-objects)                  |
-| `T.shape.a`, `Object.keys(T.shape)`                     | `T.get("a")`, `T.props.map(prop => prop.key)`                                                      |
-| `z.object({ a: T.shape.a, b: B })`, to reuse a key      | `T.pick("a").merge({ b: B })`: `T.get("a")` drops `?` and defaults, adding `\| undefined`          |
-| `.strict()`, `z.strictObject`                           | `"+": "reject"` in the object, or `T.onUndeclaredKey("reject")`                                    |
-| `.passthrough()`, `.loose()`, `z.looseObject`           | `"+": "ignore"` in the object, or `T.onUndeclaredKey("ignore")`                                    |
-| the same, where code reads the extra keys               | `"[string]": "unknown"` beside it, which infers the index signature Zod's type had                 |
-| `.strip()`, the default `z.object`                      | the default once configured, or `"+": "delete"`                                                    |
-| `.catchall(T)`                                          | `"[/^(?!a$\|b$)/]": T`, `a` and `b` the declared keys                                              |
+| Zod                                                     | ArkType                                                                                                         |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `z.object({ ... })`                                     | `type({ ... })`, nested objects as plain objects                                                                |
+| `.optional()` on a property                             | `"key?": "T"`, or `key: T.optional()` for a Type in a variable                                                  |
+| `.optional()` anywhere else                             | `"T \| undefined"` or `T.or("undefined")`                                                                       |
+| `.exactOptional()`, `.exactPartial()`                   | `"key?": "T"`, `.partial()`, without `exactOptionalPropertyTypes: false` in the config                          |
+| `.nullable()`, `.nullish()`                             | `"T \| null"`, `"key?": "T \| null"`                                                                            |
+| `.default(x)` on a property                             | `key: "number = 0"` or `key: T.default(x)`                                                                      |
+| `.default([])`, `.default({})`                          | `key: "string[] = []"`, `key: "object = {}"`, or `key: T.default(() => [])` for a Type: a function              |
+| `.default(x)` anywhere else, like one env variable's    | `type("T \| undefined").pipe(v => v ?? x)`: a default belongs to a key                                          |
+| `.catch(x)`                                             | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#fallbacks)                                     |
+| `.extend({ ... })`, `.safeExtend({ ... })`, `.merge(B)` | `.merge({ ... })`, `.merge(B)`                                                                                  |
+| `.pick({ a: true })`, `.omit({ a: true })`              | `.pick("a")`, `.omit("a")`                                                                                      |
+| `.partial()`, `.required()`, `.keyof()`                 | same names; selective `.partial({ a: true })` / `.required({ a: true })` are `.partial("a")` / `.required("a")` |
+| `.required()` on a key with a default                   | `.required()`, which rejects `undefined` there where Zod's still fills in the default                           |
+| `.deepPartial()` (Zod 3), `z.deepPartial(T)`            | no equivalent: call `.partial()` on each nested object's Type                                                   |
+| any of those on a schema with a `.refine()`             | on the object before its `.narrow()`, see [Composing objects](#composing-objects)                               |
+| `T.shape.a`, `Object.keys(T.shape)`                     | `T.get("a")`, `T.props.map(prop => prop.key)`                                                                   |
+| `z.object({ a: T.shape.a, b: B })`, to reuse a key      | `T.pick("a").merge({ b: B })`: `T.get("a")` drops `?` and defaults, adding `\| undefined`                       |
+| `.strict()`, `z.strictObject`                           | `"+": "reject"` in the object, or `T.onUndeclaredKey("reject")`                                                 |
+| `.passthrough()`, `.loose()`, `z.looseObject`           | `"+": "ignore"` in the object, or `T.onUndeclaredKey("ignore")`                                                 |
+| the same, where code reads the extra keys               | `"[string]": "unknown"` beside it, which infers the index signature Zod's type had                              |
+| `.strip()`, the default `z.object`                      | the default once configured, or `"+": "delete"`                                                                 |
+| `.catchall(T)`                                          | `"[/^(?!a$\|b$)/]": T`, `a` and `b` the declared keys                                                           |
 
 ### Arrays, tuples and records
 
@@ -275,33 +276,33 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 
 ### Unions and recursion
 
-| Zod                                    | ArkType                                                                        |
-| -------------------------------------- | ------------------------------------------------------------------------------ |
-| `z.union([A, B])`, `A.or(B)`           | `A.or(B)`, `"string \| number"`                                                |
-| `z.discriminatedUnion("kind", [A, B])` | `A.or(B)`: ArkType finds the discriminant itself                               |
-| `z.union([Item, z.array(Item)])`       | a `.pipe()` that picks the branch, see [Unions of objects](#unions-of-objects) |
-| `z.intersection(A, B)`, `A.and(B)`     | `A.and(B)`                                                                     |
-| `z.lazy(() => T)`, a getter            | `"this"` or a scope, see [Recursion](#recursion-needs-no-annotation)           |
+| Zod                                    | ArkType                                                              |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| `z.union([A, B])`, `A.or(B)`           | `A.or(B)`, `"string \| number"`                                      |
+| `z.discriminatedUnion("kind", [A, B])` | `A.or(B)`: ArkType finds the discriminant itself                     |
+| `z.union([Item, z.array(Item)])`       | `Item.or(Item.array())`, see [Unions of objects](#unions-of-objects) |
+| `z.intersection(A, B)`, `A.and(B)`     | `A.and(B)`                                                           |
+| `z.lazy(() => T)`, a getter            | `"this"` or a scope, see [Recursion](#recursion-needs-no-annotation) |
 
 ### Refinements and transforms
 
-| Zod                                                           | ArkType                                                                                                            |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `.refine(fn, "Message")`                                      | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: "Message" }))`                                               |
-| `.refine(fn, { message, path: ["key"] })`                     | the same, with `ctx.reject({ message, relativePath: ["key"] })`                                                    |
-| `.superRefine(fn)`, `.check(fn)`, several `addIssue`s         | `ctx.error({ message, relativePath })` for each, see [Refinements](#refinements)                                   |
-| `.transform(fn)`, `.pipe(T)`                                  | `.pipe(fn)`, `.to(T)`                                                                                              |
-| a transform that fails: `ctx.addIssue(...)`, `return z.NEVER` | `.pipe((v, ctx) => ok ? result : ctx.error({ message }))`                                                          |
-| `z.preprocess(fn, T)`                                         | `type("unknown").pipe(fn).to(T)`                                                                                   |
-| `z.coerce.number()`, `z.coerce.date()`                        | `type("unknown").pipe(Number).to("number")`, see [Coercion](#coercion-is-a-parse)                                  |
-| `z.coerce.string()`, `z.coerce.boolean()`                     | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)`                                                    |
-| `z.stringbool()`                                              | a `.pipe()` over the strings you accept, see [Coercion](#coercion-is-a-parse)                                      |
-| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")`               | `type("unknown").narrow((v): v is T => fn(v))`, then `.message("Message")`                                         |
-| `.brand<"Id">()`                                              | `.brand("Id")` or `"string#Id"`                                                                                    |
-| `z.codec(In, Out, { decode, encode })`                        | `codec(In, Out, { decode, encode })` from `arktype/codecs`                                                         |
-| `T.decode(x)`, `T.encode(x)`, `T.safeEncode(x)`               | `T.assert(x)`, `T.encode.assert(x)`, `T.encode(x)`                                                                 |
-| `z.input(T)`, `z.output(T)`, as schemas                       | `T.in`, `T.out`                                                                                                    |
-| `.describe(text)`, `.meta({ description })`                   | `.describe(text)` where a model or an OpenAPI document reads it, else a comment; see [Descriptions](#descriptions) |
+| Zod                                                           | ArkType                                                                                                                       |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `.refine(fn, "Message")`                                      | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: "Message" }))`                                                          |
+| `.refine(fn, { message, path: ["key"] })`                     | the same, with `ctx.reject({ message, relativePath: ["key"] })`                                                               |
+| `.superRefine(fn)`, `.check(fn)`, several `addIssue`s         | `ctx.error({ message, relativePath })` for each, see [Refinements](#refinements)                                              |
+| `.transform(fn)`, `.pipe(T)`                                  | `.pipe(fn)`, `.to(T)`                                                                                                         |
+| a transform that fails: `ctx.addIssue(...)`, `return z.NEVER` | `.pipe((v, ctx) => ok ? result : ctx.error({ message }))`                                                                     |
+| `z.preprocess(fn, T)`                                         | `type("unknown").pipe(fn).to(T)`                                                                                              |
+| `z.coerce.number()`, `z.coerce.date()`                        | `type("unknown").pipe(Number).to("number")`, see [Coercion](#coercion-is-a-parse)                                             |
+| `z.coerce.string()`, `z.coerce.boolean()`                     | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)`                                                               |
+| `z.stringbool()`                                              | `"string.boolean.parse"` for `"true"` / `"false"`, or a `.pipe()` for Zod's broader set; see [Coercion](#coercion-is-a-parse) |
+| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")`               | `type("unknown").narrow((v): v is T => fn(v))`, then `.message("Message")`                                                    |
+| `.brand<"Id">()`                                              | `.brand("Id")` or `"string#Id"`                                                                                               |
+| `z.codec(In, Out, { decode, encode })`                        | `codec(In, Out, { decode, encode })` from `arktype/codecs`                                                                    |
+| `T.decode(x)`, `T.encode(x)`, `T.safeEncode(x)`               | `T.assert(x)`, `T.encode.assert(x)`, `T.encode(x)`                                                                            |
+| `z.input(T)`, `z.output(T)`, as schemas                       | `T.in`, `T.out`                                                                                                               |
+| `.describe(text)`, `.meta({ description })`                   | `.describe(text)` where a model or an OpenAPI document reads it, else a comment; see [Descriptions](#descriptions)            |
 
 ### Error messages
 
@@ -344,18 +345,18 @@ Every row is in [Custom messages](#custom-messages), with what each says.
 
 Code that reads `issue.code`, like an API's error translator or a `customError` map, needs ArkType's [codes](https://arktype.io/docs/errors#error-codes):
 
-| Zod                                          | ArkType                                                                                    |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `invalid_type`                               | `required`, `domain`, `proto` or `discriminant`, as below                                  |
-| `invalid_value`                              | `unit` for one literal, `discriminant` for several                                         |
-| `invalid_union`                              | `discriminant`, or `union` where neither a type nor a literal key tells the branches apart |
-| `too_small`, `too_big` for a number          | `min`, `max`                                                                               |
-| `too_small`, `too_big` for a string or array | `minLength`, `maxLength`, or `exactLength` for `.length(n)` and a tuple                    |
-| `too_small`, `too_big` for a `Date`          | `after`, `before`                                                                          |
-| `not_multiple_of`, `.int()`'s `invalid_type` | `divisor`                                                                                  |
-| `invalid_format`                             | `pattern`, or `predicate` for `string.url`                                                 |
-| `unrecognized_keys`                          | `undeclared`, an issue for each key, at the key                                            |
-| `custom`                                     | `predicate`                                                                                |
+| Zod                                          | ArkType                                                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid_type`                               | `required`, `domain`, `proto` or `discriminant`, as below                                                                                   |
+| `invalid_value`                              | `unit` for one literal, `discriminant` for several                                                                                          |
+| `invalid_union`                              | `discriminant`, or `union` where neither a type nor a literal key tells the branches apart                                                  |
+| `too_small`, `too_big` for a number          | `min`, `max`                                                                                                                                |
+| `too_small`, `too_big` for a string or array | `minLength`, `maxLength`, or `exactLength` for `.length(n)` and a tuple                                                                     |
+| `too_small`, `too_big` for a `Date`          | `after`, `before`                                                                                                                           |
+| `not_multiple_of`, `.int()`'s `invalid_type` | `divisor`                                                                                                                                   |
+| `invalid_format`                             | `pattern`, or `predicate` for `string.url` and `string.date` (`string.url.http` and `string.creditCard` use both `pattern` and `predicate`) |
+| `unrecognized_keys`                          | `undeclared`, an issue for each key, at the key                                                                                             |
+| `custom`                                     | `predicate`                                                                                                                                 |
 
 A `z.union()` of objects often reports one `invalid_union` issue at the union's own path, with each branch's issues inside it. Here a literal key like `type` picks the branch, as in a `z.discriminatedUnion()`, so the issues are that branch's own, each at its own path, and a value that matches no branch gets a `discriminant` issue at that key.
 
@@ -511,7 +512,7 @@ const Tags = type("string | string[]")
 
 ### Coercion is a parse
 
-ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
+ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.boolean.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
 
 ```ts
 // z.coerce.number(), which is Number(value) for any input
@@ -537,8 +538,8 @@ const When = type("unknown")
 const Page = type("string.numeric.parse")
 
 // z.stringbool() accepts "true", "1", "yes", "on", "y" and "enabled", their
-// opposites, and any casing of them; write the set you need
-const Flag = type("'true' | 'false'").pipe(s => s === "true")
+// opposites, and any casing of them; for strict "true" | "false", use:
+const Flag = type("string.boolean.parse")
 ```
 
 - A default is an input, so a transform's default is what it parses, as Zod's `.prefault()` is: `z.stringbool().default(false)` is `Flag.default("false")`.
@@ -655,6 +656,7 @@ const Sku = type.string
 	.message("SKU must be text", "domain")
 ```
 
+- Pure predicate keywords (`string.url`, `string.date`) use code `"predicate"`, not `"pattern"` — passing `"pattern"` to them silently does nothing. Hybrid pattern+predicate keywords (`string.url.http`, `string.creditCard`) run both checks, so use a whole-value `.message(text)` (or configure both `"pattern"` and `"predicate"`) to cover every invalid string. `string.json` and `string.regex` call `ctx.reject()` inside their predicate, so `.message()` doesn't override their failure text.
 - Zod says `required_error` for a key given `undefined` too, which here is a value of the wrong type. To keep that, write `"domain"`'s message as `error => (error.data === undefined ? "SKU is required" : "SKU must be text")`.
 - A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message passed to a constraint's method is that constraint's alone, so two checks of one kind, like two patterns, or an array's length and its elements', each keep their own, as in `Tags` below.
 - A function, like Zod 4's `error: issue => ...`, receives the error: `error.data` is Zod's `issue.input`, and once `error.code === "min"` is checked, `error.rule` is its `issue.minimum`. A missing key doesn't say a function's message, so give `"self"` a string.
@@ -719,30 +721,29 @@ The key's input type is `unknown`, where `z.input` gave the inner schema's.
 
 ArkType finds a union's discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
 
-An object transforms its input when it deletes undeclared keys, by `"+": "delete"` or the global option, or when one of its keys has a default or a transform. A union can't hold a transform whose input another branch also accepts: it throws a `ParseError` saying the union is indeterminate, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. These do:
-
-- two objects with no such key, like `{ uri, text }` and `{ uri, blob }`
-- an object beside an array, a `Date` or another class's instance, which could hold the object's keys, as in `Item.or(Item.array())`
-- a `Record` beside an array
-
-For those, choose the branch in a `.pipe()`, which infers the union of what they return:
+Objects that delete undeclared keys, by `"+": "delete"` or the global option, can overlap in a union, as `{ uri, text }` and `{ uri, blob }` do, or an object and an array of it in `Item.or(Item.array())`. Data more than one branch accepts keeps each key any of them declares, where `z.union` returns what the first branch that matches does:
 
 ```ts
-const Item = type({ "+": "delete", id: "string" })
-const Items = Item.array()
-
-// z.union([Item, z.array(Item)])
-const OneOrMany = type("object").pipe(v =>
-	Array.isArray(v) ? Items(v) : Item(v)
-)
-
 const Text = type({ "+": "delete", uri: "string", text: "string" })
+const Blob = type({ "+": "delete", uri: "string", blob: "string" })
+
+const Contents = Text.or(Blob)
+
+// { uri: "u", blob: "b", text: "t" }
+// z.union([Text, Blob]) returns { uri: "u", text: "t" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
+```
+
+A key's default or transform, like `.default()` or `string.trim`, can't be joined that way, and neither can an object holding a recursive type, like a scope alias that refers to itself or `"this"`. A union throws a `ParseError` saying it's indeterminate where an object holding one of those accepts data another branch also accepts, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. For those that do, or to return what the first matching branch does, choose the branch in a `.pipe()`, which infers the union of what they return:
+
+```ts
+const Text = type({ "+": "delete", uri: "string", text: "string.trim" })
 const Blob = type({ "+": "delete", uri: "string", blob: "string" })
 
 // z.union([Text, Blob]), which takes the first branch that matches
 const Contents = type("object").pipe(v => {
-	const text = Text(v)
-	return text instanceof type.errors ? Blob(v) : text
+	const out = Text(v)
+	return out instanceof type.errors ? Blob(v) : out
 })
 ```
 
@@ -783,7 +784,7 @@ const types = scope({
 
 Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`ark declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`ark declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once at module scope so they aren't recreated on each call.
 
 ### Composing objects
 
@@ -923,7 +924,7 @@ const parameters = (object: JsonSchema, where: "query" | "path") => {
 }
 ```
 
-With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
+With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes, except for objects that overlap in a union, whose output can hold each other's keys. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
 
 Where you call `toJsonSchema` yourself, a scope can be the registry instead: with [`aliasDefs: true`](https://arktype.io/docs/json-schema/to-json-schema#named-aliases), each alias is written once, by name, and a `$ref` wherever it's used, and a [`defs` fallback](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) collects them into `components`.
 
@@ -933,7 +934,7 @@ Call `toJsonSchema(openapi)` on each Type by name, as above, rather than in a fu
 
 ### Dates and formats
 
-`z.iso.datetime()` and `z.string().datetime()` require a `Z` and, from Zod 4.5, seconds, and `z.iso.date()` a date alone. `string.date.iso` accepts all of those, and offsets and date-times without one, so intersect a pattern to keep rejecting them:
+`z.iso.date()` (and Valibot's `v.isoDate()`) is `string.date.iso.date`, which checks calendar-valid `YYYY-MM-DD` strings and writes `format: "date"` with its `pattern` in JSON Schema. `z.iso.datetime()` and `z.string().datetime()` require a `Z` and, from Zod 4.5, seconds. `string.date.iso` accepts all of those, plus offsets and date-times without one, so intersect a pattern to keep rejecting them:
 
 ```ts
 // z.iso.datetime()
@@ -945,16 +946,16 @@ const Zoned = type("string.date.iso").and(
 )
 
 // z.iso.date()
-const Day = type("string.date.iso").and(/^\d{4}-\d{2}-\d{2}$/)
+const Day = type("string.date.iso.date")
 ```
 
 Zod 3, and Zod 4 before 4.5, also take `2025-01-01T10:00Z`, so write the seconds as optional there: `/T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/`.
 
-Valibot's `v.isoDate()` is `Day` and `v.isoTimestamp()` is `Zoned`. Its `v.isoDateTime()` takes only minutes and no offset, like `2025-01-01T10:00`, so its pattern is `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/`.
+Valibot's `v.isoDate()` is `string.date.iso.date` and `v.isoTimestamp()` is `Zoned`. Its `v.isoDateTime()` takes only minutes and no offset, like `2025-01-01T10:00`, so its pattern is `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/`.
 
-`string.date.iso` checks the calendar as Zod does, so `2020-02-30` fails and `2024-02-29` passes.
+`string.date.iso` and `string.date.iso.date` check the calendar as Zod does, so `2020-02-30` fails and `2024-02-29` passes.
 
-`toJsonSchema()` throws for these, since it writes one `pattern` for a string, and the schema a tool reads through Standard Schema keeps both, the second in an `allOf`. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`, or `format: "date"` for `Day`.
+`toJsonSchema()` throws for `Instant` and `Zoned`, since it writes one `pattern` for a string, and the schema a tool reads through Standard Schema keeps both, the second in an `allOf`. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`. `string.date.iso.date` already writes `format: "date"` and a single `pattern`.
 
 In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
 
@@ -1064,7 +1065,7 @@ Valibot's defaults are Zod's: `v.object` removes undeclared keys, and `v.optiona
 | `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`                   | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                                                                          |
 | `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`                  | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`                                                                       |
 | `v.url`, `v.uuid`, `v.regex(r)`                                          | `"string.url"`, `"string.uuid"`, `/r/`                                                                                                     |
-| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp`                           | `"string.date.iso"` with a pattern for each, see [Dates and formats](#dates-and-formats)                                                   |
+| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp`                           | `"string.date.iso.date"`, and `"string.date.iso"` with a pattern for the others; see [Dates and formats](#dates-and-formats)               |
 | `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()`              | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"`                                                         |
 | `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | `.message("Message", "domain")`, `.message("Message", "pattern")`, `.atLeastLength(8, "Message")`: see [Custom messages](#custom-messages) |
 | `v.check(fn, msg)`, `v.rawCheck`                                         | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                                                                             |

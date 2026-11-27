@@ -20,6 +20,14 @@ contextualize(() => {
 		attest(registry.version).equals(arkUtilVersion)
 	})
 
+	it("names a symbol Symbol.for registered, which nothing holds weakly", () => {
+		const registered = Symbol.for("registeredFor")
+		const name = nameOf(registered)
+		attest(name).snap("registeredFor")
+		attest(nameOf(registered)).equals(name)
+		attest(register(registered)).equals(name)
+	})
+
 	it("counted names never collide", () => {
 		const names = ["counted", "counted", "counted$1", "counted$1$1"].map(name =>
 			nameOf({ [name]: () => {} }[name])

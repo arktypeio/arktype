@@ -27,6 +27,8 @@ import {
 import {
 	assertNoProblemConfig,
 	mergeConfigs,
+	recordFirstType,
+	removedCloneMessage,
 	resolveGlobalConfig,
 	type ArkSchemaConfig,
 	type ResolvedConfig
@@ -68,6 +70,7 @@ import { parseSchema, type RootSchema } from "./parseSchema.ts"
 import {
 	isResolvable,
 	resolveShallowAliases,
+	writeUnresolvableMessage,
 	type Alias
 } from "./roots/alias.ts"
 import { BaseRoot } from "./roots/root.ts"
@@ -284,7 +287,16 @@ export interface ResolvedScopeConfig
 $ark.ambient ??= {} as never
 
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
-	(nodesById[ctx.id] = ctx)
+	nodesById.pin(ctx.id, ctx) as ctx
+
+const publishNode = (ctx: BaseParseContext, node: BaseRoot): BaseRoot => {
+	nodesById.set(ctx.id, node)
+	if (ctx.aliases) {
+		for (const alias of ctx.aliases) alias.target = node
+		ctx.aliases = undefined
+	}
+	return node
+}
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
@@ -351,6 +363,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				throwParseError(writeGlobalOnlyConfigMessage(k))
 		}
 		assertNoProblemConfig(config as ArkSchemaConfig | undefined)
+		if (config && "clone" in config) throwParseError(removedCloneMessage)
 		if (config?.ambient !== undefined) validateAmbientConfig(config.ambient)
 
 		const aliasEntries = Object.entries(def).map(entry =>
@@ -579,6 +592,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			(this._lazy && maybeResolveExport(this._lazy, name)) ??
 			maybeResolveSubalias(this.aliases, name)
 		if (resolution) return resolution
+		// an alias shadows the keyword of its name, including what only the
+		// keyword's submodule holds
+		const dotIndex = name.indexOf(".")
+		if (dotIndex !== -1 && hasOwn(this.aliases, name.slice(0, dotIndex))) return
 		const keyword = maybeResolveSubalias(this.ambient, name)
 		return keyword && (this.res[name] = this.bindKw(keyword))
 	}
@@ -599,16 +616,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		node: BaseRoot
 	): BaseRoot {
 		if (ctx.isReferencedById) {
-			if (nodesById[node.id] !== node) node = withId(node, ctx.id)
-			nodesById[ctx.id] = node
-		} else delete nodesById[ctx.id]
+			if (nodesById.get(node.id) !== node) node = withId(node, ctx.id)
+			publishNode(ctx, node)
+		} else nodesById.delete(ctx.id)
 		return (this.res[name] = node)
 	}
 
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { reduced: true })
-		const ctx = nodesById[pending.id] as BaseParseContext
+		const ctx = nodesById.get(pending.id) as BaseParseContext
 		const mark = $ark.reached?.mark()
 		const resolution = resolving(() =>
 			this.resolveContext(name, ctx, resolveShallowAliases(pending))
@@ -657,6 +674,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		} catch (e) {
 			// reset so the next reference reparses it and throws the same error
 			ctx.phase = "unresolved"
+			nodesById.delete(ctx.id)
 			throw e
 		} finally {
 			openDefinitions.pop()
@@ -674,23 +692,29 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return resolving(() => {
 				// it reaches no definition still open, so its component closes with it
 				if (ctx.lowlink === ctx.index) {
-					for (const member of openMembers.splice(membersStart)) {
-						component.push(member)
+					const members = openMembers.splice(membersStart)
+					component.push(...members)
+					for (const member of members) {
 						member.phase = "resolved"
 						member.$.resolveContext(member.alias!, member, member.resolution!)
 						$ark.reached?.store(mark, member.$.res, member.alias)
 						delete member.resolution
 					}
 				}
-				return node.topAlias ?
+				const resolved =
+					node.topAlias ?
 						this.resolvePending(name, (this.res[name] = withId(node, ctx.id)))
 					:	this.resolveContext(name, ctx, node)
+				if ($ark.cfg && !$ark.cfgFrozenBy && !inProgress.definitions)
+					recordFirstType(resolved, undefined, name)
+				return resolved
 			})
 		} catch (e) {
 			// a deferred check failed; reparsing would reuse checked nodes
 			for (const failed of component) {
 				failed.phase = "failed"
 				failed.error = e
+				nodesById.delete(failed.id)
 				failed.$.res[failed.alias!] = failed
 			}
 			throw e
@@ -707,7 +731,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const isScopeAlias = hasOwn(this.aliases, name)
 		let def: unknown =
 			isScopeAlias ? this.aliases[name]
-			: hasOwn(this.ambient, name) ? this.ambient[name]
+			: !isPrivateKey(name) && hasOwn(this.ambient, name) ? this.ambient[name]
 			: undefined
 
 		if (!def) return this.maybeResolveSubalias(name)
@@ -723,6 +747,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 			ctx.phase = "resolving"
 			try {
 				def = defining(() => this.normValue(ctx.def))
+			} catch (e) {
+				if (ctx.aliases) {
+					const retry = () => this.resolveRoot(name)
+					for (const alias of ctx.aliases) alias.c.aliasResolve = retry
+				}
+				nodesById.delete(ctx.id)
+				throw e
 			} finally {
 				// registered while the call runs, so an alias parsed during it resolves by name
 				delete this.res[name]
@@ -732,10 +763,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 				ctx.phase = "unresolved"
 				this.res[name] = ctx
 				// parsing its definition discards checks still open, so they're made first
-				assertUnchecked()
+				try {
+					assertUnchecked()
+				} catch (e) {
+					if (ctx.aliases) {
+						const retry = () => this.resolveRoot(name)
+						for (const alias of ctx.aliases) alias.c.aliasResolve = retry
+					}
+					nodesById.delete(ctx.id)
+					throw e
+				}
 				return this.maybeResolve(name)
 			}
-			delete nodesById[ctx.id]
+			nodesById.delete(ctx.id)
 		} else def = this.normValue(def)
 
 		if (hasArkKind(def, "generic")) {
@@ -869,7 +909,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return new RootModule(
 			flatMorph(namesToExport, (_, name) => [
 				name,
-				this._exports![name]
+				hasOwn(this._exports!, name) ? this._exports![name] : undefined
 			]) as never
 		) as never
 	}
@@ -936,7 +976,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			input = { ...input, unit: 0 } as never
 
 		bootstrap()
-		return this.bindRef(
+		const result = this.bindRef(
 			parseNode({
 				kind,
 				def: input as NodeInput,
@@ -945,7 +985,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 				alias: opts.alias,
 				reduced: opts.reduced
 			})
-		) as never
+		)
+		if (
+			$ark.cfg &&
+			!$ark.cfgFrozenBy &&
+			!inProgress.definitions &&
+			!inProgress.resolutions &&
+			hasArkKind(result, "root")
+		)
+			recordFirstType(result)
+		return result as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -954,23 +1003,29 @@ export abstract class BaseScope<$ extends {} = {}> {
 	/** parses a definition in this scope to a node */
 	parseDef(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
 		if (hasArkKind(def, "root") && isInstanceOf(def, BaseRoot))
-			return this.bindRef(def)
+			return this.bindRef(def.internal)
 
 		const ctxInputOrNode = this.preparseOwn(def, opts)
 		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
-		let node = this.parseOpenDef(def, ctx)
-		node = resolving(() => {
-			if (node.topAlias && !inProgress.definitions)
-				node = resolveShallowAliases(node)
+		let node: BaseRoot
+		try {
+			node = this.parseOpenDef(def, ctx)
+			node = resolving(() => {
+				if (node.topAlias && !inProgress.definitions)
+					node = resolveShallowAliases(node)
 
-			// if the node is recursive e.g. { box: "this" }, we need to make sure it
-			// has the original id from context so that its references compile correctly
-			if (ctx.isReferencedById) nodesById[ctx.id] = node = withId(node, ctx.id)
-			else delete nodesById[ctx.id]
-			return node
-		})
+				// if the node is recursive e.g. { box: "this" }, we need to make sure it
+				// has the original id from context so that its references compile correctly
+				if (ctx.isReferencedById) node = publishNode(ctx, withId(node, ctx.id))
+				else nodesById.delete(ctx.id)
+				return node
+			})
+		} catch (e) {
+			nodesById.delete(ctx.id)
+			throw e
+		}
 		if (!ctx.isReferencedAsThis || ctx.name) return node
 		// parsed again, since the nodes that reference it have printed `this`
 		return printSelfAsThis(
@@ -1004,10 +1059,26 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		// resolving aliases can throw, so they resolve on definition
 		if (node.hasAlias) resolveReachedAliases(node)
-		if (node.unitFn || !jit) return node
+		if (node.unitFn || !jit) {
+			if (
+				$ark.cfg &&
+				!$ark.cfgFrozenBy &&
+				!inProgress.definitions &&
+				!inProgress.resolutions
+			)
+				recordFirstType(node)
+			return node
+		}
 		bindPrecompiledUnits?.([node])
-		if (node.unitFn || !canJit(this.cfg)) return node
-		node.deferJit()
+		const canCompile = !node.unitFn && canJit(this.cfg)
+		if (
+			$ark.cfg &&
+			!$ark.cfgFrozenBy &&
+			!inProgress.definitions &&
+			!inProgress.resolutions
+		)
+			recordFirstType(node)
+		if (canCompile) node.deferJit()
 		return node
 	}
 
@@ -1022,7 +1093,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 		// compiling binds what it checked before, unless the host refused
 		if (node.c.preJit) {
-			node.allows = node.c.preJit
+			if (Object.isExtensible(node)) node.allows = node.c.preJit
 			node.c.preJit = undefined
 		}
 	}
@@ -1164,6 +1235,10 @@ export const resolveAmbient = (name: string): BaseRoot | undefined => {
 
 ambientResolver.resolve = resolveAmbient
 
+// a module from import() holds each alias under one, to be spread into a
+// scope rather than read through
+const isPrivateKey = (key: string): boolean => key[0] === "#"
+
 const maybeResolveSubalias = (
 	base: Dict,
 	name: string
@@ -1174,14 +1249,16 @@ const maybeResolveSubalias = (
 	const dotPrefix = name.slice(0, dotIndex)
 	// if the name includes ".", but the prefix is not an alias, it
 	// might be something like a decimal literal, so just fall through to return
-	if (!hasOwn(base, dotPrefix)) return
+	if (isPrivateKey(dotPrefix) || !hasOwn(base, dotPrefix)) return
 	const prefixSchema = base[dotPrefix]
 	if (!hasArkKind(prefixSchema, "module"))
 		return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
 
 	const subalias = name.slice(dotIndex + 1)
 	const resolution =
-		hasOwn(prefixSchema, subalias) ? prefixSchema[subalias] : undefined
+		!isPrivateKey(subalias) && hasOwn(prefixSchema, subalias) ?
+			prefixSchema[subalias]
+		:	undefined
 
 	if (resolution === undefined)
 		return maybeResolveSubalias(prefixSchema, subalias)
@@ -1264,12 +1341,7 @@ const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 	return result
 }
 
-export const writeUnresolvableMessage = <token extends string>(
-	token: token
-): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
-
-export type writeUnresolvableMessage<token extends string> =
-	`'${token}' is unresolvable`
+export { writeUnresolvableMessage }
 
 export const writeNonSubmoduleDotMessage = <name extends string>(
 	name: name

@@ -39,9 +39,9 @@ contextualize(() => {
 			attest(() =>
 				inferred({
 					type: "object",
-					title: 5,
-					description: null,
-					deprecated: "yes",
+					title: "User",
+					description: "A user object",
+					deprecated: true,
 					$comment: ["array"],
 					"x-nested": { type: "strin", minLength: -1 },
 					errorMessage: { type: "must be an object" },
@@ -687,13 +687,258 @@ contextualize(() => {
 					type: "number",
 					minimum: 0,
 					// @ts-expect-error
-					exclusiveMinimum: true,
-					// @ts-expect-error
 					unevaluatedProperties: { type: "boolean" }
 				})
+			).type.errors.snap(
+				`Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`
+			)
+			// under draft-07, 2019-09+ keywords are ignored annotations both statically and at runtime
+			attest(() =>
+				inferred({
+					$schema: "http://json-schema.org/draft-07/schema#",
+					type: "object",
+					unevaluatedProperties: false,
+					unevaluatedItems: false,
+					$dynamicRef: "#foo",
+					$recursiveRef: "#",
+					properties: {
+						nested: { type: "object", unevaluatedProperties: false }
+					}
+				})
+			).type.errors.is("")
+			attest<
+				[true, false],
+				[
+					isValid<{
+						$schema: "http://json-schema.org/draft-07/schema#"
+						unevaluatedProperties: false
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2020-12/schema"
+						unevaluatedProperties: false
+					}>
+				]
+			>()
+		})
+
+		it("annotation keyword value types", () => {
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					description: 5
+				})
+			).type.errors("Type 'number' is not assignable to type 'string'.")
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					title: { bad: true }
+				})
+			).type.errors("Type '{ bad: true; }' is not assignable to type 'string'.")
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					examples: { a: 1 }
+				})
+			).type.errors(
+				"Object literal may only specify known properties, and 'a' does not exist in type 'readonly unknown[]'."
+			)
+			attest(() =>
+				inferred({
+					type: "string",
+					// @ts-expect-error
+					deprecated: "yes"
+				})
+			).type.errors("Type 'string' is not assignable to type 'boolean'.")
+			attest<
+				[true, false, false, false, false],
+				[
+					isValid<{
+						type: "string"
+						title?: string | undefined
+						description?: string | undefined
+						examples?: unknown[] | undefined
+						deprecated?: boolean | undefined
+					}>,
+					isValid<{ description: 5 }>,
+					isValid<{ title: { bad: true } }>,
+					isValid<{ examples: { a: 1 } }>,
+					isValid<{ deprecated: "yes" }>
+				]
+			>()
+		})
+
+		it("prefixItems beside array items", () => {
+			attest(() =>
+				inferred({
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					// @ts-expect-error
+					items: [{ type: "number" }]
+				})
+			).type.errors("items must be a schema beside prefixItems")
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					// @ts-expect-error
+					items: [{ type: "number" }]
+				})
+			).type.errors("items must be a schema beside prefixItems")
+			// draft-07 and 2019-09 treat prefixItems as an unknown keyword
+			attest(() =>
+				inferred({
+					$schema: "http://json-schema.org/draft-07/schema#",
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					items: [{ type: "number" }]
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2019-09/schema",
+					type: "array",
+					prefixItems: [{ type: "string" }],
+					items: [{ type: "number" }]
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2019-09/schema",
+					type: "array",
+					prefixItems: 5
+				})
+			).type.errors.is("")
+			attest<
+				[false, false, true, true, true],
+				[
+					isValid<{
+						type: "array"
+						prefixItems: [{ type: "string" }]
+						items: [{ type: "number" }]
+					}>,
+					isValid<{
+						type: "array"
+						prefixItems: [{ type: "string" }]
+						items: { type: "boolean" } | [{ type: "number" }]
+					}>,
+					isValid<{
+						type: "array"
+						prefixItems?: [{ type: "string" }]
+						items: [{ type: "number" }]
+					}>,
+					isValid<{
+						$schema: "http://json-schema.org/draft-07/schema#"
+						type: "array"
+						prefixItems: 5
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2019-09/schema"
+						type: "array"
+						prefixItems: 5
+						items: [{ type: "number" }]
+					}>
+				]
+			>()
+		})
+
+		it("draft-04 boolean exclusive bounds", () => {
+			attest(() =>
+				inferred({
+					type: "number",
+					minimum: 0,
+					exclusiveMinimum: true,
+					maximum: 10,
+					exclusiveMaximum: true
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					$schema: "http://json-schema.org/draft-04/schema#",
+					type: "number",
+					minimum: 0,
+					exclusiveMinimum: true,
+					maximum: 10,
+					exclusiveMaximum: false
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					type: "number",
+					exclusiveMinimum: false,
+					exclusiveMaximum: false
+				})
+			).type.errors.is("")
+			attest<
+				[true, true],
+				[
+					isValid<{ minimum: any; exclusiveMinimum: true }>,
+					isValid<{ maximum: any; exclusiveMaximum: true }>
+				]
+			>()
+			attest(() =>
+				inferred({
+					type: "number",
+					// @ts-expect-error
+					exclusiveMinimum: true,
+					// @ts-expect-error
+					exclusiveMaximum: true
+				})
 			).type.errors
-				.snap(`Type 'true' is not assignable to type '"boolean exclusiveMinimum isn't supported by fromJsonSchema\u200b"'.
-Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`)
+				.snap(`Type 'true' is not assignable to type '"exclusiveMinimum can't be true without minimum\u200b"'.
+Type 'true' is not assignable to type '"exclusiveMaximum can't be true without maximum\u200b"'.`)
+			// explicit draft-06 / draft-07 / 2019-09 / 2020-12 reject boolean exclusive bounds
+			attest(() =>
+				inferred({
+					$schema: "https://json-schema.org/draft/2020-12/schema",
+					type: "number",
+					minimum: 0,
+					// @ts-expect-error
+					exclusiveMinimum: true,
+					maximum: 10,
+					// @ts-expect-error
+					exclusiveMaximum: false
+				})
+			).type.errors.snap(`Type 'boolean' is not assignable to type 'number'.
+Type 'boolean' is not assignable to type 'number'.`)
+			attest<
+				[false, false, false, false, true],
+				[
+					isValid<{
+						$schema: "http://json-schema.org/draft-06/schema#"
+						type: "number"
+						minimum: 0
+						exclusiveMinimum: true
+					}>,
+					isValid<{
+						$schema: "http://json-schema.org/draft-07/schema#"
+						type: "number"
+						minimum: 0
+						exclusiveMinimum: false
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2019-09/schema"
+						type: "number"
+						maximum: 10
+						exclusiveMaximum: true
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2020-12/schema"
+						type: "number"
+						maximum: 10
+						exclusiveMaximum: false
+					}>,
+					isValid<{
+						$schema: "https://json-schema.org/draft/2020-12/schema"
+						type: "number"
+						exclusiveMinimum: 0
+						exclusiveMaximum: 10
+					}>
+				]
+			>()
 		})
 
 		it("nullable", () => {
@@ -927,6 +1172,57 @@ Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"
 				// @ts-expect-error
 				fromJsonSchema(s)
 			).type.errors("Argument of type 'schema' is not assignable")
+		})
+	})
+
+	describe("draft-07 keyword gating", () => {
+		it("ignores 2019-09+ keywords under draft-07 matching runtime", () => {
+			attest<
+				true,
+				isValid<{
+					$schema: "http://json-schema.org/draft-07/schema#"
+					prefixItems: "ignored"
+					minContains: -1
+					maxContains: "ignored"
+					dependentRequired: 123
+					dependentSchemas: "ignored"
+				}>
+			>()
+			attest<
+				false,
+				isValid<{
+					$schema: "http://json-schema.org/draft-07/schema#"
+					prefixItems: "ignored"
+					minLength: -1
+				}>
+			>()
+			attest<false, isValid<{ prefixItems: "invalid" }>>()
+			attest<false, isValid<{ minContains: -1 }>>()
+			attest<false, isValid<{ maxContains: "invalid" }>>()
+			attest<false, isValid<{ dependentRequired: 123 }>>()
+			attest<false, isValid<{ dependentSchemas: "invalid" }>>()
+
+			const T = fromJsonSchema({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				prefixItems: "ignored",
+				minContains: -1,
+				maxContains: "ignored",
+				dependentRequired: 123,
+				dependentSchemas: "ignored"
+			})
+			attest(T.allows([1, "a"])).equals(true)
+			attest(T.allows("nope")).equals(false)
+
+			// union of draft-07 and 2020-12 schemas distributes completions per branch
+			type UnionSchema =
+				| {
+						$schema: "http://json-schema.org/draft-07/schema#"
+						type: "array"
+						prefixItems: "ignored"
+				  }
+				| { type: "string" }
+			attest<true, isValid<UnionSchema>>()
 		})
 	})
 })

@@ -109,6 +109,18 @@ export const corpus: [def: unknown, inputs: () => unknown[]][] = [
 		]
 	],
 	[{ "+": "delete", a: "string" }, () => [{ a: "a", b: 1 }, { b: 1 }]],
+	[
+		[
+			{ "+": "delete", uri: "string", "text?": "string" },
+			"|",
+			{ "+": "delete", uri: "string", "blob?": "string" }
+		],
+		() => [
+			{ uri: "a", text: "t", blob: "b", z: 1 },
+			{ uri: "a", text: 1, blob: "b" },
+			{ uri: 1 }
+		]
+	],
 	[{ [sym]: "string" }, () => [{ [sym]: "a" }, { [sym]: 1 }, {}]],
 	[
 		"Date >= d'2000-01-01T00:00:00.000Z'",

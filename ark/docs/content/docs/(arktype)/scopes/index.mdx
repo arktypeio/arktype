@@ -87,6 +87,25 @@ const superScope = scope({
 })
 ```
 
+To infer every exported alias's output or input type at once — recursing into nested submodules and skipping generic aliases — use `Module.infer` / `Module.infer.In` or `Scope.infer` / `Scope.infer.In`:
+
+```ts
+import { scope, type Module, type Scope } from "arktype"
+
+const $ = scope({
+	id: "string",
+	user: { id: "id", age: "number = 0" }
+})
+
+const types = $.export()
+
+// { id: string; user: { id: string; age: number } }
+type Outputs = Module.infer<typeof types>
+
+// { id: string; user: { id: string; age?: number } }
+type Inputs = Scope.infer.In<typeof $>
+```
+
 ## Cyclic types
 
 Aliases can reference themselves and each other:
@@ -136,7 +155,7 @@ types.Package(arktype)
 
 A cycle must pass through an object, array or morph. An alias that resolves to itself without one, like `a` in `scope({ a: "a | string" })`, is a type error and throws a `ParseError`.
 
-For a single recursive `Type`, you don't need a scope: use the [`this`](/docs/expressions#this) keyword. Define cyclic scopes and recursive Types once, at module scope: each stays in memory for the life of the process.
+For a single recursive `Type`, you don't need a scope: use the [`this`](/docs/expressions#this) keyword. Define cyclic scopes and recursive Types once at module scope so they aren't recreated on each call.
 
 <Callout type="warn" title="Cyclic types may display as any">
 

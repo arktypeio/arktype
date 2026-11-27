@@ -785,30 +785,77 @@ export const pathOf = (issue: {
 	return path
 }
 
+/** an issue `lineOf` can format: an `ArkError`, standalone `ArkIssue`, or `PathedIssue` */
+export interface ReadableIssue {
+	readonly path: readonly PropertyKey[]
+	readonly message?: string | undefined
+	readonly code?: ArkErrorCode | undefined
+	readonly expected?: string | undefined
+}
+
+let formatArkError: ((error: ReadableIssue) => string | undefined) | undefined
+
+/** @internal registered by errors.ts so arktype and arktype/runtime share one lineOf */
+export const registerErrorLineFormatter = (
+	formatter: (error: ReadableIssue) => string | undefined
+): void => {
+	formatArkError = formatter
+}
+
+const isLabeledIssue = (
+	issue: ReadableIssue,
+	message: string,
+	defaultMessage: string
+): boolean => {
+	if ((issue as ArkIssue)._n !== undefined) return true
+	// a JSON-round-tripped ArkError loses its non-enumerable _n note, keeping
+	// either meta/valueMeta.label (JSON.stringify(error)) or `<label> <default>`
+	// (ArkErrors.toJSON())
+	const meta =
+		issue.code === "required" ?
+			(issue as { valueMeta?: { label?: unknown; message?: unknown } })
+				.valueMeta
+		:	(issue as { meta?: { label?: unknown; message?: unknown } }).meta
+	if (
+		typeof meta?.label === "string" &&
+		meta.message === undefined &&
+		message.startsWith(meta.label + " ")
+	)
+		return true
+	return (
+		(issue.expected !== undefined || issue.code === "required") &&
+		message.length > defaultMessage.length + 1 &&
+		(message.endsWith(" " + defaultMessage) ||
+			message.includes(" " + defaultMessage + " "))
+	)
+}
+
 /**
- * @internal an issue's line of a summary: its message after its path, one
- * configured or supplied as a sentence (isCustomIssue) after a colon. A union
- * listing its branches' issues names each one's path instead, and a labeled
- * one's message names its own value (labeledPathOf). Each flag is read in the
- * one expression returned: a bundler that inlines a flag as it prints folds
- * an expression it's in, and leaves a statement testing it, and a function
- * returning it, as they are. A listed issue's message is set as it's created
+ * Formats an error as its line in `errors.summary`, e.g.
+ * `name must be a string` or `name: Enter a name`.
  */
-export const lineOf = (issue: ArkIssue): string => {
-	const message = (issue.message ??= messageOf(issue))
+export const lineOf = (issue: ReadableIssue): string => {
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== undefined) return formatted
+	}
+	const defaultMessage = messageOf(issue)
+	const message = issue.message ?? defaultMessage
 	// every key of a build holding neither an index nor a key to bracket is an
 	// identifier, so its path is its keys joined, and it holds no pathOf
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
-		listsUnions && issue._l !== undefined ? issue._l
-		: labelsValues && issue._n !== undefined ? labeledPathOf(issue) + message
+		listsUnions && (issue as ArkIssue)._l !== undefined ?
+			(issue as ArkIssue)._l!
+		: labelsValues && isLabeledIssue(issue, message, defaultMessage) ?
+			labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
 				writesText &&
 				!(message === "is invalid" && issue.expected === "valid") &&
-				!message.startsWith(messageOf(issue))
+				!message.startsWith(defaultMessage)
 			) ?
 				": "
 			:	" ") +
@@ -821,7 +868,7 @@ export const lineOf = (issue: ArkIssue): string => {
 // An undeclared key's site says what's expected. Only a missing key's says
 // what the value was, since writing any other value would ship a printer
 export const messageOf = (issue: {
-	readonly code?: ArkErrorCode
+	readonly code?: ArkErrorCode | undefined
 	readonly expected?: string | undefined
 }): string =>
 	issue.expected !== undefined ?

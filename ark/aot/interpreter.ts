@@ -56,6 +56,11 @@ import {
 	type PlainContainer,
 	type PureBuiltin
 } from "./builtins.ts"
+import {
+	recordDroppedNarrows,
+	type DroppedNarrow,
+	type SpreadSource
+} from "./droppedNarrow.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import { declaredNameOf, holeNameOf, namedPlacesOf } from "./holeNames.ts"
 import {
@@ -118,6 +123,8 @@ import {
 export interface InterpreterOptions {
 	// ship arktype, precompiling only the code it compiles
 	runtime?: "arktype" | undefined
+	// false silences dropped-narrow warnings
+	droppedNarrow?: boolean | undefined
 }
 
 type InputRoot =
@@ -297,6 +304,8 @@ export interface SiteState {
 	// in order
 	reached: Reached[]
 	roots: BaseRoot[]
+	// structural operations that dropped a root-level user predicate while defining this site
+	droppedNarrows: DroppedNarrow[]
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds
 	introspection:
 		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
@@ -325,6 +334,7 @@ export const createSiteState = (
 	arktypeArguments: [],
 	reached: [],
 	roots: [],
+	droppedNarrows: [],
 	introspection: undefined,
 	value: undefined,
 	error: undefined,
@@ -448,6 +458,11 @@ export class Interpreter {
 	private configurationsByNode = new Map<Node, unknown>()
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
+	private spreadsByObject = new WeakMap<object, SpreadSource>()
+	private stringPropsByObject = new WeakMap<
+		object,
+		Map<PropertyKey, SpreadSource>
+	>()
 	// unknown values a declaration computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	private dynamicFree = new WeakSet<object>()
@@ -799,6 +814,19 @@ export class Interpreter {
 					if (problem) return problem
 					defineData(result, k, Reflect.get(copy, k))
 				}
+				if (hasDomain(spread, "object")) {
+					const inherited = this.spreadsByObject.get(spread)
+					if (inherited) this.spreadsByObject.set(result, inherited)
+					const inheritedStrings = this.stringPropsByObject.get(spread)
+					if (inheritedStrings) {
+						let target = this.stringPropsByObject.get(result)
+						if (!target) {
+							target = new Map()
+							this.stringPropsByObject.set(result, target)
+						}
+						for (const [k, source] of inheritedStrings) target.set(k, source)
+					}
+				}
 				continue
 			}
 			if (property.kind !== "init") {
@@ -835,6 +863,28 @@ export class Interpreter {
 			if (problem) return problem
 			const value = this.evaluate(property.value, ctx)
 			if (isDynamic(value) && !value.isOpaque) return value
+			if (key === "...") {
+				this.spreadsByObject.set(result, {
+					property,
+					valueNode: property.value,
+					module: ctx.module
+				})
+			}
+			if (
+				(typeof value === "string" && value.includes("<")) ||
+				Array.isArray(value)
+			) {
+				let target = this.stringPropsByObject.get(result)
+				if (!target) {
+					target = new Map()
+					this.stringPropsByObject.set(result, target)
+				}
+				target.set(key as PropertyKey, {
+					property,
+					valueNode: property.value,
+					module: ctx.module
+				})
+			}
 			defineData(result, key as PropertyKey, value)
 		}
 		return result
@@ -2368,6 +2418,19 @@ export class Interpreter {
 				this.definitionsByScope.set(result, converted[0])
 			if (opaque && hasDomain(result, "object"))
 				this.opaqueStandInsByValue.set(result, opaque)
+			if (ctx.site && this.opts.droppedNarrow !== false) {
+				recordDroppedNarrows({
+					fn,
+					receiver,
+					args: converted,
+					result,
+					node,
+					module: ctx.module,
+					site: ctx.site,
+					spreadsByObject: this.spreadsByObject,
+					stringPropsByObject: this.stringPropsByObject
+				})
+			}
 			return result
 		} catch (e) {
 			// what arktype throws over a stand-in says nothing of its value

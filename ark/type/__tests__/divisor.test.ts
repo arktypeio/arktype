@@ -99,6 +99,34 @@ contextualize(() => {
 			)
 		})
 
+		it("indivisible literal", () => {
+			// @ts-expect-error
+			attest(() => type("'a' % 2"))
+				.throws('Divisor operand must be a number (was "a")')
+				// TypeScript escapes the quotes of a string literal type it prints
+				.type.errors('Divisor operand must be a number (was \\"a\\")')
+			// @ts-expect-error
+			attest(() => type("5n % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was 5n)"
+			)
+			// @ts-expect-error
+			attest(() => type("'' % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was empty)"
+			)
+		})
+
+		it("indivisible builtin object", () => {
+			// structurally a Set is also a WeakSet, which it isn't at runtime
+			// @ts-expect-error
+			attest(() => type("Set % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was a Set)"
+			)
+			// @ts-expect-error
+			attest(() => type("File % 2")).throwsAndHasTypeError(
+				"Divisor operand must be a number (was a File instance)"
+			)
+		})
+
 		it("morph", () => {
 			// @ts-expect-error
 			attest(() => type("string.numeric.parse > 2"))
@@ -155,6 +183,15 @@ contextualize(() => {
 			attest(() => type("number%3&8")).throws.snap(
 				"ParseError: Intersection of % 3 and 8 results in an unsatisfiable type"
 			)
+		})
+
+		it("overflowing lcm reduces to 0", () => {
+			const T = type
+				.schema({ domain: "number", divisor: 3 })
+				.and(type.schema({ domain: "number", divisor: 2 ** 1023 }))
+			attest(T.expression).snap("0")
+			attest(T.allows(0)).equals(true)
+			attest(T.allows(3)).equals(false)
 		})
 	})
 })

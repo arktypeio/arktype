@@ -22,6 +22,7 @@ import {
 	rmSync,
 	statSync,
 	symlinkSync,
+	utimesSync,
 	writeFileSync
 } from "node:fs"
 import { dirname, join, relative } from "node:path"
@@ -397,7 +398,7 @@ contextualize(function (this: Mocha.Suite) {
 			])
 		})
 
-		it("never reads what another version of the code wrote", async () => {
+		it("never reads what another version of the code wrote, keeps recent siblings, and prunes older ones", async () => {
 			const dir = writeFixture({
 				"main.ts": shapeReader("./shape.ts"),
 				"shape.ts": shaped("string")
@@ -406,9 +407,41 @@ contextualize(function (this: Mocha.Suite) {
 			forge(dir)
 			const root = cacheRootOf(dir)
 			const [version] = readdirSync(root)
-			renameSync(join(root, version), join(root, hashOf("other")))
+			const other = hashOf("other")
+			renameSync(join(root, version), join(root, other))
 			attest(await codeIn(dir)).satisfies(/^import/)
-			attest(readdirSync(root)).equals([version])
+			// keeps recent sibling so distinct Node runtimes (e.g. Electron ESLint vs CLI) don't thrash
+			attest(readdirSync(root).sort()).equals([other, version].sort())
+
+			// once more than AnswerCache.maxVersions accumulate, oldest siblings are pruned
+			const now = Date.now()
+			const extra = ["s1", "s2", "s3", "s4"].map((label, i) => {
+				const name = hashOf(label)
+				const path = join(root, name)
+				mkdirSync(path, { recursive: true })
+				const t = new Date(now - (10 - i) * 60_000)
+				utimesSync(path, t, t)
+				return name
+			})
+			utimesSync(join(root, other), new Date(now - 1000), new Date(now - 1000))
+			new AnswerCache(dir)
+			const kept = readdirSync(root).sort()
+			attest(kept.length).equals(AnswerCache.maxVersions)
+			attest(kept.includes(version)).equals(true)
+			attest(kept.includes(other)).equals(true)
+			attest(kept.includes(extra[0])).equals(false)
+			attest(kept.includes(extra[1])).equals(false)
+		})
+
+		it("anchors the cache under the nearest project root when invoked from a subdirectory", () => {
+			const dir = writeFixture({
+				"package.json": "{}",
+				"packages/app/src/main.ts": "export const x = 1\n"
+			})
+			const sub = join(dir, "packages", "app", "src")
+			const cache = new AnswerCache(sub)
+			attest(dirname(cache.dir)).equals(cacheRootOf(dir))
+			attest(existsSync(join(sub, "node_modules"))).equals(false)
 		})
 
 		it("reads another directory once a package the precompiler runs changes", () => {

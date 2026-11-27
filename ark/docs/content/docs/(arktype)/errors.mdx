@@ -44,24 +44,25 @@ if (out instanceof type.errors) {
 | `throw()`               | throws a [`TraversalError`](#traversalerror)                                              |
 | `[Symbol.iterator]()`   | each error in `issues`, for `for...of` and spread                                         |
 
-`arktype` exports functions that read an `ArkErrors`, most grouping it by path:
+`arktype` exports functions that read an `ArkErrors` or an `ArkError`, most grouping errors by path:
 
 | function                   | what it returns                                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------------------ |
 | `firstIssue(out)`          | the first error in `issues`, found [without the rest](#finding-only-the-first) where it can be   |
+| `lineOf(error)`            | one error formatted as its line in `summary`, e.g. `name must be a string`                       |
 | `byPath(out)`              | an object mapping each path's `propString` to its first error                                    |
 | `flatByPath(out)`          | like `byPath`, but each value is an array of every error at the path                             |
 | `flatMessagesByPath(out)`  | like `flatByPath`, but with each error's `message`                                               |
 | `byAncestorPath(out)`      | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's `message`, without its path, in a [locale](/docs/i18n#rendering-in-a-locale)         |
 
-A [precompiled](/docs/precompile/validators#errors) build has `firstIssue` but not the others, and fails on a call to one, naming it. There, group `out.issues` by each error's `path`.
+`firstIssue`, `lineOf`, `byPath`, `flatByPath`, `flatMessagesByPath` and `byAncestorPath` all work in a [precompiled](/docs/precompile/validators#errors) build. `messageIn` does not — standalone validators write English only, and calling `messageIn` fails the build.
 
 To change what an error says, see [Error messages](/docs/configuration#error-messages).
 
 ### Summary lines
 
-`summary` writes one line for each error:
+`summary` writes one line for each error, and `lineOf(error)` formats a single `ArkError` the same way:
 
 | error                                                | its line                            | example                                        |
 | ---------------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
@@ -162,23 +163,23 @@ if (out instanceof type.errors) {
 
 An error's `code` tells you its other fields:
 
-| code                                    | fields                                                                                                                                                     |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain`                                | `domain`, like `"string"`                                                                                                                                  |
-| `unit`                                  | `unit`, the expected value                                                                                                                                 |
-| `proto`                                 | `proto`, the expected constructor                                                                                                                          |
-| `min`, `max`                            | `rule`, and `exclusive` when the bound is exclusive                                                                                                        |
-| `minLength`, `maxLength`, `exactLength` | `rule`                                                                                                                                                     |
-| `divisor`                               | `rule`                                                                                                                                                     |
-| `pattern`                               | `rule` (the regex source) and `flags`                                                                                                                      |
-| `before`, `after`                       | `rule`, a `Date`                                                                                                                                           |
-| `notEqual`                              | `rule`, a number or `Date`                                                                                                                                 |
-| `notEqualLength`                        | `rule`                                                                                                                                                     |
-| `predicate`                             | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
-| `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description                                         |
-| `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                           |
-| `discriminant`                          | `discriminantKind`, `cases`, `onKey` and `absent`                                                                                                          |
-| `union`                                 | `errors`, one per branch, or none where each branch fails at what it is, like `Date \| RegExp` given `1`, which expects `a Date or a RegExp`               |
+| code                                    | fields                                                                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`                                | `domain`, like `"string"`                                                                                                                                     |
+| `unit`                                  | `unit`, the expected value                                                                                                                                    |
+| `proto`                                 | `proto`, the expected constructor                                                                                                                             |
+| `min`, `max`                            | `rule`, `exclusive` when the bound is exclusive, and `unit` (`BoundUnit`) when set                                                                            |
+| `minLength`, `maxLength`, `exactLength` | `rule`, and `unit` (`BoundUnit`, e.g. `"character"` / `"item"` or custom) when set                                                                            |
+| `divisor`                               | `rule`                                                                                                                                                        |
+| `pattern`                               | `rule` (the regex source) and `flags`                                                                                                                         |
+| `before`, `after`                       | `rule`, a `Date`                                                                                                                                              |
+| `notEqual`                              | `rule` (a number or `Date`), and `unit` (`BoundUnit`) when set                                                                                                |
+| `notEqualLength`                        | `rule`, and `unit` (`BoundUnit`) when set                                                                                                                     |
+| `predicate`                             | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse    |
+| `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description (honoring any user-authored `.describe()`) |
+| `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                              |
+| `discriminant`                          | `discriminantKind`, `cases`, `onKey` and `absent`                                                                                                             |
+| `union`                                 | `errors`, one per branch, or none where each branch fails at what it is, like `Date \| RegExp` given `1`, which expects `a Date or a RegExp`                  |
 
 Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
 

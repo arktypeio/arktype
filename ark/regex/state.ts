@@ -36,7 +36,9 @@ export declare namespace State {
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
-		caseInsensitive: contains<flags, "i">
+		caseInsensitive: contains<flags, "i"> extends true ? CasedBudget.Initial
+		:	false
+		multiline: contains<flags, "m">
 		flags: flags
 	}>
 
@@ -55,7 +57,8 @@ export declare namespace State {
 		branches: RegexAst[]
 		sequence: RegexAst
 		root: RegexAst
-		caseInsensitive: boolean
+		caseInsensitive: CaseInsensitiveState
+		multiline: boolean
 	}
 
 	export namespace Group {
@@ -78,7 +81,7 @@ export declare namespace State {
 			remaining extends (
 				[infer head extends RegexAst, ...infer tail extends RegexAst[]]
 			) ?
-				head extends UnionTree<infer headBranches> ?
+				[head] extends [UnionTree<infer headBranches>] ?
 					finalizeUnion<tail, [...flattened, ...headBranches]>
 				:	finalizeUnion<tail, [...flattened, head]>
 			:	UnionTree<flattened>
@@ -103,6 +106,53 @@ export type AnchorMarker<inner extends Anchor = Anchor> =
 export type StartAnchorMarker = AnchorMarker<"^">
 export type EndAnchorMarker = AnchorMarker<"$">
 
+/**
+ * Tracks case-insensitive expansion budget as `[currentBranchCased, maxBranchCased]`
+ * when case-insensitive matching is active, or `false` when case-sensitive.
+ */
+export type CaseInsensitiveState = false | CasedBudget
+
+export type CasedBudget = [cased: 1[], maxCased: 1[]]
+
+export declare namespace CasedBudget {
+	export type Initial = [[], []]
+}
+
+type longerTuple<a extends 1[], b extends 1[]> =
+	a extends [...b, ...1[]] ? a : b
+
+type resetBranchCased<
+	groups extends State.Group[],
+	budget extends CasedBudget
+> = [
+	groups extends [...unknown[], infer parent extends State.Group] ?
+		parent["caseInsensitive"] extends [infer parentCased extends 1[], 1[]] ?
+			parentCased
+		:	[]
+	:	[],
+	longerTuple<budget[1], budget[0]>
+]
+
+type pushGroupCaseInsensitive<
+	current extends CaseInsensitiveState,
+	modifier extends boolean | undefined
+> =
+	modifier extends false ? false
+	: modifier extends true ?
+		current extends [infer cased extends 1[], 1[]] ?
+			[cased, cased]
+		:	CasedBudget.Initial
+	: current extends [infer cased extends 1[], 1[]] ? [cased, cased]
+	: false
+
+type popGroupCaseInsensitive<last extends State.Group, inner extends State> =
+	last["caseInsensitive"] extends infer lastBudget extends CasedBudget ?
+		inner["capture"] extends LookaroundKind ? lastBudget
+		: inner["caseInsensitive"] extends infer innerBudget extends CasedBudget ?
+			[longerTuple<innerBudget[1], innerBudget[0]>, lastBudget[1]]
+		:	lastBudget
+	:	false
+
 export declare namespace s {
 	export type error<message extends string> = State.from<{
 		unscanned: ErrorMessage<message>
@@ -112,6 +162,7 @@ export declare namespace s {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: false
+		multiline: false
 		flags: ""
 	}>
 
@@ -127,6 +178,25 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], s["root"]>
 		root: root
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
+		flags: s["flags"]
+	}>
+
+	export type shiftCasedChar<
+		s extends State,
+		root extends RegexAst,
+		unscanned extends string
+	> = State.from<{
+		unscanned: unscanned
+		groups: s["groups"]
+		capture: s["capture"]
+		branches: s["branches"]
+		sequence: pushQuantifiable<s["sequence"], s["root"]>
+		root: root
+		caseInsensitive: s["caseInsensitive"] extends CasedBudget ?
+			[[...s["caseInsensitive"][0], 1], s["caseInsensitive"][1]]
+		:	false
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -142,6 +212,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], quantified>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -166,6 +237,7 @@ export declare namespace s {
 		>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -179,7 +251,12 @@ export declare namespace s {
 		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
 		sequence: SequenceTree.Empty
 		root: ""
-		caseInsensitive: s["caseInsensitive"]
+		caseInsensitive: s["caseInsensitive"] extends (
+			infer budget extends CasedBudget
+		) ?
+			resetBranchCased<s["groups"], budget>
+		:	false
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -195,6 +272,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], pushQuantifiable<s["root"], a>>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		multiline: s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -202,7 +280,8 @@ export declare namespace s {
 		s extends State,
 		capture extends string | State.UnnamedCaptureKind,
 		unscanned extends string,
-		caseInsensitive extends boolean | undefined
+		caseInsensitive extends boolean | undefined,
+		multiline extends boolean | undefined = undefined
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
@@ -210,8 +289,11 @@ export declare namespace s {
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
-		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
-		:	s["caseInsensitive"]
+		caseInsensitive: pushGroupCaseInsensitive<
+			s["caseInsensitive"],
+			caseInsensitive
+		>
+		multiline: multiline extends boolean ? multiline : s["multiline"]
 		flags: s["flags"]
 	}>
 
@@ -235,7 +317,8 @@ export declare namespace s {
 				: s["capture"] extends LookaroundKind ? ""
 				: // non-capturing
 					State.Group.finalize<s>
-				caseInsensitive: last["caseInsensitive"]
+				caseInsensitive: popGroupCaseInsensitive<last, s>
+				multiline: last["multiline"]
 				flags: s["flags"]
 			}>
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
@@ -249,6 +332,7 @@ export declare namespace s {
 					{
 						captures: EmptyCaptures
 						names: {}
+						priorBranchNames: never
 						flags: s["flags"]
 						errors: []
 					}
@@ -267,7 +351,7 @@ export declare namespace s {
 				:	ErrorMessage<writeMidAnchorError<"^">>
 			:	never
 		:	// if there were errors, return the first one
-			r["ctx"]["errors"][0]
+			Exclude<r["ctx"]["errors"][0], undefined>
 
 	type finalizeContext<ctx extends FinalizationContext> =
 		ctx["captures"] extends EmptyCaptures ? finalizeContextWithoutCaptures<ctx>
@@ -280,6 +364,7 @@ export declare namespace s {
 					rest
 				:	never
 				names: ctx["names"]
+				priorBranchNames: ctx["priorBranchNames"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}>
@@ -315,9 +400,13 @@ export type RegexAst =
 	| GroupTree
 	| QuantifierTree
 
-export interface ReferenceNode<to extends string = string> {
+export interface ReferenceNode<
+	to extends string = string,
+	caseInsensitive extends boolean = boolean
+> {
 	kind: "reference"
 	to: to
+	caseInsensitive: caseInsensitive
 }
 
 export declare namespace ReferenceNode {
@@ -333,20 +422,46 @@ export declare namespace ReferenceNode {
 				// to help users avoid it
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 			:	FinalizationResult.from<{
-					pattern: inferReference<ctx["captures"][to]>
+					pattern: inferReference<ctx["captures"][to], self["caseInsensitive"]>
 					ctx: ctx
 				}>
 		: to extends keyof ctx["names"] ?
 			ctx["names"][to] extends IncompleteCaptureGroup ?
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 			:	FinalizationResult.from<{
-					pattern: inferReference<ctx["names"][to]>
+					pattern: inferReference<ctx["names"][to], self["caseInsensitive"]>
 					ctx: ctx
 				}>
+		: to extends ctx["priorBranchNames"] ?
+			FinalizationResult.from<{
+				pattern: ""
+				ctx: ctx
+			}>
 		:	FinalizationResult.error<ctx, writeUnresolvableBackreferenceMessage<to>>
 
-	type inferReference<to extends string | undefined> =
-		to extends string ? to : ""
+	type inferReference<
+		to extends string | undefined,
+		caseInsensitive extends boolean
+	> =
+		to extends string ?
+			caseInsensitive extends true ?
+				expandBackreferenceCase<to>
+			:	to
+		:	""
+
+	type expandBackreferenceCase<s extends string, cased extends 1[] = []> =
+		s extends "" ? ""
+		: string extends s ? string
+		: s extends `${infer head}${infer tail}` ?
+			string extends head ?
+				appendNonRedundant<string, expandBackreferenceCase<tail, cased>>
+			: `${number}` extends head ?
+				`${number}${expandBackreferenceCase<tail, cased>}`
+			: Lowercase<head> extends Uppercase<head> ?
+				`${head}${expandBackreferenceCase<tail, cased>}`
+			: cased["length"] extends 5 ? string
+			: `${Lowercase<head> | Uppercase<head>}${expandBackreferenceCase<tail, [...cased, 1]>}`
+		:	string
 }
 
 export const writeIncompleteReferenceError = <ref extends string>(
@@ -397,12 +512,13 @@ export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], [], ctx, ctx["captures"]>
+	> = _finalize<self["ast"], [], ctx, ctx["captures"], ctx["priorBranchNames"]>
 
 	type FinalizedBranch = {
 		pattern: string
 		captures: IndexedCaptures
 		names: NamedCaptures
+		errors: ErrorMessage[]
 	}
 
 	namespace FinalizedBranch {
@@ -413,19 +529,22 @@ export declare namespace UnionTree {
 		astBranches extends unknown[],
 		acc extends FinalizedBranch[],
 		ctx extends FinalizationContext,
-		priorCaptures extends IndexedCaptures
+		priorCaptures extends IndexedCaptures,
+		priorNames extends string
 	> =
 		astBranches extends [infer head, ...infer tail] ?
-			finalizeTree<head, branchContextOf<ctx, priorCaptures>> extends (
-				infer r extends FinalizationResult
-			) ?
+			finalizeTree<
+				head,
+				branchContextOf<ctx, priorCaptures, priorNames>
+			> extends infer r extends FinalizationResult ?
 				// a branch's results don't affect the next branch, so they're kept
 				// together rather than finalizing the rest once for each
 				_finalize<
 					tail,
 					[...acc, finalizeBranch<ctx, r>],
 					ctx,
-					r["ctx"]["captures"]
+					r["ctx"]["captures"],
+					priorNames | (unionKeyOf<r["ctx"]["names"]> & string)
 				>
 			:	never
 		:	finalizeBranches<
@@ -436,12 +555,17 @@ export declare namespace UnionTree {
 			>
 
 	// groups in previous branches can't participate in a match, so they are
-	// captured as undefined
+	// captured as undefined (and prior branch group names are tracked separately
+	// so ES2025 same-name groups across branches don't trigger duplicate errors)
 	type branchContextOf<
 		ctx extends FinalizationContext,
-		priorCaptures extends IndexedCaptures
+		priorCaptures extends IndexedCaptures,
+		priorNames extends string
 	> =
-		priorCaptures["length"] extends ctx["captures"]["length"] ? ctx
+		[priorCaptures["length"], priorNames] extends (
+			[ctx["captures"]["length"], ctx["priorBranchNames"]]
+		) ?
+			ctx
 		:	FinalizationContext.from<{
 				captures: {
 					[i in keyof priorCaptures]: i extends keyof ctx["captures"] ?
@@ -449,6 +573,7 @@ export declare namespace UnionTree {
 					:	undefined
 				}
 				names: ctx["names"]
+				priorBranchNames: priorNames
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}>
@@ -464,6 +589,7 @@ export declare namespace UnionTree {
 				// undefined will be added to named captures as needed
 				// by finalizeBranches since it can be done in one step
 				names: r["ctx"]["names"]
+				errors: r["ctx"]["errors"]
 			}>
 		:	never
 
@@ -503,7 +629,8 @@ export declare namespace UnionTree {
 							branch["names"][k]
 						:	undefined
 					}
-					errors: ctx["errors"]
+					priorBranchNames: ctx["priorBranchNames"]
+					errors: branch["errors"]
 				}
 			}>
 		:	never
@@ -541,7 +668,12 @@ export declare namespace GroupTree {
 		self extends GroupTree,
 		ctx extends FinalizationContext
 	> =
-		finalizeGroupAst<self, ctx> extends infer r ?
+		self["capture"] extends string & keyof ctx["names"] ?
+			FinalizationResult.error<
+				ctx,
+				writeDuplicateCaptureGroupNameError<self["capture"]>
+			>
+		: finalizeGroupAst<self, ctx> extends infer r ?
 			// allow the result to distribute to a particular branch
 			// to preserve associations between groups and references
 			// so that e.g. "(a|b)\\1" is inferred as "aa" | "bb"
@@ -562,6 +694,7 @@ export declare namespace GroupTree {
 				// error on trying to reference it (will always be empty)
 				captures: [...ctx["captures"], IncompleteCaptureGroup]
 				names: ctx["names"] & { [_ in self["capture"]]: IncompleteCaptureGroup }
+				priorBranchNames: ctx["priorBranchNames"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}
@@ -569,6 +702,7 @@ export declare namespace GroupTree {
 			{
 				captures: [...ctx["captures"], IncompleteCaptureGroup]
 				names: ctx["names"]
+				priorBranchNames: ctx["priorBranchNames"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}
@@ -615,6 +749,7 @@ export declare namespace GroupTree {
 				result["names"][k]
 			:	undefined
 		}
+		priorBranchNames: base["priorBranchNames"]
 		flags: result["flags"]
 		errors: result["errors"]
 	}>
@@ -632,6 +767,7 @@ export declare namespace GroupTree {
 			[k in keyof ctx["names"]]: k extends name ? anchorsAway<pattern>
 			:	ctx["names"][k]
 		}
+		priorBranchNames: ctx["priorBranchNames"]
 		flags: ctx["flags"]
 		errors: ctx["errors"]
 	}>
@@ -643,6 +779,7 @@ export declare namespace GroupTree {
 	> = FinalizationContext.from<{
 		captures: setIndex<ctx["captures"], index, anchorsAway<pattern>>
 		names: ctx["names"]
+		priorBranchNames: ctx["priorBranchNames"]
 		flags: ctx["flags"]
 		errors: ctx["errors"]
 	}>
@@ -693,8 +830,9 @@ export declare namespace QuantifierTree {
 		r extends FinalizationResult,
 		quantifiedCaptures extends IndexedCaptures
 	> =
-		| finalizeZeroQuantified<ctx, r, quantifiedCaptures>
-		| finalizeOnePlusQuantified<self["max"], r>
+		self["max"] extends 0 ? finalizeZeroQuantified<ctx, r, quantifiedCaptures>
+		:	| finalizeZeroQuantified<ctx, r, quantifiedCaptures>
+			| finalizeOnePlusQuantified<self["max"], r>
 
 	// add `| undefined` to any capture groups quantified by zero
 	type finalizeZeroQuantified<
@@ -712,6 +850,7 @@ export declare namespace QuantifierTree {
 			]
 			flags: r["ctx"]["flags"]
 			names: zeroQuantifiedNames<ctx["names"], r["ctx"]["names"]>
+			priorBranchNames: ctx["priorBranchNames"]
 			errors: r["ctx"]["errors"]
 		}
 	}>
@@ -759,6 +898,7 @@ type extractNewCaptures<
 	:	[]
 
 export interface FinalizationContext extends Required<RegexContext> {
+	priorBranchNames: string
 	errors: ErrorMessage[]
 }
 
@@ -782,6 +922,7 @@ export declare namespace FinalizationResult {
 		ctx: {
 			captures: ctx["captures"]
 			names: ctx["names"]
+			priorBranchNames: ctx["priorBranchNames"]
 			flags: ctx["flags"]
 			errors: [...ctx["errors"], ErrorMessage<message>]
 		}
@@ -805,10 +946,10 @@ type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
 		startStripped extends `${infer bothStripped}${EndAnchorMarker}` ?
 			bothStripped
-		:	appendNonRedundant<startStripped, string>
+		:	appendString<startStripped>
 	: pattern extends `${infer endStripped}${EndAnchorMarker}` ?
-		prependNonRedundant<endStripped, string>
-	:	prependNonRedundant<appendNonRedundant<pattern, string>, string>
+		prependString<endStripped>
+	:	prependString<appendString<pattern>>
 
 type anchorsAway<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
@@ -817,6 +958,20 @@ type anchorsAway<pattern extends string> =
 		:	startStripped
 	: pattern extends `${infer endStripped}${EndAnchorMarker}` ? endStripped
 	: pattern
+
+export type appendString<base extends string> =
+	base extends unknown ?
+		`${base}${string}` extends base ?
+			base
+		:	`${base}${string}`
+	:	never
+
+type prependString<base extends string> =
+	base extends unknown ?
+		`${string}${base}` extends base ?
+			base
+		:	`${string}${base}`
+	:	never
 
 type appendNonRedundant<base extends string, suffix extends string> =
 	string extends base ?
@@ -827,22 +982,11 @@ type appendNonRedundant<base extends string, suffix extends string> =
 	// to represent digits, so it is valid to merge them as `${number}`.
 	`${number}` extends base ?
 		`${number}` extends suffix ?
-			`${number}`
+			[base, suffix] extends [`${number}`, `${number}`] ?
+				`${number}`
+			:	`${base}${suffix}`
 		:	`${base}${suffix}`
 	:	`${base}${suffix}`
-
-type prependNonRedundant<base extends string, prefix extends string> =
-	string extends base ?
-		string extends prefix ?
-			string
-		:	`${prefix}${base}`
-	: // this is not generalizable, but arkregex uses `${number}`
-	// to represent digits, so it is valid to merge them as `${number}`.
-	`${number}` extends base ?
-		`${number}` extends prefix ?
-			`${number}`
-		:	`${prefix}${base}`
-	:	`${prefix}${base}`
 
 export const writeMidAnchorError = <anchor extends Anchor>(
 	anchor: anchor
@@ -850,3 +994,11 @@ export const writeMidAnchorError = <anchor extends Anchor>(
 
 type writeMidAnchorError<anchor extends Anchor> =
 	`Anchor ${anchor} may not appear mid-pattern`
+
+export const writeDuplicateCaptureGroupNameError = <name extends string>(
+	name: name
+): writeDuplicateCaptureGroupNameError<name> =>
+	`Duplicate capture group name '${name}'`
+
+export type writeDuplicateCaptureGroupNameError<name extends string> =
+	`Duplicate capture group name '${name}'`

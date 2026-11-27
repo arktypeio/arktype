@@ -159,6 +159,74 @@ contextualize(() => {
 		})
 	})
 
+	it("promoted Object.prototype key alongside string and constrained indexes", () => {
+		// OpenAPI 3.0 must not leak patternProperties when [string] narrows a promoted proto key
+		const T = type({ "[string]": "'a'", "[/^toString$/]": "string" })
+		attest(() => T.toJsonSchema({ target: "openapi-3.0" })).throws
+			.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
+{
+    code: "indexKey",
+    base: {
+        type: "object",
+        properties: {
+            toString: {
+                type: "string"
+            }
+        }
+    },
+    key: {
+        type: "string"
+    },
+    value: {
+        type: "string",
+        enum: [
+            "a"
+        ]
+    }
+}`)
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { toString: { type: "string" } },
+			patternProperties: { "": { type: "string", const: "a" } }
+		})
+		// compatible string index promotes cleanly to additionalProperties even in OpenAPI 3.0
+		const Compatible = type({ "[string]": "string", "[/^toString$/]": "'a'" })
+		attest(Compatible.toJsonSchema({ target: "openapi-3.0" })).snap({
+			type: "object",
+			properties: { toString: { type: "string", enum: ["a"] } },
+			additionalProperties: { type: "string" }
+		})
+
+		// proto key "toString" does not match string >= 20
+		const DisjointKey = type({
+			"[/^toString$/]": "number",
+			"[string >= 20]": "string",
+			"+": "reject"
+		})
+		attest(DisjointKey.allows({ toString: 1 })).equals(true)
+		attest(() => DisjointKey.toJsonSchema()).throws(
+			'ToJsonSchemaError: Can\'t convert "indexKey" to JSON Schema'
+		)
+
+		// proto key matches string >= 1, so index value must also apply to it
+		const NarrowedProto = type({
+			"[/^toString$/]": "number",
+			"[string >= 1]": "string",
+			"+": "reject"
+		})
+		attest(NarrowedProto.allows({ toString: 1 })).equals(false)
+		attest(NarrowedProto.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { toString: { type: "number" } },
+			propertyNames: { type: "string", minLength: 1 },
+			patternProperties: { "": { type: "string" } }
+		})
+		const RoundTripped = fromJsonSchema(NarrowedProto.toJsonSchema())
+		attest(RoundTripped.allows({ toString: 1 })).equals(false)
+		attest(RoundTripped.allows({ a: "x" })).equals(true)
+		attest(RoundTripped.allows({ "": "x" })).equals(false)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1612
 	it("refs to a structure in a union", () => {
 		const Thing = type({ a: "string" }).or("null")
@@ -1153,5 +1221,88 @@ contextualize(() => {
 		attest(() => Derived.toJsonSchema()).throws(
 			'Can\'t convert "predicate" to JSON Schema'
 		)
+	})
+
+	it("omits trivial ±Infinity bounds and writes unsatisfiable ones as never", () => {
+		attest(
+			type("number")
+				.atLeast(Number.NEGATIVE_INFINITY)
+				.atMost(Number.POSITIVE_INFINITY)
+				.toJsonSchema({ dialect: null })
+		).snap({ type: "number" })
+		attest(
+			type("number")
+				.moreThan(Number.NEGATIVE_INFINITY)
+				.lessThan(10)
+				.toJsonSchema({ dialect: null })
+		).snap({ type: "number", exclusiveMaximum: 10 })
+		attest(
+			type("number")
+				.atLeast(Number.POSITIVE_INFINITY)
+				.toJsonSchema({ dialect: null })
+		).snap({ not: {} })
+		attest(
+			type("number")
+				.atMost(Number.NEGATIVE_INFINITY)
+				.toJsonSchema({ dialect: null })
+		).snap({ not: {} })
+		attest(
+			type
+				.schema({ domain: "number", notEqual: Number.POSITIVE_INFINITY })
+				.toJsonSchema({ dialect: null })
+		).snap({ type: "number" })
+	})
+
+	it("converts optional and defaultable tuple elements without crashing on undefined", () => {
+		attest(type(["string", "number?"]).toJsonSchema({ dialect: null })).snap({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			minItems: 1,
+			items: false
+		})
+		attest(
+			type(["string", ["number", "=", 0]]).toJsonSchema({ dialect: null })
+		).snap({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number", default: 0 }],
+			minItems: 1,
+			items: false
+		})
+	})
+
+	it("resolves intersection basis directly when aliasDefs names a basis alias", () => {
+		const $1 = scope({ AnyObj: "object", Box: { name: "string" } })
+		attest(
+			$1.export().Box.toJsonSchema({ aliasDefs: ["AnyObj"], dialect: null })
+		).snap({
+			type: "object",
+			properties: { name: { type: "string" } },
+			required: ["name"]
+		})
+
+		const $2 = scope({
+			Name: "string",
+			User: { name: "Name", id: "string >= 1" }
+		})
+		attest(
+			$2.export().User.toJsonSchema({ aliasDefs: ["Name"], dialect: null })
+		).snap({
+			type: "object",
+			properties: {
+				name: { $ref: "#/$defs/Name" },
+				id: { type: "string", minLength: 1 }
+			},
+			required: ["id", "name"],
+			$defs: { Name: { type: "string" } }
+		})
+
+		const $3 = scope({ Num: "number", Pos: "number > 0" })
+		attest(
+			$3.export().Pos.toJsonSchema({ aliasDefs: ["Num"], target: "draft-07" })
+		).snap({
+			$schema: "http://json-schema.org/draft-07/schema#",
+			type: "number",
+			exclusiveMinimum: 0
+		})
 	})
 })

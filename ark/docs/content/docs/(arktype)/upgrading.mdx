@@ -53,7 +53,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use function defaults, or morphs on defaults? [They run on each call](#defaults-run-each-time-theyre-applied).
 - Do you chain two right bounds, like `number < 5 < 6`? [Group them](#a-second-right-bound-throws).
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](#standard-schemas-must-validate-synchronously).
-- Do you reflect on a Type's own keys or prototype, freeze a Type, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](#types-are-built-when-theyre-first-read).
+- Do you reflect on a Type's own keys or prototype, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](#types-are-built-when-theyre-first-read).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](#inference) and [ArkRegex](#arkregex).
 - Do you use `arktype/schema` (previously `@ark/schema`) without `arktype`? [Import `arktype`](#arkschema).
@@ -179,7 +179,7 @@ if (out instanceof type.errors) {
 
 It lists each error's `message`, so a key with a `message` you configured holds that text, where `flatProblemsByPath` held what ArkType would have written.
 
-A [precompiled](/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString`, so there group `out.issues` by `issue.path` instead.
+A [precompiled](/docs/precompile/validators#errors) build's `arktype/runtime` exports `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue` and `lineOf` as well (though its errors still have no `propString`); only `messageIn` is unsupported.
 
 A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
 
@@ -248,7 +248,7 @@ A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain arra
 ```ts
 const T = type({ name: "string > 1" })
 
-// [{ message: "must be at least length 2", path: ["name"], ... }]
+// [{ message: "must be at least 2 characters", path: ["name"], ... }]
 // before: "name must be at least length 2 (was 1)"
 T["~standard"].validate({ name: "x" })
 ```
@@ -574,6 +574,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 - An arktype Type embedded through `~standard`: `user.age must be an integer`, before: `user.age age must be ...`.
 - Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
 - `""` and a length of `0` read as `empty`, mirroring `non-empty`: `"string.email | ''"` reads `must be an email address or empty` (before: `must be an email address or ""`), and `"string == 0"` reads `must be empty` (before: `must be exactly length 0`).
+- Length bounds on strings and arrays include their unit: `"string >= 5"` reads `must be at least 5 characters` (before: `must be at least length 5`), and `"string[] <= 10"` reads `must be at most 10 items` (before: `must be at most length 10`). Custom units can also be configured on length and numeric bound schemas via `unit`.
 - A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
 - A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true"`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
 - `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.
@@ -853,9 +854,9 @@ import { type } from "arktype"
 scope({}, { numberAllowsInfinity: true } as never)
 ```
 
-### onUndeclaredKey: "delete" rejects overlapping object unions
+### "delete" keeps each key an overlapping union's branches declare
 
-With `onUndeclaredKey: "delete"` configured, a union of objects whose inputs overlap throws a `ParseError`, as it already did with `"+": "delete"` in each object. Before, data both allowed came out as whichever branch sorted first:
+Where objects that delete undeclared keys overlap in a union, data more than one of them allows keeps each key any of them declares. Before, with `onUndeclaredKey: "delete"` configured it came out as whichever branch sorted first, and with `"+": "delete"` in each object the union threw a `ParseError`:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -864,12 +865,16 @@ configure({ onUndeclaredKey: "delete" })
 ```
 
 ```ts
-// throws ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
-// before: { uri: "u", blob: "b" } for { uri: "u", text: "t", blob: "b" }
-type({ uri: "string", text: "string" }).or({ uri: "string", blob: "string" })
+const Contents = type({ uri: "string", text: "string" }).or({
+	uri: "string",
+	blob: "string"
+})
+
+// { uri: "u", blob: "b", text: "t" }, before: { uri: "u", blob: "b" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
 ```
 
-Give the branches a key that tells them apart, like a literal `kind`, or delete outside the union.
+A union still throws that `ParseError` where an overlapping object also has a default or another morph at a key, or holds a recursive type. Give those branches a key that tells them apart, like a literal `kind`, or choose the branch in a `.pipe()`.
 
 ### meta.keyword is reserved
 
@@ -933,7 +938,7 @@ Object.keys(User) // its node's keys
 
 - `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading see only a function's `length` and `name`, and `key in User` answers for a key the Type holds itself as it would for `type.object`.
 - `Object.getPrototypeOf()` returns a prototype every unread Type shares. `instanceof` builds the Type, so it answers as before.
-- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make the first read throw a `TypeError`, where they made the Type throw once it compiled.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` work on unread, eager and `@ark/aot` precompiled Types without throwing on first read or compilation. Freezing an unread Type leaves it the function it is — it's called and read as the Type it builds, while its own keys and prototype stay an unread Type's — and a Type frozen after its first read but before compiling is checked without compiling.
 - `type.Record` is a function that calls and reads through to the `Record` generic, so `type.Record === type.keywords.Record` is `false`.
 - Two spellings of one Type can be two equal Types, depending on which is created and read first, as with `type("string")` and `type.keywords.string.root`, or `type("'b'")` and `type('"b"')`, and `/a/` and `"string & /a/"` always are. Definitions written alike are still one Type, as are union order, `.array()` and `[]`, and `type.string` and `"string"`.
 
@@ -969,7 +974,6 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - Functions and symbols print by name: `{ Symbol(tag): string }`, before: `{ $ark.tag: string }`. In `json`, a repeated name is counted as `isLong$1`, before: `isLong1`, and keyword morphs are named by what they do, like `$ark.trimString`, before: `$ark.morphs12`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
-
 - Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them, which moves only keys that first differ at a character JSON escapes or where one ends: `"a"` now precedes `"a b"`.
 
 ## Inference

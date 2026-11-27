@@ -44,6 +44,8 @@ import { settingsPathsOf, withSettingsFile } from "./settings.ts"
 import { SchemaStrategies } from "./strategies.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
+export type Checker = "tsjs" | "tsgo" | "tsrs"
+
 export interface PrecompilePluginOptions
 	extends PrecompileOptions,
 		NodeHostOptions {}
@@ -534,6 +536,7 @@ const answerRequests = (
 			Atomics.notify(data.answered, 0)
 		}
 		if (request[0] === "close") {
+			data.lifeline?.close()
 			if ("close" in port) port.close()
 			// Deno's parentPort can't close, but its worker can close itself
 			else (globalThis as { close?: () => void }).close?.()

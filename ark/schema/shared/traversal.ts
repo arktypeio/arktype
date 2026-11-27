@@ -85,8 +85,10 @@ export class InternalTraversal implements FailureContext {
 	declare config: ResolvedConfig
 
 	declare branches: BranchTraversal[]
-	/** what it tracks of the cyclic nodes it enters, once it enters one */
+	/** what it tracks of the cyclic nodes Apply enters, once it enters one */
 	declare res: Resolutions | undefined
+	/** what it tracks of the cyclic nodes Allows enters, kept separate from Apply's */
+	declare allowRes: Resolutions | undefined
 	/** whether data a root allowed within the bounds is a tree, so each path is transformed */
 	declare isTree: boolean
 	/** each cyclic node's transformed data, keyed by the input it transformed */
@@ -134,6 +136,7 @@ export class InternalTraversal implements FailureContext {
 		this.config = config
 		this.branches = noBranches
 		this.res = undefined
+		this.allowRes = undefined
 		this.isTree = true
 		this.tfdById = undefined
 		this.recv = root
@@ -533,14 +536,21 @@ export const execMorph =
 export const callMorph = (
 	ctx: InternalTraversal,
 	morph: Morph,
-	data: unknown
+	data: unknown,
+	label?: string
 ): unknown => {
-	const { recv, recvAt } = ctx
+	const { recv, recvAt, lbl } = ctx
 	receive(ctx, data)
 	ctx.retFrom = undefined
-	const result = morph(data as never, ctx as never)
-	ctx.recv = recv
-	ctx.recvAt = recvAt
+	if (label !== undefined) ctx.lbl = label
+	let result: unknown
+	try {
+		result = morph(data as never, ctx as never)
+	} finally {
+		ctx.recv = recv
+		ctx.recvAt = recvAt
+		if (label !== undefined) ctx.lbl = lbl
+	}
 	return ctx.retFrom === undefined ? result : returned(ctx, result)
 }
 
@@ -817,12 +827,18 @@ export const allowsInBranchBy = (
 	node?: BaseNode
 ): boolean => {
 	const pathLength = ctx.path.length
+	const outerAllowRes = ctx.allowRes
 	ctx.pushBr()
-	const allowed = allows.call(node, data, ctx)
-	// compiled Allows returns false without popping the keys it pushed. Set
-	// only then, as an array's length is set by a call
-	if (ctx.path.length !== pathLength) ctx.path.length = pathLength
-	return ctx.popBr()!.errN === 0 && allowed
+	try {
+		const allowed = allows.call(node, data, ctx)
+		return ctx.currentBranch!.errN === 0 && allowed
+	} finally {
+		ctx.popBr()
+		// compiled Allows returns false without popping the keys it pushed. Set
+		// only then, as an array's length is set by a call
+		if (ctx.path.length !== pathLength) ctx.path.length = pathLength
+		if (!outerAllowRes) ctx.allowRes = undefined
+	}
 }
 
 // a call V8 can't inline until data fails, so a guarded transform compiles with its checks
@@ -955,13 +971,23 @@ class Resolutions {
 const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
 	(ctx.res ??= new Resolutions())
 
+const allowResolutionsOf = (ctx: InternalTraversal): Resolutions =>
+	(ctx.allowRes ??= new Resolutions())
+
 // undefined once entered, else whether data is known or assumed valid
 export const enterResolution = (
 	ctx: InternalTraversal,
 	id: string,
 	data: unknown
+): boolean | undefined =>
+	enterResolutionIn(allowResolutionsOf(ctx), ctx, id, data)
+
+const enterResolutionIn = (
+	res: Resolutions,
+	ctx: InternalTraversal,
+	id: string,
+	data: unknown
 ): boolean | undefined => {
-	const res = resolutionsOf(ctx)
 	// untracked, every state is a failure, so none is looked up
 	const states = res.tracked || res.hasFailed ? res.seen[id] : undefined
 	const state = states?.get(data)
@@ -1012,13 +1038,18 @@ export const enterResolution = (
 export const exitResolution = (
 	ctx: InternalTraversal,
 	allowed?: boolean
+): boolean => exitResolutionIn(ctx.allowRes!, ctx, allowed)
+
+const exitResolutionIn = (
+	res: Resolutions,
+	ctx: InternalTraversal,
+	allowed?: boolean
 ): boolean => {
-	const res = ctx.res!
 	const frame = res.frames![--res.depth]
-	if (!res.tracked) return allowed ?? exitUntracked(ctx, frame)
+	if (!res.tracked) return allowed ?? exitUntracked(res, ctx, frame)
 	const invalid = res.invalid
 	res.invalid = frame.outerInvalid
-	const valid = allowed ?? (invalid === undefined && ctx.errN === frame.errN)
+	const valid = (allowed ?? invalid === undefined) && ctx.errN === frame.errN
 	const data = frame.data
 	const states = res.seen[frame.id]!
 	// a primitive has no identity, so each place reports its own errors
@@ -1054,12 +1085,12 @@ export const exitResolution = (
 
 // a failed object is recorded so it isn't reported twice
 const exitUntracked = (
+	res: Resolutions,
 	ctx: InternalTraversal,
 	frame: ResolvingFrame
 ): boolean => {
 	if (ctx.errN === frame.errN) return true
 	if (!hasDomain(frame.data, "object")) return false
-	const res = ctx.res!
 	;(res.seen[frame.id] ??= new Map()).set(frame.data, invalidResolution(ctx))
 	res.hasFailed = true
 	return false
@@ -1142,9 +1173,10 @@ export const applyResolution = (
 	data: unknown,
 	ctx: InternalTraversal
 ): void => {
-	if (enterResolution(ctx, id, data) !== undefined) return
+	const res = resolutionsOf(ctx)
+	if (enterResolutionIn(res, ctx, id, data) !== undefined) return
 	node.tApply(data, ctx)
-	exitResolution(ctx)
+	exitResolutionIn(res, ctx)
 }
 
 // undefined once entered, else whether traversal continues
@@ -1153,7 +1185,7 @@ export const enterApplied = (
 	id: string,
 	data: unknown
 ): boolean | undefined => {
-	const entered = enterResolution(ctx, id, data)
+	const entered = enterResolutionIn(resolutionsOf(ctx), ctx, id, data)
 	return entered === undefined ? undefined : entered || !ctx.failFast
 }
 
@@ -1161,7 +1193,7 @@ export const exitApplied = (
 	ctx: InternalTraversal,
 	continues: boolean
 ): boolean => {
-	exitResolution(ctx)
+	exitResolutionIn(ctx.res!, ctx)
 	return continues
 }
 

@@ -166,7 +166,7 @@ export const assertIs = (expected: unknown, actual: unknown): void => {
 }
 
 const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
-	if (expected === actual) return
+	if (Object.is(expected, actual)) return
 
 	try {
 		if (

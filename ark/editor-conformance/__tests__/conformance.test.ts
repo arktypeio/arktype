@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	diagnosticOutputs,
+	matchDiagnosticSource,
 	staleDiagnosticFiles
 } from "@ark/editor-conformance/diagnostics/generate.ts"
 import {
@@ -21,6 +22,28 @@ contextualize(() => {
 		it("cases.json and rules.json are current", async () => {
 			attest(staleDiagnosticFiles(await diagnosticOutputs())).equals([])
 		}).timeout(60_000)
+
+		it("matches TypeScript diagnostic paths across Windows separators and drive casing", () => {
+			const entries = [
+				["sources/arktype.ts", "D:\\repo\\diagnostics\\sources\\arktype.ts"],
+				[
+					"sources/typescript.ts",
+					"D:\\repo\\diagnostics\\sources\\typescript.ts"
+				]
+			] as const
+			attest(
+				matchDiagnosticSource("D:/repo/diagnostics/sources/arktype.ts", entries)
+			).equals("sources/arktype.ts")
+			attest(
+				matchDiagnosticSource(
+					"d:/repo/diagnostics/sources/typescript.ts",
+					entries
+				)
+			).equals("sources/typescript.ts")
+			attest(
+				matchDiagnosticSource("D:/repo/diagnostics/sources/other.ts", entries)
+			).equals(undefined)
+		})
 	})
 
 	// the expectations below are written out by hand, so they check the port

@@ -99,7 +99,7 @@ contextualize(() => {
 		})
 
 		attest(out.toString()).snap(`email must be an email address
-tags must be at least length 3`)
+tags must be at least 3 items`)
 	})
 
 	it("multiple refinement errors", () => {
@@ -127,7 +127,7 @@ tags must be at least length 3`)
 		const out = Schema(data)
 
 		attest(out.toString()).snap(`email must be an email address
-tags must be at least length 3
+tags must be at least 3 items
 score must be non-negative
 date must be a Date
 nospace must be matched by ^\\S*$
@@ -178,7 +178,7 @@ extra must be a string or null (was missing)`)
 			key: "  This is too long  "
 		})
 
-		attest(outWithMorph.toString()).snap("key must be at most length 4")
+		attest(outWithMorph.toString()).snap("key must be at most 4 characters")
 
 		const withoutMorph = type({
 			key: type("3<=string<=4")
@@ -188,7 +188,7 @@ extra must be a string or null (was missing)`)
 			key: "  This is too long  "
 		})
 
-		attest(outWithoutMorph.toString()).snap("key must be at most length 4")
+		attest(outWithoutMorph.toString()).snap("key must be at most 4 characters")
 	})
 
 	it("cross scope reference", () => {
@@ -357,7 +357,7 @@ extra must be a string or null (was missing)`)
 			first_name: "Bob"
 		})
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
-			"first_name must be at most length 3"
+			"first_name must be at most 3 characters"
 		)
 
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
@@ -1019,7 +1019,7 @@ extra must be a string or null (was missing)`)
 		})
 
 		attest(Feedback.expression).snap(
-			"{ contact: string == 0 | /^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$/ }"
+			"{ contact: string == 0 | /^[\\w%'+-]+(?:\\.[\\w%'+-]+)*@[\\dA-Za-z](?:[\\dA-Za-z-]*[\\dA-Za-z])?(?:\\.[\\dA-Za-z](?:[\\dA-Za-z-]*[\\dA-Za-z])?)*\\.[A-Za-z]{2,}$/ }"
 		)
 		attest(Feedback.t).type.toString.snap(`{ contact: string }`)
 	})
@@ -1108,7 +1108,7 @@ extra must be a string or null (was missing)`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1274
-	it("fail on non-discriminable union of objects with onUndeclaredKey: delete", () => {
+	it("non-discriminable union of objects with onUndeclaredKey: delete", () => {
 		const Point2d = type({
 			x: "number",
 			y: "number",
@@ -1122,11 +1122,13 @@ extra must be a string or null (was missing)`)
 			"+": "delete"
 		})
 
-		attest(() => Point2d.or(Point3d)).throws
-			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { x: number, y: number, z: number, + (undeclared): delete }
-Right: { x: number, y: number, + (undeclared): delete }
-Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the union of their inputs to a single morph.`)
+		const Point = Point2d.or(Point3d)
+		attest<{ x: number; y: number } | { x: number; y: number; z: number }>(
+			Point.infer
+		)
+		attest(Point({ x: 1, y: 2, z: 3, w: 4 })).equals({ x: 1, y: 2, z: 3 })
+		attest(Point({ x: 1, y: 2, w: 4 })).equals({ x: 1, y: 2 })
+		attest(Point({ x: 1, y: 2, z: "3" })).equals({ x: 1, y: 2 })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1266
@@ -1237,7 +1239,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		}>(urDOOMed.t)
 
 		attest(urDOOMed.expression).snap(
-			'{ escapes?: "a | b" | "c | d", grouping: (((((4 | 5)[] | 3)[] | 2)[] | 1)[] | 0)[], nestedGenerics: 0n }'
+			'{ "escapes?": "a | b" | "c | d", grouping: (((((4 | 5)[] | 3)[] | 2)[] | 1)[] | 0)[], nestedGenerics: 0n }'
 		)
 	})
 

@@ -68,7 +68,16 @@ export interface Contextualize extends ContextualizeRoot {
 }
 
 const testDirName = "__tests__"
-const testSuffix = ".test.ts"
+const testSuffixPattern = /(?:\.(?:test|spec|bench))?\.[cm]?[jt]sx?$/
+
+export const getSuiteName = (filePath: string): string => {
+	const testsDirChar = filePath.search(testDirName)
+	const suiteNamePath =
+		testsDirChar === -1 ?
+			basename(filePath)
+		:	filePath.slice(testsDirChar + testDirName.length + 1)
+	return suiteNamePath.replace(testSuffixPattern, "")
+}
 
 const contextualizeRoot: ContextualizeRoot = (first, contextualTests) => {
 	const describe = globalThis.describe
@@ -77,13 +86,7 @@ const contextualizeRoot: ContextualizeRoot = (first, contextualTests) => {
 			`contextualize cannot be used without a global 'describe' function.`
 		)
 	}
-	const filePath = caller().file
-	const testsDirChar = filePath.search(testDirName)
-	const suiteNamePath =
-		testsDirChar === -1 ?
-			basename(filePath)
-		:	filePath.slice(testsDirChar + testDirName.length + 1)
-	const suiteName = suiteNamePath.slice(0, -testSuffix.length)
+	const suiteName = getSuiteName(caller().file)
 	if (contextualTests) {
 		describe(suiteName, () =>
 			contextualTests((name, test) => {

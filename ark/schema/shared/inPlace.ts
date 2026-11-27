@@ -235,6 +235,8 @@ const holdsWriter = (places: Map<string, Place>): boolean => {
 
 const writesSoundly = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) {
+		// each joined branch transforms data as the union received it
+		if (node.is("union") && node.keepsAny) return false
 		const structure = node.is("intersection") ? node.structure : undefined
 		if (structure && transformsKeyTwice(structure)) return false
 	}

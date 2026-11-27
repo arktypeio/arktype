@@ -1,15 +1,48 @@
 // a library built on arktype, exporting each shape of Type whose declaration
 // tsc writes out. testBuild.ts emits its declarations against the build.
 import {
+	annotatingFallback,
+	ark,
+	ArkErrors,
+	byAncestorPath,
+	byPath,
+	configure,
+	declare,
 	define,
+	firstIssue,
+	flatByPath,
+	flatMessagesByPath,
 	fn,
 	fromJsonSchema,
 	generic,
+	keywords,
+	lineOf,
 	match,
+	messageIn,
 	scope,
-	type
+	ToJsonSchemaError,
+	type,
+	type ArkError,
+	type FromJsonSchema as FromJsonSchemaFn,
+	type Locale,
+	type Module,
+	type ReadableIssue,
+	type Scope,
+	type ScopeParser
 } from "arktype"
 import { codec } from "arktype/codecs"
+import {
+	describeCause,
+	describeMissing,
+	groupByPath,
+	isolate,
+	labelOf,
+	listPattern,
+	printedActualOf,
+	writeKeywordExpected
+} from "arktype/i18n"
+import { de } from "arktype/locales/de"
+import { en } from "arktype/locales/en"
 import { regex } from "arktype/regex"
 
 export const User = type({ name: "string", age: "number" })
@@ -26,6 +59,8 @@ export const Or = type("string").or("number")
 export const And = type.and({ a: "string" }, { b: "string" })
 export const Merged = User.merge({ email: "string.email" })
 export const Picked = User.pick("name")
+export const PartialName = User.partial("name")
+export const RequiredName = PartialName.required("name")
 export const Keys = User.keyof()
 export const Props = User.props
 export const Users = User.array()
@@ -51,6 +86,7 @@ export const EpochMs = codec("number.integer", "Date", {
 })
 
 export const types = scope({ id: "string", user: { id: "id" } })
+export const scopeCfg = types.config
 export const Owned = types.type({ owner: "user" })
 export const typeOf = types.type
 export const matchOf = types.match
@@ -92,3 +128,77 @@ export const FromJsonSchema = fromJsonSchema({
 })
 export const FromStandardSchema = fromJsonSchema(User)
 export const intersection = FromJsonSchema.and(User)
+// public values, methods, metadata, keywords, locales and helpers
+export const userMeta = User.meta
+export const userConfigure = User.configure
+export const userJsonSchema = User.toJsonSchema()
+export const toJsonSchemaMethod = User.toJsonSchema
+export const toJsonSchemaErrorCtor = ToJsonSchemaError
+export const fallback = annotatingFallback
+export const kw = keywords
+export const kwString = keywords.string
+export const kwStringBase64 = keywords.string.base64
+export const kwStringBoolean = keywords.string.boolean
+export const kwStringDate = keywords.string.date
+export const kwStringDateIso = keywords.string.date.iso
+export const kwStringDateIsoDate = keywords.string.date.iso.date
+export const kwStringNormalizeNfc = keywords.string.normalize.NFC
+export const kwStringUpper = keywords.string.upper
+export const kwNumber = keywords.number
+export const kwObject = keywords.object
+export const kwObjectJson = keywords.object.json
+export const kwUnknown = keywords.unknown
+export const kwArray = keywords.Array
+export const kwArrayIndex = type.arrayIndex
+export const kwTypedArray = keywords.TypedArray
+export const kwFormData = keywords.FormData
+export const arkScope = ark
+export const scopeFn = scope
+export const codecFn = codec
+export const typeFn = type
+export const typeModule = type.module
+export const typeSchema = type.schema
+export const matchFn = match
+export const fnFn = fn
+export const genericFn = generic
+export const defineFn = define
+export const declareFn = declare
+export const configureFn = configure
+export const fromJsonSchemaFn = fromJsonSchema
+export const regexFn = regex
+export const arkErrorsCtor = ArkErrors
+export const summaryInOf = (errors: ArkErrors) => errors.summaryIn
+export const messageInFn = messageIn
+export const formatErrorIn = (error: ArkError, locale: Locale) =>
+	messageIn(error, locale)
+export const byPathFn = byPath
+export const byAncestorPathFn = byAncestorPath
+export const flatByPathFn = flatByPath
+export const firstIssueFn = firstIssue
+export const flatMessagesByPathFn = flatMessagesByPath
+export const formatErrorLine = lineOf
+export const formatReadableIssue = (issue: ReadableIssue): string =>
+	lineOf(issue)
+export const enLocale = en
+export const deLocale = de
+export const spreadLocale = { ...de, tag: "de-AT" }
+export const i18nHelpers = {
+	describeCause,
+	describeMissing,
+	groupByPath,
+	isolate,
+	labelOf,
+	listPattern,
+	printedActualOf,
+	writeKeywordExpected
+}
+export type ExportedHelpers = [
+	FromJsonSchemaFn,
+	ScopeParser,
+	Module.infer<typeof exported>,
+	Module.infer.In<typeof exported>,
+	Module.infer.Out<typeof exported>,
+	Scope.infer<typeof types>,
+	Scope.infer.In<typeof types>,
+	Scope.infer.Out<typeof types>
+]

@@ -25,12 +25,12 @@ import {
 import { fingerprintOfCode } from "./cache.ts"
 import {
 	emitDeclarations,
-	type Checker,
 	refuseDeclare,
 	writeDeclaredOutsideMessage,
 	type Declarations
 } from "./declare.ts"
 import type {
+	Checker,
 	PrecompilePluginOptions,
 	PrecompileRequest,
 	RenderedDiagnostics,
@@ -1776,7 +1776,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				(this as { environment?: { name: string } }).environment
 			)
 			for (const path in declarations.files) {
-				const fileName = relative(declarations.root, path)
+				const fileName = relative(
+					declarations.root.split("\\").join("/"),
+					path.split("\\").join("/")
+				)
 				if (fileName.startsWith("../"))
 					throwError(writeDeclaredOutsideMessage(path, declarations.root))
 				this.emitFile({
@@ -2929,7 +2932,7 @@ const esbuildScanOf = async (
 				: undefined
 			)
 		},
-		readFile: path => readFileSync(path, "utf8"),
+		readFile,
 		isTransformed,
 		idOf: fileOf,
 		cwd

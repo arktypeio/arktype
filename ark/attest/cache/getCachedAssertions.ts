@@ -67,9 +67,9 @@ export const isPositionWithinRange = (
 ): boolean => {
 	if (line < start.line || line > end.line) return false
 
-	if (line === start.line) return char >= start.char
+	if (line === start.line && char < start.char) return false
 
-	if (line === end.line) return char <= end.char
+	if (line === end.line && char > end.char) return false
 
 	return true
 }

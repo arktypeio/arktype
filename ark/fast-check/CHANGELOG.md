@@ -1,5 +1,9 @@
 # @ark/fast-check
 
+## Unreleased
+
+- Fixed 5 soundness bugs in arbitrary generation: `unknown` predicates and JSON Schema `oneOf` handling, morph `declaredIn` and built-in parse keywords, empty-array additional properties, `±Infinity` and out-of-safe-integer bounds, and cyclic variadic tuples.
+
 ## 0.0.22-beta.2
 
 ### Type `arkToArbitrary`'s values as the Type's input

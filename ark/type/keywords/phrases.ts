@@ -1,11 +1,14 @@
-import { en, type Locale } from "@ark/schema"
+import { en, type KeywordPhraseAlias, type Locale } from "@ark/schema"
 import type { KeywordConfig } from "../config.ts"
 import { raisedErrorPhrases } from "./functions.ts"
+
+export type { KeywordPhraseAlias }
 
 const epoch = "an integer representing a safe Unix timestamp"
 
 /** the English phrase of each builtin keyword whose nodes carry one */
 export const keywordPhrases = {
+	"Array.index": "an array index",
 	"FormData.parsed": "an object representing parsed form data",
 	"number.epoch": {
 		noun: epoch,
@@ -27,6 +30,7 @@ export const keywordPhrases = {
 	"string.date": "a parsable date",
 	"string.date.epoch": "an integer string representing a safe Unix timestamp",
 	"string.date.iso": "an ISO 8601 date or date-time",
+	"string.date.iso.date": "an ISO 8601 date",
 	"string.date.parse": "a parsable date",
 	"string.digits": "only digits 0-9",
 	"string.email": "an email address",
@@ -64,10 +68,9 @@ export const keywordPhrases = {
 	"string.uuid.v7": "a UUIDv7",
 	"string.uuid.v8": "a UUIDv8"
 } as const satisfies {
-	readonly [alias in keyof KeywordConfig]?: Locale.KeywordPhrase
+	readonly [alias in keyof KeywordConfig &
+		KeywordPhraseAlias]: Locale.KeywordPhrase
 }
-
-export type KeywordPhraseAlias = keyof typeof keywordPhrases
 
 // every resolved config shares schema's en, so it gains the phrases in place
 Object.assign(en.keywordPhrases, keywordPhrases)

@@ -120,10 +120,10 @@
 		"name": "optionalTupleElement",
 		"origin": "tsc",
 		"source": "sources/arktype.ts:18 TS2322",
-		"input": "Type '\"number\"' is not assignable to type '\"A postfix required element cannot follow an optional or defaultable element​\"'.",
-		"output": "A postfix required element cannot follow an optional or defaultable element​",
+		"input": "Type '\"number\"' is not assignable to type '\"A required element may not follow an optional element​\"'.",
+		"output": "A required element may not follow an optional element​",
 		"rule": 2,
-		"display": "A postfix required element cannot follow an optional or defaultable element​"
+		"display": "A required element may not follow an optional element​"
 	},
 	{
 		"name": "badTupleOperator",

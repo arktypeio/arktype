@@ -8,7 +8,10 @@ import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
+	formatBoundCount,
 	type BaseRangeInner,
+	type BoundUnit,
+	type BoundUnitInput,
 	type UnknownExpandedRangeSchema
 } from "./range.ts"
 
@@ -16,10 +19,12 @@ export declare namespace Min {
 	export interface Inner extends BaseRangeInner {
 		rule: number
 		exclusive?: true
+		unit?: BoundUnit
 	}
 
 	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
 		rule: number
+		unit?: BoundUnitInput
 	}
 
 	export type Schema = ExpandedSchema | number
@@ -44,12 +49,16 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 		ownErr: true,
 		keys: {
 			rule: {},
-			exclusive: {}
+			exclusive: {},
+			unit: {
+				unserialized: true
+			}
 		},
 		defaults: {
 			description: node => {
-				if (node.rule === 0) return node.exclusive ? "positive" : "non-negative"
-				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
+				if (node.rule === 0 && !node.unit)
+					return node.exclusive ? "positive" : "non-negative"
+				return `${node.exclusive ? "more than" : "at least"} ${formatBoundCount(node.rule, node.unit)}`
 			}
 		},
 		coversNoun: true

@@ -1,11 +1,15 @@
 import {
 	$ark,
+	assertDefaultValueAssignability,
 	Disjoint,
 	inProgress,
+	markUnchecked,
 	normalizeIndex,
 	normalizeOrder,
 	queueUnchecked,
+	uncheckedQueued,
 	writeDuplicateKeyMessage,
+	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
 	type OptionalNode,
@@ -39,6 +43,15 @@ const intersectPropsAndIndex = <
 			intersectNodesRoot(lValue._in, rValue._in, $)
 		:	intersectNodesRoot(lValue, rValue, $)
 	const value = intersectValues(l.value, r.value)
+	// a default is a value of its key, which the signature checks as it would
+	// one the data held
+	if (l.is("optional") && l.hasDef()) {
+		assertDefaultValueAssignability(
+			value instanceof Disjoint ? $ark.kw.never.internal : r.value,
+			l.default,
+			l.key
+		)
+	}
 	// a cyclic value a definition's key meets is decided once definitions close
 	if (
 		kind === "required" &&
@@ -261,12 +274,18 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 
 			// a prop meets the other side's index signatures as in one literal
 			if ((l.index && r.props.length) || (r.index && l.props.length)) {
-				return (
+				const uncheckedBefore = uncheckedQueued()
+				const result =
 					structure.reduce!(
 						(childIntersectionResult as Structure.Node).inner,
 						ctx.$
 					) ?? childIntersectionResult
+				if (
+					uncheckedQueued() > uncheckedBefore &&
+					!(result instanceof Disjoint)
 				)
+					markUnchecked(result as BaseNode)
+				return result
 			}
 
 			return childIntersectionResult
@@ -275,6 +294,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 	reduce: (inner, $) => {
 		if (!inner.required && !inner.optional) return
 
+		const uncheckedBefore = uncheckedQueued()
 		const seen = new Set<Key>()
 		let updated = false
 		const newOptionalProps: OptionalNode[] =
@@ -302,11 +322,13 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		}
 
 		if (updated) {
-			return $.node(
+			const reduced = $.node(
 				"structure",
 				{ ...inner, optional: newOptionalProps },
 				{ reduced: true }
 			)
+			if (uncheckedQueued() > uncheckedBefore) markUnchecked(reduced)
+			return reduced
 		}
 	}
 }

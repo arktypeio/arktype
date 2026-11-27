@@ -115,6 +115,31 @@ contextualize(() => {
 		attest(precompileStandalone({ tree }).code).equals(artifact)
 	})
 
+	it("writes a cyclic node an alias resolves to as one equal to it that none does", () => {
+		const nodesOf = (t: type.Any): Record<string, string> =>
+			Object.fromEntries(
+				[
+					...precompileStandalone({ T: t }).code.matchAll(
+						/^const (\w+)Node = .*\n(?:\t.*\n)*}\)\)\(\)$/gm
+					)
+				].map(([declaration, name]) => [name, declaration])
+			)
+		// the case a union reads the keyword's root as is equal to it without
+		// being the node its aliases resolve to, and both are named, so
+		// written, as one unit
+		const resolved = nodesOf(type("object.json"))
+		const equal = nodesOf(type("object.json").or("ArrayBuffer").or("string"))
+		attest(Object.keys(resolved).length).equals(1)
+		attest(flatMorph(resolved, name => [name, equal[name]])).equals(resolved)
+		// what tells them apart is read only by a transform, which still holds it
+		const { Tree } = scope({
+			Tree: { name: "string.trim", "next?": "Tree" }
+		}).export()
+		attest(
+			precompileStandalone({ Tree }).code.includes("tfsById: true")
+		).equals(true)
+	})
+
 	it("writes a global pattern the same after it matches", () => {
 		const T = type({ s: /a/g })
 		const write = () => [
@@ -424,6 +449,22 @@ contextualize(() => {
 		attest(
 			T({ precompiledValue: "a", next: { precompiledValue: 1 } }).toString()
 		).snap("next.precompiledValue must be a string")
+	})
+
+	it("misses a type piping through a cyclic type", async () => {
+		const piped = () =>
+			scope({})
+				.type("string.json.parse")
+				.pipe(
+					scope({ pipedCycle: { a: "string", "b?": "pipedCycle" } }).export()
+						.pipedCycle,
+					o => o
+				)
+		const units = await precompileUnits([piped()])
+		attest(units).equals({})
+		attest(piped()('{ "a": "x", "b": { "a": 1 } }').toString()).snap(
+			"b.a must be a string"
+		)
 	})
 
 	it("a definition resolving aliases leaves a union's cases until it's used", () => {

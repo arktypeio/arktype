@@ -8,6 +8,7 @@ import type {
 } from "@ark/schema"
 
 import {
+	allowsInBranchBy,
 	ArkErrors,
 	codedIssue,
 	describeActual,
@@ -91,6 +92,7 @@ export {
 	applyRejected,
 	ArkErrors,
 	arrayIndexMatcher,
+	arrayPathKeyOf,
 	byAncestorPath,
 	byPath,
 	callMorph,
@@ -126,6 +128,7 @@ export {
 	holdsOnlyIndices,
 	keepOwn,
 	InternalTraversal,
+	lineOf,
 	listedIssue,
 	matchesRepeated,
 	mergeTransformed,
@@ -139,6 +142,7 @@ export {
 	rejects,
 	runtimeConfig,
 	runtimeScope,
+	setOwnValue,
 	silentCtx,
 	throwIssues,
 	throwOnDefault,
@@ -146,6 +150,7 @@ export {
 	transformed,
 	transformedInApply,
 	transformIfAllowed,
+	transformKept,
 	transformResolution,
 	transformsBranches,
 	transformsValid,
@@ -158,18 +163,23 @@ export {
 	writeMessage,
 	writeNotEqualActual,
 	writeProtoActual,
+	writeRangeActual,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
 	writeUnitActual,
 	writeUnitMessage,
-	type ArkError
+	type ArkError,
+	type ReadableIssue
 } from "arktype/schema/runtime"
 export {
 	baseNameOf,
 	functionNameOf,
+	hasOwnKeys,
 	isIpv4,
 	isIpv6,
 	isIso8601,
+	isIso8601Date,
+	isNonArray,
 	isNumericString,
 	isPlainObjectOrArray,
 	isUuid,
@@ -256,7 +266,7 @@ export class Validator {
 	// a build without the expression member has none to print, and one whose
 	// validators all lack it ships no read of it
 	toString(): string {
-		return holdsExpression && this.expression ?
+		return holdsExpression && this.expression !== undefined ?
 				`Type<${this.expression}>`
 			:	"Type"
 	}
@@ -276,7 +286,7 @@ export const bakeInto = <t>(
 	{ "~standard": standard, ...attributes }: Omit<ValidatorAttributes, "meta">
 ): t => {
 	// a Type arktype created, as where a site is left to it, has each member
-	if (validator instanceof Validator) {
+	if (validator instanceof Validator && Object.isExtensible(validator)) {
 		const prior: BakedJsonSchema | undefined = Reflect.getOwnPropertyDescriptor(
 			validator,
 			"toJsonSchema"
@@ -941,6 +951,10 @@ export const failsListed = ((
 	return ctx.failFast
 }) satisfies Fn
 
+// what a ctx's _e and failsUnion are while an Allows reading its ctx asks it:
+// a failure stops there, adding no issue
+export const stops = (): true => true
+
 // whether a union fails, by the first issue of each branch; none where one that
 // a write or a getter has made valid since passes
 export const failsBranches = ((
@@ -950,6 +964,13 @@ export const failsBranches = ((
 	issueOf: UnionIssueOf
 ): boolean | undefined => {
 	if (!ctx?._e) return true
+	// a branch that fails adds no issue to a ctx that's only asked, so none
+	// would be read as passing: each is asked as arktype's union asks it
+	if (traversesUnions && ctx._e === stops) {
+		return !branches.some(branch =>
+			allowsInBranchBy(ctx, branch as never, data)
+		)
+	}
 	const firsts: ArkIssue[] = []
 	for (const branch of branches) {
 		let first: ArkIssue | undefined

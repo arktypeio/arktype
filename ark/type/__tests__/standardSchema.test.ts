@@ -141,9 +141,9 @@ contextualize(() => {
 			}
 		}
 		attest(textOf(type({ y: { z: "string >= 2" } }), { y: { z: "a" } })).snap({
-			summary: "y.z must be at least length 2",
-			errors: ["must be at least length 2"],
-			issues: ["must be at least length 2"]
+			summary: "y.z must be at least 2 characters",
+			errors: ["must be at least 2 characters"],
+			issues: ["must be at least 2 characters"]
 		})
 		// a union's message writes its branches' paths from its own
 		attest(
@@ -441,6 +441,93 @@ contextualize(() => {
 			attest(() => type.schema(Foreign as never)).throws(
 				writeForeignArkMessage("A Type passed as a schema")
 			)
+		})
+
+		it("aborts piped morphs when a Standard Schema reports issues", () => {
+			let ranPipe = false
+			const Std: StandardSchemaV1<unknown, { id: string }> = {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: v =>
+						typeof v === "object" && v !== null && "id" in v ?
+							{ value: v as { id: string } }
+						:	{
+								issues: [
+									{ message: "first issue", path: ["a"] },
+									{ message: "second issue", path: ["b"] }
+								]
+							}
+				}
+			}
+			const Piped = type(Std).pipe(v => {
+				ranPipe = true
+				return v.id
+			})
+			attest(Piped("bad").toString()).snap("a: first issue\nb: second issue")
+			attest(ranPipe).equals(false)
+			attest(Piped({ id: "ok" })).equals("ok")
+			attest(ranPipe).equals(true)
+		})
+
+		it("handles callable foreign roots, foreign roots without ~standard, and deferred Record", () => {
+			const ForeignNoStandard = Object.setPrototypeOf(
+				{},
+				{ " arkKind": "root" }
+			)
+			attest(() => type({ user: ForeignNoStandard as never })).throws(
+				writeForeignArkMessage("This Type")
+			)
+
+			const ForeignNonThunkFn = Object.assign((v: unknown) => v, {
+				" arkKind": "root"
+			})
+			attest(() => type(ForeignNonThunkFn as never)).throws(
+				writeForeignArkMessage("This Type")
+			)
+
+			const ForeignFn = Object.assign((v: unknown) => v, {
+				" arkKind": "root",
+				"~standard": {
+					version: 1,
+					vendor: "arktype",
+					validate: (v: unknown) =>
+						typeof v === "object" && v !== null && "id" in v ?
+							{ value: v }
+						:	{
+								issues: [
+									{
+										message: "id must be a string",
+										problem: "must be a string",
+										path: ["id"]
+									}
+								]
+							},
+					jsonSchema: {
+						input: () => ({
+							type: "object",
+							properties: { id: { type: "string" } }
+						}),
+						output: () => ({
+							type: "object",
+							properties: { id: { type: "string" } }
+						})
+					}
+				}
+			})
+			const Wrapped = type({ user: ForeignFn as never })
+			attest(Wrapped({ user: {} }).toString()).snap("user.id must be a string")
+			attest(Wrapped.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: {
+					user: { type: "object", properties: { id: { type: "string" } } }
+				},
+				required: ["user"]
+			})
+
+			const Rec = type.Record("string", ForeignFn as StandardSchemaV1)
+			attest(Rec({ a: { id: "ok" } })).equals({ a: { id: "ok" } })
+			attest(Rec({ a: {} }).toString()).snap("a.id must be a string")
 		})
 
 		it("throws for a module or generic in a scope", () => {
@@ -948,11 +1035,11 @@ contextualize(() => {
 					{
 						code: "minLength",
 						path: ["password"],
-						expected: "at least length 12",
-						message: "must be at least length 12"
+						expected: "at least 12 characters",
+						message: "must be at least 12 characters"
 					}
 				],
-				message: "password must be at least length 12"
+				message: "password must be at least 12 characters"
 			})
 			attest(parsed.issues).equals(directJson)
 			attest(JSON.stringify(result.issues)).equals(JSON.stringify(direct))

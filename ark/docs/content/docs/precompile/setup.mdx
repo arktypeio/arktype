@@ -221,7 +221,7 @@ By default, each definition becomes a standalone validator and `arktype` resolve
 
 ## Options in ark.json [#ark-json]
 
-Set [options](/docs/precompile/options) in `ark.json` beside your `package.json` rather than in the plugin call, so `ark check`, the Node and Bun drivers and the ESLint rule build as your bundler does. A program that calls `configure()` names its config module there:
+Set [options](/docs/precompile/options) in `ark.json` beside your `package.json` rather than in the plugin call, so `ark check`, the Node and Bun drivers and the ESLint rule build as your bundler does. `npx arktype init` creates one with `"$schema"` for editor completion. A program that calls `configure()` names its config module there:
 
 ```json title="ark.json"
 {
@@ -300,7 +300,7 @@ The aliases also point a dependency's `arktype` imports at the runtime, so the `
 
 On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so Node would load arktype, for your code and for any dependency importing it, beside the runtime your validators use, and `out instanceof type.errors` would be false for their errors. `bundlePagesRouterDependencies` has Next bundle them, as it does the app router's, and the loader fails a module there without it. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy. Either router leaves external a package `serverExternalPackages` names, so the loader fails the build for one that imports arktype, reading the list from `next.config` without running it: name its packages as string literals.
 
-`withPrecompile` has `next build` read your project as Next loads `next.config`, before Turbopack starts, through every script under it that nothing imports and each route, so it can [prune](/docs/precompile/options#prune) and hold each validator once, in a file under `node_modules/.bin/.ark`. As the read writes only what changed, before Turbopack looks, Turbopack's build cache keeps from an earlier build only what this one's read left as it was. The read resolves imports as Node does, through your `tsconfig.json`'s `paths` and `turbopack.resolveAlias`, and the loader checks each module as Turbopack builds it against what it read, for each layer of a route, failing one that differs, naming it: a module a loader rewrote, or one whose import resolves to another file in that layer, as a `react-server` condition may. Where it can't read the project, it warns, naming why, and each module holds its own validators, as they do with `prune: false`, in `next dev` and without `withPrecompile`: for another loader in `turbopack.rules`, a Babel config like `.babelrc` or `experimental.swcPlugins`, which Turbopack runs after the loader, `pageExtensions`, a file like `.mdx` that a loader compiles, a query on an import, or an import it can't name.
+`withPrecompile` has `next build` read your project as Next loads `next.config`, before Turbopack starts, through every script under it that nothing imports and each route, so it can [prune](/docs/precompile/options#prune) and hold each validator once, in a file under `node_modules/.cache/ark-units`. As the read writes only what changed, before Turbopack looks, Turbopack's build cache keeps from an earlier build only what this one's read left as it was. The read resolves imports as Node does, through your `tsconfig.json`'s `paths` and `turbopack.resolveAlias`, and the loader checks each module as Turbopack builds it against what it read, for each layer of a route, failing one that differs, naming it: a module a loader rewrote, or one whose import resolves to another file in that layer, as a `react-server` condition may. Where it can't read the project, it warns, naming why, and each module holds its own validators, as they do with `prune: false`, in `next dev` and without `withPrecompile`: for another loader in `turbopack.rules`, a Babel config like `.babelrc` or `experimental.swcPlugins`, which Turbopack runs after the loader, `pageExtensions`, a file like `.mdx` that a loader compiles, a query on an import, or an import it can't name.
 
 Turbopack runs the loader in a pool of processes, once for the client and once for the server. `next dev` precompiles each module for each, where one process of `next build` precompiles its project once.
 
@@ -380,7 +380,7 @@ Pass `--enable-source-maps` for original lines in stack traces.
 
 ### Build with tsc [#tsc]
 
-A program `tsc` compiles to run from its `outDir` precompiles what it emits with `--emit`, run after `tsc`:
+A program `tsc` compiles to run from its `outDir` precompiles what it emits with `ark emit`, run after `tsc`:
 
 ```json title="package.json"
 {
@@ -390,11 +390,11 @@ A program `tsc` compiles to run from its `outDir` precompiles what it emits with
 }
 ```
 
-It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsconfigs it references. Each module reading arktype, directly or through a Type it imports, is precompiled from its source as a bundler would and emitted again over what `tsc` wrote, in the module format, target and source maps the tsconfig sets, with `arktype` and its other entries imported or required as `arktype/runtime`. Other modules and declarations stay as `tsc` emitted them. It takes the options `--check` does, reads `ark.json`, and fails on what a build would, writing nothing. Since it emits from source, run anything that rewrites `tsc`'s output, like `tsc-alias`, after it.
+It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsconfigs it references. Each module reading arktype, directly or through a Type it imports, is precompiled from its source as a bundler would and emitted again over what `tsc` wrote, in the module format, target and source maps the tsconfig sets, with `arktype` and its other entries imported or required as `arktype/runtime`. Other modules and declarations stay as `tsc` emitted them. It takes the options `ark check` does, reads `ark.json`, and fails on what a build would, writing nothing. Since it emits from source, run anything that rewrites `tsc`'s output, like `tsc-alias`, after it.
 
-Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. That includes one that [opts in](/docs/precompile/advanced#libraries), whose Types are arktype's at runtime, so a definition reading one of them fails the build, naming the fix. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `arktype/schema/runtime` that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
+Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. That includes one that [opts in](/docs/precompile/advanced#libraries), whose Types are arktype's at runtime, so a definition reading one of them fails the build, naming the fix. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `arktype/schema/runtime` that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `ark emit` refuses them. A library publishes what `tsc` emits without `ark emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
 
-`--emit --declare` also writes [declarations](/docs/precompile/advanced#declarations) as `--declare` does. `--emit` reads the compiler API of TypeScript 5.5 to 6, so in a TypeScript 7 project, install TypeScript 6 beside it: `npm i -D typescript-6@npm:typescript@6` (which `--declare` also reads before TypeScript 7.1).
+`ark emit --declare` also writes [declarations](/docs/precompile/advanced#declarations) as `ark declare` does. `ark emit` reads the compiler API of TypeScript 5.5 to 6, so in a TypeScript 7 project, install TypeScript 6 beside it: `npm i -D typescript-6@npm:typescript@6` (which `ark declare` also reads before TypeScript 7.1).
 
 ## Bun [#bun]
 
@@ -418,7 +418,7 @@ Bun doesn't ask a runtime plugin to resolve packages, so `arktype` resolves to t
 
 ## React Native (Metro) [#metro]
 
-Metro has no plugin: it caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the package that defines your Types instead, with `tsc` and [`--emit`](#tsc), and have the app import what it emits. Metro bundles that as it does any package, and the bundle holds each validator and `arktype`'s runtime, without its parser:
+Metro has no plugin: it caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the package that defines your Types instead, with `tsc` and [`ark emit`](#tsc), and have the app import what it emits. Metro bundles that as it does any package, and the bundle holds each validator and `arktype`'s runtime, without its parser:
 
 ```json title="packages/domain/package.json"
 {
@@ -450,7 +450,7 @@ Metro has no plugin: it caches each module by its own text, so a module whose va
 }
 ```
 
-- Leave `declaration` unset and let `--declare` write the declarations. `tsc` can't write one for a [cyclic](/docs/scopes#cyclic-types) scope, and fails with `TS5088`, where `--declare` names each cycle. Under TypeScript 7, install `typescript-6@npm:typescript@6` beside it [as above](#tsc).
+- Leave `declaration` unset and let `ark declare` write the declarations. `tsc` can't write one for a [cyclic](/docs/scopes#cyclic-types) scope, and fails with `TS5088`, where `ark declare` names each cycle. Under TypeScript 7, install `typescript-6@npm:typescript@6` beside it [as above](#tsc).
 - Import the package's own modules with their `.ts` extensions, which `rewriteRelativeImportExtensions` writes as `.js` in `out`. Metro reads those imports from either, but it doesn't resolve a `.js` import to the `.ts` file beside it.
 - Each emitted module imports `arktype/runtime`, which Metro resolves through arktype's `exports`. That's on by default in Metro 0.87, and set by `resolver.unstable_enablePackageExports` in earlier versions. Install `arktype` where the package resolves it, as a dependency of the package, and let a monorepo's `watchFolders` include the package and `arktype`.
 - Rebuild the package as you edit a Type. A Metro dev server bundles the next request from the new `out`, since each emitted module holds the validators of the Types it imports in its own text.
@@ -504,7 +504,7 @@ A directory, like `src`, stands for each JavaScript and TypeScript file it holds
 
 It reads [`ark.json`](/docs/precompile/options#arkjson) as a build does, and the options a plugin call passes in a file at the project's root, like `precompile.vite({ config: "src/config.ts" })` in `vite.config.ts`, saying where it found them. An option that isn't a literal there, or a plugin loaded in a way it can't follow, fails it, asking for the option in `ark.json` or as a flag. Each [option](/docs/precompile/options) is a flag that overrides both, like `--preset smallest`, `--optimize-errors size`, `--no-freeze` or `--members '{"assert":false}'`.
 
-It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates.
+It exits with 1 where the build would fail. `--fail-under <percent>` exits with 1 only if less than that percent of definitions can be precompiled, or on an error outside a definition, so CI can hold a project to it while it migrates. Pass `--json` for a machine-readable JSON report (with `files`, `sites`, `accepted`, `islands`, `rate`, `errors`, `errorsOutsideSites` and `diagnostics`).
 
 The same analysis is available as `new Precompiler(host, options).analyze(source, id)` from `@ark/aot`, which, as a build does, applies the program's configuration to arktype in its thread.
 
@@ -526,4 +526,4 @@ export default [
 ]
 ```
 
-`configs.recommended` lints JavaScript and TypeScript files. It reports what fails the build as an error, through `@ark/aot/precompilable`, and what the build warns about, like a problem [`allowUnsafe`](/docs/precompile/options#allowunsafe) builds past, as a warning, through `@ark/aot/warnings`. Each takes the build's options, which `ark.json` gives both. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.
+`configs.recommended` lints JavaScript and TypeScript files. It reports what fails the build as an error, through `@ark/aot/precompilable`, and what the build warns about — including structural operations like `"..."`, `.merge()` or `.pick()` that [drop a root `.narrow()`](/docs/precompile/troubleshooting#definitions) and problems [`allowUnsafe`](/docs/precompile/options#allowunsafe) builds past — as a warning, through `@ark/aot/warnings`. Each takes the build's options, which `ark.json` gives both. ESLint parses TypeScript only through a parser like typescript-eslint's, which a project already linting TypeScript configures.

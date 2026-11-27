@@ -10,16 +10,28 @@ import {
 } from "@ark/schema"
 import {
 	throwParseError,
+	type anyOrNever,
 	type array,
+	type Brand,
 	type Callable,
 	type conform,
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
+	type isSafelyMappable,
 	type JsonStructure,
+	type Primitive,
 	type Scanner,
+	type show,
 	type WhitespaceChar
 } from "@ark/util"
+import type {
+	Default,
+	distill,
+	InferredMorph,
+	isInferredDefault,
+	TerminallyInferredObject
+} from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
@@ -42,8 +54,129 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferDefinition<arg, $> extends param[1] ? unknown
+	unknown extends param[1] ? unknown
+	: satisfiesGenericConstraint<inferDefinition<arg, $>, param[1]> extends true ?
+		unknown
 	:	ErrorType<[`Invalid argument for ${param[0]}`, expected: param[1]]>
+
+export type satisfiesGenericConstraint<t, constraint> =
+	[distill.In<t>] extends [constraint] ? true
+	: stripConstraintDefaults<constraint> extends infer c ?
+		[constraintKindsOf<c>] extends [noConstraintKinds<"default">] ?
+			[constraintInput<t>] extends [c] ?
+				true
+			:	false
+		: [stripConstraintDefaults<t>] extends [c] ? true
+		: [t, c] extends (
+			[InferredMorph<infer ti, infer to>, InferredMorph<infer ci, infer co>]
+		) ?
+			c extends (...args: never) => anyOrNever ? false
+			: t extends (...args: never) => anyOrNever ? false
+			: [constraintInput<ti>, distill.Out<to["t"]>] extends (
+				[constraintInput<ci>, distill.Out<co["t"]>]
+			) ?
+				true
+			:	false
+		:	false
+	:	never
+
+type ConstraintTransformKind = "default" | "morph"
+
+type ConstraintArrayKey = keyof unknown[] | `${number}`
+
+type indexedConstraintKinds<t> = {
+	[k in keyof t as string extends k ? ""
+	: symbol extends k ? ""
+	: k]-?: constraintKindsOf<t[k]>
+}
+
+// mirrors distilledSidesOf so cyclic types short-circuit without TS2589
+type constraintKindsOf<t> =
+	t extends undefined ? never
+	: [t] extends [anyOrNever] ? never
+	: unknown extends t ? never
+	: t extends Brand | TerminallyInferredObject | Primitive ? never
+	: t extends Function ?
+		t extends (...args: never) => anyOrNever ? never
+		: t extends InferredMorph<infer i> ? "morph" | constraintKindsOf<i>
+		: never
+	: t extends Default ? "default"
+	: t extends array ?
+		keyof t extends ConstraintArrayKey ?
+			{ [i: number]: constraintKindsOf<t[number]> }
+		:	{
+				[k in number | Exclude<keyof t, ConstraintArrayKey>]: constraintKindsOf<
+					t[k]
+				>
+			}
+	: [keyof t] extends [never] ? never
+	: isSafelyMappable<t> extends true ?
+		string extends keyof t ? indexedConstraintKinds<t>
+		: symbol extends keyof t ? indexedConstraintKinds<t>
+		: { [k in keyof t]-?: constraintKindsOf<t[k]> }
+	:	never
+
+type noConstraintKinds<ignored extends ConstraintTransformKind = never> =
+	| ignored
+	| { readonly [k: PropertyKey]: noConstraintKinds<ignored> }
+
+// mirrors runtime withoutDefaults while keeping brands and morphs intact
+type stripConstraintDefaults<t> =
+	[constraintKindsOf<t>] extends [noConstraintKinds<"morph">] ? t
+	:	_stripConstraint<t, false>
+
+// mirrors runtime morph.extends: strips defaults and unwraps morph inputs while keeping brands
+type constraintInput<t> =
+	[constraintKindsOf<t>] extends [noConstraintKinds] ? t
+	:	_stripConstraint<t, true>
+
+type _stripConstraint<t, unwrapMorph extends boolean> =
+	t extends undefined ? t
+	: [t] extends [anyOrNever] ? t
+	: unknown extends t ? unknown
+	: t extends Brand | TerminallyInferredObject | Primitive ? t
+	: t extends Function ?
+		t extends (...args: never) => anyOrNever ? t
+		: t extends InferredMorph<infer i, infer o> ?
+			unwrapMorph extends true ?
+				_stripConstraint<i, true>
+			:	(In: _stripConstraint<i, false>) => o
+		:	t
+	: t extends Default<infer base> ? _stripConstraint<base, unwrapMorph>
+	: t extends array ?
+		t[number][] extends t ?
+			t extends unknown[] ?
+				_stripConstraint<t[number], unwrapMorph>[]
+			:	readonly _stripConstraint<t[number], unwrapMorph>[]
+		: t extends unknown[] ? stripTupleDefaults<[...t], [], unwrapMorph>
+		: Readonly<stripTupleDefaults<[...t], [], unwrapMorph>>
+	: [keyof t] extends [never] ? t
+	: isSafelyMappable<t> extends true ?
+		show<
+			{
+				[k in keyof t as isInferredDefault<t[k]> extends true ? never
+				:	k]: _stripConstraint<t[k], unwrapMorph>
+			} & {
+				[k in keyof t as isInferredDefault<t[k]> extends true ? k
+				:	never]?: _stripConstraint<t[k], unwrapMorph>
+			}
+		>
+	:	t
+
+type stripTupleDefaults<
+	t extends array,
+	prefix extends array,
+	unwrapMorph extends boolean
+> =
+	t extends readonly [infer head, ...infer tail] ?
+		stripTupleDefaults<
+			tail,
+			isInferredDefault<head> extends true ?
+				[...prefix, _stripConstraint<head, unwrapMorph>?]
+			:	[...prefix, _stripConstraint<head, unwrapMorph>],
+			unwrapMorph
+		>
+	:	[...prefix, ...{ [i in keyof t]: _stripConstraint<t[i], unwrapMorph> }]
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
@@ -350,13 +483,17 @@ export type GenericParser<$ = {}> = <
 	}
 ) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>
 
+// each returns through r, as a generic call written as an argument of another
+// is otherwise left for a second pass of inferring that call once TypeScript
+// sees it return a callable type, and a definition referencing the Generic
+// has failed by then
 interface GenericBodyParser<params extends array<GenericParamAst>, $> {
-	<const body>(
+	<const body, r = Generic<params, body, $, $>>(
 		body: type.validate<body, $, baseGenericConstraints<params>>
-	): Generic<params, body, $, $>
+	): r extends infer _ ? _ : never
 
-	<hkt extends Hkt.constructor>(
+	<hkt extends Hkt.constructor, r = Generic<params, InstanceType<hkt>, $, $>>(
 		instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
 		hkt: hkt
-	): Generic<params, InstanceType<hkt>, $, $>
+	): r extends infer _ ? _ : never
 }

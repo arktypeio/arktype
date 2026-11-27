@@ -160,19 +160,48 @@ export const C = /* @__PURE__ */ $ark#3(values)`)
 		})
 
 		it("fromJsonSchema", () => {
-			const source = `import { fromJsonSchema } from "arktype"
-const Name = fromJsonSchema({ type: "string", minLength: 1 })
-const User = fromJsonSchema({ type: "object", properties: { name: { type: "string" } } })
+			const ok = `import { fromJsonSchema } from "arktype"
+export const Name = fromJsonSchema({ type: "string", minLength: 1 })
+export const User = fromJsonSchema({
+	type: "object",
+	properties: { name: { type: "string" }, age: { type: "integer", minimum: 0 } },
+	required: ["name"]
+})
+export const ConstObj = fromJsonSchema({ const: { a: 1 } })
+export const EnumObj = fromJsonSchema({ enum: [{ a: 1 }, { a: 2 }] })
 // @ark-runtime
-const Island = fromJsonSchema({ type: "object", properties: { name: { type: "string" } } })`
-			attest(statusesOf(source)).snap([
-				"2:14 accepted string >= 1",
-				"3:14 accepted { name?: string } & isNonArray",
-				"5:16 island"
+export const Island = fromJsonSchema({ type: "array", uniqueItems: true })`
+			attest(statusesOf(ok)).snap([
+				"2:21 accepted string >= 1",
+				"3:21 accepted { name: string, age?: number % 1 >= 0 } & isNonArray",
+				"8:25 accepted { a: 1, + (undeclared): reject } & isNonArray & hasOwnKeys",
+				"9:24 accepted { a: 1 | 2, + (undeclared): reject } & isNonArray & hasOwnKeys",
+				"11:23 island"
 			])
-			// a JSON Schema object excludes arrays with a predicate of arktype's own
-			attest(precompile(source).diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:3:14  fromJsonSchema({ type: \"object\", properties: { name: { type… can't be precompiled yet\n  Function(isNonArray) can't be precompiled to a standalone validator\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			attest(precompile(ok).diagnostics).equals([])
+
+			const unsupported = `import { fromJsonSchema } from "arktype"
+export const Unique = fromJsonSchema({ type: "array", uniqueItems: true })
+export const NotNull = fromJsonSchema({ not: { type: "null" } })
+export const HasNum = fromJsonSchema({ type: "array", contains: { type: "number" } })
+export const Cond = fromJsonSchema({ if: { type: "number" }, then: { minimum: 0 } })
+export const Tenths = fromJsonSchema({ type: "number", multipleOf: 0.1 })`
+			attest(precompile(unsupported).diagnostics.map(renderDiagnostic)).snap([
+				`/main.ts:2:23  fromJsonSchema({ type: "array", uniqueItems: true }) can't be precompiled yet
+  fromJsonSchema's \`uniqueItems\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:3:24  fromJsonSchema({ not: { type: "null" } }) can't be precompiled yet
+  fromJsonSchema's \`not\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:4:23  fromJsonSchema({ type: "array", contains: { type: "number" … can't be precompiled yet
+  fromJsonSchema's \`contains\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:5:21  fromJsonSchema({ if: { type: "number" }, then: { minimum: 0… can't be precompiled yet
+  fromJsonSchema's \`if\`/\`then\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`,
+				`/main.ts:6:23  fromJsonSchema({ type: "number", multipleOf: 0.1 }) can't be precompiled yet
+  fromJsonSchema's \`multipleOf\` keyword can't be precompiled to a standalone validator
+  Put // @ark-runtime on the line before this definition, or build with runtime: "arktype", so arktype defines it at runtime.`
 			])
 		})
 
@@ -2741,15 +2770,15 @@ export const translators = [ark.messageIn]`)
 
 		it("functions of errors arktype/runtime exports", () => {
 			attest(
-				diagnosticsOf(`import { type, flatMessagesByPath, type ArkErrors } from "arktype"
+				diagnosticsOf(`import { type, flatMessagesByPath, lineOf, type ArkErrors } from "arktype"
 import * as ark from "arktype"
 const User = type({ name: "string" })
-export const report = (errors: ArkErrors) => flatMessagesByPath(errors)
+export const report = (errors: ArkErrors) => [flatMessagesByPath(errors), errors.issues.map(lineOf)]
 export const check = (data: unknown) => {
 	const out = User(data)
 	return out instanceof type.errors ? ark.byPath(out) : out
 }
-export const readers = [ark.flatByPath, ark.byAncestorPath]`)
+export const readers = [ark.flatByPath, ark.byAncestorPath, ark.lineOf]`)
 			).equals([])
 		})
 
@@ -3754,5 +3783,80 @@ const A = type(read({}))`)
 		).snap([
 			"3:11 rejected\n  `o.a.b` reads a property of undefined, which throws"
 		])
+	})
+
+	describe("fromJsonSchema and non-reflecting Object methods", () => {
+		it("classifies fromJsonSchema as Type-returning", () => {
+			const source = `import { fromJsonSchema, type } from "arktype"
+export const Tags = fromJsonSchema({
+	type: "array",
+	items: { type: "string" }
+})
+export const upperTags = (input: unknown) => {
+	const out = Tags(input)
+	if (out instanceof type.errors) return []
+	return out.map(s => s.toUpperCase())
+}
+export const issueMessages = (input: unknown) => {
+	const res = Tags["~standard"].validate(input)
+	if ("issues" in res && res.issues) return res.issues.map(i => i.message)
+	return []
+}
+export const inputSchema = () =>
+	Tags["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+export const jsonSchema = () => Tags.toJsonSchema()`
+			attest(statusesOf(source)).snap([
+				"2:21 accepted string[]",
+				"18:33 accepted"
+			])
+			attest(diagnosticsOf(source)).equals([])
+		})
+
+		it("allows Object.freeze/seal/preventExtensions and extensibility checks on Types while still refusing reflection", () => {
+			const okSource = `import { type } from "arktype"
+export const FrozenA = Object.freeze(type({ a: "string" }))
+const T = type({ b: "number" })
+export const FrozenB = Object.freeze(T)
+export const Sealed = Object.seal(T)
+export const NonExt = Object.preventExtensions(T)
+export const check = (input: unknown) => {
+	const out = FrozenA(input)
+	if (out instanceof type.errors) return out.issues.map(i => i.message)
+	return [
+		out.a,
+		FrozenB.allows(input),
+		Sealed.allows(input),
+		NonExt.allows(input),
+		Object.isFrozen(T),
+		Object.isSealed(T),
+		Object.isExtensible(T),
+		Object.is(FrozenB, T)
+	]
+}`
+			attest(statusesOf(okSource)).snap([
+				"2:38 accepted { a: string }",
+				"3:11 accepted { b: number }"
+			])
+			attest(diagnosticsOf(okSource)).equals([])
+
+			const badSource = `import { type } from "arktype"
+const T = type({ a: "string" })
+export const a = Object.keys(T)
+export const b = Object.entries(T)
+export const c = Object.values(T)
+export const d = Object.assign({}, T)
+export const e = Object.getOwnPropertyNames(T)
+export const f = Object.getOwnPropertyDescriptors(T)
+export const g = Object.defineProperty(T, "x", { value: 1 })`
+			attest(diagnosticsOf(badSource)).snap([
+				'/main.ts:3:18  Object.keys(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:4:18  Object.entries(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:18  Object.values(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:6:18  Object.assign({}, T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:7:18  Object.getOwnPropertyNames(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:8:18  Object.getOwnPropertyDescriptors(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:9:18  Object.defineProperty(T, "x", { value: 1 }) writes to an arktype value, which throws at runtime\n  `T` is an arktype value, which the standalone runtime freezes with what it holds\n  Keep what you attach in an object of your own, or build with runtime: "arktype".'
+			])
+		})
 	})
 })

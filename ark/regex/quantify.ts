@@ -1,5 +1,7 @@
-import type { parseNonNegativeInteger, Scanner } from "@ark/util"
-import type { s, State } from "./state.ts"
+import type { contains, parseNonNegativeInteger, Scanner } from "@ark/util"
+import type { isAsciiDigits } from "./escape.ts"
+import type { UnicodeFlag } from "./regex.ts"
+import type { appendString, s, State } from "./state.ts"
 
 export type parseBuiltinQuantifier<
 	s extends State,
@@ -41,23 +43,29 @@ type parsePossibleRangeString<unscanned extends string> =
 	unscanned extends (
 		`${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}`
 	) ?
-		ParsedRange.from<{
-			min: parseNonNegativeInteger<l>
-			max: parseNonNegativeInteger<r>
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+		[isAsciiDigits<l>, isAsciiDigits<r>] extends [true, true] ?
+			ParsedRange.from<{
+				min: parseNonNegativeInteger<l>
+				max: parseNonNegativeInteger<r>
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+		:	null
 	: unscanned extends `${infer l extends `${number}`},}${infer next}` ?
-		ParsedRange.from<{
-			min: parseNonNegativeInteger<l>
-			max: null
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+		isAsciiDigits<l> extends true ?
+			ParsedRange.from<{
+				min: parseNonNegativeInteger<l>
+				max: null
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+		:	null
 	: unscanned extends `${infer l extends `${number}`}}${infer next}` ?
-		ParsedRange.from<{
-			min: parseNonNegativeInteger<l>
-			max: parseNonNegativeInteger<l>
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+		isAsciiDigits<l> extends true ?
+			ParsedRange.from<{
+				min: parseNonNegativeInteger<l>
+				max: parseNonNegativeInteger<l>
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+		:	null
 	:	null
 
 type GreaterDigits = {
@@ -123,6 +131,8 @@ export type parsePossibleRange<
 				writeMinExceedsMaxQuantifierError<parseQuantifier<unscanned, parsed>>
 			>
 		:	s.pushQuantifier<s, parsed["min"], parsed["max"], parsed["unscanned"]>
+	: contains<s["flags"], UnicodeFlag> extends true ?
+		s.error<incompleteQuantifierMessage>
 	:	s.shiftQuantifiable<s, "{", unscanned>
 
 export type quantify<
@@ -130,6 +140,13 @@ export type quantify<
 	min extends number,
 	max extends number | null
 > = tryFastPath<pattern, min, max>
+
+type isUnionString<s extends string, copy extends string = s> =
+	s extends unknown ?
+		[copy] extends [s] ?
+			false
+		:	true
+	:	never
 
 type tryFastPath<
 	pattern extends string,
@@ -150,7 +167,7 @@ type tryFastPath<
 		max extends 1 ? "" | pattern
 		: max extends number ? loopFromZero<pattern, max, "", []>
 		: // max is null, all we can do is append ${string}
-			"" | `${pattern}${string}`
+			"" | appendString<pattern>
 	:	loopUntilMin<pattern, min, max, "", []>
 
 type loopFromZero<
@@ -160,7 +177,25 @@ type loopFromZero<
 	repetitions extends 1[]
 > =
 	repetitions["length"] extends max ? acc
+	: repetitions["length"] extends 2 ?
+		isUnionString<base> extends true ?
+			string
+		:	loopFromZeroUnchecked<
+				base,
+				max,
+				acc | `${acc}${base}`,
+				[...repetitions, 1]
+			>
 	:	loopFromZero<base, max, acc | `${acc}${base}`, [...repetitions, 1]>
+
+type loopFromZeroUnchecked<
+	base extends string,
+	max extends number,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends max ? acc
+	:	loopFromZeroUnchecked<base, max, acc | `${acc}${base}`, [...repetitions, 1]>
 
 type loopUntilMin<
 	base extends string,
@@ -174,9 +209,26 @@ type loopUntilMin<
 		: // don't need appendNonRedundant for these cases because if the pattern is
 		// something collapsible like `string` or `bigint, the fast path has
 		// already been taken
-		repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
-		: `${acc}${string}`
+		repetitions["length"] extends 0 ? acc | appendString<`${acc}${base}`>
+		: appendString<acc>
+	: repetitions["length"] extends 2 ?
+		isUnionString<base> extends true ?
+			appendString<acc>
+		:	loopUntilMinUnchecked<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 	:	loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]>
+
+type loopUntilMinUnchecked<
+	base extends string,
+	min extends number,
+	max extends number | null,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends min ?
+		max extends number ? loopUntilMaxUnchecked<base, min, max, acc, repetitions>
+		: repetitions["length"] extends 0 ? acc | appendString<`${acc}${base}`>
+		: appendString<acc>
+	:	loopUntilMinUnchecked<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 
 type loopUntilMax<
 	base extends string,
@@ -186,7 +238,33 @@ type loopUntilMax<
 	repetitions extends 1[]
 > =
 	repetitions["length"] extends max ? acc
+	: repetitions["length"] extends 2 ?
+		isUnionString<base> extends true ?
+			appendString<acc>
+		:	loopUntilMaxUnchecked<
+				base,
+				min,
+				max,
+				acc | `${acc}${base}`,
+				[...repetitions, 1]
+			>
 	:	loopUntilMax<base, min, max, acc | `${acc}${base}`, [...repetitions, 1]>
+
+type loopUntilMaxUnchecked<
+	base extends string,
+	min extends number,
+	max extends number,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends max ? acc
+	:	loopUntilMaxUnchecked<
+			base,
+			min,
+			max,
+			acc | `${acc}${base}`,
+			[...repetitions, 1]
+		>
 
 export type QuantifyingChar = "*" | "+" | "?"
 
@@ -213,3 +291,15 @@ export const writeMinExceedsMaxQuantifierError = <quantifier extends string>(
 
 export type writeMinExceedsMaxQuantifierError<quantifier extends string> =
 	`Quantifier ${quantifier} min cannot exceed max`
+
+export const incompleteQuantifierMessage =
+	"Incomplete quantifier: escape '{' with '\\\\{' to match literally with the 'u' or 'v' flag"
+
+export type incompleteQuantifierMessage =
+	"Incomplete quantifier: escape '{' with '\\{' to match literally with the 'u' or 'v' flag"
+
+export const loneClosingBraceMessage =
+	"Lone quantifier bracket: escape '}' with '\\\\}' to match literally with the 'u' or 'v' flag"
+
+export type loneClosingBraceMessage =
+	"Lone quantifier bracket: escape '}' with '\\}' to match literally with the 'u' or 'v' flag"

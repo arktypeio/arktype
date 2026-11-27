@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	Disjoint,
 	intrinsic,
 	rootSchema,
 	writeInvalidLengthBoundMessage,
@@ -65,7 +66,7 @@ contextualize(() => {
 
 			attest(T({ code: "123456" })).snap({ code: "123456" })
 			attest(T({ code: "foo" }).toString()).snap(
-				"code must be exactly length 6"
+				"code must be exactly 6 characters"
 			)
 		})
 
@@ -227,6 +228,58 @@ contextualize(() => {
 			attest(() => type("number >=")).throwsAndHasTypeError(
 				writeMissingRightOperandMessage(">=")
 			)
+			// @ts-expect-error
+			attest(() => type("number >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("Date >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("number >  ")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("string > 0 | number >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("number % 2 > 0 % 2 >")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">")
+			)
+		})
+
+		it("stray > after bound or generic", () => {
+			// @ts-expect-error
+			attest(() => type("string > 0 >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("0 < number < 5 >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("number > 0#foo >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("0 < number < 5#foo >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			const $ = scope({ arr: type("string[]").and({ a: "number" }) })
+			// @ts-expect-error
+			attest(() => $.type("keyof arr > 0 >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("Record<string, number>>")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
+			// @ts-expect-error
+			attest(() => type("Record<string, number> >")).throwsAndHasTypeError(
+				writeUnexpectedCharacterMessage(">")
+			)
 		})
 
 		it("missing operand after a left bound", () => {
@@ -352,6 +405,13 @@ contextualize(() => {
 			)
 		})
 
+		it("unboundable builtin object", () => {
+			// @ts-expect-error
+			attest(() => type("Map>10")).throwsAndHasTypeError(
+				writeUnboundableMessage("Map")
+			)
+		})
+
 		it("morph", () => {
 			// @ts-expect-error
 			attest(() => type("string.trim > 2"))
@@ -473,14 +533,14 @@ contextualize(() => {
 			attest<string>(T.infer)
 			attest(T.json).snap({ domain: "string", notEqualLength: [3] })
 			attest(T("ab")).equals("ab")
-			attest(T("abc").toString()).snap("must be other than length 3")
+			attest(T("abc").toString()).snap("must be other than 3 characters")
 		})
 
 		it("array length", () => {
 			const T = type("string[] != 2")
 			attest<string[]>(T.infer)
 			attest(T.expression).snap("string[] != 2")
-			attest(T(["a", "b"]).toString()).snap("must be other than length 2")
+			attest(T(["a", "b"]).toString()).snap("must be other than 2 items")
 		})
 
 		it("zero length is non-empty", () => {
@@ -1045,5 +1105,201 @@ contextualize(() => {
 		const five = type("5 <= number < 10").and("0 < number <= 5")
 
 		attest(five.expression).equals("5")
+	})
+
+	it("notEqualLength 0 schema reduces cleanly", () => {
+		const Str = type.schema({ domain: "string", notEqualLength: 0 })
+		attest(Str.expression).snap("string >= 1")
+		attest(Str.allows("")).equals(false)
+		attest(Str.allows("a")).equals(true)
+
+		const Arr = type.schema({ proto: Array, notEqualLength: 0 })
+		attest(Arr.expression).snap("Array >= 1")
+		attest(Arr.allows([])).equals(false)
+		attest(Arr.allows([1])).equals(true)
+	})
+
+	describe("bound units", () => {
+		it("uses characters for strings and items for arrays across comparators", () => {
+			attest(type("string > 5")("abc").toString()).snap(
+				"must be at least 6 characters"
+			)
+			attest(type("string <= 1")("ab").toString()).snap(
+				"must be at most 1 character"
+			)
+			attest(type("string == 1")("ab").toString()).snap(
+				"must be exactly 1 character"
+			)
+			attest(type("string != 1")("a").toString()).snap(
+				"must be other than 1 character"
+			)
+			attest(type("string > 0")("").toString()).snap("must be non-empty")
+			attest(type("string == 0")("a").toString()).snap("must be empty")
+
+			attest(type("string[] > 5")(["a"]).toString()).snap(
+				"must be at least 6 items"
+			)
+			attest(type("string[] <= 1")(["a", "b"]).toString()).snap(
+				"must be at most 1 item"
+			)
+			attest(type("string[] == 1")(["a", "b"]).toString()).snap(
+				"must be exactly 1 item"
+			)
+			attest(type("string[] != 1")(["a"]).toString()).snap(
+				"must be other than 1 item"
+			)
+			attest(type("string[] > 0")([]).toString()).snap("must be non-empty")
+			attest(type("string[] == 0")(["a"]).toString()).snap("must be empty")
+		})
+
+		it("keeps bound units in domain-discriminated unions", () => {
+			const StringOrNumber = type("string > 5 | number")
+			attest(StringOrNumber("abc").toString()).snap(
+				"must be at least 6 characters"
+			)
+			const ArrayOrNumber = type("string[] >= 3 | number")
+			attest(ArrayOrNumber(["a"]).toString()).snap("must be at least 3 items")
+		})
+
+		it("accepts custom units on fluent bound methods", () => {
+			const Delay = type.number
+				.moreThan({ rule: 5, unit: "second" })
+				.atMost({ rule: 60, unit: "second" })
+			attest(Delay(3).toString()).snap("must be more than 5 seconds")
+			attest(Delay(90).toString()).snap("must be at most 60 seconds")
+
+			const Entries = type.string
+				.array()
+				.atLeastLength({
+					rule: 2,
+					unit: { singular: "entry", plural: "entries" }
+				})
+				.atMostLength({
+					rule: 5,
+					unit: { singular: "entry", plural: "entries" }
+				})
+			attest(Entries(["a"]).toString()).snap("must be at least 2 entries")
+			attest(Entries(["a", "b", "c", "d", "e", "f"]).toString()).snap(
+				"must be at most 5 entries"
+			)
+		})
+
+		it("names the unit in actual when text replaces the bound's", () => {
+			const Password = type("string >= 8").describe("a strong password")
+			const pwErr = Password("x") as type.errors
+			attest(pwErr.issues[0].actual).snap("1 character")
+			const emptyErr = Password("") as type.errors
+			attest(emptyErr.issues[0].actual).snap("0 characters")
+			const Pair = type("string[] == 2").configure({ expected: "a pair" })
+			const pairErr = Pair(["a"]) as type.errors
+			attest(pairErr.issues[0].actual).snap("1 item")
+
+			const LongTimeout = type.number
+				.atLeast({ rule: 5, unit: "second" })
+				.describe("a long timeout")
+			attest((LongTimeout(1) as type.errors).issues[0].actual).snap("1 second")
+			attest((LongTimeout(2) as type.errors).issues[0].actual).snap("2 seconds")
+			const ShortTimeout = type.number
+				.atMost({ rule: 5, unit: "second" })
+				.configure({ expected: "a short timeout" })
+			attest((ShortTimeout(10) as type.errors).issues[0].actual).snap(
+				"10 seconds"
+			)
+			const NotOneSecond = type.number
+				.lessThan({ rule: 1, unit: "second" })
+				.or(type.number.moreThan({ rule: 1, unit: "second" }))
+				.describe("not one second")
+			attest((NotOneSecond(1) as type.errors).issues[0].actual).snap("1 second")
+
+			// without replacing text, actual stays the bare value
+			const PlainMin = type.number.atLeast({ rule: 5, unit: "second" })
+			attest((PlainMin(1) as type.errors).issues[0].actual).snap("1")
+		})
+
+		it("preserves custom units across chained constraints, unions, and exclusions", () => {
+			const SameConstrained = type.string
+				.atLeastLength(3)
+				.atLeastLength({ rule: 3, unit: "rune" })
+			attest(SameConstrained("ab").toString()).snap("must be at least 3 runes")
+
+			const Tightened = type.string
+				.atLeastLength({ rule: 3, unit: "rune" })
+				.atLeastLength(5)
+			attest(Tightened("abcd").toString()).snap("must be at least 5 runes")
+
+			const Collapsed = type.string
+				.atLeastLength({ rule: 3, unit: "rune" })
+				.atMostLength(3)
+			attest(Collapsed("ab").toString()).snap("must be exactly 3 runes")
+
+			const OneByte = type.string.atLeastLength({ rule: 1, unit: "byte" })
+			attest(OneByte("").toString()).snap("must be at least 1 byte")
+
+			const ZeroBytes = type.string.exactlyLength({ rule: 0, unit: "byte" })
+			attest(ZeroBytes("a").toString()).snap("must be exactly 0 bytes")
+
+			const MergedRange = type.number
+				.lessThan({ rule: 5, unit: "second" })
+				.or(type.number.moreThan({ rule: 5, unit: "second" }))
+			attest(MergedRange(5).toString()).snap("must be other than 5 seconds")
+
+			const UnmergedConflicting = type.number
+				.lessThan({ rule: 5, unit: "second" })
+				.or(
+					type.number.moreThan({
+						rule: 5,
+						unit: { singular: "ms", plural: "ms" }
+					})
+				)
+			attest(UnmergedConflicting(5).toString()).snap(
+				"must be less than 5 seconds or more than 5 ms"
+			)
+
+			const Excluded = type.string
+				.atLeastLength({ rule: 3, unit: "rune" })
+				.or("number")
+				.exclude("number")
+			attest(Excluded("ab").toString()).snap("must be at least 3 runes")
+		})
+
+		it("exposes unit on configured description writers", () => {
+			const $ = scope(
+				{ s: "string >= 4", a: "string[] >= 4" },
+				{
+					minLength: {
+						description: node =>
+							`minimum ${node.rule} ${node.unit?.plural ?? "units"}`
+					}
+				}
+			).export()
+			attest($.s("a").toString()).snap("must be minimum 4 characters")
+			attest($.a(["a"]).toString()).snap("must be minimum 4 items")
+		})
+	})
+
+	it("handles complete-coverage range splits, extreme Date notEqual, and infinite bound merges", () => {
+		const emptyLen = type.string.exactlyLength(0)
+		attest(emptyLen.extract("''").expression).snap('""')
+		attest(emptyLen.exclude("''").expression).snap("never")
+
+		const maxDate = new Date(8_640_000_000_000_000)
+		const atMax = type.schema({ domain: "object", proto: Date, after: maxDate })
+		attest(atMax.exclude(type.unit(maxDate)).expression).snap("never")
+		attest(
+			atMax.internal.intersect(
+				type.schema({ domain: "object", proto: Date, notEqual: maxDate })
+					.internal
+			)
+		).instanceOf(Disjoint)
+
+		const ltInf = type.schema({
+			domain: { domain: "number", numberAllowsInfinity: true },
+			max: { rule: Number.POSITIVE_INFINITY, exclusive: true }
+		})
+		const gtInf = type.schema({
+			domain: { domain: "number", numberAllowsInfinity: true },
+			min: { rule: Number.POSITIVE_INFINITY, exclusive: true }
+		})
+		attest(ltInf.or(gtInf).allows(Number.POSITIVE_INFINITY)).equals(false)
 	})
 })

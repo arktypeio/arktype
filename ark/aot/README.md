@@ -22,14 +22,16 @@ export default {
 A program `tsc` builds without a bundler precompiles what it emits:
 
 ```sh
-tsc && ark emit
+tsc && npx arktype emit
 ```
 
 List what the build can't precompile before you switch:
 
 ```sh
-ark check "src/**/*.ts"
+npx arktype check "src/**/*.ts"
 ```
+
+In scripts (or with `pnpm exec ark`), you can invoke the `ark` binary directly; with `npx`, always use `npx arktype` (`ark` on npm is an unrelated package).
 
 To have a coding agent set it up, add the skill, which has the setup for each bundler and the fix for each build error:
 

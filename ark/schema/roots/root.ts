@@ -7,6 +7,7 @@ import {
 	isEmptyObject,
 	isInstanceOf,
 	omit,
+	printable,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -131,9 +132,8 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
-		return (this._standard ??=
+		return (this.c.standard ??=
 			Object.defineProperty<StandardSchemaV1.ArkTypeProps>(
 				{
 					vendor: "arktype",
@@ -262,17 +262,16 @@ export abstract class BaseRoot<
 		return this.$.schema(this.applyStruct("omit", keys))
 	}
 
-	required(): BaseRoot {
-		return this.$.schema(this.applyStruct("required", []))
+	required(...keys: KeyOrKeyNode[]): BaseRoot {
+		return this.$.schema(this.applyStruct("required", keys))
 	}
 
-	partial(): BaseRoot {
-		return this.$.schema(this.applyStruct("partial", []))
+	partial(...keys: KeyOrKeyNode[]): BaseRoot {
+		return this.$.schema(this.applyStruct("partial", keys))
 	}
 
-	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
-		if (this._keyof) return this._keyof
+		if (this.c.keyof) return this.c.keyof
 		const result = this.applyStruct("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.kw.unknown.internal
@@ -283,7 +282,7 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return (this._keyof = this.$.fin(result))
+		return (this.c.keyof = this.$.fin(result))
 	}
 
 	get props(): Prop.Node[] {
@@ -363,9 +362,25 @@ export abstract class BaseRoot<
 			// preserved rather than reduced to a new object
 			if (isHomomorphic && transformed.equals(structure)) return branch
 
+			const isArrayBranch =
+				isHomomorphic &&
+				(transformed.sequence ||
+					(branch.is("intersection") &&
+						branch.basis?.is("proto") &&
+						branch.basis.proto === Array))
+
 			return this.$.node("intersection", {
-				...(isHomomorphic && transformed.sequence ?
-					{ proto: this.$.node("proto", { proto: Array }) }
+				...(isArrayBranch ?
+					{
+						proto: this.$.node("proto", { proto: Array }),
+						...((
+							branch.is("intersection") &&
+							!transformed.sequence &&
+							branch.inner.exactLength?.rule === 0
+						) ?
+							{ exactLength: branch.inner.exactLength }
+						:	{})
+					}
 				:	{ domain: this.$.node("domain", { domain: "object" }) }),
 				structure: transformed
 			})
@@ -380,16 +395,12 @@ export abstract class BaseRoot<
 
 	extract(r: unknown): BaseRoot {
 		const rNode = this.$.parseDef(r)
-		return this.$.schema(
-			this.branches.filter(branch => branch.extends(rNode))
-		) as never
+		return sets().extract(this, rNode)
 	}
 
 	exclude(r: unknown): BaseRoot {
 		const rNode = this.$.parseDef(r)
-		return this.$.schema(
-			this.branches.filter(branch => !branch.extends(rNode))
-		) as never
+		return sets().exclude(this, rNode)
 	}
 
 	array(): BaseRoot {
@@ -516,7 +527,9 @@ export abstract class BaseRoot<
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		return this._pipe(
 			...morphs.map(morph =>
-				hasArkKind(morph, "root") ? morph : makeMorph(tryMorph, morph)
+				hasArkKind(morph, "root") ? morph
+				: typeof morph === "function" ? makeMorph(tryMorph, morph)
+				: throwParseError(writeInvalidPipeOperandMessage(morph))
 			)
 		)
 	}
@@ -547,15 +560,20 @@ export abstract class BaseRoot<
 	rawPipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "root")) {
 			return this.toNode(
-				isInstanceOf(morph, BaseRoot) ? morph : this.$.parseDef(morph)
+				isInstanceOf(morph, BaseRoot) ? morph.internal : this.$.parseDef(morph)
 			)
 		}
+		if (typeof morph !== "function")
+			return throwParseError(writeInvalidPipeOperandMessage(morph))
 
 		return this.distribute(
 			branch =>
 				this.$.node("morph", {
 					morphs:
-						branch.is("morph") ? [...branch.morphs, morph] : [branch, morph]
+						branch.is("morph") ? [...branch.morphs, morph] : [branch, morph],
+					...(branch.is("morph") && branch.declaredIn ?
+						{ declaredIn: branch.declaredIn }
+					:	{})
 				}),
 			branches => this.$.node("union", { branches })
 		)
@@ -679,9 +697,9 @@ export abstract class BaseRoot<
 			this.transform(
 				(kind, inner) =>
 					kind === "structure" ? { ...inner, undeclared: rule } : inner,
-				deep ? undefined : (
-					{ shouldTf: node => !includes(structuralKinds, node.kind) }
-				)
+				deep ?
+					{ throughMorphs: true }
+				:	{ shouldTf: node => !includes(structuralKinds, node.kind) }
 			)
 		)
 	}
@@ -701,6 +719,11 @@ export abstract class BaseRoot<
 			return false
 
 		return true
+	}
+
+	/** whether deleting undeclared keys is all it does to the data it allows, if it does anything */
+	get deletesOnly(): boolean {
+		return !this.hasAlias && !this.hasMorph && !reachesDefault(this)
 	}
 
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {
@@ -880,7 +903,7 @@ const computeReachesDefault = (root: BaseRoot, final: boolean): boolean => {
 	return false
 }
 
-const reachesDefault = (root: BaseRoot): boolean => {
+export const reachesDefault = (root: BaseRoot): boolean => {
 	if (!root.alters && !root.hasAlias) return false
 	const final = isResolutionFinal()
 	const cacheable = final || !root.hasAlias
@@ -1078,3 +1101,6 @@ export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,
 	operand extends string
 > = `${operation} operand must be an object (was ${operand})`
+
+const writeInvalidPipeOperandMessage = (operand: unknown): string =>
+	`pipe operand must be a function or Type (was ${printable(operand)}). To pipe to a definition, use .to() instead.`

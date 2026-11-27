@@ -110,7 +110,7 @@ To compare a Type with JSON's meaning, read its `.toJsonSchema()` with `fromJson
 
 ### OpenAPI
 
-OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and the schema's other keywords still apply, so `{ type: "string", enum: ["x"], nullable: true }` is `"x"`. A `nullable` without a `type`, like one beside a `$ref`, throws a `ParseError` naming its pointer, as ajv does. A `$ref` into a document's `components` resolves when the document is spread into the schema that refers to it, as [From JSON Schema](/docs/json-schema/from-json-schema#how-it-reads-json-schema) shows.
+OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and the schema's other keywords still apply, so `{ type: "string", enum: ["x"], nullable: true }` is `"x"`. Without a `type` — beside `allOf`, `anyOf`, `oneOf`, `$ref`, `enum`, `const`, or any other subschema — `nullable: true` unions the schema with `null`. A `$ref` into a document's `components` resolves when the document is spread into the schema that refers to it, as [From JSON Schema](/docs/json-schema/from-json-schema#how-it-reads-json-schema) shows.
 
 ## Combining
 

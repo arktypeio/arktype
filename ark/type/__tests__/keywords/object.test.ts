@@ -13,6 +13,18 @@ contextualize(() => {
 		attest(type("Date").infer).type.toString.snap("Date")
 	})
 
+	it("object input", () => {
+		const O = type("object")
+		attest(O.inferIn).type.toString.snap("object")
+		attest(type({ a: "object", b: "string = 'b'" }).inferIn).type.toString.snap(
+			"{ a: object; b?: string }"
+		)
+		// @ts-expect-error
+		attest(() => O.from(5))
+			.throws("must be an object")
+			.type.errors("not assignable to parameter of type 'object'")
+	})
+
 	it("invalid Date", () => {
 		class NaNTime extends Date {
 			override getTime() {
@@ -42,7 +54,7 @@ contextualize(() => {
 				.throws("must be an object")
 				.type.errors("not assignable to parameter of type 'JsonStructure'")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be a number, a string, an object, boolean or null'
+				"foo[0] must be a number, a string, an object, boolean or null"
 			)
 		})
 
@@ -61,7 +73,7 @@ contextualize(() => {
 				"at must be a plain object or array"
 			)
 			attest(Json([() => {}])?.toString()).snap(
-				'["0"] must be a plain object or array'
+				"[0] must be a plain object or array"
 			)
 		})
 
@@ -108,6 +120,29 @@ contextualize(() => {
 			// has declared out
 			attest<string>(stringify.out.t)
 			attest(stringify.out.expression).snap("string")
+
+			// circular objects and arrays return ArkErrors instead of throwing TypeError
+			const circ: Record<string, unknown> = {}
+			circ.self = circ
+			const circArr: unknown[] = []
+			circArr.push(circArr)
+			for (const T of [
+				stringify,
+				scope({}, { jitless: true }).type("object.json.stringify")
+			]) {
+				// call twice to exercise both uncompiled and JIT-compiled paths
+				for (let i = 0; i < 2; i++) {
+					const err = T(circ)
+					if (!(err instanceof type.errors)) throw new Error("expected errors")
+					attest(err.toString()).snap("must be a JSON-serializable value")
+					attest((err.issues[0] as { cause?: unknown }).cause).instanceOf(
+						TypeError
+					)
+					attest(T(circArr).toString()).snap(
+						"must be a JSON-serializable value"
+					)
+				}
+			}
 		})
 	})
 

@@ -149,6 +149,82 @@ contextualize.each(
 				b: { domain: "number" }
 			})
 		})
+
+		it("private submodule", () => {
+			const $ = scope({
+				"#mod": scope({
+					a: "number",
+					inner: scope({ b: "string" }).export()
+				}).export(),
+				whole: "mod.a",
+				array: "mod.a[]",
+				expression: "mod.inner.b | mod.a"
+			})
+			const types = $.export()
+
+			attest<number>(types.whole.infer)
+			attest(types.whole.expression).snap("number")
+			attest<number[]>(types.array.infer)
+			attest(types.array.expression).snap("number[]")
+			attest<string | number>(types.expression.infer)
+			attest(types.expression.expression).snap("number | string")
+			attest(Object.keys(types)).equals(["whole", "array", "expression"])
+
+			// @ts-expect-error
+			attest(() => $.type("mod.c")).throwsAndHasTypeError(
+				writeUnresolvableMessage("mod.c")
+			)
+			// @ts-expect-error
+			attest(() => $.type("mod.i")).completions({ "mod.i": ["mod.inner"] })
+			// @ts-expect-error
+			attest(() => $.type("mod")).throwsAndHasTypeError(
+				writeMissingSubmoduleAccessMessage("mod")
+			)
+		})
+
+		it("a submodule's private keys", () => {
+			const utilities = scope({ id: "'id'", "box<t>": ["t"] })
+			// imported, each alias is a key spreading it makes private
+			const $ = scope({ imported: utilities.import() })
+
+			// @ts-expect-error
+			attest(() => $.type("imported.id")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.id")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.id[] | null")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.id")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.box<string>")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.box")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.")
+			)
+			// nor is one read by the key itself, which ends at the dot once scanned
+			// @ts-expect-error
+			attest(() => $.type("imported.#id")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.")
+			)
+			// @ts-expect-error
+			attest(() => $.type("imported.#id[]")).throwsAndHasTypeError(
+				writeUnresolvableMessage("imported.")
+			)
+			// so the name of one isn't told to use it
+			// @ts-expect-error
+			attest(() => $.type("imported.box")).throws.snap(
+				"ParseError: 'imported.box' is unresolvable. 'imported' has #id, #box."
+			)
+
+			const exported = scope({ exported: utilities.export() })
+			attest<"id">(exported.type("exported.id").infer)
+			// @ts-expect-error
+			attest(() => exported.type("exported.")).completions({
+				"exported.": ["exported.box", "exported.id"]
+			})
+		})
 	}
 )
 
@@ -350,6 +426,21 @@ contextualize.each(
 			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("true"))
 		})
 
+		it("dot access on a keyword inferred as never or any", () => {
+			// @ts-expect-error
+			attest(() => type("never.foo")).throwsAndHasTypeError(
+				writeNonSubmoduleDotMessage("never")
+			)
+			// @ts-expect-error
+			attest(() => type("unknown.any.foo")).throwsAndHasTypeError(
+				writeNonSubmoduleDotMessage("any")
+			)
+			attest(() =>
+				// @ts-expect-error
+				scope({ a: "never", b: "a.foo" }).export()
+			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("a"))
+		})
+
 		it("completions", $ => {
 			attest(() =>
 				$.type({
@@ -413,6 +504,22 @@ contextualize.each(
 					foo: "a.b.c.d.e.f.g."
 				})
 			).completions({ "a.b.c.d.e.f.g.": ["a.b.c.d.e.f.g.alias"] })
+		})
+
+		it("a submodule shadows all of a keyword's of its name", () => {
+			const $ = scope({
+				string: scope({ id: "'id'" }).export(),
+				a: "string.id"
+			})
+
+			attest<"id">($.export().a.infer)
+			attest($.export().a.expression).snap('"id"')
+			// @ts-expect-error
+			attest(() => $.type("string.email")).throwsAndHasTypeError(
+				writeUnresolvableMessage("string.email")
+			)
+			// other keywords' submodules still resolve
+			attest($.type("number.integer").expression).snap("number % 1")
 		})
 
 		it("a keyword read through a scope's aliases resolves as through arktype", () => {

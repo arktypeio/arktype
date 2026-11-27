@@ -1,7 +1,7 @@
 import { arityOf, arrayEquals, isArray, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { declareNode } from "../shared/declare.ts"
+import type { declareNode, TypeMeta } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/issues.ts"
 import {
 	implementNode,
@@ -94,9 +94,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	head: BaseRoot | undefined =
 		hasArkKind(this.morphs[0], "root") ? this.morphs[0] : undefined
 	/** the node its pipeline ends with, besides its head: the one its output is piped to */
-	tail: BaseRoot | undefined = this.includePiped(
-		this.morphs[this.morphs.length - 1]
-	)
+	tail: BaseRoot | undefined = this.includePiped()
 	/** what its head pipes to: its morphs and the nodes they pipe to */
 	piped: array<Morph | BaseRoot> =
 		this.head ? this.morphs.slice(1) : this.morphs
@@ -105,33 +103,49 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
 	)
 
-	private _traversedMorphs: array<Morph | BaseRoot> | undefined
-
-	// a configured message is its output's errors' too
+	// a configured message or label is its output's errors' too
 	get travMorphs(): array<Morph | BaseRoot> {
-		const { message } = this.meta
-		if (this._traversedMorphs) return this._traversedMorphs
-		if (message === undefined) return (this._traversedMorphs = this.morphs)
-		return (this._traversedMorphs = this.morphs.map((morph, i) =>
-			i && hasArkKind(morph, "root") ? morph.configure({ message }) : morph
+		const { message, label } = this.meta
+		if (this.c.travMorphs) return this.c.travMorphs
+		if (message === undefined && label === undefined)
+			return (this.c.travMorphs = this.morphs)
+		const meta: TypeMeta = {}
+		if (message !== undefined) meta.message = message
+		if (label !== undefined) meta.label = label
+		return (this.c.travMorphs = this.morphs.map((morph, i) =>
+			i && hasArkKind(morph, "root") ? morph.configure(meta) : morph
 		))
 	}
 
-	// the node a morph pipes to isn't a child, so its aliases are included here
-	private includePiped(
-		last: Morph | BaseRoot | undefined
-	): BaseRoot | undefined {
-		if (this.morphs.length === 1 || !hasArkKind(last, "root")) return
-		this.hasAlias ||= last.hasAlias
-		return last
+	// nodes a morph pipes to aren't children, so their aliases are included here
+	private includePiped(): BaseRoot | undefined {
+		const morphs = this.morphs
+		for (let i = 1; i < morphs.length; i++) {
+			const morph = morphs[i]
+			if (hasArkKind(morph, "root") && morph.hasAlias) {
+				this.hasAlias = true
+				break
+			}
+		}
+		const last = morphs[morphs.length - 1]
+		return morphs.length > 1 && hasArkKind(last, "root") ? last : undefined
 	}
 
 	override get otherRefs(): readonly BaseNode[] {
-		if (!this.tail) return []
-		// a configured message's copy is what traversal pipes to
-		const morphs = this.travMorphs
-		const traversed = morphs[morphs.length - 1] as BaseRoot
-		return traversed === this.tail ? [this.tail] : [this.tail, traversed]
+		const morphs = this.morphs
+		let refs: BaseNode[] | undefined
+		let travMorphs: array<Morph | BaseRoot> | undefined
+		for (let i = 1; i < morphs.length; i++) {
+			const morph = morphs[i]
+			if (!hasArkKind(morph, "root")) continue
+			refs ??= []
+			refs.push(morph)
+			// a configured message or label's copy is what traversal pipes to
+			travMorphs ??= this.travMorphs
+			const traversed = travMorphs[i] as BaseRoot
+			if (traversed !== morph) refs.push(traversed)
+		}
+		return refs ?? []
 	}
 
 	get topMorphs(): array<Morph> {
@@ -185,6 +199,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			result = "transformedIn"
 		}
 		const morphs = this.travMorphs
+		const label = this.meta.label
 		for (let i = this.head ? 1 : 0; i < morphs.length; i++) {
 			const morph = morphs[i]
 			const morphed = `morphed${i}`
@@ -197,8 +212,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				)
 			} else {
 				const call =
-					this.contextFree[i] ?
-						`${js.ref(morph)}(${result})`
+					this.contextFree[i] ? `${js.ref(morph)}(${result})`
+					: label !== undefined ?
+						`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result}, ${JSON.stringify(label)})`
 					:	`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result})`
 				js.const(morphed, call).if(
 					`${morphed} instanceof ${js.ref(ArkErrors)}`,
@@ -236,7 +252,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			const morphed =
 				this.contextFree[i] ?
 					(morph as Morph.ContextFree)(result as never)
-				:	callMorph(ctx, morph, result)
+				:	callMorph(ctx, morph, result, this.meta.label)
 			if (morphed instanceof ArkErrors) {
 				addErrors(ctx, morphed)
 				return data

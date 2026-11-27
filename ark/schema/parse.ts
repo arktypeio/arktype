@@ -1,11 +1,13 @@
 /// <reference lib="es2021.weakref" />
 
 import {
+	hasOwn,
 	holdsWeakly,
 	includes,
 	isArray,
 	isDate,
 	isEmptyObject,
+	isKeyOf,
 	nameOf,
 	printable,
 	throwInternalError,
@@ -25,6 +27,13 @@ import {
 	type nodeOfKind
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
+import {
+	boundUnitKeys,
+	normalizeBoundUnit,
+	type BoundUnit
+} from "./refinements/unit.ts"
+import type { AliasNode } from "./roots/alias.ts"
+import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -38,7 +47,13 @@ import {
 	type UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { $ark, nodesById, type NodeId } from "./shared/registry.ts"
-import { composing, hasArkKind, isNode } from "./shared/utils.ts"
+import {
+	composing,
+	hasArkKind,
+	isNode,
+	markUnchecked,
+	uncheckedQueued
+} from "./shared/utils.ts"
 import type { ArkEnv } from "./shared/declare.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
@@ -64,6 +79,7 @@ export interface AttachedParseContext {
 	phase: "unresolved" | "resolving" | "member" | "resolved" | "failed"
 	isReferencedById?: true
 	isReferencedAsThis?: true
+	aliases?: AliasNode[] | undefined
 	index?: number
 	lowlink?: number
 	/** whether a reference reached it while it was resolving */
@@ -145,30 +161,30 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	for (let i = 0; i < keys.length; i++) {
 		const k = keys[i]
 		if (k === "meta") continue
-		const keyImpl = impl.keys[k]
+		const keyImpl = hasOwn(impl.keys, k) ? impl.keys[k] : undefined
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 		const v = input[k]
 		if (v === undefined && !keyImpl.keepUndef) continue
 		// an empty list of children is none, except a union's branches
 		if (keyImpl.child && isArray(v) && !v.length && k !== "branches") continue
-		inner[k] = keyImpl.structural ? deferAliases(v, ctx.$) : v
+		inner[k] =
+			keyImpl.structural ? deferAliases(v, ctx.$)
+			: k === "unit" && ctx.kind !== "unit" ? normalizeBoundUnit(v as never)
+			: v
 	}
 
+	let unchecked = false
 	if ($ark.sets) {
 		$ark.sets.sort(ctx.kind, inner)
 		if (!ctx.reduced) {
+			const uncheckedBefore = uncheckedQueued()
 			const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
-				// a node already keyed with the meta it would get needs no key written
-				if (
-					reduced.c.key &&
-					isEmptyObject(reduced.meta) &&
-					isEmptyObject(meta)
-				) {
-					$ark.reached?.node(reduced)
+				if (hasNoMeta(meta) && (reduced.c.key || !hasNoMeta(reduced.meta))) {
+					if (reduced.c.key) $ark.reached?.node(reduced)
 					return reduced
 				}
 
@@ -176,8 +192,11 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 				// impliedBy
 				return withMeta(reduced, meta)
 			}
+			unchecked = uncheckedQueued() > uncheckedBefore
 		}
 	}
+
+	if (ctx.kind === "intersection") attachBoundUnits(inner)
 
 	return createNode({
 		id: ctx.id,
@@ -185,9 +204,39 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		kind: ctx.kind,
 		inner,
 		meta,
-		$: ctx.$
+		$: ctx.$,
+		unchecked
 	})
 }
+
+// bounds inside an intersection inherit their basis's unit (e.g. "character" for string, "item" for Array)
+const attachBoundUnits = (inner: dict): void => {
+	const basis = (inner.proto ?? inner.domain) as
+		| nodeOfKind<Intersection.BasisKind>
+		| undefined
+	const unit = basis?.boundUnit
+	if (!unit) return
+	for (const k in inner) {
+		if (!isKeyOf(k, boundUnitKeys)) continue
+		const v = inner[k] as listable<BaseNode>
+		if (isArray(v)) {
+			let updated: BaseNode[] | undefined
+			for (let i = 0; i < v.length; i++) {
+				const node = v[i]
+				if ((node.inner as { unit?: BoundUnit }).unit !== undefined) continue
+				updated ??= v.slice()
+				updated[i] = withBoundUnit(node, unit)
+			}
+			if (updated) inner[k] = updated
+		} else if ((v.inner as { unit?: BoundUnit }).unit === undefined)
+			inner[k] = withBoundUnit(v, unit)
+	}
+}
+
+const withBoundUnit = (node: BaseNode, unit: BoundUnit): BaseNode =>
+	node.$.node(node.kind, { ...node.inner, unit, meta: node.meta } as never, {
+		reduced: true
+	})
 
 // children after other values, in order of precedence
 export const compareInnerKeys = (l: string, r: string): number =>
@@ -198,6 +247,12 @@ export const compareInnerKeys = (l: string, r: string): number =>
 	: l < r ? -1
 	: 1
 
+const hasSymbolMeta = (meta: object): boolean =>
+	Object.getOwnPropertySymbols(meta).length > 0
+
+const hasNoMeta = (meta: object): boolean =>
+	isEmptyObject(meta) && !hasSymbolMeta(meta)
+
 // a value holding an alias outside a structure is deferred to an alias of its own
 export const deferAliases = (v: unknown, $: BaseScope): unknown => {
 	if (isArray(v)) {
@@ -205,7 +260,7 @@ export const deferAliases = (v: unknown, $: BaseScope): unknown => {
 		return deferred.some((element, i) => element !== v[i]) ? deferred : v
 	}
 	if (!isNode(v) || !v.topAlias || v.is("alias")) return v
-	nodesById[v.id] = v
+	nodesById.set(v.id, v)
 	return $.node("alias", { reference: v.id }, { reduced: true })
 }
 
@@ -220,6 +275,7 @@ export type CreateNodeInput = {
 	$: BaseScope
 	ignoreCache?: true
 	shell?: DeferredShell | undefined
+	unchecked?: boolean | undefined
 }
 
 export interface DeferredShell {
@@ -238,7 +294,8 @@ export const createNode = ({
 	meta,
 	$,
 	ignoreCache,
-	shell
+	shell,
+	unchecked
 }: CreateNodeInput): BaseNode => {
 	// serialized as the node is created, so meta that can't be throws here
 	const metaJson = isEmptyObject(meta) ? undefined : metaJsonOf(meta)
@@ -246,13 +303,15 @@ export const createNode = ({
 
 	// nodes are only cached with a set engine, which reduces them first
 	const key =
-		ignoreCache || !$ark.sets ?
+		ignoreCache || hasSymbolMeta(meta) || !$ark.sets ?
 			undefined
 		:	nodeKeyOf(kind, impl, inner, metaJson, $)
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
-		if (cached) {
+		// one whose check was thrown, or discarded with its definition, before it
+		// passed is created again, which makes the check again
+		if (cached && !cached.c.unchecked) {
 			$ark.reached?.node(cached)
 			return cached
 		}
@@ -288,6 +347,8 @@ export const createNode = ({
 		resolveDescription(new nodeClassesByKind[kind](attachments, $))
 	)
 
+	if (unchecked) markUnchecked(node)
+
 	if (key) {
 		node.c.key = key
 		$.nodesByKey.set(key, node)
@@ -313,14 +374,17 @@ const nodeKeyOf = (
 			impl.keys[k].child === true ?
 				isArray(v) ? `[${idsOf(v as BaseNode[], $)}]`
 				:	idOf(v as BaseNode, $)
-			: k === "unit" ? literalKeyOf(v)
-			: valueKeyOf(v, $)
+			: k === "unit" ?
+				kind === "unit" ?
+					literalKeyOf(v)
+				:	`${JSON.stringify((v as BoundUnit).singular)}/${JSON.stringify((v as BoundUnit).plural)}`
+			:	valueKeyOf(v, $)
 		}`
 	}
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
-		hasArkKind(nodesById[inner.reference as NodeId], "root")
+		hasArkKind(nodesById.get(inner.reference as string), "root")
 	)
 		key += ",!"
 	return metaJson ? `${key},${JSON.stringify(metaJson)}` : key
@@ -404,7 +468,7 @@ export const resolveDescription = <node extends BaseNode>(node: node): node => {
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node
-	if (isNode(nodesById[id]))
+	if (isNode(nodesById.get(id)))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	// have to ignore cache to force creation of new potentially cyclic id
 	return createNode({
@@ -422,7 +486,7 @@ export const withMeta = <node extends BaseNode>(
 	meta: ArkEnv.meta,
 	id?: NodeId
 ): node => {
-	if (id && isNode(nodesById[id]))
+	if (id && isNode(nodesById.get(id)))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	return createNode({
 		id,

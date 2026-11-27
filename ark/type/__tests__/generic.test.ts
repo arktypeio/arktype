@@ -8,7 +8,14 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
-import { generic, scope, type, type Generic, type GenericAst } from "arktype"
+import {
+	generic,
+	scope,
+	type,
+	type Default,
+	type Generic,
+	type GenericAst
+} from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeParameterizedGenericKeyMessage } from "arktype/internal/scope.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
@@ -85,6 +92,72 @@ contextualize(() => {
 			attest(StringArray.json).equals(Expected.json)
 		})
 
+		it("parameter named for a keyword", () => {
+			const boxOf = type("<string>", {
+				whole: "string",
+				array: "string[]",
+				expression: "string | 2"
+			})
+
+			const T = boxOf("1")
+
+			attest<{ whole: 1; array: 1[]; expression: 1 | 2 }>(T.t)
+			attest(T.expression).snap("{ array: 1[], expression: 1 | 2, whole: 1 }")
+		})
+
+		it("parameter named for a private alias", () => {
+			const types = scope({
+				"#t": "1",
+				"box<t>": { whole: "t", array: "t[]" },
+				a: "box<'q'>",
+				// outside the generic, t is the alias
+				b: "t[]"
+			}).export()
+
+			attest<{ whole: "q"; array: "q"[] }>(types.a.t)
+			attest(types.a.expression).snap('{ array: "q"[], whole: "q" }')
+			attest<1[]>(types.b.t)
+			attest(types.b.expression).snap("1[]")
+		})
+
+		it("parameter named for a public generic", () => {
+			// as any public alias is, the generic is found first where its name is
+			// all of a definition or of an array's element, and is missing its args
+			attest(() =>
+				scope({
+					"t<x>": ["x"],
+					// @ts-expect-error
+					"box<t>": { whole: "t" }
+				}).export()
+			).throwsAndHasTypeError(
+				writeInvalidGenericArgCountMessage("t", ["x"], [])
+			)
+
+			attest(() =>
+				scope({
+					"t<x>": ["x"],
+					// @ts-expect-error
+					"box<t>": { array: "t[]" }
+				}).export()
+			).throws(writeInvalidGenericArgCountMessage("t", ["x"], []))
+
+			const $ = scope({ "t<x>": ["x"] })
+			// @ts-expect-error
+			attest(() => $.type("<t>", { whole: "t" })).throwsAndHasTypeError(
+				writeInvalidGenericArgCountMessage("t", ["x"], [])
+			)
+
+			// in an expression, it's the parameter
+			const types = scope({
+				"t<x>": ["x"],
+				"box<t>": { expression: "t | 2" },
+				a: "box<'q'>"
+			}).export()
+
+			attest<{ expression: "q" | 2 }>(types.a.t)
+			attest(types.a.expression).snap('{ expression: "q" | 2 }')
+		})
+
 		it("this not resolvable in generic def", () => {
 			attest(() =>
 				type("<t>", {
@@ -156,6 +229,80 @@ contextualize(() => {
 			attest(() => positiveToInteger("number")).throws(
 				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
 			)
+		})
+
+		it("defaulted property constraint accepts matching defaulted argument", () => {
+			const Boxed = generic(["t", { a: "string = 'x'" }])({ v: "t" })
+			const T = Boxed({ a: "string = 'x'" })
+
+			attest<{ v: { a: Default<string, "x"> } }>(T.t)
+			attest(T({ v: {} })).snap({ v: { a: "x" } })
+
+			// mirrors runtime withoutDefaults: optional property satisfies defaulted constraint
+			const WithDefault = generic(["t", { a: "string = 'hi'", b: "number" }])({
+				payload: "t"
+			})
+			const OptArg = WithDefault({ "a?": "'ok'", b: "1" })
+			attest<{ payload: { a?: "ok"; b: 1 } }>(OptArg.t)
+			attest(OptArg({ payload: { b: 1 } })).equals({ payload: { b: 1 } })
+			attest(OptArg({ payload: { a: "ok", b: 1 } })).equals({
+				payload: { a: "ok", b: 1 }
+			})
+
+			// incompatible optional property type is still rejected
+			// @ts-expect-error
+			attest(() => WithDefault({ "a?": "number", b: "1" }))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						'{ b: number, a: string = "hi" }',
+						"{ b: 1, a?: number }"
+					)
+				)
+				.type.errors("Invalid argument for t")
+
+			// defaulted tuple constraint accepts matching optional tuple argument
+			const TupleDefault = generic(["t", ["string = 'hi'", "number?"]])({
+				v: "t"
+			})
+			const OptTuple = TupleDefault(["'ok'?"])
+			attest<{ v: ["ok"?] }>(OptTuple.t)
+			attest(OptTuple({ v: [] })).equals({ v: [] })
+		})
+
+		it("morph constraint rejects non-morph arguments and accepts narrowed same morph", () => {
+			const Trimmed = generic(["t", "string.trim"])({ v: "t" })
+			// @ts-expect-error
+			attest(() => Trimmed("'hi'"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						type("string.trim").expression,
+						'"hi"'
+					)
+				)
+				.type.errors("Invalid argument for t")
+
+			const Same = Trimmed("string.trim")
+			attest(Same({ v: "  hi  " })).equals({ v: "hi" })
+
+			const Narrowed = Trimmed(type("string.trim").and("'  hi  '"))
+			attest(Narrowed({ v: "  hi  " })).equals({ v: "hi" })
+
+			const NestedTrimmed = generic(["t", { a: "string.trim" }])({ v: "t" })
+			// @ts-expect-error
+			attest(() => NestedTrimmed({ a: "'hi'" }))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						type({ a: "string.trim" }).expression,
+						'{ a: "hi" }'
+					)
+				)
+				.type.errors("Invalid argument for t")
+
+			const NestedSame = NestedTrimmed({ a: "string.trim" })
+			attest(NestedSame({ v: { a: "  hi  " } })).equals({ v: { a: "hi" } })
 		})
 
 		it("unsatisfied parameter string", () => {
@@ -253,6 +400,16 @@ contextualize(() => {
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1343
+		it("an alias references a generic written where it's defined", () => {
+			const types = scope({
+				box: generic("t")({ box: "t" }),
+				boxed: "box<'x'>"
+			}).export()
+
+			attest<{ box: "x" }>(types.boxed.t)
+			attest(types.boxed.expression).snap('{ box: "x" }')
+		})
+
 		it("generic definition at a parameterized scope key", () => {
 			attest(() =>
 				scope({
@@ -779,5 +936,180 @@ contextualize(() => {
 
 			attest<{ of: string }>(BoxType.t)
 		})
+	})
+
+	it("checks generic constraints against a morph's input side", () => {
+		const Bounded = generic(["t", "string"])({ v: "t" })
+		const Parsed = Bounded("string.numeric.parse")
+		attest<{ v: string }>(Parsed.inferIn)
+		attest<{ v: number }>(Parsed.infer)
+		attest(Parsed({ v: "5" })).equals({ v: 5 })
+
+		const NumToStr = type("number").pipe(n => String(n))
+		// @ts-expect-error
+		attest(() => Bounded(NumToStr))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"string",
+					NumToStr.expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: string]>')
+
+		const $ = scope({
+			"bounded<t extends string>": { v: "t" },
+			parsed: "bounded<string.numeric.parse>"
+		}).export()
+		attest<{ v: string }>($.parsed.inferIn)
+		attest<{ v: number }>($.parsed.infer)
+		attest($.parsed({ v: "5" })).equals({ v: 5 })
+
+		// morphs whose input is not an object/Function must not satisfy object/Function constraints
+		const GObj = generic(["t", "object"])({ v: "t" })
+		// @ts-expect-error
+		attest(() => GObj("string.numeric.parse"))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					type("string.numeric.parse").expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: object]>')
+
+		const GFn = generic(["t", "Function"])({ v: "t" })
+		// @ts-expect-error
+		attest(() => GFn("string.numeric.parse"))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"Function",
+					type("string.numeric.parse").expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: Function]>')
+
+		const GNested = generic(["t", { a: "object" }])({ v: "t" })
+		// @ts-expect-error
+		attest(() => GNested({ a: "string.numeric.parse" }))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"{ a: object }",
+					type({ a: "string.numeric.parse" }).expression
+				)
+			)
+			.type.errors(
+				'ErrorType<["Invalid argument for t", expected: { a: object; }]>'
+			)
+
+		attest(() =>
+			scope({
+				"gObj<t extends object>": { v: "t" },
+				// @ts-expect-error
+				badObj: "gObj<string.numeric.parse>"
+			}).export()
+		)
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					type("string.numeric.parse").expression
+				)
+			)
+			.type.errors(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					"string.numeric.parse"
+				)
+			)
+
+		// morph whose output is an object but input is string must still be rejected
+		const StrToObj = type("string")
+			.pipe(s => ({ s }))
+			.to({ s: "string" })
+		// @ts-expect-error
+		attest(() => GObj(StrToObj))
+			.throws(
+				writeUnsatisfiedParameterConstraintMessage(
+					"t",
+					"object",
+					StrToObj.expression
+				)
+			)
+			.type.errors('ErrorType<["Invalid argument for t", expected: object]>')
+
+		// nested, array, and union Brand constraints
+		const GNestedBrand = generic(["t", { id: "string#Id" }])({ v: "t" })
+		const NestedBranded = GNestedBrand({ id: "string#Id" })
+		attest<{ v: { id: string } }>(NestedBranded.inferIn)
+		// @ts-expect-error
+		attest(() => GNestedBrand({ id: "string" })).type.errors(
+			"Invalid argument for t"
+		)
+
+		const GArrayBrand = generic(["t", "string#Id[]"])({ v: "t" })
+		const ArrayBranded = GArrayBrand("string#Id[]")
+		attest<{ v: string[] }>(ArrayBranded.inferIn)
+		// @ts-expect-error
+		attest(() => GArrayBrand("string[]")).type.errors("Invalid argument for t")
+
+		const GUnionBrand = generic(["t", "string#Id | number"])({ v: "t" })
+		const UnionBranded = GUnionBrand("string#Id")
+		attest<{ v: string }>(UnionBranded.inferIn)
+		// @ts-expect-error
+		attest(() => GUnionBrand("string")).type.errors("Invalid argument for t")
+
+		// morph whose input is unbranded must not satisfy a branded constraint
+		const GBrand = generic(["t", "string#Id"])({ v: "t" })
+		const BrandedDirect = GBrand("string#Id")
+		attest<{ v: string }>(BrandedDirect.inferIn)
+		const strToId = type("string")
+			.pipe(s => s)
+			.to("string#Id")
+		// @ts-expect-error
+		attest(() => GBrand(strToId)).type.errors("Invalid argument for t")
+		// @ts-expect-error
+		attest(() => GNestedBrand({ id: strToId })).type.errors(
+			"Invalid argument for t"
+		)
+		const GEmail = generic(["t", "string.email#Email"])({ v: "t" })
+		const strToEmail = type("string")
+			.pipe(s => s)
+			.to("string.email#Email")
+		// @ts-expect-error
+		attest(() => GEmail(strToEmail))
+			.throws("t must be assignable to")
+			.type.errors("Invalid argument for t")
+
+		// cyclic object constraint reports invalid argument without TS2589
+		const cyclicScope = scope({
+			Node: { value: "string", "next?": "Node" },
+			"wrap<t extends Node>": { node: "t" }
+		})
+		const validCyclic = cyclicScope.type("wrap<Node>")
+		attest(validCyclic({ node: { value: "a" } })).equals({
+			node: { value: "a" }
+		})
+		// @ts-expect-error
+		attest(() => cyclicScope.type("wrap<number>"))
+			.throws("t must be assignable to")
+			.type.errors("t must be assignable to")
+
+		// readonly defaulted tuple constraint preserves readonly
+		const GReadonlyTuple = generic(["t", type(["string = 'x'"]).readonly()])({
+			v: "t"
+		})
+		const OptReadonlyTuple = GReadonlyTuple(type(["string?"]).readonly())
+		attest<{ v: readonly [string?] }>(OptReadonlyTuple.t)
+		attest(OptReadonlyTuple({ v: [] })).equals({ v: [] })
+
+		// frozen generic supports lazy getters like .id/.json and instantiation
+		const FrozenG = Object.freeze(generic("t")({ v: "t" }))
+		attest(FrozenG.internal.id).equals(FrozenG.internal.id)
+		attest(FrozenG.json).equals(generic("t")({ v: "t" }).json)
+		attest(FrozenG("string")({ v: "ok" })).equals({ v: "ok" })
 	})
 })

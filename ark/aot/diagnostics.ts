@@ -14,6 +14,7 @@ export type Rule =
 	| "syntax"
 	| "unsupported"
 	| "copies"
+	| "dropped-narrow"
 
 export interface Diagnostic {
 	severity: "error" | "warning"
