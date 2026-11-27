@@ -137,6 +137,20 @@ contextualize(() => {
 			attest(liftNumberArray(["five"]).toString()).snap("[0] must be a number")
 		})
 
+		it("union element", () => {
+			// its branches are lifted together, so one array can mix them
+			const T = type("Array.liftFrom<string | number>")
+			attest<
+				(In: string | number | (string | number)[]) => To<(string | number)[]>
+			>(T.t)
+			attest(T(["a", 1])).equals(["a", 1])
+			attest(T(5)).equals([5])
+			// as at runtime, an array element isn't lifted
+			const U = type("Array.liftFrom<string | number[]>")
+			attest<(In: string | string[]) => To<string[]>>(U.t)
+			attest(U([1]).toString()).snap("[0] must be a string")
+		})
+
 		it("invoked", () => {
 			const T = keywords.Array.liftFrom({ data: "number" })
 

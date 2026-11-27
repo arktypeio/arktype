@@ -4,14 +4,16 @@ import {
 	rootSchema,
 	type GenericAst
 } from "@ark/schema"
-import { Hkt, liftArray, type Digit } from "@ark/util"
+import { Hkt, liftArray, type array, type Digit } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 
+// as at runtime, an element that's an array isn't lifted, and the others are
+// lifted together, so a union's branches can be mixed in one array
 export class LiftFromHkt extends Hkt<[element: unknown]> {
-	declare body: liftArray<this[0]> extends infer lifted ?
-		(In: this[0] | lifted) => To<lifted>
+	declare body: Exclude<this[0], array> extends infer element ?
+		(In: element | element[]) => To<element[]>
 	:	never
 }
 
