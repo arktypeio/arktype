@@ -681,12 +681,14 @@ x must be a string`)
 	it("orders cyclic types by when they were defined", () => {
 		// an alias's id counts those of its name, so three defined in turn can be
 		// counted8, counted9 and counted10, the last before the others as text
-		const k = () =>
+		const k = (): type.Any =>
 			scope({ counted: { a: "counted", k: "true" } }).export().counted
 		let K = k()
 		while (!/\D9*8$/.test(K.internal.id)) K = k()
-		const L = scope({ counted: { a: "counted", l: "true" } }).export().counted
-		const R = scope({ counted: { a: "counted", r: "true" } }).export().counted
+		const L: type.Any = scope({ counted: { a: "counted", l: "true" } }).export()
+			.counted
+		const R: type.Any = scope({ counted: { a: "counted", r: "true" } }).export()
+			.counted
 		const ids = [K, L, R].map(T => T.internal.id)
 		attest(ids.map(id => id.length - ids[0].length)).equals([0, 0, 1])
 

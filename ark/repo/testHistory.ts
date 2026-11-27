@@ -178,7 +178,9 @@ const show = (log: Observation[] | undefined, path: string[]) => {
 // units whose differences are allowed to depend on history, by why
 const skippedUnits: Record<string, string> = {
 	"ark/type/__tests__/gc.test.ts › gc › values captured by functions":
-		"collection depends on what was compiled before"
+		"collection depends on what was compiled before",
+	"ark/type/__tests__/union.test.ts › union › orders cyclic types by when they were defined":
+		"warms an alias counter to the next digit boundary, so the loop count differs on a second run"
 }
 
 const staleSkips = Object.keys(skippedUnits).filter(unit => {

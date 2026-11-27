@@ -385,7 +385,7 @@ Port must be at most 65535`)
 Port muss höchstens 65535 sein`)
 		})
 
-		it("preserves labels across .encode in JIT, jitless, and other locales", () => {
+		it("preserves labels across .encode in JIT and jitless", () => {
 			const PortObj = type({
 				port: type("string.integer.parse").label("Port")
 			})
@@ -393,7 +393,6 @@ Port muss höchstens 65535 sein`)
 			for (let i = 0; i < 2; i++) {
 				const bad = PortObj.encode({ port: "bad" }) as type.errors
 				attest(bad.summary).snap("Port must be a number")
-				attest(bad.summaryIn(de)).snap("Port muss eine Zahl sein")
 				attest((PortObj.encode({ port: 1.5 }) as type.errors).summary).snap(
 					"Port must be an integer"
 				)
@@ -459,13 +458,29 @@ Port must be an integer`)
 				"Payload must be a JSON-serializable value"
 			)
 
-			// jitless mode and German locale
+			// jitless mode
 			const $ = scope({}, { jitless: true })
 			const JitlessPort = $.type({
 				port: $.type("string.integer.parse").label("Port")
 			})
 			const jitlessErr = JitlessPort.encode({ port: "bad" }) as type.errors
 			attest(jitlessErr.summary).snap("Port must be a number")
+		})
+
+		it("preserves labels across .encode in German locale", () => {
+			const PortObj = type({
+				port: type("string.integer.parse").label("Port")
+			})
+			const $ = scope({}, { jitless: true })
+			const JitlessPort = $.type({
+				port: $.type("string.integer.parse").label("Port")
+			})
+			// call twice to exercise both uncompiled and JIT-compiled paths
+			const bad0 = PortObj.encode({ port: "bad" }) as type.errors
+			const bad1 = PortObj.encode({ port: "bad" }) as type.errors
+			const jitlessErr = JitlessPort.encode({ port: "bad" }) as type.errors
+			attest(bad0.summaryIn(de)).snap("Port muss eine Zahl sein")
+			attest(bad1.summaryIn(de)).snap("Port muss eine Zahl sein")
 			attest(jitlessErr.summaryIn(de)).snap("Port muss eine Zahl sein")
 		})
 	})

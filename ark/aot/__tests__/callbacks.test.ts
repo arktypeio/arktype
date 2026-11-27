@@ -205,7 +205,7 @@ const B = type.instanceOf(User)`,
 		])
 		attest(descriptionsOf({ runtime: "arktype" })).snap([
 			"a number and valid according to an anonymous predicate",
-			"an instance of "
+			"an instance of an anonymous class"
 		])
 	})
 

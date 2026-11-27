@@ -3443,8 +3443,11 @@ return namespace`
 				registered ? `"$ark." + runtime.baseNameOf(${hole})`
 				: predicate ? `runtime.describePredicate({ predicate: ${hole} })`
 				: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
-				: this.classes.has(named) ? `runtime.functionNameOf(${hole})`
-				: `runtime.baseNameOf(${hole})`
+				: this.classes.has(named) ?
+					s.slice(0, match.index).endsWith("an instance of ") ?
+						`(runtime.functionNameOf(${hole}) || "an anonymous class")`
+					:	`runtime.functionNameOf(${hole})`
+				:	`runtime.baseNameOf(${hole})`
 			)
 			start = match.index + match[0].length
 		}
