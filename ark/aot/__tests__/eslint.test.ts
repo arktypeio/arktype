@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { configs } from "@ark/aot/eslint"
+import { closePrecompilers, configs } from "@ark/aot/eslint"
 import { Linter } from "eslint"
 import { readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
@@ -288,9 +288,11 @@ export const T = type({ a: "string" })`
 		const code = `import { type } from "arktype"\nexport const User = type({ name: "string" })`
 		const dir = writeFixture({ "package.json": "{}", "main.ts": code })
 		const filename = join(dir, "main.ts")
-		for (let i = 1; i <= 10; i++)
+		for (let i = 1; i <= 6; i++)
 			attest(lint(code, { bakedLimit: i * 1000 }, filename, dir)).equals([])
 		// revisiting an evicted config still succeeds cleanly
 		attest(lint(code, { bakedLimit: 1000 }, filename, dir)).equals([])
 	}).timeout(120_000)
+
+	after(() => closePrecompilers())
 })

@@ -345,6 +345,7 @@ import {
 import {
 	commaAfter,
 	firstStatementOf,
+	formatImportName,
 	importsEndOf,
 	inlineModules,
 	keepImportedModules,
@@ -1534,7 +1535,9 @@ export class Precompiler {
 				this.declaresOnly(target.module)
 			) {
 				alias = `${name}_${aliases.size}`
-				;(imports[target.module.id] ??= []).push(`${target.name} as ${alias}`)
+				;(imports[target.module.id] ??= []).push(
+					`${formatImportName(target.name)} as ${alias}`
+				)
 			}
 			aliases.set(binding, alias)
 			return alias
@@ -3457,7 +3460,7 @@ export class Precompiler {
 				.map(
 					([specifier, locals]) =>
 						`\nimport { ${Object.keys(locals)
-							.map(name => `${name} as ${locals[name]}`)
+							.map(name => `${formatImportName(name)} as ${locals[name]}`)
 							.join(", ")} } from ${JSON.stringify(specifier)}`
 				)
 				.join(""),
@@ -3619,7 +3622,7 @@ export class Precompiler {
 					inserted +=
 						name === "default" ?
 							`\nimport ${locals[name]} from ${from}`
-						:	`\nimport { ${name} as ${locals[name]} } from ${from}`
+						:	`\nimport { ${formatImportName(name)} as ${locals[name]} } from ${from}`
 				}
 			}
 		}

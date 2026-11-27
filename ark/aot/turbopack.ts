@@ -116,7 +116,7 @@ export default function (
 	source: string
 ): string | undefined {
 	const given = this.getOptions()
-	const cwd = given.cwd ?? process.cwd()
+	const cwd = given.cwd ?? this.rootContext ?? process.cwd()
 	// ark.json or package.json's "ark", which decide each module's output as
 	// next.config's options do, but which Turbopack's build cache sees change
 	// only as dependencies: one written since the last build too
@@ -125,8 +125,10 @@ export default function (
 	let opts: PrecompilePluginOptions
 	try {
 		const production = this.mode === "production" || isProductionEnv()
-		const key = `${production}${JSON.stringify(given)}`
-		const set = withSettingsFile(given)
+		const key = `${production}${cwd}${JSON.stringify(given)}`
+		const set = withSettingsFile(
+			given.cwd !== undefined || !this.rootContext ? given : { ...given, cwd }
+		)
 		const settings = JSON.stringify(set)
 		if ((settingsByOptions[key] ??= settings) !== settings) {
 			throwBuildError(
@@ -197,7 +199,7 @@ const runtimeShimOf = (
 	)
 		.split(sep)
 		.join("/")
-	return `export * from ${JSON.stringify(path.startsWith(".") ? path : `./${path}`)}\n`
+	return `export * from ${JSON.stringify(/^\.\.?(?:\/|$)/.test(path) ? path : `./${path}`)}\n`
 }
 
 // `next build` answers its modules from next.config's read of the project,

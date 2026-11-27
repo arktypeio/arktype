@@ -603,7 +603,18 @@ const openParsedJs = (
 			projectReferences: config.projectReferences
 		})
 	})
-	const emitted = emittedFilesOf(program)
+	const canonical = (path: string) => {
+		const normalized = path.split("\\").join("/")
+		return ts.sys.useCaseSensitiveFileNames ?
+				normalized
+			:	normalized.toLowerCase()
+	}
+	const referencedFiles = referencedFilesOf(
+		ts,
+		config.projectReferences,
+		canonical
+	)
+	const emitted = emittedFilesOf(program, referencedFiles, canonical)
 	const layout = layoutOf(ts, config, emitted)
 	let emitDiagnostics: ts.Diagnostic[] = []
 	return {
@@ -731,14 +742,51 @@ export const formatDiagnostics = (
 		getNewLine: () => "\n"
 	})
 
-export const emittedFilesOf = (program: ts.Program): ts.SourceFile[] =>
+const referencedFilesOf = (
+	ts: TypeScript,
+	references: readonly ts.ProjectReference[] | undefined,
+	canonical: (path: string) => string
+): Set<string> | undefined => {
+	if (!references?.length) return
+	const visited = new Set<string>()
+	const files = new Set<string>()
+	const visit = (refs: readonly ts.ProjectReference[]) => {
+		for (const ref of refs) {
+			const refConfigPath =
+				/\.json$/i.test(ref.path) ? ref.path : join(ref.path, "tsconfig.json")
+			const key = canonical(refConfigPath)
+			if (visited.has(key)) continue
+			visited.add(key)
+			const read = ts.readConfigFile(refConfigPath, ts.sys.readFile)
+			if (read.error || !read.config) continue
+			const parsed = ts.parseJsonConfigFileContent(
+				read.config,
+				ts.sys,
+				nodeDirname(refConfigPath),
+				undefined,
+				refConfigPath
+			)
+			for (const fileName of parsed.fileNames) files.add(canonical(fileName))
+			if (parsed.projectReferences?.length) visit(parsed.projectReferences)
+		}
+	}
+	visit(references)
+	return files.size ? files : undefined
+}
+
+export const emittedFilesOf = (
+	program: ts.Program,
+	referencedFiles?: ReadonlySet<string>,
+	canonical: (path: string) => string = path => path
+): ts.SourceFile[] =>
 	program
 		.getSourceFiles()
 		.filter(
 			file =>
 				!file.isDeclarationFile &&
 				!program.isSourceFileFromExternalLibrary(file) &&
-				/\.[cm]?[jt]sx?$/.test(file.fileName)
+				/\.[cm]?[jt]sx?$/.test(file.fileName) &&
+				(!referencedFiles || !referencedFiles.has(canonical(file.fileName)))
 		)
 		.sort((l, r) => (l.fileName < r.fileName ? -1 : 1))
 
@@ -849,11 +897,11 @@ const layoutOf = (
 }
 
 const specifierBetween = (fromDir: string, declarationPath: string) => {
-	const specifier = relative(fromDir, declarationPath).replace(
-		/\.d\.([cm]?)ts$/,
-		".$1js"
-	)
-	return specifier.startsWith(".") ? specifier : `./${specifier}`
+	const specifier = relative(
+		fromDir.split("\\").join("/"),
+		declarationPath.split("\\").join("/")
+	).replace(/\.d\.([cm]?)ts$/, ".$1js")
+	return /^\.\.?(?:\/|$)/.test(specifier) ? specifier : `./${specifier}`
 }
 
 // a top-level declaration whose type TypeScript would infer
@@ -1061,9 +1109,10 @@ const redeclarationOf = (
 			const named =
 				byNode.size ? (visit(declared.type!) as ts.TypeNode) : undefined
 			// a cycle no shape names is declared as printed, where it could be
-			return printed && holdsElided(ts, named ?? declared.type!) ? printed : (
-					named
-				)
+			const result =
+				printed && holdsElided(ts, named ?? declared.type!) ? printed : named
+			if (result === printed && printed) redeclared?.add(inferred)
+			return result
 		}
 		const redeclare = (declaration: ts.VariableDeclaration) => {
 			const type = typeOf(

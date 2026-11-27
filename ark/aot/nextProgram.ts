@@ -407,7 +407,7 @@ const withUnitFiles = (
 			/\\/g,
 			"/"
 		)
-		return JSON.stringify(path.startsWith(".") ? path : `./${path}`)
+		return JSON.stringify(/^\.\.?(?:\/|$)/.test(path) ? path : `./${path}`)
 	})
 
 const readAndWrite = async (

@@ -735,7 +735,8 @@ const defDropsUserPredicate = (
 			return defDropsUserPredicate(scope.aliases[def], scope, after, {
 				spreadOnly,
 				inIntersection,
-				seen
+				seen,
+				shadowed
 			})
 		}
 		return false
@@ -758,7 +759,8 @@ const defDropsUserPredicate = (
 			return defDropsUserPredicate(def[0], scope, after, {
 				spreadOnly,
 				inIntersection,
-				seen
+				seen,
+				shadowed
 			})
 		}
 		// meta tuple: [base, "@", meta]
@@ -766,7 +768,8 @@ const defDropsUserPredicate = (
 			return defDropsUserPredicate(def[0], scope, after, {
 				spreadOnly,
 				inIntersection,
-				seen
+				seen,
+				shadowed
 			})
 		}
 		// tuple intersection: [lhs, "&", rhs]
@@ -777,12 +780,14 @@ const defDropsUserPredicate = (
 				defDropsUserPredicate(def[0], scope, after, {
 					spreadOnly,
 					inIntersection: nextInIntersection,
-					seen: new Set(seen)
+					seen: new Set(seen),
+					shadowed
 				}) ||
 				defDropsUserPredicate(def[2], scope, after, {
 					spreadOnly,
 					inIntersection: nextInIntersection,
-					seen: new Set(seen)
+					seen: new Set(seen),
+					shadowed
 				})
 			)
 		}
@@ -792,12 +797,14 @@ const defDropsUserPredicate = (
 				defDropsUserPredicate(def[0], scope, after, {
 					spreadOnly,
 					inIntersection,
-					seen: new Set(seen)
+					seen: new Set(seen),
+					shadowed
 				}) ||
 				defDropsUserPredicate(def[2], scope, after, {
 					spreadOnly,
 					inIntersection,
-					seen: new Set(seen)
+					seen: new Set(seen),
+					shadowed
 				})
 			)
 		}

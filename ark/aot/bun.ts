@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
+import { throwError } from "./util.ts"
 import {
 	appendSourceMap,
 	createDevelopmentHost,
@@ -55,10 +57,14 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 				// the development runtime, so Bun prints errors as issues
 				const host =
 					isProductionEnv() ? createNodeHost(opts) : createDevelopmentHost(opts)
-				const runtime = host.resolve(
-					"arktype/runtime",
-					join(cwd, "package.json")
-				)
+				const runtime =
+					host.resolve("arktype/runtime", join(cwd, "package.json")) ??
+					host.resolve("arktype/runtime", fileURLToPath(import.meta.url))
+				if (!runtime) {
+					throwError(
+						`Could not resolve "arktype/runtime" from ${cwd} for @ark/aot/bun`
+					)
+				}
 				for (const specifier of [...runtimeSpecifiers, "arktype/runtime"]) {
 					if (!resolvesToRuntime(specifier, opts)) continue
 					build.module(specifier, () => ({

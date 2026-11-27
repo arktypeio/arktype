@@ -26,6 +26,9 @@ import { minifiedSizeOf } from "./runtimeSize.ts"
 import { exportNameOf, type Binding } from "./scope.ts"
 import { combinesChecks, smallerOf } from "./smaller.ts"
 
+export const formatImportName = (name: string): string =>
+	/^[$A-Z_a-z][\w$]*$/.test(name) ? name : JSON.stringify(name)
+
 export const noValidators: StandaloneModules = {
 	code: "",
 	modules: {},
@@ -135,7 +138,7 @@ export const inlineModules = (
 		.map(([source, { namespace, isPassed, locals }]) => {
 			const from = JSON.stringify(source)
 			const named = Object.entries(locals).map(
-				([name, local]) => `${name} as ${local}`
+				([name, local]) => `${formatImportName(name)} as ${local}`
 			)
 			let written = isPassed ? `\nimport * as ${namespace} from ${from}` : ""
 			if (named.length)
@@ -174,7 +177,11 @@ const inlinedCallOf = (
 			})
 			// imported by name, so a bundler can drop the exports none read
 			const localOf = (name: string) =>
-				(imported.locals[name] ??= `${imported.namespace}$${name}`)
+				(imported.locals[name] ??= `${imported.namespace}$${
+					/^[$A-Z_a-z][\w$]*$/.test(name) ? name : (
+						Object.keys(imported.locals).length
+					)
+				}`)
 			for (const binding of statement.specifiers) {
 				if (binding.type !== "ImportNamespaceSpecifier") {
 					params.push(binding.local.name)

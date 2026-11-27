@@ -411,13 +411,25 @@ const resolveAotCli = (cwd: string): string | undefined => {
 
 const aotSubcommands = new Set(["check", "emit", "declare"])
 
+const explicitCwdOf = (args: string[], baseCwd: string): string | undefined => {
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i]
+		if (arg === "--") break
+		if (arg === "--cwd" && i + 1 < args.length)
+			return resolve(baseCwd, args[i + 1])
+		if (arg.startsWith("--cwd=")) return resolve(baseCwd, arg.slice(6))
+	}
+}
+
 const runAot = (
 	subcommand: string,
 	rest: string[],
 	cwd: string,
 	stderr: (text: string) => void
 ): number => {
-	const cliPath = resolveAotCli(cwd)
+	const lookupCwd = explicitCwdOf(rest, cwd)
+	const cliPath =
+		(lookupCwd ? resolveAotCli(lookupCwd) : undefined) ?? resolveAotCli(cwd)
 	if (!cliPath) {
 		const pm = detectPackageManager(cwd)
 		const spec =

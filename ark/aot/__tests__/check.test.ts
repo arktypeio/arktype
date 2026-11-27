@@ -955,4 +955,21 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			]
 		})
 	})
+
+	it("skips dangling symlinks and rejects empty --fail-under", () => {
+		const dir = writeFixture({
+			"package.json": "{}",
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		symlinkSync(join(dir, "missing.ts"), join(dir, "dangling.ts"))
+		const report = check([], { cwd: dir })
+		attest(report.errors).equals(0)
+		attest(report.accepted).equals(1)
+
+		const emptyFailUnder = runCli(dir, "--check", "--fail-under", "")
+		attest(emptyFailUnder.status).equals(2)
+		attest(
+			emptyFailUnder.stderr.includes("--fail-under must be a percentage")
+		).equals(true)
+	})
 })

@@ -180,10 +180,12 @@ const declare = (): never => {
 	const checker = values.checker as string | undefined
 	if (checker !== undefined && !checkers.includes(checker as Checker))
 		fail(`--checker must be ${checkers.join(", ")} (was ${checker})`)
+	const cwd = values.cwd as string | undefined
 	// a flag over ark.json, as for the other modes
 	const { tsconfig, checker: setChecker } = ((): DeclareOptions => {
 		try {
 			return withSettingsFile({
+				cwd,
 				tsconfig: values.tsconfig as string | undefined,
 				checker: checker as Checker | undefined
 			})
@@ -192,7 +194,7 @@ const declare = (): never => {
 		}
 	})()
 	const declarations = run(() =>
-		emitDeclarations({ tsconfig, checker: setChecker })
+		emitDeclarations({ cwd, tsconfig, checker: setChecker })
 	)
 	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
@@ -204,11 +206,15 @@ const declare = (): never => {
 
 if (values.declare && !values.emit) {
 	const others = Object.keys(values).filter(
-		flag => flag !== "declare" && flag !== "tsconfig" && flag !== "checker"
+		flag =>
+			flag !== "declare" &&
+			flag !== "tsconfig" &&
+			flag !== "checker" &&
+			flag !== "cwd"
 	)
 	if (others.length || positionals.length) {
 		fail(
-			`ark declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
+			`ark declare emits the tsconfig's program and takes no files or option but --tsconfig, --checker and --cwd (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
 		)
 	}
 	declare()
@@ -226,7 +232,9 @@ if (!values.check && !values.emit)
 	fail("ark check, ark emit or ark declare is required")
 
 const failUnder =
-	values["fail-under"] === undefined ? undefined : Number(values["fail-under"])
+	values["fail-under"] === undefined ? undefined
+	: (values["fail-under"] as string).trim() === "" ? Number.NaN
+	: Number(values["fail-under"])
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 

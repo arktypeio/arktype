@@ -754,5 +754,16 @@ export const Merged = Dates.merge({ total: "number" })`
 			attest(report.errors).equals(0)
 			attest(report.diagnostics).equals([])
 		}).timeout(60_000)
+
+		it("does not warn when a generic parameter shadows an outer narrowed alias in tuple expressions", () => {
+			const source = `import { scope } from "arktype"
+const isValid = (o: object) => Object.keys(o).length > 0
+const $ = scope({
+	P: ["object", ":", isValid],
+	"Box<P>": { "...": ["P", "&", { a: "string" }], extra: "number" }
+})
+export const out = $.export()`
+			attest(diagnosticsOf(source)).equals([])
+		})
 	})
 })

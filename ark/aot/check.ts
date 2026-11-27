@@ -93,7 +93,9 @@ const sourcesOf = (patterns: string[], cwd: string): string[] => {
 		.map(match => resolve(cwd, match))
 		.sort()
 	for (const path of matches) {
-		if (!statSync(path).isDirectory()) {
+		const stat = statSync(path, { throwIfNoEntry: false })
+		if (!stat) continue
+		if (!stat.isDirectory()) {
 			if (scriptFile.test(path)) files.add(path)
 		} else if (!dirs.some(dir => path.startsWith(dir + sep))) dirs.push(path)
 	}
@@ -116,7 +118,9 @@ const holdsSkippedSources = (pattern: string, cwd: string): boolean => {
 	const exclude = isInNodeModules(pattern) ? undefined : isInNodeModules
 	return globSync(pattern, { cwd, exclude }).some(match => {
 		const path = resolve(cwd, match)
-		return statSync(path).isDirectory() ?
+		const stat = statSync(path, { throwIfNoEntry: false })
+		if (!stat) return false
+		return stat.isDirectory() ?
 				globSync(defaultSources, {
 					cwd: path,
 					exclude

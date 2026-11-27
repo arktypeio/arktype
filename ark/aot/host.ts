@@ -647,5 +647,5 @@ const segmentAt = (
 
 export const specifierOf = (importer: string, file: string): string => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
-	return path.startsWith(".") ? path : `./${path}`
+	return /^\.\.?(?:\/|$)/.test(path) ? path : `./${path}`
 }

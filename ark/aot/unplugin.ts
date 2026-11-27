@@ -1776,7 +1776,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				(this as { environment?: { name: string } }).environment
 			)
 			for (const path in declarations.files) {
-				const fileName = relative(declarations.root, path)
+				const fileName = relative(
+					declarations.root.split("\\").join("/"),
+					path.split("\\").join("/")
+				)
 				if (fileName.startsWith("../"))
 					throwError(writeDeclaredOutsideMessage(path, declarations.root))
 				this.emitFile({

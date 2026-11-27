@@ -1,8 +1,10 @@
 import type { ESLint, Linter, Rule, SourceCode } from "eslint"
 import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
+import { isAbsolute } from "node:path"
 import type { Diagnostic } from "./diagnostics.ts"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import { realPathOf } from "./host.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import {
 	resolvePrecompileOptions,
@@ -18,11 +20,16 @@ type LintPrecompiler = {
 	settingsStamp: string
 }
 
-const maxPrecompilers = 8
+const maxPrecompilers = 4
 
 // each configuration needs a thread of its own, apart from ESLint's, bounded
 // as an LRU so long-running editor servers across config edits don't leak workers
 const precompilersByOptions = new Map<string, LintPrecompiler>()
+
+export const closePrecompilers = (): void => {
+	for (const entry of precompilersByOptions.values()) closeQuietly(entry)
+	precompilersByOptions.clear()
+}
 
 const closeQuietly = (entry: LintPrecompiler): void => {
 	try {
@@ -130,13 +137,23 @@ const check = (
 // both rules read one result for each file a lint run parses
 const checkedBySource = new WeakMap<SourceCode, Record<string, CheckedModule>>()
 
+const filenameOf = (filename: string): string =>
+	isAbsolute(filename) ? realPathOf(filename) : filename
+
 const checkOnce = (context: Rule.RuleContext): CheckedModule => {
 	const { sourceCode } = context
-	const opts = { ...context.options[0], cwd: context.cwd }
+	const opts = {
+		...context.options[0],
+		cwd: context.options[0]?.cwd ?? context.cwd
+	}
 	const key = JSON.stringify(opts)
 	let checked = checkedBySource.get(sourceCode)
 	if (!checked) checkedBySource.set(sourceCode, (checked = {}))
-	return (checked[key] ??= check(opts, sourceCode.text, context.filename))
+	return (checked[key] ??= check(
+		opts,
+		sourceCode.text,
+		filenameOf(context.filename)
+	))
 }
 
 const reporterOf = (
@@ -152,11 +169,9 @@ const reporterOf = (
 	create: context => ({
 		"Program:exit": () => {
 			const result = checkOnce(context)
+			const file = filenameOf(context.filename)
 			for (const diagnostic of result.diagnostics) {
-				if (
-					diagnostic.file !== context.filename ||
-					diagnostic.severity !== severity
-				)
+				if (diagnostic.file !== file || diagnostic.severity !== severity)
 					continue
 				context.report({
 					loc: {

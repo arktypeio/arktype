@@ -1432,7 +1432,7 @@ export const Order = type({ item: Item, helper: Helper })
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
 		attest([cli.status, cli.stderr.split("\n")[0]]).snap([
 			2,
-			"ark declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was --check --preset)"
+			"ark declare emits the tsconfig's program and takes no files or option but --tsconfig, --checker and --cwd (was --check --preset)"
 		])
 	})
 

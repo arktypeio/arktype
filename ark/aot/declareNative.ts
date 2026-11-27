@@ -657,11 +657,14 @@ export const openNative = (
 	const outputsBySource = new Map<string, [path: string, text: string]>()
 	const declarationPathByFile: Record<string, string | undefined> = {}
 	const options: LayoutOptions = raw.getCompilerOptions()
-	const root =
+	const root = (
 		options.declarationDir ??
 		options.outDir ??
 		options.rootDir ??
 		dirname(configPath)
+	)
+		.split("\\")
+		.join("/")
 	const sharedPath = `${root}/${sharedDeclarationFile}`
 	for (const [path, output] of emit.outputFiles as unknown as [
 		string,
