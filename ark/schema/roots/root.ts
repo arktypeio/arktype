@@ -606,10 +606,25 @@ export abstract class BaseRoot<
 		const constraint = this.$.node(kind, constraintInputOf(kind, schema))
 
 		if (constraint.isRoot()) {
-			// if the node reduces to `unknown`, nothing to do (e.g. minLength: 0)
-			return constraint.isUnknown() ? this : (
-					throwInternalError(`Unexpected constraint node ${constraint}`)
+			if (!constraint.isUnknown())
+				return throwInternalError(`Unexpected constraint node ${constraint}`)
+			// if the node reduces to `unknown`, nothing to do (e.g. minLength: 0),
+			// except that a morph can't be constrained even by that, as it can't be
+			// by anything else
+			if (
+				(io === "root" ? this
+				: io === "in" ? this._in
+				: this._out
+				).is("morph")
+			) {
+				return throwInvalidOperandError(
+					kind,
+					this.$.node(kind, constraintInputOf(kind, schema), { reduced: true })
+						.implied ?? ($ark.kw.unknown.internal as never),
+					this as never
 				)
+			}
+			return this
 		}
 
 		// an intersection's output is one too, so one that needn't meet a basis isn't written

@@ -370,6 +370,16 @@ contextualize(() => {
 				)
 		})
 
+		it("morph by a bound no length fails", () => {
+			// @ts-expect-error
+			attest(() => type("string.integer.parse >= 0"))
+				.throws.snap(
+					"ParseError: MinLength operand must be a string or an array (was a morph)"
+				)
+				.type.errors("To constrain the output of string.integer.parse")
+			attest(type("string >= 0").expression).snap("string")
+		})
+
 		it("same bound kind union", () => {
 			const T = type("1<(number[]|object[])<10")
 			attest<number[] | object[]>(T.infer)
