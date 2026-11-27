@@ -1087,6 +1087,40 @@ user.name must be a string`)
 items[0].name must be a string`)
 	})
 
+	it("names a union failing at each base by the label its bases share", async () => {
+		const Shape = type({ k: "'a'", v: "string" }).or({ k: "'b'", v: "number" })
+		const types = {
+			// read where its key can't be, and as branches each a base
+			Labeled: type({
+				shape: Shape.label("Shape"),
+				when: type("Date | Map").label("When")
+			}),
+			Alike: type({
+				when: type("Date").label("When").or(type("Map").label("When"))
+			}),
+			Root: Shape.label("Shape"),
+			// the union's alone names no base
+			Self: type({
+				shape: Shape.label("Shape", "self"),
+				when: type("Date | Map").label("When", "self")
+			})
+		}
+		const validators = await load(types)
+		const cases: [string, unknown][] = [
+			["Labeled", { shape: 5, when: 1 }],
+			["Alike", { when: 1 }],
+			["Root", 5],
+			["Self", { shape: 5, when: 1 }]
+		]
+		attest(textOf(validators, cases)).equals(textOf(types, cases))
+		attest(textOf(validators, cases)).snap([
+			"Shape must be an object\nWhen must be a Date or a Map",
+			"When must be a Date or a Map",
+			"Shape must be an object",
+			"shape must be an object\nwhen must be a Date or a Map"
+		])
+	})
+
 	it("a union's configured expected is written after must be and its path", async () => {
 		const Shape = type({ a: "string" })
 			.or({ b: "number" })

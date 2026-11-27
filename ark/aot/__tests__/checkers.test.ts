@@ -461,6 +461,69 @@ false
 		).equals(["readingCtxNode(Apply)", "readingCtxNode(Apply)"])
 	})
 
+	it("fails a union no branch allows where a callback reading its ctx has its root's Allows ask", async () => {
+		const root = fixture(
+			"ctx-union",
+			`import { type } from "arktype"
+
+const print = (t: { (data: unknown): unknown; allows(data: unknown): boolean }, data: unknown) => {
+	const out = t(data)
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out), t.allows(data))
+}
+const shallow = (data: unknown, ctx: { path: unknown[] }) => ctx.path.length < 3
+const Either = type({ a: "string" }).or({ b: "number" })
+const Held = type({ either: Either }).narrow(shallow)
+print(Held, { either: {} })
+print(Held, { either: 1 })
+print(Held, { either: { b: 1 } })
+// a case a key doesn't tell from the rest, an element, and a sibling's callback
+print(type({ either: type({ kind: "'a'" }).or({ b: "number" }) }).narrow(shallow), { either: { kind: "b" } })
+print(type({ eithers: Either.array() }).narrow(shallow), { eithers: [{ a: "" }, {}] })
+print(type({ either: Either, name: type("string").narrow(shallow) }), { either: {}, name: "" })
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `either.a must be a string or either.b must be a number false
+either must be an object false
+{"either":{"b":1}} true
+either.b must be a number or either.kind must be "a" false
+eithers[1].a must be a string or eithers[1].b must be a number false
+either.a must be a string or either.b must be a number false
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		attest(behaviorOf(await bundle(root, smallest))).equals(expected)
+	})
+
+	it("passes a ctx to a key's callback where a structure that transforms is asked before its filter", async () => {
+		const root = fixture(
+			"ctx-filter",
+			`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+// reports more than it returns, so it's passed the ctx it's called with
+const named = (s: string, ctx: { mustBe(expected: string): boolean }) => s !== "" || (ctx.mustBe("named"), ctx.mustBe("set"))
+// its filter reads data as it came, so only once its keys allow it
+const User = type({ name: type("string").narrow(named), role: "string = 'user'" }).filter(user => user.name !== "root")
+print(User({ name: "" }))
+print(User({ name: 1 }))
+print(User({ name: "root" }))
+print(User({ name: "ann" }))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `name must be named
+name must be set
+name must be a string
+must be valid according to an anonymous predicate
+{"name":"ann","role":"user"}
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		attest(behaviorOf(await bundle(root, smallest))).equals(expected)
+	})
+
 	it("returns what a factory created before for the same function, keyed by an object its module declares", async () => {
 		const root = fixture(
 			"intern-holder",
@@ -2020,6 +2083,34 @@ run(() => Piped('{ "outer": { "v": "a" }, "other": 1 }'))
 		attest(behaviorOf(await bundle(root, smallest))).equals(compiled)
 	})
 
+	it("finds what a default a function returns fails where a key beside its shape fails", async () => {
+		const root = fixture(
+			"failingDefaultBeside",
+			appOf(
+				proved,
+				`const low = () => { globalThis.calls++; return 1 }
+const Limits = type({ max: type("number > 5").default(low) })
+const Settings = type({ "name?": "string", limits: Limits, "all?": Limits.array() })
+run(() => Settings({ name: 1, limits: {} }))
+run(() => Settings({ limits: {} }))
+run(() => Settings({ name: 1, limits: { max: 9 }, all: [{ max: 6 }, {}] }))
+run(() => Settings({ name: 1, limits: { max: 9 } }))
+`
+			)
+		)
+		const compiled = behaviorOf(await bundle(root))
+		attest(compiled).equals(
+			`name must be a string
+limits.max must be more than 5 1
+limits.max must be more than 5 1
+name must be a string
+all[1].max must be more than 5 1
+name must be a string 0
+`
+		)
+		attest(behaviorOf(await bundle(root, smallest))).equals(compiled)
+	})
+
 	it("reads a failing value once at each depth, with no ctx", async () => {
 		const js = await bundle(
 			fixture(
@@ -2216,6 +2307,55 @@ console.log(validator.allows(cyclic), validator(cyclic) === cyclic, validator.al
 				tempPath("checkers", "cyclic-root")
 			)
 			attest(runPlain(root)).equals("true true false\n")
+		})
+
+		it("fails data where a filter is asked of a cycle whose keys transform", async () => {
+			const root = fixture(
+				"cyclic-filter",
+				`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+// asked before its keys' morphs run, so of a structure that transforms
+const Comment = type({ text: "string.trim", "reply?": "this" }).filter(comment => comment.text !== "")
+print(Comment({ text: 1 }))
+print(Comment({ text: " a ", reply: { text: 1 } }))
+print(Comment({ text: "" }))
+print(Comment({ text: " a ", reply: { text: " b " } }))
+${repaying}
+`
+			)
+			const checkers = await bundle(root, smallest)
+			attest(checkers.includes("holdingAlias(")).equals(true)
+			// as arktype prints them
+			attest(behaviorOf(checkers)).equals(`text must be a string
+reply.text must be a string
+must be valid according to an anonymous predicate
+{"text":"a","reply":{"text":"b"}}
+`)
+		})
+
+		it("passes a ctx to a key's callback where a filter is asked of a cycle whose keys transform", async () => {
+			const root = fixture(
+				"cyclic-ctx-filter",
+				`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const named = (s: string, ctx: { mustBe(expected: string): boolean }) => s !== "" || (ctx.mustBe("named"), ctx.mustBe("set"))
+const Comment = type({ by: type("string").narrow(named), text: "string.trim", "reply?": "this" }).filter(comment => comment.by !== "root")
+print(Comment({ by: "", text: " a " }))
+print(Comment({ by: "root", text: "" }))
+print(Comment({ by: "a", text: " a ", reply: { by: "b", text: " b " } }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			attest(behaviorOf(await bundle(root, smallest))).equals(`by must be named
+by must be set
+must be valid according to an anonymous predicate
+{"by":"a","text":"a","reply":{"by":"b","text":"b"}}
+`)
 		})
 	})
 

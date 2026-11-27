@@ -218,7 +218,7 @@ const isUnion = (node: BaseNode): boolean => node.is("union")
 
 // what makes a checker apply a value itself
 const appliesValue =
-	/runtime\.(?:morphing|readingCtx|holdingAlias|aliasedValue|aliasedMember)\(/
+	/runtime\.(?:morphing|writtenBy|readingCtx|holdingAlias|aliasedValue|aliasedMember)\(/
 
 // a string key written alike may match too, where it's only read needlessly
 const discriminatesBoolean =
@@ -340,6 +340,11 @@ export interface TextContext {
 	/** a required key's: its value's meta, whose message the missing key says */
 	valueMeta?: ArkEnv.meta | undefined
 	meta?: ArkEnv.meta | undefined
+	/**
+	 * a union's written from what its bases are: the label their issues name
+	 * their value by, which arktype's union of them is named by
+	 */
+	label?: string | undefined
 }
 
 type DescribingKey = (typeof describingKeys)[number]
@@ -390,8 +395,8 @@ const keepsOf = (
 // the label a site's default message names its value by, as arktype's errors
 // read it: a missing key's value's, not that of the object around an
 // undeclared key, nor that of a union listing its branches' errors, each
-// named by its own, nor one written from what its bases are, which the union
-// names only where each base's issue does
+// named by its own. One written from what its bases are is named as each
+// base's issue is, by the label they share, not by its own
 const labelOf = (
 	context: TextContext,
 	meta: Record<string, unknown>
@@ -405,7 +410,7 @@ const labelOf = (
 				meta.expected !== undefined
 			) ?
 				meta.label
-			:	undefined
+			:	context.label
 		:	meta.label
 	return typeof label === "string" ? label : undefined
 }
@@ -459,9 +464,20 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 			: context.description !== undefined ? context.description
 			: context.missingValueDescription
 	}
+	// what a union says its value was is its own to say only where its message
+	// is, saying what it is or expects rather than what its branches did
+	const saysActual =
+		code !== "union" ||
+		(meta.description !== undefined && meta.keyword === undefined) ||
+		typeof meta.expected === "string"
 	if (
-		!unwritableCodes.has(code) &&
-		Object.values(custom).some(writer => typeof writer === "function")
+		unwritableCodes.has(code) ?
+			// which reads only its value, as no other writer of these does
+			saysActual &&
+			typeof custom.actual === "function" &&
+			typeof custom.expected !== "function" &&
+			custom.message === undefined
+		:	Object.values(custom).some(writer => typeof writer === "function")
 	) {
 		const describer =
 			custom.actual === undefined ?
@@ -515,12 +531,21 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		issueContext.c = c
 	}
 	// what a configured actual says the value was is written after what's
-	// expected, as arktype's message is, and after its path as any is
+	// expected, as arktype's message is, and after its path as any is. A
+	// unit's own writer writes that too, unless it was what's expected, and
+	// a predicate's does of a site, where no morph threw and no keyword raised
 	else if (
 		typeof custom.actual === "string" &&
 		custom.actual &&
 		custom.message === undefined &&
-		configured.message === errorWriters.message
+		(configured.message === errorWriters.message ||
+			(code === "union" &&
+				saysActual &&
+				configured.message === errorWritersByCode.union.message) ||
+			(code === "predicate" &&
+				configured.message === errorWritersByCode.predicate.message) ||
+			(configured.message === errorWritersByCode.unit.message &&
+				custom.actual !== issueContext.description))
 	) {
 		issueContext.message = errorWriters.message(
 			{ expected: issueContext.description, actual: custom.actual } as never,

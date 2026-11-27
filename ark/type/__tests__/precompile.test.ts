@@ -115,6 +115,31 @@ contextualize(() => {
 		attest(precompileStandalone({ tree }).code).equals(artifact)
 	})
 
+	it("writes a cyclic node an alias resolves to as one equal to it that none does", () => {
+		const nodesOf = (t: type.Any): Record<string, string> =>
+			Object.fromEntries(
+				[
+					...precompileStandalone({ T: t }).code.matchAll(
+						/^const (\w+)Node = .*\n(?:\t.*\n)*}\)\)\(\)$/gm
+					)
+				].map(([declaration, name]) => [name, declaration])
+			)
+		// the case a union reads the keyword's root as is equal to it without
+		// being the node its aliases resolve to, and both are named, so
+		// written, as one unit
+		const resolved = nodesOf(type("object.json"))
+		const equal = nodesOf(type("object.json").or("ArrayBuffer").or("string"))
+		attest(Object.keys(resolved).length).equals(1)
+		attest(flatMorph(resolved, name => [name, equal[name]])).equals(resolved)
+		// what tells them apart is read only by a transform, which still holds it
+		const { Tree } = scope({
+			Tree: { name: "string.trim", "next?": "Tree" }
+		}).export()
+		attest(
+			precompileStandalone({ Tree }).code.includes("tfsById: true")
+		).equals(true)
+	})
+
 	it("writes a global pattern the same after it matches", () => {
 		const T = type({ s: /a/g })
 		const write = () => [

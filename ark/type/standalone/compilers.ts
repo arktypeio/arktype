@@ -19,6 +19,7 @@ import {
 	type TraversalKind,
 	type UnionNode
 } from "@ark/schema"
+import type { UnionSite } from "@ark/schema/internal"
 import { throwInternalError } from "@ark/util"
 import { failsAtPath, FirstIssues } from "../runtime.ts"
 import { combines, writeCombinator } from "./combinators.ts"
@@ -243,7 +244,8 @@ class StandaloneCompiler extends TraversalCompiler {
 	// a union no branch allows reports what each branch's first issue expected,
 	// unless it can only be what its description lists
 	override unionFails(node: UnionNode): string {
-		if (expectsItsBases(node)) return `!${this.error(node)}`
+		if (expectsItsBases(node))
+			return `!${this.failsSite(this.siteRef(issueSiteOf(basesSiteOf(node))), "data")}`
 		return this.branchesFail(
 			node,
 			node.branches.map(branch => this.traversal(branch, "Apply"))
@@ -356,7 +358,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	override failingSiteOf(prop: BaseNode): string | undefined {
 		const { value, errorCtx } = prop as nodeOfKind<"required">
 		if (reportsItself(value) && expectsItsBases(value))
-			return this.siteRef(unionKeySiteOf(value.failSite, errorCtx))
+			return this.siteRef(unionKeySiteOf(basesSiteOf(value), errorCtx))
 		// as does a union of units, like a boolean, which only misses
 		if (onlyMisses(value)) {
 			return this.siteRef(
@@ -455,6 +457,34 @@ const expectsItsBases = (node: UnionNode): boolean => {
 	return describeBranches(expected) === node.description
 }
 
+// the label each base's issue names its value by, if they agree, which
+// arktype's union of them names its value by: see labelOf
+const labelSharedBy = (bases: readonly IssueContext[]): string | undefined => {
+	const label = bases[0]?.label
+	return bases.every(base => base.label === label) ? label : undefined
+}
+
+// a union's site, naming its value by the label its bases share
+type BasesSite = UnionSite & Pick<TextContext, "label">
+
+const basesSites = new WeakMap<UnionNode, BasesSite>()
+
+// the site of a union whose issue is written from what its bases are: its
+// own, naming its value as its bases do
+const basesSiteOf = (node: UnionNode): BasesSite => {
+	let site = basesSites.get(node)
+	if (!site) {
+		const label = labelSharedBy(
+			node.branches.map(branch =>
+				issueContextOf((branch.failSite as { v: TextContext }).v)
+			)
+		)
+		site = label === undefined ? node.failSite : { ...node.failSite, label }
+		basesSites.set(node, site)
+	}
+	return site
+}
+
 const reportsItself = (value: BaseNode): value is UnionNode =>
 	value.is("union") && !value.discriminant && !value.hasAlias
 
@@ -484,6 +514,7 @@ const findBases = (node: UnionNode): Bases | null => {
 	if (node.meta.description !== undefined && node.meta.keyword === undefined)
 		return null
 	const nodes: nodeOfKind<"domain" | "proto" | "unit">[] = []
+	const contexts: IssueContext[] = []
 	const expected: string[] = []
 	const addExpected = (description: string) => {
 		if (!expected.includes(description)) expected.push(description)
@@ -532,6 +563,7 @@ const findBases = (node: UnionNode): Bases | null => {
 		// an expected written from data can't be known here
 		if (context.written && context.written.keeps & 1) return false
 		if (!nodes.includes(basis)) nodes.push(basis)
+		contexts.push(context)
 		if (describes) addExpected(context.description!)
 		return true
 	}
@@ -547,13 +579,13 @@ const findBases = (node: UnionNode): Bases | null => {
 	}
 	for (const branch of node.branches)
 		if (!collect(branch, { describes: !defaultCase })) return null
-	return {
-		nodes,
-		site: issueSiteOf({
-			meta: node.meta,
-			description: describeBranches(expected)
-		})
+	const site: BasesSite = {
+		meta: node.meta,
+		description: describeBranches(expected)
 	}
+	const label = labelSharedBy(contexts)
+	if (label !== undefined) site.label = label
+	return { nodes, site: issueSiteOf(site) }
 }
 
 export const refNameOf = (unit: string, i: number): string => `${unit}R${i}`

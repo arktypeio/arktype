@@ -31,6 +31,7 @@ import {
 	runtimeScope,
 	silentCtx,
 	siteOf,
+	stops,
 	transformedInApply,
 	TransformErrors,
 	transformIfAllowed,
@@ -170,8 +171,6 @@ export const narrowedWithCtx = ((
 	return checker
 }) satisfies Fn
 
-const stops = () => true
-
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
 	if (ctx._e === stops) return checker(data, ctx)
 	const { chkOnly, _e, failsUnion } = ctx
@@ -286,7 +285,8 @@ export const aliasedMember = ((checker: Checker, id: string): Checker => {
 
 // a structure read by Allows alone, as a root is, where a narrow's read after it
 export const holdingAlias = ((checker: Checker): Checker => {
-	const node = { tAllows: allowsReadingCtx(checker) } as never
+	// its scope's config is what continues data past the depth an Allows tracks
+	const node = { tAllows: allowsReadingCtx(checker), $: runtimeScope } as never
 	checker.a = data =>
 		allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig)
 	return checker
@@ -1238,6 +1238,9 @@ const freed = (values: Written) => {
 // what holds an alias transforms with a ctx, whichever value transforms
 const readingValues = (t: Transform, held: readonly Checker[], withCtx?: 1) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	// a default a function writes may fail as a morph may, so what holds one
+	// is applied as what holds a morph is
+	if (held.some(({ w }) => w)) t.e = applyMorphAt
 	return holdingMorphs(t, held)
 }
 

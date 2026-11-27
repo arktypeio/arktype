@@ -25,6 +25,8 @@ const told: Record<string, string> = {
 		show(type({ k: Templated }), { k: 1 }, {})
 		show(type({ k: type("string").configure({ message: ctx => \`Enter \${ctx.expected}\` }) }), { k: 1 })
 		show(type({ k: type("number").configure({ actual: "wrong" }) }), { k: "a" })
+		show(type({ k: type("null").configure({ actual: "wrong" }) }), { k: "a" })
+		show(type({ k: type("1").configure({ actual: "wrong" }).label("K") }), { k: 2 })
 		show(type({ k: type("number").configure({ actual: data => typeof data }) }), { k: "a" })
 		show(type({ k: type("string").configure({ expected: "text" }) }), { k: 1 }, {})
 	`,
@@ -44,6 +46,12 @@ const told: Record<string, string> = {
 		show(type({ k: type("string").narrow((s, ctx) => ctx.reject({ expected: "shorter", actual: "long" })) }), { k: "a" })
 		show(type({ k: type("string").narrow((s, ctx) => ctx.reject({ message: "Too long" })) }), { k: "a" })
 	`,
+	"says what a configured actual says the value was where a narrow or a keyword's check fails": `
+		const short = (s: string) => s.length < 3
+		show(type({ k: type("string").narrow(short).configure({ actual: "long" }) }), { k: "abc" }, { k: 1 })
+		show(type({ k: type("string.date").configure({ actual: "wrong" }).label("When") }), { k: "!!" })
+		show(type("string.normalize.NFC.preformatted").configure({ actual: "wrong" }), "e\\u0301")
+	`,
 	"lists a union's errors whose messages begin as arktype's own, and says a sentence they share": `
 		const AsDefault = type("string").configure({ message: "must be a string" })
 		const Enter = type("string").configure({ message: "Enter text" })
@@ -57,6 +65,15 @@ const told: Record<string, string> = {
 		show(type({ k: Either.configure({ message: "must be E", expected: "E" }) }), { k: {} })
 		show(type({ k: Either.configure({ message: "must be E" }) }), { k: {} })
 		show(type({ k: Either.configure({ message: "Pick one" }) }), { k: {} })
+	`,
+	"says what a union's configured actual says the value was where its message is its own": `
+		const Either = type({ a: "string" }).or({ b: "string" })
+		show(type({ k: Either.describe("E").configure({ actual: "odd" }) }), { k: 1 }, { k: {} })
+		show(type({ k: Either.configure({ expected: "E", actual: data => typeof data }) }), { k: 1 })
+		show(type({ k: Either.configure({ actual: "odd" }) }), { k: 1 }, { k: {} })
+		show(type({ k: type("1 | 2").configure({ actual: data => typeof data }) }), { k: 3 })
+		show(type({ k: type("string | number[]").describe("S").configure({ actual: data => typeof data }) }), { k: null })
+		show(type("1 | 2").configure({ actual: data => typeof data }), 3)
 	`,
 	"keeps each through a pipe and the validator a morph calls": `
 		const AsDefault = type("string").configure({ message: "must be a string" })
@@ -232,6 +249,24 @@ const labeledWritten: Record<string, string> = {
 const writtenConfig = `import { configure } from "arktype/config"
 
 configure({ min: { expected: ctx => \`over \${ctx.rule}\` } })
+`
+
+// what a union's value was is written by a function configured for its codes
+const actualWritten: Record<string, string> = {
+	"says what a function configured for a union's code says the value was": `
+		const Either = type({ a: "string" }).or({ b: "string" })
+		show(type({ k: Either.describe("E") }), { k: 1 }, { k: {} })
+		show(type({ k: "1 | 2" }), { k: 3 })
+		show(type({ kind: "'a'" }).or({ kind: "'b'", a: "string" }), {})
+	`
+}
+
+const actualConfig = `import { configure } from "arktype/config"
+
+configure({
+	union: { actual: data => typeof data },
+	discriminant: { actual: data => typeof data }
+})
 `
 
 const appOf = (
@@ -423,6 +458,16 @@ console.log(JSON.stringify({
 		{
 			"config.ts": writtenConfig,
 			"main.ts": appOf(labeledWritten, 'import "./config.ts"\n')
+		},
+		{ config: "config.ts" }
+	)
+
+	itWritesAsArktype(
+		"an actual a function configured for a union's code writes",
+		actualWritten,
+		{
+			"config.ts": actualConfig,
+			"main.ts": appOf(actualWritten, 'import "./config.ts"\n')
 		},
 		{ config: "config.ts" }
 	)
