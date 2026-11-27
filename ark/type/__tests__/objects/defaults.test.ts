@@ -441,6 +441,14 @@ contextualize(() => {
 			attest(T.json).equals(Expected.json)
 		})
 
+		it("any whitespace around the value", () => {
+			const T = type({ key: "string =  \t''  " })
+			const Expected = type({ key: ["string", "=", ""] })
+
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
+		})
+
 		it("Date", () => {
 			const T = type({ key: 'Date = d"1993-05-21"' })
 

@@ -67,7 +67,7 @@ export type WhitespaceChar = keyof typeof whitespaceChars
 export type trim<s extends string> = trimEnd<trimStart<s>>
 
 export type trimStart<s extends string> =
-	s extends `${WhitespaceChar}${infer tail}` ? trimEnd<tail> : s
+	s extends `${WhitespaceChar}${infer tail}` ? trimStart<tail> : s
 
 export type trimEnd<s extends string> =
 	s extends `${infer init}${WhitespaceChar}` ? trimEnd<init> : s
