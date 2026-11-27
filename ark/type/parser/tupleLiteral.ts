@@ -18,6 +18,7 @@ import {
 	type ErrorMessage,
 	type satisfy
 } from "@ark/util"
+import type { isInferredDefault } from "../attributes.ts"
 import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
 import {
 	parseProperty,
@@ -311,6 +312,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 					SequencePhase.optionals | SequencePhase.defaultables
 				) ?
 					next["kind"]
+				: next["spread"] extends true ? spreadPhase<s, next>
 				: // if we're parsing the variadic element, don't update the phase
 				// so that we can still check it to ensure we don't have
 				// postfix elements following optionals or defaultables
@@ -345,19 +347,73 @@ type nextValidatedSpreadOperatorIfPresent<
 	next["spread"] extends true ?
 		[
 			next["inferred"] extends infer spreadOperand extends array ?
-				// if the spread operand is a fixed-length tuple, it won't be a variadic element
-				// and therefore doesn't need to be validated as one
-				// there are some edge cases around spreads like `[string?, ...[number?]]` which should
-				// result in a type error but currently don't. TS also doesn't handle those,
-				// but would be nice to have at some point regardless.
-				[number, number] extends (
-					[s["inferred"]["length"], spreadOperand["length"]]
-				) ?
-					ErrorMessage<multipleVariadicMessage>
-				:	"..."
+				Extract<spreadResult<s, spreadOperand>, ErrorMessage> extends infer e ?
+					[e] extends [never] ?
+						"..."
+					:	e
+				:	never
 			:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
 		]
 	:	[]
+
+type spreadPhase<s extends SequenceParseState, next extends PreparsedElement> =
+	[next["inferred"]] extends [array] ?
+		Exclude<spreadResult<s, next["inferred"]>, ErrorMessage> extends (
+			infer phase extends SequencePhase
+		) ?
+			[phase] extends [never] ?
+				s["phase"]
+			:	phase
+		:	never
+	:	s["phase"]
+
+// any could be any array, so all that's known of what it appends is that it
+// may be variadic
+type spreadResult<s extends SequenceParseState, operand extends array> =
+	0 extends 1 & operand ?
+		isVariadic<s> extends true ?
+			ErrorMessage<multipleVariadicMessage>
+		:	s["phase"]
+	:	appendSpreadElements<s["phase"], isVariadic<s>, operand>
+
+/**
+ * The phase after a spread's elements are appended one at a time to those
+ * before it, as runtime appends them, or the error appending one throws:
+ * its required elements, then defaultable, optional, variadic and postfix
+ */
+type appendSpreadElements<
+	phase extends SequencePhase,
+	variadic extends boolean,
+	elements extends array
+> =
+	elements extends readonly [] ? phase
+	: elements extends readonly [infer head, ...infer tail] ?
+		isInferredDefault<head> extends true ?
+			variadic extends true ?
+				ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
+			: phase extends SequencePhase.optionals ?
+				ErrorMessage<defaultablePostOptionalMessage>
+			:	appendSpreadElements<SequencePhase.defaultables, variadic, tail>
+		: phase extends SequencePhase.prefix ?
+			appendSpreadElements<phase, variadic, tail>
+		: variadic extends true ?
+			ErrorMessage<postfixAfterOptionalOrDefaultableMessage>
+		:	ErrorMessage<requiredPostOptionalMessage>
+	: elements[number][] extends elements ?
+		variadic extends true ?
+			ErrorMessage<multipleVariadicMessage>
+		:	phase
+	: elements extends readonly [...infer init, unknown] ?
+		appendSpreadElements<phase, variadic, init> extends infer result ?
+			result extends ErrorMessage | SequencePhase.prefix ?
+				result
+			:	ErrorMessage<postfixAfterOptionalOrDefaultableMessage>
+		:	never
+	: elements extends readonly [unknown?, ...infer tail] ?
+		variadic extends true ?
+			ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
+		:	appendSpreadElements<SequencePhase.optionals, variadic, tail>
+	:	phase
 
 type nextValidatedElement<
 	s extends SequenceParseState,

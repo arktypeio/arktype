@@ -163,9 +163,10 @@ contextualize(() => {
 		attest(WithOptional([true, "hi"])).equals([true, "hi", 0])
 		attest(WithOptional([true, "hi", 2, false])).equals([true, "hi", 2, false])
 
-		attest(() => type(["string?", "...", type(["number = 0"])])).throws(
-			defaultablePostOptionalMessage
-		)
+		attest(() =>
+			// @ts-expect-error
+			type(["string?", "...", type(["number = 0"])])
+		).throwsAndHasTypeError(defaultablePostOptionalMessage)
 	})
 
 	describe("without exactOptionalPropertyTypes", () => {

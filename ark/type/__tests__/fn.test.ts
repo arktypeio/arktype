@@ -517,11 +517,10 @@ contextualize(() => {
 			})
 
 			it("error on optional post-variadic in spread", () => {
-				// no type error yet, ideally would have one if tuple
-				// parsing were more precise for nested spread tuples
 				attest(() =>
+					// @ts-expect-error
 					type.fn("...", "string[]", "...", ["string?"])(() => {})
-				).throws(optionalOrDefaultableAfterVariadicMessage)
+				).throwsAndHasTypeError(optionalOrDefaultableAfterVariadicMessage)
 			})
 
 			it("errors on postfix following optional", () => {

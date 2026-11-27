@@ -4,6 +4,7 @@ import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
 	optionalOrDefaultableAfterVariadicMessage,
+	requiredPostOptionalMessage,
 	spreadDefaultableMessage,
 	spreadOptionalMessage,
 	writeNonArraySpreadMessage
@@ -98,11 +99,33 @@ contextualize(() => {
 	})
 
 	it("error on optional post-variadic in spread", () => {
-		// no type error yet, ideally would have one if tuple
-		// parsing were more precise for nested spread tuples
-		attest(() => type(["...", "string[]", "...", ["string?"]])).throws(
-			optionalOrDefaultableAfterVariadicMessage
+		attest(() =>
+			// @ts-expect-error
+			type(["...", "string[]", "...", ["string?"]])
+		).throwsAndHasTypeError(optionalOrDefaultableAfterVariadicMessage)
+	})
+
+	it("spread elements are appended as if written in place", () => {
+		// @ts-expect-error
+		attest(() => type(["...", ["number?"], "string"])).throwsAndHasTypeError(
+			requiredPostOptionalMessage
 		)
+		attest(() =>
+			// @ts-expect-error
+			type(["string?", "...", ["number"]])
+		).throwsAndHasTypeError(requiredPostOptionalMessage)
+		// an empty spread appends nothing, so what follows still follows "string?"
+		attest(() =>
+			// @ts-expect-error
+			type(["string?", "...", "[]", "number"])
+		).throwsAndHasTypeError(requiredPostOptionalMessage)
+
+		const T = type(["...", ["number?"], "string?"])
+		attest<[number?, string?]>(T.infer)
+		attest(T.expression).snap("[number?, string?]")
+		const U = type(["string", "...", ["...", "number[]", "string"], "boolean"])
+		attest<[string, ...number[], string, boolean]>(U.infer)
+		attest(U.expression).snap("[string, ...number[], string, boolean]")
 	})
 
 	it("errors on an optional or defaultable spread", () => {

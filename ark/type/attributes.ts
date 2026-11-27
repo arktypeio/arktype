@@ -188,7 +188,7 @@ type indexedDefaults<o> = {
 	[k in keyof o as isInferredDefault<o[k]> extends true ? k : never]: 0
 }
 
-type isInferredDefault<v> =
+export type isInferredDefault<v> =
 	unwrapInput<v> extends Default<infer t> ?
 		[t] extends [anyOrNever] ?
 			false
