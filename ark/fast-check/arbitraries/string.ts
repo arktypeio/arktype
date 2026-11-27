@@ -58,9 +58,12 @@ export const buildStringArbitrary = (
 			stringConstraints.maxLength !== undefined
 		)
 			throwInternalError("Bounded regex is not supported.")
-		return fc.stringMatching(
+		const base = fc.stringMatching(
 			new RegExp(stringConstraints.pattern, stringConstraints.flags)
 		)
+		return stringConstraints.originalRegex ?
+				base.filter(s => stringConstraints.originalRegex!.test(s))
+			:	base
 	}
 
 	return fc.string(stringConstraints)
@@ -72,6 +75,7 @@ const getFastCheckStringConstraints = (
 	const stringConstraints: fc.StringConstraints & {
 		pattern?: string
 		flags?: string
+		originalRegex?: RegExp
 	} = {}
 	for (const refinement of refinements) {
 		if (refinement.is("pattern")) {
@@ -83,12 +87,20 @@ const getFastCheckStringConstraints = (
 			stringConstraints["pattern"] = refinement.rule
 			// the flags change what the source means (under u, \u{1F600} is one
 			// code point rather than the text "u{1F600}"), so they must reach
-			// fast-check. It rejects i, but a string matching without i also
-			// matches with it, so dropping i only narrows what is generated.
-			// Flags it cannot honor soundly (y, v) are passed through so it
-			// throws rather than generating strings the type rejects.
-			if (refinement.flags)
+			// fast-check. It rejects i, so drop i when calling stringMatching
+			// and filter against the original RegExp so negated classes like
+			// /[^a]/i never emit failing characters. Flags it cannot honor
+			// soundly (y, v) are passed through so it throws rather than
+			// generating strings the type rejects.
+			if (refinement.flags) {
 				stringConstraints["flags"] = refinement.flags.replace("i", "")
+				if (refinement.flags.includes("i")) {
+					stringConstraints["originalRegex"] = new RegExp(
+						refinement.rule,
+						refinement.flags
+					)
+				}
+			}
 		} else if (refinement.is("exactLength")) {
 			stringConstraints["minLength"] = refinement.rule
 			stringConstraints["maxLength"] = refinement.rule

@@ -220,9 +220,18 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 			if (hasDivisor !== undefined)
 				rule = isMin ? Math.ceil(rule) : Math.floor(rule)
 			numberConstraints[refinement.kind] = rule
-		} else if (refinement.is("divisor"))
+			numberConstraints.noNaN = true
+		} else if (refinement.is("divisor")) {
 			numberConstraints["divisor"] = refinement.rule
+			numberConstraints.noNaN = true
+		}
 	}
+
+	if (
+		numberConstraints.min !== undefined ||
+		numberConstraints.max !== undefined
+	)
+		numberConstraints.noNaN = true
 
 	return numberConstraints
 }

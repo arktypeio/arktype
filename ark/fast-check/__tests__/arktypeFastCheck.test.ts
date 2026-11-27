@@ -714,6 +714,36 @@ contextualize(() => {
 			])
 				assertProperty(arkToArbitrary(T), T)
 		})
+		it("handles narrowed object, __proto__ keys, /i negated charsets, bounded NaN, and binary-tree cycles", () => {
+			assertProperty(
+				arkToArbitrary(type("object").narrow(o => typeof o === "object")),
+				type("object")
+			)
+			const WithProto = type({ __proto__: "string", a: "number" })
+			assertProperty(arkToArbitrary(WithProto), WithProto)
+			const NegI = type(/^[^a]+$/i)
+			assertProperty(arkToArbitrary(NegI), NegI)
+			const Pos = type.schema({
+				domain: { domain: "number", numberAllowsNaN: true },
+				min: { rule: 0, exclusive: true }
+			})
+			assertProperty(arkToArbitrary(Pos), Pos)
+			const Tree = type({ val: "number", "left?": "this", "right?": "this" })
+			assertProperty(arkToArbitrary(Tree), Tree)
+			const $ = scope({ node: [["node"], "|", ["node?"]] } as never)
+			const Node = $.type("node" as never)
+			assertProperty(arkToArbitrary(Node), Node)
+
+			const sym = Symbol("k")
+			const WithSym = type({ [sym]: "string", a: "number" })
+			assertProperty(arkToArbitrary(WithSym), WithSym)
+
+			const PipedJson = type("string.json.parse").pipe(v => v)
+			assertProperty(arkToArbitrary(PipedJson), PipedJson)
+
+			const PipedDate = type("string.date.parse").pipe(d => d.getTime())
+			assertProperty(arkToArbitrary(PipedDate), PipedDate)
+		})
 	})
 })
 
