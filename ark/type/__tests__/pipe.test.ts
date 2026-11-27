@@ -114,6 +114,20 @@ contextualize(() => {
 			attest(T.expression).equals(Expected.expression)
 		})
 
+		it("branch disjoint from what it's piped to is dropped", () => {
+			// as `null |> string` throws, so no data reaches it
+			const T = type("null | string.lower |> string")
+			attest<(In: string) => To<string>>(T.t)
+			attest(T.expression).snap("(In: string) => To<string>")
+			attest(T(null).toString()).snap("must be a string")
+			// one that intersects it is still piped to it
+			const U = type("null | 1 | string.lower |> number")
+			attest(U.expression).snap(
+				"(In: string) => To<number> | (In: 1) => To<number>"
+			)
+			attest(U(1)).equals(1)
+		})
+
 		it("missing operand", () => {
 			// @ts-expect-error
 			attest(() => type("string |>")).throws(

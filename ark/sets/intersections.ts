@@ -226,5 +226,14 @@ const _pipeMorphed = (
 		return ctx.$.node("morph", { morphs: [inTersection, to] })
 	}
 
+	// a branch that alters nothing, piped to what alters nothing and doesn't
+	// intersect it, is dropped as `null |> string` throws outside a union. One
+	// that does intersect stays a morph, so configuring the pipe leaves its
+	// output's description and JSON Schema its own
+	if (!from.alters && !to.alters) {
+		const intersection = intersectOrPipeNodes(from, to, ctx)
+		if (intersection instanceof Disjoint) return intersection
+	}
+
 	return ctx.$.node("morph", { morphs: [from, to] })
 }
