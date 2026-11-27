@@ -8,7 +8,11 @@ import {
 } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
-import { doubleAtMessage, type Match } from "arktype/internal/match.ts"
+import {
+	doubleAtMessage,
+	writeInvalidDefaultCaseMessage,
+	type Match
+} from "arktype/internal/match.ts"
 import { discriminantJsonOf } from "arksets/internal"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
@@ -143,6 +147,17 @@ contextualize(() => {
 		attest(m("foo")).equals(3)
 
 		attest(m).type.toString.snap("Match<string, [(In: string) => number]>")
+	})
+
+	it("invalid default", () => {
+		attest(() =>
+			// @ts-expect-error
+			match({ string: s => s.length, default: "x" })
+		).throws(writeInvalidDefaultCaseMessage("x"))
+		attest(() =>
+			// @ts-expect-error
+			match.case("string", s => s.length).default(5)
+		).throws(writeInvalidDefaultCaseMessage(5))
 	})
 
 	it("within scope", () => {

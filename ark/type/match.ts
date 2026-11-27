@@ -17,6 +17,7 @@ import {
 	type Key,
 	type mutable,
 	type numericStringKeyOf,
+	printable,
 	type show,
 	type unionToTuple
 } from "@ark/util"
@@ -282,6 +283,15 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"
 
+const defaultCaseKeywords: readonly unknown[] = [
+	"never",
+	"assert",
+	"reject"
+] satisfies DefaultCaseKeyword[]
+
+export const writeInvalidDefaultCaseMessage = (defaultCase: unknown): string =>
+	`Default case must be a function, "never", "assert" or "reject" (was ${printable(defaultCase)})`
+
 type DefaultCase<ctx extends MatchParserContext = MatchParserContext<any>> =
 	| DefaultCaseKeyword
 	| Morph<ctx["input"]>
@@ -483,6 +493,8 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	default(defaultCase: DefaultCase): Match {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
+		else if (!defaultCaseKeywords.includes(defaultCase))
+			throwParseError(writeInvalidDefaultCaseMessage(defaultCase))
 
 		const shouldThrow = defaultCase === "never" || defaultCase === "assert"
 
