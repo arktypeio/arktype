@@ -2275,11 +2275,10 @@ const replaceProp = (
 		branch.$
 	)
 	if (reducedIntersection instanceof Disjoint) return
-	return (reducedIntersection ??
-		branch.$.node("intersection", {
-			...nextInner,
-			meta: branch.meta
-		})) as Union.ChildNode
+	return branch.$.node("intersection", {
+		...nextInner,
+		meta: branch.meta
+	}) as Union.ChildNode
 }
 
 // whether narrowing branch's existing props can possibly satisfy r's non-value constraints

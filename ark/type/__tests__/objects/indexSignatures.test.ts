@@ -509,5 +509,8 @@ other must be a string`)
 		attest(exIdx.allows({ a: "x" })).equals(true)
 		attest(exIdx.allows({ a: undefined })).equals(false)
 		attest(exIdx.allows({ a: 1 })).equals(false)
+
+		const described = type({ a: "string | number" }).describe("Custom")
+		attest(described.exclude({ a: "number" }).description).snap("Custom")
 	})
 })

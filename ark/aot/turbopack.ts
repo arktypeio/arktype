@@ -126,9 +126,13 @@ export default function (
 	try {
 		const production = this.mode === "production" || isProductionEnv()
 		const key = `${production}${cwd}${JSON.stringify(given)}`
-		const set = withSettingsFile(
+		const loaded = withSettingsFile(
 			given.cwd !== undefined || !this.rootContext ? given : { ...given, cwd }
 		)
+		const set =
+			given.cwd === undefined && "cwd" in loaded ?
+				(({ cwd: _, ...rest }) => rest)(loaded)
+			:	loaded
 		const settings = JSON.stringify(set)
 		if ((settingsByOptions[key] ??= settings) !== settings) {
 			throwBuildError(
