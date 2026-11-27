@@ -241,18 +241,14 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			)
 		})
 
-		it("orders overlapping union branches when deleting undeclared keys", () => {
-			const O = type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey(
-				"delete"
-			)
-			attest(O({ a: "ok", z: 1 })).snap({ a: "ok" })
-			attest(O({ b: true, z: 1 })).snap({ b: true })
-			attest(O({ a: "ok", b: true, z: 1 })).snap({ a: "ok" })
+		it("fails on delete indiscriminable union key", () => {
 			attest(() =>
-				type([{ a: "string.trim" }, "|", { b: "boolean" }]).onUndeclaredKey(
-					"delete"
-				)
-			).throws("Conflicting morph at a")
+				type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey("delete")
+			).throws
+				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: string, + (undeclared): delete }
+Right: { b: boolean, + (undeclared): delete }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
 		})
 
 		it("reject key", () => {

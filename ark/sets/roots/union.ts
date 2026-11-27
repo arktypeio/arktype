@@ -2,17 +2,13 @@ import {
 	type ArkEnv,
 	$ark,
 	Disjoint,
-	authoredTopAliasBranches,
 	compileLiteralPropAccess,
 	compileSerializedValue,
 	constraintInputOf,
-	deferredOrderInners,
-	deferredOrderState,
 	flatMorphsAreEqual,
 	flatRefsAreEqual,
 	hasArkKind,
 	hashesMatch,
-	inProgress,
 	isNode,
 	isResolutionFinal,
 	queueUnchecked,
@@ -48,7 +44,6 @@ import {
 	integerLikeMatcher,
 	isDate,
 	isEmptyObject,
-	type mutable,
 	range,
 	stringifyPath,
 	throwParseError,
@@ -67,108 +62,16 @@ export const unionImplementation: setImplementationOf<Union.Declaration> = {
 		if (!inner.ordered) inner.branches = sortSiblings(inner.branches)
 	},
 	reduce: (inner, $) => {
-		const authored = mergeMorphBranches(inner.branches, $)
-		if (!inner.ordered) {
-			const hasTopAlias = authored.some(branch => branch.topAlias)
-			const sorted = sortSiblings(authored)
-			;(inner as mutable<Union.Inner>).branches = sorted
-			if (hasTopAlias) authoredTopAliasBranches.set(inner, authored)
-			let needsOrdered = false
-			let hasOpenAlias = false
-			const reducedBranches = reduceBranches(
-				inner,
-				kind => {
-					if (kind === "deleteOnly") needsOrdered = true
-					else hasOpenAlias = true
-				},
-				() => needsOrdered
-			)
-			if (needsOrdered) {
-				const orderedBranches = reduceBranches({
-					branches: authored,
-					ordered: true
-				})
-				if (orderedBranches.length === 1) return orderedBranches[0]
-				// if pruning removed the conflicting delete branch, drop ordering
-				if (orderedBranches.length < authored.length) {
-					let stillNeedsOrdered = false
-					const rechecked = reduceBranches(
-						{ branches: sortSiblings(orderedBranches) },
-						kind => {
-							if (kind === "deleteOnly") stillNeedsOrdered = true
-						}
-					)
-					if (!stillNeedsOrdered) {
-						if (rechecked.length === 1) return rechecked[0]
-						if (isUnknownUnion(rechecked))
-							return $.node("intersection", {}, { reduced: true })
-						return $.node(
-							"union",
-							{ ...inner, branches: rechecked },
-							{ reduced: true }
-						)
-					}
-				}
-				return $.node(
-					"union",
-					{
-						...inner,
-						branches: orderedBranches,
-						ordered: true
-					},
-					{ reduced: true }
-				)
-			}
-			if (
-				hasOpenAlias &&
-				!hasTopAlias &&
-				inProgress.definitions > 0 &&
-				!deferredOrderState.rebuilding
-			) {
-				// keep authored branches (>= 2) in an uncached temporary union;
-				// scope resolution rebuilds it immutably once the cyclic component closes
-				;(inner as mutable<Union.Inner>).branches = authored
-				deferredOrderInners.add(inner)
-				return
-			}
-			if (reducedBranches.length === 1) return reducedBranches[0]
-
-			if (isUnknownUnion(reducedBranches))
-				return $.node("intersection", {}, { reduced: true })
-
-			if (reducedBranches.length === inner.branches.length) return
-
-			if (hasTopAlias) {
-				// preserve authored order of surviving branches until resolveShallowAliases unfolds them
-				const kept = new Set(reducedBranches)
-				const keptAuthored = authored.filter(branch => kept.has(branch))
-				;(inner as mutable<Union.Inner>).branches = reducedBranches
-				if (keptAuthored.length === reducedBranches.length)
-					authoredTopAliasBranches.set(inner, keptAuthored)
-				return
-			}
-
-			return $.node(
-				"union",
-				{
-					...inner,
-					branches: reducedBranches
-				},
-				{ reduced: true }
-			)
-		}
-
 		const reducedBranches = reduceBranches({
 			...inner,
-			branches: authored
+			branches: mergeMorphBranches(inner.branches, $)
 		})
 		if (reducedBranches.length === 1) return reducedBranches[0]
 
-		if (
-			reducedBranches.length === inner.branches.length &&
-			authored.length === inner.branches.length
-		)
-			return
+		if (!inner.ordered && isUnknownUnion(reducedBranches))
+			return $.node("intersection", {}, { reduced: true })
+
+		if (reducedBranches.length === inner.branches.length) return
 
 		return $.node(
 			"union",
@@ -1168,11 +1071,10 @@ const pureDomainBitOf = (mask: number): number => {
 		:	0
 }
 
-export const reduceBranches = (
-	{ branches, ordered }: Union.Inner,
-	onOverlap?: (kind: "deleteOnly" | "openAlias") => void,
-	isOrdered?: () => boolean
-): readonly Union.ChildNode[] => {
+export const reduceBranches = ({
+	branches,
+	ordered
+}: Union.Inner): readonly Union.ChildNode[] => {
 	if (branches.length < 2) return branches
 
 	// sorted, equal units are adjacent, and units that aren't equal are disjoint
@@ -1180,7 +1082,6 @@ export const reduceBranches = (
 		return branches.filter((branch, i) => !i || !branch.equals(branches[i - 1]))
 
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
-	let deleteOnly = false
 	// branches sharing no domain are disjoint, most of a union's pairs
 	const domains = branches.map(domainsOf)
 
@@ -1227,19 +1128,7 @@ export const reduceBranches = (
 		)!
 		if (intersection instanceof Disjoint) return
 
-		if (!ordered) {
-			const overlap = checkDeterminateOverlap(
-				branches[i],
-				branches[j],
-				true,
-				onOverlap !== undefined,
-				isOrdered
-			)
-			if (overlap === "deleteOnly") {
-				deleteOnly = true
-				onOverlap?.("deleteOnly")
-			} else if (overlap === "openAlias") onOverlap?.("openAlias")
-		}
+		if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
 
 		if (intersection.equals(branches[i]._in)) {
 			// preserve ordered branches that are a subtype of a subsequent branch
@@ -1393,7 +1282,7 @@ export const reduceBranches = (
 	}
 
 	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
-	return ordered || deleteOnly ? uniqueBranches : mergeAlike(uniqueBranches)
+	return ordered ? uniqueBranches : mergeAlike(uniqueBranches)
 }
 
 const inputOf = (prop: Prop.Node): BaseRoot => prop.value._in
@@ -2449,25 +2338,12 @@ const sameMeta = (nodes: readonly BaseNode[]) => {
 const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))
 
-type OverlapResult = "ok" | "deleteOnly" | "openAlias"
-
-const checkDeterminateOverlap = (
+const assertDeterminateOverlap = (
 	l: Union.ChildNode,
-	r: Union.ChildNode,
-	allowDeleteOnly = true,
-	deferOpenToUnion = false,
-	isOrdered?: () => boolean
-): OverlapResult => {
+	r: Union.ChildNode
+): void => {
 	if (l.hasAlias || r.hasAlias) {
 		if (!isResolutionFinal()) {
-			const deleteOnly = allowDeleteOnly && differsOnlyByDelete(l, r, false)
-			if (
-				!deleteOnly &&
-				deferOpenToUnion &&
-				inProgress.definitions > 0 &&
-				!deferredOrderState.rebuilding
-			)
-				return "openAlias"
 			// aliased branches' transforms and overlap are known once definitions close
 			queueUnchecked(() => {
 				if (
@@ -2475,87 +2351,31 @@ const checkDeterminateOverlap = (
 					!l.equals(r) &&
 					!(intersectNodesRoot(l._in, r._in, l.$) instanceof Disjoint)
 				)
-					checkDeterminateOverlap(l, r, deleteOnly || !!isOrdered?.())
+					assertDeterminateOverlap(l, r)
 			}, `${l.id}|${r.id}`)
-			return deleteOnly ? "deleteOnly" : "ok"
+			return
 		}
-		if (!l.tfs && !r.tfs) return "ok"
-	} else if (!l.alters && !r.alters) return "ok"
+		if (!l.tfs && !r.tfs) return
+	} else if (!l.alters && !r.alters) return
 
-	if (transformsEqual(l, r, true)) return "ok"
-
-	if (allowDeleteOnly && nonDeleteTransformsEqual(l, r, true))
-		return "deleteOnly"
+	if (
+		arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
+		(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
+		arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) &&
+		arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
+			isEqual: flatRefsAreEqual
+		})
+	)
+		return
 
 	throwParseError(
 		writeIndiscriminableMorphMessage(
 			l.expression,
 			r.expression,
-			describeIndiscriminableDetails(l, r, true)
+			describeIndiscriminableDetails(l, r)
 		)
 	)
 }
-
-const transformsEqual = (
-	l: Union.ChildNode,
-	r: Union.ChildNode,
-	final: boolean
-): boolean =>
-	arrayEquals(l.topMorphs as Morph[], r.topMorphs as Morph[]) &&
-	(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
-	arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) &&
-	arrayEquals(
-		transformingAliasRefsOf(l, final),
-		transformingAliasRefsOf(r, final),
-		{ isEqual: flatRefsAreEqual }
-	)
-
-const differsOnlyByDelete = (
-	l: Union.ChildNode,
-	r: Union.ChildNode,
-	final: boolean
-): boolean =>
-	!transformsEqual(l, r, final) && nonDeleteTransformsEqual(l, r, final)
-
-const topUserMorphs = (node: Union.ChildNode): readonly Morph[] =>
-	node.is("morph") ? (node.topMorphs as Morph[]) : []
-
-const topNonDeleteMorphKey = (node: Union.ChildNode): string =>
-	node.is("intersection") ? (node.structure?.defaultsKey ?? "") : ""
-
-const nonDeleteFlatMorphsOf = (
-	node: Union.ChildNode
-): FlatRef<Morph.Node | Intersection.Node>[] =>
-	node.flatMorphs.filter(
-		ref => ref.node.is("morph") || !!ref.node.structure?.defaultsKey
-	)
-
-const nonDeleteFlatMorphsAreEqual = (
-	l: FlatRef<Morph.Node | Intersection.Node>,
-	r: FlatRef<Morph.Node | Intersection.Node>
-): boolean =>
-	l.propString === r.propString &&
-	(l.node.is("morph") && r.node.is("morph") ? l.node.sameMorphs(r.node)
-	: l.node.is("intersection") && r.node.is("intersection") ?
-		l.node.structure?.defaultsKey === r.node.structure?.defaultsKey
-	:	false)
-
-const nonDeleteTransformsEqual = (
-	l: Union.ChildNode,
-	r: Union.ChildNode,
-	final: boolean
-): boolean =>
-	arrayEquals(topUserMorphs(l), topUserMorphs(r)) &&
-	(l as Morph.Node).inverse === (r as Morph.Node).inverse &&
-	topNonDeleteMorphKey(l) === topNonDeleteMorphKey(r) &&
-	arrayEquals(nonDeleteFlatMorphsOf(l), nonDeleteFlatMorphsOf(r), {
-		isEqual: nonDeleteFlatMorphsAreEqual
-	}) &&
-	arrayEquals(
-		nonDeleteTransformingAliasRefsOf(l, final),
-		nonDeleteTransformingAliasRefsOf(r, final),
-		{ isEqual: flatRefsAreEqual }
-	)
 
 const peekAliasResolution = (alias: Alias.Node): BaseRoot | undefined => {
 	const registered = $ark.nodesById.get(alias.reference) ?? alias.target
@@ -2566,65 +2386,8 @@ const peekAliasResolution = (alias: Alias.Node): BaseRoot | undefined => {
 	return undefined
 }
 
-const reachesAnyTransform = (
-	root: BaseNode,
-	final: boolean,
-	seen = new Set<BaseNode>()
-): boolean => {
-	if (seen.has(root)) return false
-	seen.add(root)
-	if (root.alters) return true
-	if (!root.hasAlias) return false
-	if (root.is("alias")) {
-		if (root.isIo) return false
-		if (!final && root.operator === "&" && root.operands)
-			return root.operands.some(op => reachesAnyTransform(op, final, seen))
-		const target = final ? root.resolution : peekAliasResolution(root)
-		return target ? reachesAnyTransform(target, final, seen) : false
-	}
-	return root.children.some(child => reachesAnyTransform(child, final, seen))
-}
-
-// whether a node reaches any transform other than undeclared-key deletion
-const hasNonDeleteTransform = (
-	root: BaseNode,
-	final: boolean,
-	seen = new Set<BaseNode>()
-): boolean => {
-	if (seen.has(root)) return false
-	seen.add(root)
-	if (root.is("morph")) return true
-	if (root.is("structure") && root.defaultsKey) return true
-	if (root.is("optional") && root.hasDef()) return true
-	if (root.is("sequence") && root.defMorphs.length) return true
-	if (root.is("alias")) {
-		if (root.isIo) return false
-		if (!final && root.operator === "&" && root.operands)
-			return root.operands.some(op => hasNonDeleteTransform(op, final, seen))
-		const target = final ? root.resolution : peekAliasResolution(root)
-		return target ? hasNonDeleteTransform(target, final, seen) : false
-	}
-	if (!root.alters && !root.hasAlias) return false
-	return root.children.some(child => hasNonDeleteTransform(child, final, seen))
-}
-
-const transformingAliasRefsOf = (node: BaseRoot, final: boolean): FlatRef[] =>
-	node.flatRefs.filter(
-		ref =>
-			ref.node.is("alias") &&
-			(final ? ref.node.tfs : reachesAnyTransform(ref.node, false))
-	)
-
-const nonDeleteTransformingAliasRefsOf = (
-	node: BaseRoot,
-	final: boolean
-): FlatRef[] =>
-	node.flatRefs.filter(
-		ref =>
-			ref.node.is("alias") &&
-			(final ? ref.node.tfs : reachesAnyTransform(ref.node, false)) &&
-			hasNonDeleteTransform(ref.node, final)
-	)
+const transformingAliasRefsOf = (node: BaseRoot): FlatRef[] =>
+	node.flatRefs.filter(ref => ref.node.is("alias") && ref.node.tfs)
 
 const formatFlatPath = (path: readonly KeyOrKeyNode[]): string =>
 	stringifyPath(path, {
@@ -2672,17 +2435,16 @@ const differingDefaultKeys = (
 
 const describeIndiscriminableDetails = (
 	l: Union.ChildNode,
-	r: Union.ChildNode,
-	final = true
+	r: Union.ChildNode
 ): string | undefined => {
-	const lFlat = nonDeleteFlatMorphsOf(l)
-	const rFlat = nonDeleteFlatMorphsOf(r)
+	const lFlat = l.flatMorphs
+	const rFlat = r.flatMorphs
 	const conflictPaths = new Set<string>()
 	const lFlatAt = new Map<string, FlatRef<Morph.Node | Intersection.Node>[]>()
 	const rFlatAt = new Map<string, FlatRef<Morph.Node | Intersection.Node>[]>()
 
 	for (const ref of lFlat) {
-		if (!rFlat.some(other => nonDeleteFlatMorphsAreEqual(ref, other))) {
+		if (!rFlat.some(other => flatMorphsAreEqual(ref, other))) {
 			const formatted = formatFlatPath(ref.path)
 			conflictPaths.add(formatted)
 			;(
@@ -2691,7 +2453,7 @@ const describeIndiscriminableDetails = (
 		}
 	}
 	for (const ref of rFlat) {
-		if (!lFlat.some(other => nonDeleteFlatMorphsAreEqual(ref, other))) {
+		if (!lFlat.some(other => flatMorphsAreEqual(ref, other))) {
 			const formatted = formatFlatPath(ref.path)
 			conflictPaths.add(formatted)
 			;(
@@ -2700,8 +2462,8 @@ const describeIndiscriminableDetails = (
 		}
 	}
 
-	const lAliases = nonDeleteTransformingAliasRefsOf(l, final)
-	const rAliases = nonDeleteTransformingAliasRefsOf(r, final)
+	const lAliases = transformingAliasRefsOf(l)
+	const rAliases = transformingAliasRefsOf(r)
 	for (const ref of lAliases) {
 		if (!rAliases.some(other => flatRefsAreEqual(ref, other)))
 			conflictPaths.add(formatFlatPath(ref.path))
@@ -2711,8 +2473,7 @@ const describeIndiscriminableDetails = (
 			conflictPaths.add(formatFlatPath(ref.path))
 	}
 
-	if (topNonDeleteMorphKey(l) !== topNonDeleteMorphKey(r))
-		for (const k of differingDefaultKeys(l, r)) conflictPaths.add(k)
+	for (const k of differingDefaultKeys(l, r)) conflictPaths.add(k)
 
 	const paths = [...conflictPaths].sort()
 	const sameExpression = l.expression === r.expression

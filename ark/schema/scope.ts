@@ -56,9 +56,6 @@ import {
 	type BaseNode
 } from "./node.ts"
 import {
-	authoredTopAliasBranches,
-	deferredOrderState,
-	deferredOrderUnions,
 	nodesById,
 	parseNode,
 	registerNodeId,
@@ -76,7 +73,6 @@ import {
 	writeUnresolvableMessage,
 	type Alias
 } from "./roots/alias.ts"
-import type { Morph } from "./roots/morph.ts"
 import { BaseRoot } from "./roots/root.ts"
 import type { Union } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
@@ -672,7 +668,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		registerParseContext(ctx).phase = "resolving"
 		ctx.index = ctx.lowlink = openDefinitions.push(ctx) - 1
 		const membersStart = openMembers.length
-		const deferredStart = deferredOrderState.count
 		let node: BaseRoot
 		try {
 			node = this.parseOpenDef(ctx.def, ctx)
@@ -699,20 +694,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 				if (ctx.lowlink === ctx.index) {
 					const members = openMembers.splice(membersStart)
 					component.push(...members)
-					if (deferredOrderState.count > deferredStart) {
-						ctx.phase = "member"
-						ctx.resolution = node
-						deferredOrderState.rebuilding++
-						try {
-							for (const member of members)
-								member.resolution = rebuildDeferredUnions(member.resolution!)
-							node = rebuildDeferredUnions(node)
-						} finally {
-							deferredOrderState.rebuilding--
-							ctx.phase = "resolved"
-							delete ctx.resolution
-						}
-					}
 					for (const member of members) {
 						member.phase = "resolved"
 						member.$.resolveContext(member.alias!, member, member.resolution!)
@@ -975,8 +956,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const union = input as Union.Inner
 			const branches = union.branches.flatMap(branch =>
 				(branch as BaseRoot).is("union") ?
-					(authoredTopAliasBranches.get((branch as {} as Union.Node).inner) ??
-					(branch as {} as Union.Node).branches)
+					(branch as {} as Union.Node).branches
 				:	branch
 			)
 			if (branches.length === 1) return this.bindRef(branches[0]) as never
@@ -1029,23 +1009,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxInputOrNode, "root")) return this.bindRef(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseCtx(ctxInputOrNode))
-		const deferredStart = deferredOrderState.count
 		let node: BaseRoot
 		try {
 			node = this.parseOpenDef(def, ctx)
 			node = resolving(() => {
-				if (deferredOrderState.count > deferredStart) {
-					ctx.phase = "member"
-					ctx.resolution = node
-					deferredOrderState.rebuilding++
-					try {
-						node = rebuildDeferredUnions(node)
-					} finally {
-						deferredOrderState.rebuilding--
-						ctx.phase = "resolved"
-						delete ctx.resolution
-					}
-				}
 				if (node.topAlias && !inProgress.definitions)
 					node = resolveShallowAliases(node)
 
@@ -1391,59 +1358,6 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
-
-const rebuildDeferredUnions = (root: BaseRoot): BaseRoot => {
-	const memo = new Map<BaseNode, boolean>()
-	const containsDeferred = (node: BaseNode): boolean => {
-		const cached = memo.get(node)
-		if (cached !== undefined) return cached
-		const found =
-			deferredOrderUnions.has(node) ||
-			(!node.is("alias") &&
-				(node.children.some(containsDeferred) ||
-					(node.is("morph") &&
-						(node.piped.some(
-							m => hasArkKind(m, "root") && containsDeferred(m)
-						) ||
-							(node.declaredIn !== undefined &&
-								containsDeferred(node.declaredIn)) ||
-							(node.declaredOut !== undefined &&
-								containsDeferred(node.declaredOut))))))
-		memo.set(node, found)
-		return found
-	}
-	if (!containsDeferred(root)) return root
-	if (root.is("union") && authoredTopAliasBranches.has(root.inner)) {
-		return root.$.node("union", {
-			...root.inner,
-			branches: authoredTopAliasBranches
-				.get(root.inner)!
-				.map(rebuildDeferredUnions),
-			meta: root.meta
-		})
-	}
-	return root.transform(
-		(kind, inner) => {
-			if (kind !== "morph") return inner
-			const morph = inner as Morph.Inner
-			return {
-				...morph,
-				morphs: morph.morphs.map((m, i) =>
-					i > 0 && hasArkKind(m, "root") ? rebuildDeferredUnions(m) : m
-				),
-				...(morph.declaredIn && {
-					declaredIn: rebuildDeferredUnions(morph.declaredIn)
-				}),
-				...(morph.declaredOut && {
-					declaredOut: rebuildDeferredUnions(morph.declaredOut)
-				})
-			}
-		},
-		{
-			shouldTf: containsDeferred
-		}
-	) as BaseRoot
-}
 
 export const rootSchema: BaseScope["schema"] = rootSchemaScope.schema
 export const node: BaseScope["node"] = rootSchemaScope.node

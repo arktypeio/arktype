@@ -1904,59 +1904,6 @@ ${repaying}
 		).equals('{"a":"a","z":1} true\n{"a":"a"}\n')
 	})
 
-	it("orders overlapping object unions deleting undeclared keys in a standalone build", async () => {
-		const root = writeFixture(
-			{
-				"config.ts": `import { configure } from "arktype/config"
-
-configure({ onUndeclaredKey: "delete" })
-`,
-				"main.ts": `import "./config.ts"
-import { type } from "arktype"
-
-export const Resource = type({ uri: "string", "text?": "string" }).or({
-	uri: "string",
-	"blob?": "string"
-})
-export const RequiredResource = type({ uri: "string", text: "string" }).or({
-	uri: "string",
-	blob: "string"
-})
-export const Reversed = type({ uri: "string", blob: "string" }).or({
-	uri: "string",
-	text: "string"
-})
-const show = (out: unknown) =>
-	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
-show(Resource({ uri: "x", text: "a", extra: 1 }))
-show(Resource({ uri: "x", blob: "b", extra: 1 }))
-show(Resource({ uri: "x", text: 123, blob: "b", extra: 1 }))
-show(Resource({ uri: "x", text: "a", blob: "b", extra: 1 }))
-show(RequiredResource({ uri: "x", text: "a", extra: 1 }))
-show(RequiredResource({ uri: "x", blob: "b", extra: 1 }))
-show(RequiredResource({ uri: "x", text: "a", blob: "b", extra: 1 }))
-show(Reversed({ uri: "x", text: "a", blob: "b", extra: 1 }))
-show(RequiredResource({ uri: "x" }))
-${repaying}
-`
-			},
-			tempPath("checkers", "delete-union")
-		)
-		const js = await bundle(root, { ...smallest, config: "config.ts" })
-		const plain = runPlain(root)
-		attest(behaviorOf(js)).equals(plain)
-		attest(plain).snap(`{"uri":"x","text":"a"}
-{"uri":"x"}
-{"uri":"x","blob":"b"}
-{"uri":"x","text":"a"}
-{"uri":"x","text":"a"}
-{"uri":"x","blob":"b"}
-{"uri":"x","text":"a"}
-{"uri":"x","blob":"b"}
-text must be a string or blob must be a string
-`)
-	})
-
 	it("transforms a key whose callback reads ctx, which sees the key's path", async () => {
 		const root = fixture(
 			"ctxUnderDeleting",

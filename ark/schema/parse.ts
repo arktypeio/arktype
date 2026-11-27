@@ -39,12 +39,7 @@ import {
 	type UnknownAttachmentsInput,
 	type UnknownNodeImplementation
 } from "./shared/implement.ts"
-import {
-	$ark,
-	authoredTopAliasBranches,
-	nodesById,
-	type NodeId
-} from "./shared/registry.ts"
+import { $ark, nodesById, type NodeId } from "./shared/registry.ts"
 import { composing, hasArkKind, isNode } from "./shared/utils.ts"
 import type { ArkEnv } from "./shared/declare.ts"
 
@@ -164,8 +159,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	}
 
 	if ($ark.sets) {
-		// unreduced unions sort inside reduce so authored order survives delete-only ordering
-		if (ctx.kind !== "union" || ctx.reduced) $ark.sets.sort(ctx.kind, inner)
+		$ark.sets.sort(ctx.kind, inner)
 		if (!ctx.reduced) {
 			const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 			if (reduced) {
@@ -240,21 +234,6 @@ export interface DeferredShell {
 /** the id of the node created last, so a deferred Type can tell it reached a new one */
 export let lastCreated: string | undefined
 
-/**
- * unreduced temporary unions whose overlapping branches hold unresolved aliases;
- * kept uncached and rebuilt immutably once their cyclic component finishes parsing
- */
-export const deferredOrderInners: WeakSet<object> = new WeakSet()
-
-export const deferredOrderUnions: WeakSet<BaseNode> = new WeakSet()
-
-export const deferredOrderState: { count: number; rebuilding: number } = {
-	count: 0,
-	rebuilding: 0
-}
-
-export { authoredTopAliasBranches }
-
 export const createNode = ({
 	id,
 	alias,
@@ -268,19 +247,10 @@ export const createNode = ({
 	// serialized as the node is created, so meta that can't be throws here
 	const metaJson = isEmptyObject(meta) ? undefined : metaJsonOf(meta)
 	const impl = nodeImplementationsByKind[kind]
-	const isDeferredOrder = kind === "union" && deferredOrderInners.has(inner)
-	const isUncachedTopAlias =
-		kind === "union" && authoredTopAliasBranches.has(inner)
 
 	// nodes are only cached with a set engine, which reduces them first
 	const key =
-		(
-			ignoreCache ||
-			hasSymbolMeta(meta) ||
-			isDeferredOrder ||
-			isUncachedTopAlias ||
-			!$ark.sets
-		) ?
+		ignoreCache || hasSymbolMeta(meta) || !$ark.sets ?
 			undefined
 		:	nodeKeyOf(kind, impl, inner, metaJson, $)
 
@@ -321,11 +291,6 @@ export const createNode = ({
 	const node = composing(() =>
 		resolveDescription(new nodeClassesByKind[kind](attachments, $))
 	)
-
-	if (isDeferredOrder) {
-		deferredOrderUnions.add(node)
-		deferredOrderState.count++
-	}
 
 	if (key) {
 		node.c.key = key

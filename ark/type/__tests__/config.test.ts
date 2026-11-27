@@ -687,427 +687,16 @@ age must be non-negative`)
 	})
 
 	describe("onUndeclaredKey", () => {
-		it("delete orders overlapping object unions in authored branch order", () => {
-			const [AB, BA] = withConfig({ onUndeclaredKey: "delete" }, () => {
-				const $ = scope({})
-				return [
-					$.type([{ a: "string" }, "|", { b: "boolean" }]),
-					$.type([{ b: "boolean" }, "|", { a: "string" }])
-				]
-			})
-			attest(AB.internal.is("union") && AB.internal.ordered).equals(true)
-			attest(AB({ a: "ok", extra: 1 })).snap({ a: "ok" })
-			attest(AB({ b: true, extra: 1 })).snap({ b: true })
-			attest(AB({ a: "ok", b: true, extra: 1 })).snap({ a: "ok" })
-			attest(BA({ a: "ok", b: true, extra: 1 })).snap({ b: true })
-			attest(AB({}).toString()).snap("a must be a string or b must be boolean")
-		})
-
-		// https://github.com/arktypeio/arktype/issues/1752
-		it("delete handles overlapping object unions with optional and required fields", () => {
-			const [Optional, Required, Nested, Recursive] = withConfig(
-				{ onUndeclaredKey: "delete" },
-				() => {
-					const $ = scope({})
-					const Optional = $.type({
-						uri: "string",
-						"text?": "string"
-					}).or({
-						uri: "string",
-						"blob?": "string"
-					})
-					const Required = $.type({
-						uri: "string",
-						text: "string"
-					}).or({
-						uri: "string",
-						blob: "string"
-					})
-					const Other = $.type({
-						uri: "string",
-						"html?": "string"
-					}).or({
-						uri: "string",
-						"md?": "string"
-					})
-					const Nested = $.type({ a: "string", res: Optional }).or({
-						b: "string",
-						res: Other
-					})
-					const Recursive = scope({
-						Tree: "Branch | Leaf",
-						Branch: { label: "string", children: "Tree[]" },
-						Leaf: { label: "string" }
-					}).export().Tree
-					return [Optional, Required, Nested, Recursive]
-				}
-			)
-			attest(Optional({ uri: "x", text: "a", extra: 1 })).snap({
-				uri: "x",
-				text: "a"
-			})
-			// first branch matches because text? is optional, deleting blob & extra
-			attest(Optional({ uri: "x", blob: "b", extra: 1 })).snap({ uri: "x" })
-			// invalid text falls through to second branch
-			attest(Optional({ uri: "x", text: 123, blob: "b", extra: 1 })).snap({
-				uri: "x",
-				blob: "b"
-			})
-			attest(Optional({ uri: "x", text: "a", blob: "b", extra: 1 })).snap({
-				uri: "x",
-				text: "a"
-			})
-
-			attest(Required({ uri: "x", text: "a", extra: 1 })).snap({
-				uri: "x",
-				text: "a"
-			})
-			attest(Required({ uri: "x", blob: "b", extra: 1 })).snap({
-				uri: "x",
-				blob: "b"
-			})
-			attest(Required({ uri: "x", text: "a", blob: "b", extra: 1 })).snap({
-				uri: "x",
-				text: "a"
-			})
-
-			attest(
-				Nested({ a: "1", res: { uri: "x", text: "a", extra: 1 }, z: 2 })
-			).snap({ a: "1", res: { uri: "x", text: "a" } })
-			attest(
-				Nested({ b: "2", res: { uri: "x", html: "<p>", extra: 1 }, z: 2 })
-			).snap({ b: "2", res: { uri: "x", html: "<p>" } })
-
-			attest(
-				Recursive({
-					label: "root",
-					children: [{ label: "leaf", extra: 1 }],
-					extra: 2
-				})
-			).snap({ label: "root", children: [{ label: "leaf" }] })
-			attest(Recursive({ label: "only", extra: 2 })).snap({ label: "only" })
-		})
-
-		it("preserves authored order and resolves cyclic aliased delete unions", () => {
-			// Blocker 1: cyclic topAlias union must preserve authored branch order
-			const [BA, AB, LeafFirst] = withConfig(
-				{ onUndeclaredKey: "delete" },
-				() => [
-					scope({
-						Tree: "B | A",
-						A: { z: "string", "child?": "Tree" },
-						B: { a: "string", "child?": "Tree" }
-					}).export().Tree,
-					scope({
-						Tree: "A | B",
-						A: { z: "string", "child?": "Tree" },
-						B: { a: "string", "child?": "Tree" }
-					}).export().Tree,
-					scope({
-						Tree: "Leaf | Branch",
-						Leaf: { label: "string" },
-						Branch: { label: "string", children: "Tree[]" }
-					}).export().Tree
-				]
-			)
-			attest(BA({ a: "1", z: "2", extra: 3 })).snap({ a: "1" })
-			attest(AB({ a: "1", z: "2", extra: 3 })).snap({ z: "2" })
-			attest(LeafFirst({ label: "x", children: [], extra: 1 })).snap({
-				label: "x"
-			})
-
-			// Blocker 2a: delete lives only behind a cyclic alias child
-			const Node = scope({
-				Node: "Wrapper | Plain",
-				Wrapper: { item: "Inner" },
-				Plain: { other: "string" },
-				Inner: { a: "string", "next?": "Node", "+": "delete" }
-			}).export().Node
-			attest(Node({ item: { a: "1", extra: 9 }, other: "hi" }) as unknown).snap(
-				{ item: { a: "1" }, other: "hi" }
-			)
-			attest(Node({ other: "hi", extra: 9 }) as unknown).snap({
-				other: "hi",
-				extra: 9
-			})
-
-			// Blocker 2b: outer branches share keys under global delete and differ behind cyclic aliases
-			const Outer = withConfig(
-				{ onUndeclaredKey: "delete" },
-				() =>
-					scope({
-						Outer: "A | B",
-						A: { child: "DelA" },
-						B: { child: "DelB" },
-						DelA: { a: "string", "next?": "Outer" },
-						DelB: { b: "string", "next?": "Outer" }
-					}).export().Outer
-			)
-			attest(Outer({ child: { a: "1", b: "2", extra: 3 }, topExtra: 4 })).snap({
-				child: { a: "1" }
-			})
-			attest(Outer({ child: { b: "2", extra: 3 }, topExtra: 4 })).snap({
-				child: { b: "2" }
-			})
-
-			// Blocker 2c & 2d: union constructed while cyclic deleting target is still resolving
-			const { Outer: OuterPending } = scope({
-				DelA: { a: "string", "next?": "Outer", "+": "delete" },
-				Outer: [{ other: "string" }, "|", { child: "DelA" }]
-			}).export()
-			attest(
-				OuterPending({
-					other: "hi",
-					child: { a: "1", extra: 9 }
-				}) as unknown
-			).snap({ other: "hi", child: { a: "1", extra: 9 } })
-			attest(OuterPending({ child: { a: "1", extra: 9 } }) as unknown).snap({
-				child: { a: "1" }
-			})
-
-			const { DelA: NestedPending } = scope({
-				DelA: {
-					a: "string",
-					"next?": [{ other: "string" }, "|", { child: "DelA" }],
-					"+": "delete"
-				}
-			}).export()
-			attest(
-				NestedPending({
-					a: "1",
-					next: { other: "hi", child: { a: "2", extra: 9 } },
-					topExtra: 1
-				}) as unknown
-			).snap({ a: "1", next: { other: "hi", child: { a: "2", extra: 9 } } })
-			attest(
-				NestedPending({
-					a: "1",
-					next: { child: { a: "2", extra: 9 } },
-					topExtra: 1
-				}) as unknown
-			).snap({ a: "1", next: { child: { a: "2" } } })
-
-			// Negative: cyclic alias hiding a real user morph still throws
+		it("delete fails on an indiscriminable union", () => {
 			attest(() =>
-				scope({
-					DelA: { a: "string.trim", "next?": "Outer", "+": "delete" },
-					Outer: [{ other: "string" }, "|", { child: "DelA" }]
-				}).export()
-			).throws("Conflicting morph at child")
-
-			// Repro A1: opposite-order topAlias unions in the same cycle never collide in nodesByKey
-			const sameScopeTop = scope({
-				AB: "A | B",
-				BA: "B | A",
-				A: { z: "string", "child?": "AB", "+": "delete" },
-				B: { a: "string", "child?": "BA", "+": "delete" }
-			}).export()
-			attest(sameScopeTop.AB({ a: "1", z: "2", extra: 3 })).snap({ z: "2" })
-			attest(sameScopeTop.BA({ a: "1", z: "2", extra: 3 })).snap({ a: "1" })
-
-			// Repro A2: opposite-order pending unions in the same scope never collide
-			const sameScopePending = scope({
-				DelA: { a: "string", "x?": "AB", "y?": "BA", "+": "delete" },
-				AB: [{ other: "string" }, "|", { child: "DelA" }],
-				BA: [{ child: "DelA" }, "|", { other: "string" }]
-			}).export()
-			attest(
-				sameScopePending.AB({
-					other: "hi",
-					child: { a: "1", extra: 9 }
-				}) as unknown
-			).snap({ other: "hi", child: { a: "1", extra: 9 } })
-			attest(
-				sameScopePending.BA({
-					other: "hi",
-					child: { a: "1", extra: 9 }
-				}) as unknown
-			).snap({ other: "hi", child: { a: "1" } })
-
-			// Repro A3 + D: sibling inline reversed unions keep distinct order AND parent expression matches
-			const { DelA: SiblingInline } = scope({
-				DelA: {
-					a: "string",
-					"x?": [{ other: "string" }, "|", { child: "DelA" }],
-					"y?": [{ child: "DelA" }, "|", { other: "string" }],
-					"+": "delete"
-				}
-			}).export()
-			attest(
-				SiblingInline({
-					a: "1",
-					x: { other: "hi", child: { a: "2", extra: 9 } },
-					y: { other: "hi", child: { a: "3", extra: 9 } },
-					topExtra: 1
-				}) as unknown
-			).snap({
-				a: "1",
-				x: { other: "hi", child: { a: "2", extra: 9 } },
-				y: { other: "hi", child: { a: "3" } }
-			})
-			attest(SiblingInline.expression).snap(
-				"{ a: string, x?: { other: string } | { child: $DelA }, y?: { child: $DelA } | { other: string }, + (undeclared): delete }"
-			)
-
-			// Repro B1: subtype branch before supertype branch in cyclic delete union keeps both branches cleanly
-			const { Outer: SubBeforeSuper } = scope({
-				DelA: { x: "string", "next?": "Outer", "+": "delete" },
-				Outer: [{ a: "string", child: "DelA" }, "|", { a: "string" }]
-			}).export()
-			attest(
-				SubBeforeSuper({ a: "hi", child: { x: "1", extra: 9 } }) as unknown
-			).snap({ a: "hi", child: { x: "1" } })
-			attest(SubBeforeSuper({ a: "hi", extra: 9 }) as unknown).snap({
-				a: "hi",
-				extra: 9
-			})
-
-			// Repro B2: supertype branch before subtype branch collapses cleanly to non-union
-			const { Outer: SuperBeforeSub } = scope({
-				DelA: { x: "string", "next?": "Outer", "+": "delete" },
-				Outer: [{ a: "string" }, "|", { a: "string", child: "DelA" }]
-			}).export()
-			attest(SuperBeforeSub.internal.is("union")).equals(false)
-			attest(SuperBeforeSub.equals(type({ a: "string" }))).equals(true)
-
-			// Repro C: flattening a pending union into an outer union preserves authored branch order
-			const { Outer: Flattened } = scope({
-				DelA: { a: "string", "next?": "Outer", "+": "delete" },
-				Tag: { tag: "number", "next?": "Outer" },
-				Outer: [[{ other: "string" }, "|", { child: "DelA" }], "|", "Tag"]
-			}).export()
-			attest(
-				Flattened({
-					other: "hi",
-					child: { a: "1", extra: 9 }
-				}) as unknown
-			).snap({ other: "hi", child: { a: "1", extra: 9 } })
-			attest(Flattened({ child: { a: "1", extra: 9 } }) as unknown).snap({
-				child: { a: "1" }
-			})
-
-			// Anonymous `this` with inline cyclic delete union also rebuilds immutably
-			const ThisInline = type({
-				a: "string",
-				"next?": [{ other: "string" }, "|", { child: "this" }],
-				"+": "delete"
-			})
-			attest(
-				ThisInline({
-					a: "1",
-					next: { other: "hi", child: { a: "2", extra: 9 } },
-					topExtra: 1
-				}) as unknown
-			).snap({ a: "1", next: { other: "hi", child: { a: "2", extra: 9 } } })
-			attest(
-				ThisInline({
-					a: "1",
-					next: { child: { a: "2", extra: 9 } },
-					topExtra: 1
-				}) as unknown
-			).snap({ a: "1", next: { child: { a: "2" } } })
-
-			// Piped targets (`MorphNode.piped`) also rebuild deferred unions immutably
-			attest(() =>
-				scope({
-					TrimNode: {
-						a: "string.trim",
-						"next?": [
-							["unknown", "=>", (x: unknown) => x],
-							"|>",
-							[{ other: "string" }, "|", { child: "TrimNode" }]
-						]
-					}
-				}).export()
-			).throws("Conflicting morph at child")
-
-			attest(() =>
-				type({
-					a: "string.trim",
-					"next?": [
-						["unknown", "=>", (x: unknown) => x],
-						"|>",
-						[{ other: "string" }, "|", { child: "this" }]
-					]
-				})
-			).throws("Conflicting morph at child")
-
-			// Self-cyclic through a user pipe also reaches a real morph, so it throws
-			attest(() =>
-				scope({
-					DelSelfPiped: {
-						a: "string",
-						"next?": [
-							["unknown", "=>", (x: unknown) => x],
-							"|>",
-							[{ other: "string" }, "|", { child: "DelSelfPiped" }]
-						],
-						"+": "delete"
-					}
-				}).export()
-			).throws("Conflicting morph at child")
-
-			// Piped target referencing a delete-only cyclic type sets tail.ordered === true
-			const { PipedToDel } = scope({
-				DelA: { a: "string", "next?": "DelA", "+": "delete" },
-				PipedToDel: [
-					["unknown", "=>", (x: unknown) => x],
-					"|>",
-					[{ other: "string" }, "|", { child: "DelA" }]
-				]
-			}).export()
-			const tail = PipedToDel.internal.assertIs("morph").piped[1]
-			attest(
-				typeof tail === "function" &&
-					"is" in tail &&
-					tail.is("union") &&
-					tail.ordered
-			).equals(true)
-			attest(
-				PipedToDel({
-					other: "hi",
-					child: { a: "2", extra: 9 }
-				}) as unknown
-			).snap({ other: "hi", child: { a: "2", extra: 9 } })
-			attest(PipedToDel({ child: { a: "2", extra: 9 } }) as unknown).snap({
-				child: { a: "2" }
-			})
-		})
-
-		it("drops ordering when subsumed deleting branch leaves a non-transforming union", () => {
-			// Blocker 3: pruning a subsumed deleting branch must not leave a non-transforming ordered union
-			const t1 = type.or(
-				{ a: "string", b: "number", "+": "ignore" },
-				{ a: "string", "+": "ignore" },
-				{ a: "string", b: "number", "+": "delete" }
-			)
-			const t2 = type.or(
-				{ c: "string", d: "number", "+": "ignore" },
-				{ c: "string", "+": "ignore" },
-				{ c: "string", d: "number", "+": "delete" }
-			)
-			attest(t1.internal.is("union")).equals(false)
-			attest(t2.internal.is("union")).equals(false)
-			const combined = type({ x: "string", v: t1 }).or({ y: "number", v: t2 })
-			attest(
-				combined({ x: "ok", v: { a: "hi", b: 1, extra: true } }) as unknown
-			).snap({ x: "ok", v: { a: "hi", b: 1, extra: true } })
-
-			// equal-input delete/ignore branches preserve first-match order
-			const DelFirst = type.or(
-				{ a: "string", "+": "delete" },
-				{ a: "string", "+": "ignore" }
-			)
-			attest(DelFirst({ a: "hi", extra: 1 })).snap({ a: "hi" })
-
-			const IgnoreFirst = type.or(
-				{ a: "string", "+": "ignore" },
-				{ a: "string", "+": "delete" }
-			)
-			attest(IgnoreFirst({ a: "hi", extra: 1 }) as unknown).snap({
-				a: "hi",
-				extra: 1
-			})
+				withConfig({ onUndeclaredKey: "delete" }, () =>
+					scope({}).type([{ a: "string" }, "|", { b: "boolean" }])
+				)
+			).throws
+				.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { a: string, + (undeclared): delete }
+Right: { b: boolean, + (undeclared): delete }
+Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
 		})
 
 		it("delete still rejects overlapping unions with conflicting user morphs or defaults", () => {
@@ -1148,47 +737,33 @@ age must be non-negative`)
 			attest(O({ kind: "b", a: "ok", b: true })).snap({ kind: "b", b: true })
 		})
 
-		it("an explicit ignore keeps extra keys in an ordered delete union", () => {
-			const [deleteFirst, ignoreFirst] = withConfig(
+		// the ignoring branch's input took the config's delete back once it
+		// held a morph, so the branches looked disjoint
+		it("an explicit ignore fails an indeterminate union", () => {
+			const [optional, required] = withConfig(
 				{ onUndeclaredKey: "delete" },
 				() => {
 					const C = scope({}).type({ provider: "string" })
-					const Ignore = scope({}).type({
-						"+": "ignore",
-						uses: "string",
-						"o?": C
-					})
-					return [C.or(Ignore), Ignore.or(C)]
+					return [
+						() => C.or({ "+": "ignore", uses: "string", "o?": C }),
+						() => C.or({ "+": "ignore", uses: "string", o: C })
+					]
 				}
 			)
-			attest(deleteFirst({ provider: "aws", uses: "s3", x: 1 })).snap({
-				provider: "aws"
-			})
-			attest(deleteFirst({ uses: "s3", x: 1 }) as unknown).snap({
-				uses: "s3",
-				x: 1
-			})
-			attest(
-				deleteFirst({
-					uses: "s3",
-					o: { provider: "aws", extra: 2 },
-					x: 1
-				}) as unknown
-			).snap({ uses: "s3", o: { provider: "aws" }, x: 1 })
-			attest(
-				ignoreFirst({ provider: "aws", uses: "s3", x: 1 }) as unknown
-			).snap({
-				provider: "aws",
-				uses: "s3",
-				x: 1
-			})
-			// a real morph beside explicit ignore still throws indeterminate
+			attest(optional).throws(
+				"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
+			)
+			attest(required).throws("is indeterminate")
+			const C = type({ "+": "delete", provider: "string" })
+			attest(() => C.or({ "+": "ignore", uses: "string", "o?": C })).throws(
+				"is indeterminate"
+			)
 			attest(() =>
 				withConfig({ onUndeclaredKey: "delete" }, () => {
-					const C = scope({}).type({ provider: "string" })
-					return C.or({ "+": "ignore", uses: "string.trim", "o?": C })
+					const D = scope({}).type({ provider: "string" })
+					return D.or({ uses: "string", "o?": D })
 				})
-			).throws("Conflicting morph at uses")
+			).throws("is indeterminate")
 		})
 
 		it("an explicit ignore stays ignore in what's built from it", () => {

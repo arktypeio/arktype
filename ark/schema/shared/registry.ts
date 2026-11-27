@@ -31,13 +31,6 @@ export const ambientResolver: {
 	resolve?: (name: string) => BaseRoot | undefined
 } = {}
 
-/**
- * authored branch order of pending unions holding top-level aliases,
- * read by resolveShallowAliases and union flattening
- */
-export const authoredTopAliasBranches: WeakMap<object, readonly BaseRoot[]> =
-	new WeakMap()
-
 export const reference = (name: string): RegisteredReference =>
 	`${registryName}.${name}` as never
 
