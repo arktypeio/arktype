@@ -317,7 +317,18 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}
 		const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 		const caseNode = discriminant.cases[k]
-		if (caseNode === true || caseNode?.tAllows(data, ctx)) return true
+		if (
+			caseNode === true ||
+			(caseNode &&
+				((
+					discriminant.ownEnumerableDefault &&
+					k !== "default" &&
+					caseNode.checksCtx
+				) ?
+					allowsInBranch(ctx as Traversal, caseNode, data)
+				:	caseNode.tAllows(data, ctx)))
+		)
+			return true
 		if (
 			discriminant.ownEnumerableDefault &&
 			k !== "default" &&
@@ -568,10 +579,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				} else caseResult = caseTf
 			} else if (v === true) caseResult = "true"
 			else if (js.trav !== "Apply") {
-				caseResult =
-					fallback && k !== "default" ?
-						`(${js.inv(v)}) || (${ownEnumGuard} && ${fallbackAllows})`
-					:	js.inv(v)
+				if (fallback && k !== "default") {
+					const vAllows =
+						v.checksCtx ?
+							`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(v, "Allows")}, data)`
+						:	js.inv(v)
+					caseResult = `(${vAllows}) || (${ownEnumGuard} && ${fallbackAllows})`
+				} else caseResult = js.inv(v)
 			} else if (k === "default") {
 				caseResult =
 					js.defaultFails?.(this, v) ??

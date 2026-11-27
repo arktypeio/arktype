@@ -177,7 +177,8 @@ type casesToMorphTuple<
 				:	ctx["callInput"]
 			) => o
 		:	(
-				In: [ctx["callInput"]] extends [unset] ? maybeLiftToKey<defs[i], ctx>
+				In: [ctx["callInput"]] extends [unset] ?
+					_finalizeCaseArg<defs[i], ctx, "in">
 				: [_finalizeCaseArg<defs[i], ctx, "in">] extends [never] ? never
 				: ctx["callInput"]
 			) => o
@@ -203,9 +204,6 @@ type inferCaseArg<
 	ctx extends MatchParserContext,
 	endpoint extends "in" | "out"
 > = _finalizeCaseArg<inferDefinition<def, ctx["$"]>, ctx, endpoint>
-
-type maybeLiftToKey<t, ctx extends MatchParserContext> =
-	ctx["key"] extends PropertyKey ? { [k in ctx["key"]]: t } : t
 
 type _finalizeCaseArg<
 	t,

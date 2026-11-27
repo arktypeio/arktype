@@ -1673,4 +1673,22 @@ Left: { c: 0 }
 Right: (In: number | Date) => Out<unknown>
 Make their inputs disjoint (e.g. with a discriminant key or narrower morph input), or pipe the union of their inputs to a single morph.`)
 	})
+
+	it("isolates contextual case errors before falling back on ownEnumerableDefault in allows and apply", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const a = $.type({
+				kind: "'a'",
+				x: $.type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+			})
+			const b = $.type({ kind: "'b'", y: "string" })
+			const fb = $.type({ "+": "reject", x: "number", z: "string = 'ok'" })
+			const u = a.or(b).or(fb)
+			const data = Object.assign(Object.create({ kind: "a" }), { x: -1 })
+			for (let i = 0; i < 3; i++) {
+				attest(u.allows(data)).equals(true)
+				attest(u(data)).equals({ x: -1, z: "ok" })
+			}
+		}
+	})
 })

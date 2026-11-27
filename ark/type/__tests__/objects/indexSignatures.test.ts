@@ -478,4 +478,36 @@ other must be a string`)
 			"{ normal: string >= 1, optional?: string >= 1 }"
 		)
 	})
+
+	it("handles exclude/extract on declared keys alongside index signatures without crashing", () => {
+		const T = type({ a: "string | number", "[string]": "string" })
+		attest(T.exclude({ a: "string" }).expression).snap("never")
+		attest(T.extract({ a: "string" }).expression).snap(
+			"{ [string]: string, a: string }"
+		)
+
+		const Opt = type({ "a?": "string | number", "[string]": "string" })
+		attest(Opt.exclude({ "a?": "string" }).expression).snap("never")
+
+		const $ = scope(
+			{
+				A: { "a?": "string | number" },
+				B: { a: "string | undefined" },
+				C: { "a?": "string | number", "+": "reject" },
+				D: { "[string]": "string" }
+			},
+			{ exactOptionalPropertyTypes: false }
+		).export()
+		const exOpt = $.A.exclude($.B)
+		attest(exOpt.allows({})).equals(true)
+		attest(exOpt.allows({ a: 1 })).equals(true)
+		attest(exOpt.allows({ a: undefined })).equals(false)
+		attest(exOpt.allows({ a: "x" })).equals(false)
+
+		const exIdx = $.C.extract($.D)
+		attest(exIdx.allows({})).equals(true)
+		attest(exIdx.allows({ a: "x" })).equals(true)
+		attest(exIdx.allows({ a: undefined })).equals(false)
+		attest(exIdx.allows({ a: 1 })).equals(false)
+	})
 })

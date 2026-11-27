@@ -44,6 +44,8 @@ export const buildNumberArbitrary = (
 		}
 	}
 
+	const rawMin = numberConstraints.min ?? -Number.MAX_VALUE
+	const rawMax = numberConstraints.max ?? Number.MAX_VALUE
 	const min =
 		numberConstraints.min ??
 		((
@@ -62,22 +64,36 @@ export const buildNumberArbitrary = (
 		:	Number.MAX_SAFE_INTEGER)
 
 	const d = Math.abs(divisor)
-	const safeMin = Math.max(min, Number.MIN_SAFE_INTEGER)
-	const safeMax = Math.min(max, Number.MAX_SAFE_INTEGER)
+	const safeMin = Math.max(rawMin, Number.MIN_SAFE_INTEGER)
+	const safeMax = Math.min(rawMax, Number.MAX_SAFE_INTEGER)
 	const kMin = Math.ceil(safeMin / d)
 	const kMax = Math.floor(safeMax / d)
 
 	if (safeMin > safeMax || kMin > kMax) {
-		if (min > Number.MAX_SAFE_INTEGER || max < Number.MIN_SAFE_INTEGER) {
+		const outsideRanges: [number, number][] = []
+		if (rawMax > Number.MAX_SAFE_INTEGER) {
+			outsideRanges.push([
+				Math.max(rawMin, Number.MAX_SAFE_INTEGER + 1),
+				rawMax
+			])
+		}
+		if (rawMin < Number.MIN_SAFE_INTEGER) {
+			outsideRanges.push([
+				rawMin,
+				Math.min(rawMax, Number.MIN_SAFE_INTEGER - 1)
+			])
+		}
+		for (const [lo, hi] of outsideRanges) {
+			if (lo > hi) continue
 			if (d === 1) {
 				return fc.double({
-					min,
-					max,
+					min: lo,
+					max: hi,
 					noNaN: true,
 					noDefaultInfinity: true
 				})
 			}
-			const bigArb = buildLargeDivisorArbitrary(min, max, d)
+			const bigArb = buildLargeDivisorArbitrary(lo, hi, d)
 			if (bigArb) return bigArb
 		}
 		throw new Error(
@@ -116,30 +132,41 @@ const buildLargeDivisorArbitrary = (
 	max: number,
 	d: number
 ): fc.Arbitrary<number> | undefined => {
-	const anchor = min > 0 ? min : max
-	const ulp =
-		Math.abs(anchor) === Number.MAX_VALUE ?
-			Math.abs(anchor - nearestFloat(anchor, anchor > 0 ? "-" : "+"))
-		:	Math.abs(nearestFloat(anchor, anchor > 0 ? "+" : "-") - anchor)
-	const ulpBig = BigInt(ulp)
 	const dBig = BigInt(d)
-	const step = (ulpBig / gcdBigInt(ulpBig, dBig)) * dBig
-	// stay within the anchor's binade so step stays exact without overflowing MAX_VALUE
-	const binStart = ulp * 2 ** 52
-	const binEnd = binStart + (binStart - ulp)
-	const binLow = anchor > 0 ? binStart : -binEnd
-	const binHigh = anchor > 0 ? binEnd : -binStart
-	const lo = BigInt(Math.max(min, binLow))
-	const hi = BigInt(Math.min(max, binHigh))
-	const kMin = lo >= 0n ? (lo + step - 1n) / step : lo / step
-	const kMax = hi >= 0n ? hi / step : (hi - step + 1n) / step
-	if (kMin > kMax) return
-	const kMinNum = Number(kMin)
-	const kMaxNum = Number(kMax)
-	if (!Number.isSafeInteger(kMinNum) || !Number.isSafeInteger(kMaxNum)) return
-	return fc
-		.integer({ min: kMinNum, max: kMaxNum })
-		.map(k => Number(BigInt(k) * step))
+	let anchor = min > 0 ? min : max
+	for (let stepCount = 0; stepCount < 64; stepCount++) {
+		const ulp =
+			Math.abs(anchor) === Number.MAX_VALUE ?
+				Math.abs(anchor - nearestFloat(anchor, anchor > 0 ? "-" : "+"))
+			:	Math.abs(nearestFloat(anchor, anchor > 0 ? "+" : "-") - anchor)
+		const ulpBig = BigInt(ulp)
+		const step = (ulpBig / gcdBigInt(ulpBig, dBig)) * dBig
+		// stay within the anchor's binade so step stays exact without overflowing MAX_VALUE
+		const binStart = ulp * 2 ** 52
+		const binEnd = binStart + (binStart - ulp)
+		const binLow = anchor > 0 ? binStart : -binEnd
+		const binHigh = anchor > 0 ? binEnd : -binStart
+		const lo = BigInt(Math.max(min, binLow))
+		const hi = BigInt(Math.min(max, binHigh))
+		const kMin = lo >= 0n ? (lo + step - 1n) / step : lo / step
+		const kMax = hi >= 0n ? hi / step : (hi - step + 1n) / step
+		if (kMin <= kMax) {
+			const kMinNum = Number(kMin)
+			const kMaxNum = Number(kMax)
+			if (Number.isSafeInteger(kMinNum) && Number.isSafeInteger(kMaxNum)) {
+				return fc
+					.integer({ min: kMinNum, max: kMaxNum })
+					.map(k => Number(BigInt(k) * step))
+			}
+		}
+		if (anchor > 0) {
+			if (binEnd >= max || binEnd === Number.MAX_VALUE) return
+			anchor = nearestFloat(binEnd, "+")
+		} else {
+			if (binLow <= min || binLow === -Number.MAX_VALUE) return
+			anchor = nearestFloat(binLow, "-")
+		}
+	}
 }
 
 const getFastCheckNumberConstraints = (node: IntersectionNode) => {

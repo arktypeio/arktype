@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	Disjoint,
 	intrinsic,
 	rootSchema,
 	writeInvalidLengthBoundMessage,
@@ -1274,5 +1275,31 @@ contextualize(() => {
 			attest($.s("a").toString()).snap("must be minimum 4 characters")
 			attest($.a(["a"]).toString()).snap("must be minimum 4 items")
 		})
+	})
+
+	it("handles complete-coverage range splits, extreme Date notEqual, and infinite bound merges", () => {
+		const emptyLen = type.string.exactlyLength(0)
+		attest(emptyLen.extract("''").expression).snap('""')
+		attest(emptyLen.exclude("''").expression).snap("never")
+
+		const maxDate = new Date(8_640_000_000_000_000)
+		const atMax = type.schema({ domain: "object", proto: Date, after: maxDate })
+		attest(atMax.exclude(type.unit(maxDate)).expression).snap("never")
+		attest(
+			atMax.internal.intersect(
+				type.schema({ domain: "object", proto: Date, notEqual: maxDate })
+					.internal
+			)
+		).instanceOf(Disjoint)
+
+		const ltInf = type.schema({
+			domain: { domain: "number", numberAllowsInfinity: true },
+			max: { rule: Number.POSITIVE_INFINITY, exclusive: true }
+		})
+		const gtInf = type.schema({
+			domain: { domain: "number", numberAllowsInfinity: true },
+			min: { rule: Number.POSITIVE_INFINITY, exclusive: true }
+		})
+		attest(ltInf.or(gtInf).allows(Number.POSITIVE_INFINITY)).equals(false)
 	})
 })

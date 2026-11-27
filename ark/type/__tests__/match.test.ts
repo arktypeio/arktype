@@ -1514,4 +1514,22 @@ contextualize(() => {
 		attest(objMatch(null)).equals("fallback")
 		attest(objMatch({ a: "baz" })).equals("default")
 	})
+
+	it("preserves sibling input properties in .in().at().strings()", () => {
+		const m = match
+			.in({ kind: "'a' | 'b'", count: "number" })
+			.at("kind")
+			.strings({
+				a: x => x.count,
+				b: x => x.count + 1,
+				default: "never"
+			})
+
+		attest<number>(m({ kind: "a", count: 2 })).equals(2)
+		attest<number>(m({ kind: "b", count: 2 })).equals(3)
+		// @ts-expect-error
+		attest(() => m({ kind: "a" })).throws.snap(
+			"TraversalError: count must be a number (was missing)"
+		)
+	})
 })

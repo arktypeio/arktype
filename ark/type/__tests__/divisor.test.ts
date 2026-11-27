@@ -184,5 +184,14 @@ contextualize(() => {
 				"ParseError: Intersection of % 3 and 8 results in an unsatisfiable type"
 			)
 		})
+
+		it("overflowing lcm reduces to 0", () => {
+			const T = type
+				.schema({ domain: "number", divisor: 3 })
+				.and(type.schema({ domain: "number", divisor: 2 ** 1023 }))
+			attest(T.expression).snap("0")
+			attest(T.allows(0)).equals(true)
+			attest(T.allows(3)).equals(false)
+		})
 	})
 })

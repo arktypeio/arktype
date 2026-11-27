@@ -706,6 +706,14 @@ contextualize(() => {
 			])
 				assertProperty(arkToArbitrary(T), T)
 		})
+		it("divisor ranges abutting MAX_SAFE_INTEGER or spanning power-of-2 binades", () => {
+			for (const T of [
+				type("number % 2 >= 9007199254740991"),
+				type("number % 2 >= 9007199254740991 & number <= 9007199254740996"),
+				type("number % 4 >= 18014398509481982 & number <= 18014398509481984")
+			])
+				assertProperty(arkToArbitrary(T), T)
+		})
 	})
 })
 

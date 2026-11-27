@@ -1799,14 +1799,19 @@ const mergeRange = (
 		:	[r, l]
 	const excluded: number[] = []
 	if (first.upper && second.lower) {
-		const distance = second.lower.value - first.upper.value
 		if (
-			family.integral ?
-				distance === 2
-			:	distance === 0 && first.upper.exclusive && second.lower.exclusive
+			!family.integral &&
+			first.upper.value === second.lower.value &&
+			first.upper.exclusive &&
+			second.lower.exclusive
 		)
-			excluded.push(first.upper.value + (family.integral ? 1 : 0))
-		else if (distance > (family.integral ? 1 : 0)) return
+			excluded.push(first.upper.value)
+		else {
+			const distance = second.lower.value - first.upper.value
+			if (family.integral && distance === 2)
+				excluded.push(first.upper.value + 1)
+			else if (distance > (family.integral ? 1 : 0)) return
+		}
 	}
 	excluded.push(
 		...first.excluded.filter(value => !rangeIncludes(second, value)),
@@ -2202,7 +2207,7 @@ const splitRangeBranch = (
 			)
 			if (outNode && !hashesMatch(outNode, branch)) outNodes.push(outNode)
 		}
-		if (!outNodes.length) continue
+		if (outRanges.length && !outNodes.length) continue
 		budget.remaining--
 		const extracted: Union.ChildNode[] = [inNode]
 		const excluded: Union.ChildNode[] = []
@@ -2220,16 +2225,20 @@ const replaceProp = (
 	prop: Prop.Node,
 	kind: Prop.Kind,
 	value: BaseRoot
-): Union.ChildNode => {
+): Union.ChildNode | undefined => {
 	const structure: dict = {
 		...branch.structure!.inner,
 		order: branch.structure!.keyOrder
 	}
-	const nextProp = branch.$.node(kind, {
-		key: prop.key,
-		value,
-		meta: prop.meta
-	})
+	const nextProp = branch.$.node(
+		kind,
+		{
+			key: prop.key,
+			value,
+			meta: prop.meta
+		},
+		{ reduced: true }
+	)
 	if (kind === prop.kind) {
 		structure[prop.kind] = branch.structure![prop.kind]!.map(p =>
 			p === prop ? nextProp : p
@@ -2243,14 +2252,34 @@ const replaceProp = (
 			nextProp
 		]
 	}
-	return branch.$.node("intersection", {
+	const nextStructInner = {
+		...structure,
+		meta: branch.structure!.meta
+	}
+	const reducedStruct = $ark.sets!.reduce(
+		"structure",
+		nextStructInner,
+		branch.$
+	)
+	if (reducedStruct instanceof Disjoint) return
+	const nextInner = {
 		...branch.inner,
-		structure: branch.$.node("structure", {
-			...structure,
-			meta: branch.structure!.meta
-		} as never),
-		meta: branch.meta
-	}) as Union.ChildNode
+		structure: (reducedStruct ??
+			branch.$.node("structure", nextStructInner as never, {
+				reduced: true
+			})) as never
+	}
+	const reducedIntersection = $ark.sets!.reduce(
+		"intersection",
+		nextInner,
+		branch.$
+	)
+	if (reducedIntersection instanceof Disjoint) return
+	return (reducedIntersection ??
+		branch.$.node("intersection", {
+			...nextInner,
+			meta: branch.meta
+		})) as Union.ChildNode
 }
 
 // whether narrowing branch's existing props can possibly satisfy r's non-value constraints
@@ -2348,7 +2377,6 @@ const splitPropBranch = (
 				hashesMatch(excludedVal, prop.value)
 			)
 				continue
-			budget.remaining--
 			const extractedKind: Prop.Kind =
 				prop.required ? "required"
 				: permitsMissing ? "optional"
@@ -2364,8 +2392,20 @@ const splitPropBranch = (
 				extractedVal
 			)
 			const withExcluded = replaceProp(branch, prop, excludedKind, excludedVal)
-			const left = partitionBranch(withExtracted, rNode, budget)
-			const right = partitionBranch(withExcluded, rNode, budget)
+			if (
+				(withExtracted && hashesMatch(withExtracted, branch)) ||
+				(withExcluded && hashesMatch(withExcluded, branch))
+			)
+				continue
+			budget.remaining--
+			const left =
+				withExtracted ?
+					partitionBranch(withExtracted, rNode, budget)
+				:	{ extracted: [], excluded: [] }
+			const right =
+				withExcluded ?
+					partitionBranch(withExcluded, rNode, budget)
+				:	{ extracted: [], excluded: [] }
 			return {
 				extracted: [...left.extracted, ...right.extracted],
 				excluded: [...left.excluded, ...right.excluded]

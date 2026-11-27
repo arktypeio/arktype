@@ -79,8 +79,12 @@ const excludeFromBound = (
 		:	undefined
 	return (
 		value === bound.numRule ?
-			bound.exclusive ?
-				withPreferredUnit(bound, notEqual, ctx)
+			bound.exclusive ? withPreferredUnit(bound, notEqual, ctx)
+			: (
+				(bound.kind === "after" && value >= 8_640_000_000_000_000) ||
+				(bound.kind === "before" && value <= -8_640_000_000_000_000)
+			) ?
+				Disjoint.init("range", bound as never, notEqual)
 			:	ctx.$.node(
 					bound.kind,
 					constraintInputOf(bound.kind, {
@@ -132,7 +136,9 @@ const leastCommonMultipleOf = (l: number, r: number): number | undefined => {
 	const rBig = BigInt(Math.abs(r))
 	const multiple = (lBig / greatestCommonDivisorOf(lBig, rBig)) * rBig
 	const rounded = Number(multiple)
-	return BigInt(rounded) === multiple ? rounded : undefined
+	return Number.isFinite(rounded) && BigInt(rounded) === multiple ?
+			rounded
+		:	undefined
 }
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
