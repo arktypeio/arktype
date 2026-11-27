@@ -441,6 +441,20 @@ contextualize.each(
 			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("a"))
 		})
 
+		it("dot access on never in a union", () => {
+			// @ts-expect-error
+			attest(() => type("number|never.foo")).throwsAndHasTypeError(
+				writeNonSubmoduleDotMessage("never")
+			)
+			// @ts-expect-error
+			attest(() => type("number | never.foo[]")).throwsAndHasTypeError(
+				writeNonSubmoduleDotMessage("never")
+			)
+			// a submodule's alias in a union still resolves
+			const T = type("number|string.email")
+			attest<number | string>(T.t)
+		})
+
 		it("completions", $ => {
 			attest(() =>
 				$.type({

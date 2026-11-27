@@ -165,7 +165,10 @@ type resolveAmbient<reference extends string, $, ambient = ambientOf<$>> =
 	:	null
 
 type resolveSubmodule<submodule, reference> =
-	submodule extends { [arkKind]: "module" } ?
+	// never, like the keyword never, is no module, and a naked check would
+	// distribute over it, so it's left to tryResolveSubmodule's error
+	[submodule] extends [never] ? null
+	: submodule extends { [arkKind]: "module" } ?
 		[reference] extends [keyof submodule] ? [submodule[reference]]
 		: reference extends `${infer nested}.${infer name}` ?
 			[nested] extends [keyof submodule] ?
