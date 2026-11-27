@@ -974,7 +974,6 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - Functions and symbols print by name: `{ Symbol(tag): string }`, before: `{ $ark.tag: string }`. In `json`, a repeated name is counted as `isLong$1`, before: `isLong1`, and keyword morphs are named by what they do, like `$ark.trimString`, before: `$ark.morphs12`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
-
 - Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them, which moves only keys that first differ at a character JSON escapes or where one ends: `"a"` now precedes `"a b"`.
 
 ## Inference

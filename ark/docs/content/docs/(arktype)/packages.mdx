@@ -70,6 +70,6 @@ import { type } from "arktype"
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
 
-`@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
+`@ark/fast-check` and `@ark/attest` each peer on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
 
 `arkregex` also has an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.

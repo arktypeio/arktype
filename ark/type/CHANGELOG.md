@@ -308,7 +308,7 @@ Each failed check is its own error, so nothing raised `intersection`. It's no lo
 
 ### Summary
 
-This release is a major version. The entries below are its changes in full, in no order. The [upgrade guide](https://arktype.io/docs/upgrading) has a checklist of every breaking change with what to write instead, and the [announcement](https://arktype.io/blog/3.0) has the reasons.
+This release is a major version. The entries below are its changes in full, in no order. The [upgrade guide](https://arktype.io/docs/upgrading) has a checklist of every breaking change with what to write instead, and the [announcement](https://arktype.io/docs/blog/3.0) has the reasons.
 
 New:
 

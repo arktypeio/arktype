@@ -21,10 +21,7 @@ const abc = regex("^[abc]$")
 
 An inferred type is meant to include every string the expression matches. These currently don't:
 
-- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d")` and ArkType's `type("/\\d/")` both infer `` `${number}` ``, but match `"abc1"`.
 - A bounded run of more than 308 digits, like `\d{309}`, infers `` `${number}` ``, which can't hold a number that large. An unbounded run like `\d+` infers `string`.
-- The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
-- An `m` modifier group still anchors: `regex("^a(?m:$)")` infers `"a"` but matches `"a\nb"`.
 - The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed.
 
 `.test()` narrows its input in both branches, so the `false` branch removes strings that didn't match whenever the inferred type was widened:
@@ -46,7 +43,7 @@ if (!digit.test(input)) {
 
 ## Why is my flags string an error? [#why-is-my-flags-string-an-error]
 
-Flags must be in alphabetical order, the order `RegExp#flags` returns them in. Write `"gi"`, not `"ig"`.
+Flags can be written in any order—`"ig"` is accepted and normalized to `"gi"`, the alphabetical order `RegExp#flags` returns. A flags string is a type error only if it contains an invalid flag (outside `d`, `g`, `i`, `m`, `s`, `u`, `v`, `y`), repeats a flag, or combines `u` and `v`.
 
 ## Why can't it infer my long RegExp? [#why-doesnt-it-work-with-my-massive-regexp]
 

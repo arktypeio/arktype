@@ -86,7 +86,7 @@ Refinements apply to the intersection itself:
 | `structure`      | `object`          | Objects whose props and elements match its [structural](#structural) children | `{ required: [...] }`              |
 | `predicate`      |                   | Data a custom `narrow` function accepts                                       | `{ predicate: n => n % 2 === 1 }`  |
 
-In an intersection's schema, the constraint's kind is its key and a bare rule is shorthand, so `{ domain: "number", divisor: 2 }` is `{ domain: "number", divisor: { rule: 2 } }`. A `structure`'s keys sit directly on the intersection: `{ domain: "object", required: [...], undeclared: "reject" }`.
+In an intersection's schema, the constraint's kind is its key and a bare rule is shorthand, so `{ domain: "number", divisor: 2 }` is `{ domain: "number", divisor: { rule: 2 } }`. Bound schemas (`min`, `max`, `notEqual`, `minLength`, `maxLength`, `exactLength`, `notEqualLength`) also accept an optional `unit` (`BoundUnit`, a string or `{ singular, plural }`) to format counts in error messages. A `structure`'s keys sit directly on the intersection: `{ domain: "object", required: [...], undeclared: "reject" }`.
 
 #### Structural
 

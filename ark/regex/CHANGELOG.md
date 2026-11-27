@@ -3,8 +3,9 @@
 ## Unreleased
 
 - Prevented `TS2589` ("Type instantiation is excessively deep") on long case-insensitive patterns like URLs by widening long case-insensitive literals cleanly (#1533).
-- Improved JavaScript RegExp parity (#1771): reject out-of-order character class ranges (including inside negated sets like `[^z-a]`), reject `\p{...}` / `\P{...}` without `u`/`v` flags as type errors (e.g. `regex("^\\p{Emoji}$")` now requires `"u"` or `"v"`), and fix charset, escape, group, and quantifier edge cases.
-- Fixed soundness bugs in regex type inference: `\d` and `^a+` assignability under TypeScript 7.1, case-insensitive character sets and backreferences, zero-quantified captures like `(a){0}`, modifier groups like `(?i-:abc)`, and invalid capture group names.
+- Accepted flags in any order and normalized them to canonical alphabetical order (e.g. `"ig"` -> `"gi"`), while rejecting duplicate, invalid, or mutually exclusive (`u` and `v`) flags as type errors.
+- Improved JavaScript RegExp parity (#1771): reject out-of-order character class ranges (including inside negated sets like `[^z-a]` and `\u`/`\x` range escapes), duplicate capture group names in the same branch, `\p{...}` / `\P{...}` without `u`/`v`, incomplete quantifiers and lone `}`/`]` under `u`/`v`, and non-ASCII-digit quantifiers; handle nested `v` character sets and cross-branch `\k<name>` references.
+- Fixed soundness bugs in regex type inference: `\d` and `^a+` assignability under TypeScript 7.1, case-insensitive character sets and backreferences, `m` modifier groups like `(?m:$)`, zero-quantified captures like `(a){0}`, modifier groups like `(?i-:abc)`, and invalid capture group names.
 - Exported `RegexParser` helper type (#1777).
 
 ## 0.0.16-beta.2
