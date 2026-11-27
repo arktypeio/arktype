@@ -3,6 +3,7 @@ import type {
 	BaseNode,
 	BaseRoot,
 	Disjoint,
+	emptyBrandNameMessage,
 	JsonSchema,
 	MessageConfig,
 	NodeSelector,
@@ -416,7 +417,7 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * const out = Palindrome.assert("racecar")
 	 */
 	brand<const name extends string, r = instantiateType<type.brand<t, name>, $>>(
-		name: name
+		name: name extends "" ? ErrorMessage<emptyBrandNameMessage> : name
 	): r extends infer _ ? _ : never
 
 	/**

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { emptyBrandNameMessage } from "@ark/schema"
 import { type, type Brand, type Json, type Type } from "arktype"
 
 const acceptObject = (t: Type<object>) => t
@@ -27,6 +28,15 @@ contextualize(() => {
 
 		const out = T(5)
 		attest<Brand<number, "cool"> | type.errors>(out)
+	})
+
+	it("empty name", () => {
+		// @ts-expect-error
+		attest(() => type("string").brand("")).throwsAndHasTypeError(
+			emptyBrandNameMessage
+		)
+		// @ts-expect-error
+		attest(() => type("string#")).throwsAndHasTypeError(emptyBrandNameMessage)
 	})
 
 	it("name with !", () => {
