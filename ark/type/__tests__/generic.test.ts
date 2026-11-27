@@ -237,6 +237,72 @@ contextualize(() => {
 
 			attest<{ v: { a: Default<string, "x"> } }>(T.t)
 			attest(T({ v: {} })).snap({ v: { a: "x" } })
+
+			// mirrors runtime withoutDefaults: optional property satisfies defaulted constraint
+			const WithDefault = generic(["t", { a: "string = 'hi'", b: "number" }])({
+				payload: "t"
+			})
+			const OptArg = WithDefault({ "a?": "'ok'", b: "1" })
+			attest<{ payload: { a?: "ok"; b: 1 } }>(OptArg.t)
+			attest(OptArg({ payload: { b: 1 } })).equals({ payload: { b: 1 } })
+			attest(OptArg({ payload: { a: "ok", b: 1 } })).equals({
+				payload: { a: "ok", b: 1 }
+			})
+
+			// incompatible optional property type is still rejected
+			// @ts-expect-error
+			attest(() => WithDefault({ "a?": "number", b: "1" }))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						'{ b: number, a: string = "hi" }',
+						"{ b: 1, a?: number }"
+					)
+				)
+				.type.errors("Invalid argument for t")
+
+			// defaulted tuple constraint accepts matching optional tuple argument
+			const TupleDefault = generic(["t", ["string = 'hi'", "number?"]])({
+				v: "t"
+			})
+			const OptTuple = TupleDefault(["'ok'?"])
+			attest<{ v: ["ok"?] }>(OptTuple.t)
+			attest(OptTuple({ v: [] })).equals({ v: [] })
+		})
+
+		it("morph constraint rejects non-morph arguments and accepts narrowed same morph", () => {
+			const Trimmed = generic(["t", "string.trim"])({ v: "t" })
+			// @ts-expect-error
+			attest(() => Trimmed("'hi'"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						type("string.trim").expression,
+						'"hi"'
+					)
+				)
+				.type.errors("Invalid argument for t")
+
+			const Same = Trimmed("string.trim")
+			attest(Same({ v: "  hi  " })).equals({ v: "hi" })
+
+			const Narrowed = Trimmed(type("string.trim").and("'  hi  '"))
+			attest(Narrowed({ v: "  hi  " })).equals({ v: "hi" })
+
+			const NestedTrimmed = generic(["t", { a: "string.trim" }])({ v: "t" })
+			// @ts-expect-error
+			attest(() => NestedTrimmed({ a: "'hi'" }))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						type({ a: "string.trim" }).expression,
+						'{ a: "hi" }'
+					)
+				)
+				.type.errors("Invalid argument for t")
+
+			const NestedSame = NestedTrimmed({ a: "string.trim" })
+			attest(NestedSame({ v: { a: "  hi  " } })).equals({ v: { a: "hi" } })
 		})
 
 		it("unsatisfied parameter string", () => {

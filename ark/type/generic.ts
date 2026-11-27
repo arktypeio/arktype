@@ -10,17 +10,28 @@ import {
 } from "@ark/schema"
 import {
 	throwParseError,
+	type anyOrNever,
 	type array,
+	type Brand,
 	type Callable,
 	type conform,
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
+	type isSafelyMappable,
 	type JsonStructure,
+	type Primitive,
 	type Scanner,
+	type show,
 	type WhitespaceChar
 } from "@ark/util"
-import type { distill } from "./attributes.ts"
+import type {
+	Default,
+	distill,
+	InferredMorph,
+	isInferredDefault,
+	TerminallyInferredObject
+} from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
@@ -50,11 +61,65 @@ export type validateGenericArg<arg, param extends GenericParamAst, $> =
 
 export type satisfiesGenericConstraint<t, constraint> =
 	[distill.In<t>] extends [constraint] ? true
-	: [distill.In<t>, distill.Out<t>] extends (
-		[distill.In<constraint>, distill.Out<constraint>]
-	) ?
-		true
-	:	false
+	: stripConstraintDefaults<constraint> extends infer c ?
+		[distill.In<t>] extends [c] ? true
+		: [distill.In<t>] extends [distill.In<c>] ?
+			[distill.Out<t>] extends [c] ? true
+			: [stripConstraintDefaults<t>] extends [c] ? true
+			: [t, c] extends (
+				[InferredMorph<infer ti, infer to>, InferredMorph<infer ci, infer co>]
+			) ?
+				c extends (...args: never) => anyOrNever ? false
+				: t extends (...args: never) => anyOrNever ? false
+				: [distill.In<ti>, distill.Out<to["t"]>] extends (
+					[distill.In<ci>, distill.Out<co["t"]>]
+				) ?
+					true
+				:	false
+			:	false
+		:	false
+	:	never
+
+// mirrors runtime withoutDefaults while keeping brands and morphs intact
+type stripConstraintDefaults<t> =
+	t extends undefined ? t
+	: [t] extends [anyOrNever] ? t
+	: unknown extends t ? unknown
+	: t extends Brand | TerminallyInferredObject | Primitive ? t
+	: t extends Function ?
+		t extends (...args: never) => anyOrNever ? t
+		: t extends InferredMorph<infer i, infer o> ?
+			(In: stripConstraintDefaults<i>) => o
+		:	t
+	: t extends Default<infer base> ? stripConstraintDefaults<base>
+	: t extends array ?
+		t[number][] extends t ?
+			t extends unknown[] ?
+				stripConstraintDefaults<t[number]>[]
+			:	readonly stripConstraintDefaults<t[number]>[]
+		:	stripTupleDefaults<[...t], []>
+	: [keyof t] extends [never] ? t
+	: isSafelyMappable<t> extends true ?
+		show<
+			{
+				[k in keyof t as isInferredDefault<t[k]> extends true ? never
+				:	k]: stripConstraintDefaults<t[k]>
+			} & {
+				[k in keyof t as isInferredDefault<t[k]> extends true ? k
+				:	never]?: stripConstraintDefaults<t[k]>
+			}
+		>
+	:	t
+
+type stripTupleDefaults<t extends array, prefix extends array> =
+	t extends readonly [infer head, ...infer tail] ?
+		stripTupleDefaults<
+			tail,
+			isInferredDefault<head> extends true ?
+				[...prefix, stripConstraintDefaults<head>?]
+			:	[...prefix, stripConstraintDefaults<head>]
+		>
+	:	[...prefix, ...{ [i in keyof t]: stripConstraintDefaults<t[i]> }]
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
