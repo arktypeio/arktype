@@ -753,6 +753,19 @@ export const transformIfAllowed = (
 	return true
 }
 
+// what a transform in Apply is gated by. Data an alias reaches is allowed by
+// a traversal of its own: Apply's assumes valid each object it's still in,
+// which a transform would then reach before its errors are added
+export const allowsApart = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): boolean =>
+	node.hasAlias ?
+		(allowsAcyclic(node, data) ??
+		allowsInTraversal(node, data, traversalOf(ctx, data)))
+	:	allowsInBranch(ctx, node, data)
+
 // a predicate reading ctx sees this path; an error it adds fails the branch
 export const allowsInBranch = (
 	ctx: InternalTraversal,
@@ -997,7 +1010,9 @@ const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
 export const enterResolution = (
 	ctx: InternalTraversal,
 	id: string,
-	data: unknown
+	data: unknown,
+	// whether what enters it adds an error for data it finds invalid, as Apply does
+	reports?: boolean
 ): boolean | undefined => {
 	const res = resolutionsOf(ctx)
 	// untracked, every state is a failure, so none is looked up
@@ -1008,12 +1023,14 @@ export const enterResolution = (
 			if (state < res.assumedFrom) res.assumedFrom = state
 			return true
 		}
-		if (typeof state === "boolean") return state
-		if (ctx.currentBranch) {
+		if (typeof state === "boolean") {
+			if (state || !reports) return state
+			// Allows rejected it, as where a structure is checked before its
+			// narrows, and added no error, so it's traversed again to add them
+		} else if (ctx.currentBranch) {
 			ctx.failBranch(state.error)
 			return false
-		}
-		if (state.reported) {
+		} else if (state.reported) {
 			res.invalid ??= state
 			return false
 		}
@@ -1056,7 +1073,8 @@ export const exitResolution = (
 	if (!res.tracked) return allowed ?? exitUntracked(ctx, frame)
 	const invalid = res.invalid
 	res.invalid = frame.outerInvalid
-	const valid = allowed ?? (invalid === undefined && ctx.errN === frame.errN)
+	// a narrow Allows passes ctx to can add an error and still return true
+	const valid = (allowed ?? invalid === undefined) && ctx.errN === frame.errN
 	const data = frame.data
 	const states = res.seen[frame.id]!
 	// a primitive has no identity, so each place reports its own errors
@@ -1066,7 +1084,9 @@ export const exitResolution = (
 		return valid
 	}
 	const state: ResolutionState =
-		valid || allowed === false ? valid : invalidResolution(ctx, invalid?.error)
+		valid || allowed !== undefined ?
+			valid
+		:	invalidResolution(ctx, invalid?.error)
 	const assumedFrom = res.assumedFrom
 	res.assumedFrom = frame.assumedOuter
 	const assumed = res.assumed!
@@ -1180,7 +1200,7 @@ export const applyResolution = (
 	data: unknown,
 	ctx: InternalTraversal
 ): void => {
-	if (enterResolution(ctx, id, data) !== undefined) return
+	if (enterResolution(ctx, id, data, true) !== undefined) return
 	node.tApply(data, ctx)
 	exitResolution(ctx)
 }
@@ -1191,7 +1211,7 @@ export const enterApplied = (
 	id: string,
 	data: unknown
 ): boolean | undefined => {
-	const entered = enterResolution(ctx, id, data)
+	const entered = enterResolution(ctx, id, data, true)
 	return entered === undefined ? undefined : entered || !ctx.failFast
 }
 

@@ -52,6 +52,7 @@ import { errorFromContext } from "../shared/errors.ts"
 import type { FailureSite, SiteContext } from "../shared/issues.ts"
 import {
 	addMorphErrs,
+	allowsApart,
 	allowsInBranch,
 	applyValue,
 	transform,
@@ -837,7 +838,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			!steps.length ||
 			!travKey(
 				pathKey,
-				() => constraints.every(n => allowsInBranch(ctx, n, input)),
+				() => constraints.every(n => allowsApart(ctx, n, input)),
 				ctx
 			)
 		)

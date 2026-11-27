@@ -163,6 +163,90 @@ contextualize(() => {
 		])
 	})
 
+	it("reports invalid data a narrow reading ctx is checked after", () => {
+		// a structure that transforms is checked before the narrow of its
+		// root or a key it shares with an index signature, and a narrow
+		// reading ctx is checked in the traversal its errors go to
+		const a = type("string").narrow(
+			(s, ctx) => s !== "bad" || ctx.mustBe("good")
+		)
+		const filtered = type({ a, t: "string.trim", "next?": "this" }).filter(
+			() => true
+		)
+		const indexed = type({
+			"[string]": "unknown",
+			a,
+			t: "string.trim",
+			"next?": "this"
+		})
+
+		for (const T of [filtered, indexed]) {
+			attest(T.allows({ a: "", t: "", next: { a: 1 } })).equals(false)
+			// the first call is uncompiled
+			attest(
+				[1, 2].map(() => T({ a: "", t: "", next: { a: 1 } }).toString())
+			).equals([
+				"next.a must be a string\nnext.t must be a string (was missing)",
+				"next.a must be a string\nnext.t must be a string (was missing)"
+			])
+			attest(
+				T({
+					a: "",
+					t: "",
+					next: { a: "", t: "", next: { a: "bad", t: "" } }
+				}).toString()
+			).equals("next.next.a must be good")
+			attest(T({ a: "", t: " a ", next: { a: "", t: " b " } })).equals({
+				a: "",
+				t: "a",
+				next: { a: "", t: "b" }
+			})
+		}
+	})
+
+	it("reports an error a narrow adds before returning true", () => {
+		const T = type({
+			a: type("string").narrow((s, ctx) => s !== "bad" || !!ctx.error("good")),
+			t: "string.trim",
+			"next?": "this"
+		}).filter(() => true)
+
+		attest(T.allows({ a: "", t: "", next: { a: "bad", t: "" } })).equals(false)
+		attest(T({ a: "", t: "", next: { a: "bad", t: "" } }).toString()).snap(
+			"next.a must be good"
+		)
+	})
+
+	it("transforms each object of a cycle once, after it's allowed", () => {
+		const morphed: unknown[] = []
+		const node = <const next extends string>(next: next) =>
+			({
+				"[string]": "unknown",
+				a: type("string").narrow((s, ctx) => s !== "bad" || ctx.mustBe("good")),
+				t: type("string").pipe(s => {
+					morphed.push(s)
+					return s.trim()
+				}),
+				"next?": next
+			}) as const
+		const types = scope({ a: node("b"), b: node("a") }).export()
+		const cycle = (t: unknown) => {
+			const first: { a: string; t: string; next?: object } = { a: "", t: " a " }
+			first.next = { a: "", t, next: first }
+			return first
+		}
+
+		attest(types.a(cycle(1)).toString()).snap("next.t must be a string")
+		// a morph is called to find its errors only with what its Type allows
+		attest(morphed).equals([" a "])
+		const out = types.a.assert(cycle(" b "))
+		attest([out.t, out.next?.t, out.next?.next === out]).equals([
+			"a",
+			"b",
+			true
+		])
+	})
+
 	it("depth and width bounds", () => {
 		const types = scope({
 			list: { v: "number", "next?": "list" },
