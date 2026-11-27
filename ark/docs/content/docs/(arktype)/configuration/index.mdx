@@ -126,7 +126,7 @@ User({ name: "", age: 3, email: "x", seats: 12 })
 
 ### description
 
-What follows "must be" in a message. Because it fits into ArkType's template, it composes cleanly across unions and is reused by the Type's `.description` and JSON Schema output — reach for it when you want `must be ___` errors that compose:
+What follows "must be" in a message. Because it fits into ArkType's template, it composes cleanly across unions and is reused by the Type's `.description`, missing required property messages (e.g. `email must be a valid email (was missing)`) and JSON Schema output — reach for it when you want `must be ___` errors that compose:
 
 ```ts
 const Email = type("string.email").describe("a valid email")

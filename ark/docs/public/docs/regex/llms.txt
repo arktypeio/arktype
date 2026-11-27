@@ -235,11 +235,11 @@ const unit = regex("^(?:(?<px>\\d+)px|(?<em>\\d+)em)$")
 
 type Names = typeof unit.inferNamedCaptures
 // type Names = {
-//     px: undefined;
-//     em: string;
-// } | {
 //     px: string;
 //     em: undefined;
+// } | {
+//     px: undefined;
+//     em: string;
 // }
 ```
 

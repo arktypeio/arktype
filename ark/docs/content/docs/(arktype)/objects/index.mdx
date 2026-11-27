@@ -162,16 +162,17 @@ MyObj({})
 
 </SyntaxTabs>
 
-`= []` and `= {}` give each output its own new array or object, so mutating one never changes another:
+`= []`, `= {}` and unit-literal arrays like `= ['localhost']` or `= [1, 2]` give each output its own new array or object, so mutating one never changes another:
 
 ```ts
 const MyObj = type({
 	values: "string[] = []",
+	hosts: "string[] = ['localhost']",
 	meta: "object = {}"
 })
 ```
 
-For any other object, default to a function that returns it, e.g. `type.Date.default(() => new Date())`.
+For any other object or array, default to a function that returns it, e.g. `type.Date.default(() => new Date())`.
 
 <Callout type="warn" title="Optional and default only work in objects and tuples">
 
@@ -282,7 +283,20 @@ Both act on string keys: `"reject"` checks only an object's string keys, and `"d
 
 `"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
-Deleting keys makes an object a [morph](/docs/expressions#pipe), so a union holding one throws a `ParseError` if another branch accepts the same data, as an array, a `Date` or a second object with no literal key to tell them apart does. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write such a union.
+Deleting keys makes an object a [morph](/docs/expressions#pipe). In a union, data more than one branch accepts keeps each key any of them declares, the keys of one branch and then those only another declares:
+
+```ts
+const Contents = type({
+	"+": "delete",
+	uri: "string",
+	"text?": "string"
+}).or({ "+": "delete", uri: "string", "blob?": "string" })
+
+// { uri: "u", blob: "b", text: "t" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
+```
+
+A union still throws a `ParseError` where such an object also has a default or another morph at a key, or holds a recursive type, and a second branch accepts the same data. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write that union.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
@@ -362,7 +376,7 @@ A key in both objects takes its value from the merged object. An [intersection](
 
 <Callout type="warn" title="A spread doesn't carry a narrow">
 
-Like the other [structural transformations](/docs/objects#properties-structural), `merge` and `"..."` build a new object from the properties, so a narrow on the object itself is dropped, along with its metadata. This is the case that most often catches people out: a check across two fields written on a base object, then spread into a larger one.
+Like the other [structural transformations](/docs/objects#properties-structural), `merge` and `"..."` build a new object from the properties, so a narrow on the object itself is dropped, along with its metadata. This is the case that most often catches people out: a check across two fields written on a base object, then spread into a larger one. `@ark/aot` warns when a structural operation drops a root `.narrow()`; add `// @ark-allow-drop-narrow` on the line before or as a trailing comment on the same line if dropping it is intended.
 
 ```ts
 const Dates = type({
@@ -564,7 +578,7 @@ Before using `get`, `pick` or `omit` on a type you defined, consider defining th
 
 <Callout type="warn" title="Only properties are carried over">
 
-Anything attached to the object itself is dropped: most importantly a root [narrow](/docs/expressions#narrow) or [filter](/docs/expressions#filter), but also [metadata](/docs/configuration#metadata) like `.describe(...)`. Constraints on the properties are kept.
+Anything attached to the object itself is dropped: most importantly a root [narrow](/docs/expressions#narrow) or [filter](/docs/expressions#filter), but also [metadata](/docs/configuration#metadata) like `.describe(...)`. Constraints on the properties are kept. `@ark/aot` warns when `"..."`, `.merge()`, `.pick()`, `.omit()`, `.partial()`, `.required()`, `.map()` or their generic equivalents drop a root `.narrow()` (suppress with `// @ark-allow-drop-narrow` if intended).
 
 ```ts
 const Signup = type({
@@ -642,7 +656,7 @@ const types = type.module({
 
 ### required / partial [#properties-required-partial]
 
-Make every named property required or optional:
+Make every named property — or only the keys you pass — required or optional:
 
 ```ts
 const User = type({
@@ -654,8 +668,14 @@ const User = type({
 // Type<{ name: string; email: string; age: number }>
 const RequiredUser = User.required()
 
+// Type<{ name: string; email: string; age?: number }>
+const WithEmail = User.required("email")
+
 // Type<{ name?: string; email?: string; age?: number }>
 const PartialUser = User.partial()
+
+// Type<{ name?: string; email?: string; age?: number }>
+const OptionalName = User.partial("name")
 ```
 
 `partial` makes keys optional, which isn't the same as allowing `undefined`: under [`exactOptionalPropertyTypes`](/docs/configuration#exactoptionalpropertytypes), the default, a key may be missing but not set to `undefined`. To match a type whose keys are present but may be `undefined`, like a form's state `{ name: string | undefined }`, add `| undefined` to each value instead.

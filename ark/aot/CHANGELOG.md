@@ -1,5 +1,14 @@
 # @ark/aot
 
+## Unreleased
+
+- Warn (`dropped-narrow`) when structural operations (`"..."`, `.merge()`, `.pick()`, `.omit()`, `.partial()`, `.required()`, `.map()`, and their generic/string-syntax equivalents) drop a root `.narrow()` or `.filter()` predicate: immediately chaining `.narrow()`/`.filter()` silences the warning, JSON Schema internal predicates are skipped, individual sites can suppress via `// @ark-allow-drop-narrow` / `/* @ark-allow-drop-narrow */` in all comment layouts, and the check can be disabled globally via `droppedNarrow: false` (`--no-dropped-narrow` / ESLint option) (#1730).
+- Fixed 9 standalone validator soundness, crash, `actual`, and `.label()` parity bugs, plus added standalone support for `#1752` joined delete-only unions, `#1811` bound units, and `#1785` numeric array index paths.
+- Precompile `fromJsonSchema` object schemas in standalone builds, classify `fromJsonSchema` as Type-returning (`exportKindOf`, eliminating spurious R4 errors on validated outputs and `~standard.jsonSchema`), allow `Object.freeze`/`seal`/`preventExtensions` on Types, and support `lineOf()` via `arktype/runtime`.
+- Moved Turbopack pre-read units from `node_modules/.bin/.ark` to `node_modules/.cache/ark-units` (#1766).
+- Added `--json` to `ark check` (including structured JSON on stdout for pre-check failures) and `-v` / `--version`; supported solution-style `tsconfig.json` files (`files: []` with `references`) in `ark declare` with topological ordering and in-memory `.d.ts` overlay for `tsjs` plus bounded `ShapePrinter.settle`; decoupled `@ark/aot/unplugin` `.d.ts` from the TypeScript 6 compiler API (fixing TS 7 `skipLibCheck: false`); standardized remaining CLI error wording to `ark check` / `ark emit` / `ark declare` (#1781, #1777, #1766).
+- Hardened join/forwarding pruning soundness, esbuild/builtin ENOENT handling, `Array.from`/`String.raw` evaluation, ESLint rule resilience & LRU caching, and cache validation (#1781).
+
 ## 3.0.0-rc.10
 
 Fixed R4 false positives on reads of Type-named properties like `.label` and `.message` where the build can prove no Type reaches the value, and closed an interface inheritance soundness gap:

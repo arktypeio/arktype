@@ -1,5 +1,11 @@
 # arkregex
 
+## Unreleased
+
+- Improved JavaScript RegExp parity (#1771): reject out-of-order character class ranges (including inside negated sets like `[^z-a]`), reject `\p{...}` / `\P{...}` without `u`/`v` flags as type errors (e.g. `regex("^\\p{Emoji}$")` now requires `"u"` or `"v"`), and fix charset, escape, group, and quantifier edge cases.
+- Fixed soundness bugs in regex type inference: `\d` and `^a+` assignability under TypeScript 7.1, case-insensitive character sets and backreferences, zero-quantified captures like `(a){0}`, modifier groups like `(?i-:abc)`, and invalid capture group names.
+- Exported `RegexParser` helper type (#1777).
+
 ## 0.0.16-beta.2
 
 ### Type an unmatched capture's indices as `undefined`

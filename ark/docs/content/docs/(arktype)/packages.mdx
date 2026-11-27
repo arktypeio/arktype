@@ -44,7 +44,7 @@ These entrypoints are `arktype`'s whole public surface. Any other subpath it exp
 - `regex`, the same function `arkregex` exports.
 - `Type`, `Module` and `Generic` to check a value with `instanceof`, and `Hkt` to write a [higher-kinded generic](/docs/generics#hkt).
 - `ArkErrors`, `TraversalError` and `ParseError`, the [errors](/docs/errors) ArkType returns and throws, `ArkError`, the type of one issue, and `Traversal`, the type of the `ctx` a [narrow or morph](/docs/traversal-api) receives.
-- `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue` and `messageIn`, which [read an `ArkErrors`](/docs/errors#arkerrors).
+- `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue`, `lineOf` and `messageIn`, which [read an `ArkErrors` or `ArkError`](/docs/errors#arkerrors).
 - `annotatingFallback`, a [JSON Schema fallback](/docs/json-schema/to-json-schema#annotatingfallback), and `inferred`, the symbol key a Type's inferred type is declared under.
 - types such as `Out`, `Brand`, `Json`, `JsonSchema`, `ArkErrorCode`, `Locale`, `Scope`, `BaseType` and `inferDefinition`/`validateDefinition` for [wrapping `type`](/docs/generics#external).
 
@@ -65,7 +65,7 @@ import { type } from "arktype"
 
 ## Other packages
 
-- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). Its CLI commands run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`), and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](/docs/precompile/setup).
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). Its CLI commands run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`), and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 (or TypeScript 7.1+ via `tsgo` or `tsrs`) for declarations. See [Setup](/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.

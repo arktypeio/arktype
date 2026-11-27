@@ -1964,7 +1964,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "copy with every key required"
+                    "value": "copy with every key (or only the given keys) required"
                 }
             ],
             "notes": [
@@ -1992,7 +1992,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "params": [],
-            "example": "const Draft = type({ \"title?\": \"string\", \"body?\": \"string\" })\n// Type<{ title: string; body: string }>\nconst Post = Draft.required()"
+            "example": "const Draft = type({ \"title?\": \"string\", \"body?\": \"string\" })\n// Type<{ title: string; body: string }>\nconst Post = Draft.required()\n// Type<{ title: string; body?: string }>\nconst Titled = Draft.required(\"title\")"
         },
         {
             "group": "Objects",
@@ -2000,7 +2000,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "summary": [
                 {
                     "kind": "text",
-                    "value": "copy with every key optional"
+                    "value": "copy with every key (or only the given keys) optional"
                 }
             ],
             "notes": [
@@ -2028,7 +2028,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "params": [],
-            "example": "const User = type({ name: \"string\", email: \"string.email\" })\n// Type<{ name?: string; email?: string }>\nconst UserPatch = User.partial()"
+            "example": "const User = type({ name: \"string\", email: \"string.email\" })\n// Type<{ name?: string; email?: string }>\nconst UserPatch = User.partial()\n// Type<{ name: string; email?: string }>\nconst OptionalEmail = User.partial(\"email\")"
         },
         {
             "group": "Objects",

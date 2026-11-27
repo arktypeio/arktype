@@ -18,6 +18,8 @@ npm install -D @ark/aot
 
 `arktype` defines and validates Types. [`@ark/aot`](https://arktype.io/docs/precompile), a dev dependency, precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL: every Type works without it.
 
+Run `npx arktype init` to detect your tooling, create `ark.json` (with `"$schema"` for editor completion) and install the bundled [agent skill](https://arktype.io/docs/agents).
+
 ## Define a Type
 
 ```ts
@@ -518,6 +520,9 @@ type("string.uuid") // UUID
 type("string.url") // parsable URL
 type("string.url.http") // http:// or https:// URL
 type("string.nonblank") // non-whitespace string (without trimming)
+type("string.boolean") // "true" | "false"
+type("string.boolean.parse") // morph: "true" | "false" → boolean
+type("string.date.iso.date") // calendar-valid YYYY-MM-DD date string
 type("string.trim") // morph: trims whitespace
 type("string.json.parse") // morph: string → parsed JSON
 type("string.date.parse") // morph: string → Date
@@ -548,7 +553,8 @@ type("number % 2") // divisible by 2
 const User = type({
 	name: "string",
 	"email?": "string.email", // optional: '?' goes on the key
-	age: "number >= 0 = 0" // defaultable, so optional in the input
+	age: "number >= 0 = 0", // defaultable, so optional in the input
+	roles: "string[] = ['member']" // fresh array per call for unit-literal defaults
 })
 
 // index signatures (Record types)
@@ -610,6 +616,7 @@ const User = type({
 const Admin = User.and({ role: "'admin'" })
 const Guest = type({ name: "string" }).or({ token: "string" })
 const Draft = User.partial()
+const OptionalName = User.partial("name")
 const Name = User.pick("name")
 ```
 
@@ -826,13 +833,13 @@ The ArkType [skill](https://github.com/arktypeio/arktype/blob/main/ark/type/skil
 npx skills add arktypeio/arktype
 ```
 
-This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
+This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`: run `npx arktype skill install` (or `npx arktype init`, which also writes `ark.json`) to install the bundled copy matching your installed version, or link it with tools like [skills-npm](https://github.com/antfu/skills-npm).
 
 Agents read two references the skill links when a task needs them: the [migration guide](https://arktype.io/docs/migrating), when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema, and a precompile guide with the setup for each bundler, Next.js and test runner and the fix for each build error. To upgrade from ArkType 2, the skill sends them to [Upgrading](https://arktype.io/docs/upgrading): ask for `Upgrade this project to ArkType 3`.
 
 ## Migrate from Zod
 
-With the skill installed, migrate in one prompt:
+With the skill installed — or run `npx arktype migrate` to install the bundled skill and print a prompt tailored to your project — migrate in one prompt:
 
 ```
 Migrate this project from Zod to ArkType.
@@ -1011,7 +1018,7 @@ Completions and type errors come from TypeScript, so they work in every editor w
 
 > Migrate a project from Zod with one prompt, or convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema to ArkType by hand, and the defaults that differ between them.
 
-Add the [ArkType skill](https://arktype.io/docs/agents#skill) to your project:
+Add the [ArkType skill](https://arktype.io/docs/agents#skill) to your project (or run `npx arktype migrate` to install the bundled skill and print a prompt tailored to your project):
 
 ```bash
 npx skills add arktypeio/arktype
@@ -1122,7 +1129,8 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.startsWith("a")`, `.endsWith("a")`, `.includes("a")` | `/^a/`, `/a$/`, `/a/`, escaping regex characters |
 | `z.ipv4()`, `z.ipv6()`, `.ip()` (Zod 3) | `"string.ip.v4"`, `"string.ip.v6"`, `"string.ip"` |
 | `z.creditCard()` | `"string.creditCard"`, which rejects spaces and hyphens |
-| `z.iso.datetime()`, `.datetime()`, `z.iso.date()` | `"string.date.iso"`, which accepts more; see [Dates and formats](https://arktype.io/docs/migrating#dates-and-formats) |
+| `z.iso.date()` | `"string.date.iso.date"` |
+| `z.iso.datetime()`, `.datetime()` | `"string.date.iso"`, which accepts more; see [Dates and formats](https://arktype.io/docs/migrating#dates-and-formats) |
 | `.trim()`, `.toLowerCase()`, `.toUpperCase()` | `"string.trim"`, `"string.lower"`, `"string.upper"` |
 | `.trim().min(1)`, a check after a transform | `type("string.trim").to("string >= 1")` |
 
@@ -1155,7 +1163,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.catch(x)` | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](https://arktype.io/docs/migrating#fallbacks) |
 | `.extend({ ... })`, `.safeExtend({ ... })`, `.merge(B)` | `.merge({ ... })`, `.merge(B)` |
 | `.pick({ a: true })`, `.omit({ a: true })` | `.pick("a")`, `.omit("a")` |
-| `.partial()`, `.required()`, `.keyof()` | same names |
+| `.partial()`, `.required()`, `.keyof()` | same names; selective `.partial({ a: true })` / `.required({ a: true })` are `.partial("a")` / `.required("a")` |
 | `.required()` on a key with a default | `.required()`, which rejects `undefined` there where Zod's still fills in the default |
 | `.deepPartial()` (Zod 3), `z.deepPartial(T)` | no equivalent: call `.partial()` on each nested object's Type |
 | any of those on a schema with a `.refine()` | on the object before its `.narrow()`, see [Composing objects](https://arktype.io/docs/migrating#composing-objects) |
@@ -1189,7 +1197,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | - | - |
 | `z.union([A, B])`, `A.or(B)` | `A.or(B)`, `"string \| number"` |
 | `z.discriminatedUnion("kind", [A, B])` | `A.or(B)`: ArkType finds the discriminant itself |
-| `z.union([Item, z.array(Item)])` | a `.pipe()` that picks the branch, see [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) |
+| `z.union([Item, z.array(Item)])` | `Item.or(Item.array())`, see [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) |
 | `z.intersection(A, B)`, `A.and(B)` | `A.and(B)` |
 | `z.lazy(() => T)`, a getter | `"this"` or a scope, see [Recursion](https://arktype.io/docs/migrating#recursion-needs-no-annotation) |
 
@@ -1205,7 +1213,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `z.preprocess(fn, T)` | `type("unknown").pipe(fn).to(T)` |
 | `z.coerce.number()`, `z.coerce.date()` | `type("unknown").pipe(Number).to("number")`, see [Coercion](https://arktype.io/docs/migrating#coercion-is-a-parse) |
 | `z.coerce.string()`, `z.coerce.boolean()` | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)` |
-| `z.stringbool()` | a `.pipe()` over the strings you accept, see [Coercion](https://arktype.io/docs/migrating#coercion-is-a-parse) |
+| `z.stringbool()` | `"string.boolean.parse"` for `"true"` / `"false"`, or a `.pipe()` for Zod's broader set; see [Coercion](https://arktype.io/docs/migrating#coercion-is-a-parse) |
 | `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")` | `type("unknown").narrow((v): v is T => fn(v))`, then `.message("Message")` |
 | `.brand<"Id">()` | `.brand("Id")` or `"string#Id"` |
 | `z.codec(In, Out, { decode, encode })` | `codec(In, Out, { decode, encode })` from `arktype/codecs` |
@@ -1263,7 +1271,7 @@ Code that reads `issue.code`, like an API's error translator or a `customError` 
 | `too_small`, `too_big` for a string or array | `minLength`, `maxLength`, or `exactLength` for `.length(n)` and a tuple |
 | `too_small`, `too_big` for a `Date` | `after`, `before` |
 | `not_multiple_of`, `.int()`'s `invalid_type` | `divisor` |
-| `invalid_format` | `pattern`, or `predicate` for `string.url` |
+| `invalid_format` | `pattern`, or `predicate` for `string.url` and `string.date` (`string.url.http` and `string.creditCard` use both `pattern` and `predicate`) |
 | `unrecognized_keys` | `undeclared`, an issue for each key, at the key |
 | `custom` | `predicate` |
 
@@ -1421,7 +1429,7 @@ const Tags = type("string | string[]")
 
 ### Coercion is a parse
 
-ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
+ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.boolean.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
 
 ```ts
 // z.coerce.number(), which is Number(value) for any input
@@ -1447,8 +1455,8 @@ const When = type("unknown")
 const Page = type("string.numeric.parse")
 
 // z.stringbool() accepts "true", "1", "yes", "on", "y" and "enabled", their
-// opposites, and any casing of them; write the set you need
-const Flag = type("'true' | 'false'").pipe(s => s === "true")
+// opposites, and any casing of them; for strict "true" | "false", use:
+const Flag = type("string.boolean.parse")
 ```
 
 - A default is an input, so a transform's default is what it parses, as Zod's `.prefault()` is: `z.stringbool().default(false)` is `Flag.default("false")`.
@@ -1565,6 +1573,7 @@ const Sku = type.string
 	.message("SKU must be text", "domain")
 ```
 
+- Pure predicate keywords (`string.url`, `string.date`) use code `"predicate"`, not `"pattern"` — passing `"pattern"` to them silently does nothing. Hybrid pattern+predicate keywords (`string.url.http`, `string.creditCard`) run both checks, so use a whole-value `.message(text)` (or configure both `"pattern"` and `"predicate"`) to cover every invalid string. `string.json` and `string.regex` call `ctx.reject()` inside their predicate, so `.message()` doesn't override their failure text.
 - Zod says `required_error` for a key given `undefined` too, which here is a value of the wrong type. To keep that, write `"domain"`'s message as `error => (error.data === undefined ? "SKU is required" : "SKU must be text")`.
 - A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message passed to a constraint's method is that constraint's alone, so two checks of one kind, like two patterns, or an array's length and its elements', each keep their own, as in `Tags` below.
 - A function, like Zod 4's `error: issue => ...`, receives the error: `error.data` is Zod's `issue.input`, and once `error.code === "min"` is checked, `error.rule` is its `issue.minimum`. A missing key doesn't say a function's message, so give `"self"` a string.
@@ -1629,30 +1638,29 @@ The key's input type is `unknown`, where `z.input` gave the inner schema's.
 
 ArkType finds a union's discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
 
-An object transforms its input when it deletes undeclared keys, by `"+": "delete"` or the global option, or when one of its keys has a default or a transform. A union can't hold a transform whose input another branch also accepts: it throws a `ParseError` saying the union is indeterminate, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. These do:
-
-- two objects with no such key, like `{ uri, text }` and `{ uri, blob }`
-- an object beside an array, a `Date` or another class's instance, which could hold the object's keys, as in `Item.or(Item.array())`
-- a `Record` beside an array
-
-For those, choose the branch in a `.pipe()`, which infers the union of what they return:
+Objects that delete undeclared keys, by `"+": "delete"` or the global option, can overlap in a union, as `{ uri, text }` and `{ uri, blob }` do, or an object and an array of it in `Item.or(Item.array())`. Data more than one branch accepts keeps each key any of them declares, where `z.union` returns what the first branch that matches does:
 
 ```ts
-const Item = type({ "+": "delete", id: "string" })
-const Items = Item.array()
-
-// z.union([Item, z.array(Item)])
-const OneOrMany = type("object").pipe(v =>
-	Array.isArray(v) ? Items(v) : Item(v)
-)
-
 const Text = type({ "+": "delete", uri: "string", text: "string" })
+const Blob = type({ "+": "delete", uri: "string", blob: "string" })
+
+const Contents = Text.or(Blob)
+
+// { uri: "u", blob: "b", text: "t" }
+// z.union([Text, Blob]) returns { uri: "u", text: "t" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
+```
+
+A key's default or transform, like `.default()` or `string.trim`, can't be joined that way, and neither can an object holding a recursive type, like a scope alias that refers to itself or `"this"`. A union throws a `ParseError` saying it's indeterminate where an object holding one of those accepts data another branch also accepts, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. For those that do, or to return what the first matching branch does, choose the branch in a `.pipe()`, which infers the union of what they return:
+
+```ts
+const Text = type({ "+": "delete", uri: "string", text: "string.trim" })
 const Blob = type({ "+": "delete", uri: "string", blob: "string" })
 
 // z.union([Text, Blob]), which takes the first branch that matches
 const Contents = type("object").pipe(v => {
-	const text = Text(v)
-	return text instanceof type.errors ? Blob(v) : text
+	const out = Text(v)
+	return out instanceof type.errors ? Blob(v) : out
 })
 ```
 
@@ -1693,7 +1701,7 @@ const types = scope({
 
 Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`ark declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`ark declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once at module scope so they aren't recreated on each call.
 
 ### Composing objects
 
@@ -1833,7 +1841,7 @@ const parameters = (object: JsonSchema, where: "query" | "path") => {
 }
 ```
 
-With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
+With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes, except for objects that overlap in a union, whose output can hold each other's keys. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
 
 Where you call `toJsonSchema` yourself, a scope can be the registry instead: with [`aliasDefs: true`](https://arktype.io/docs/json-schema/to-json-schema#named-aliases), each alias is written once, by name, and a `$ref` wherever it's used, and a [`defs` fallback](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) collects them into `components`.
 
@@ -1843,7 +1851,7 @@ Call `toJsonSchema(openapi)` on each Type by name, as above, rather than in a fu
 
 ### Dates and formats
 
-`z.iso.datetime()` and `z.string().datetime()` require a `Z` and, from Zod 4.5, seconds, and `z.iso.date()` a date alone. `string.date.iso` accepts all of those, and offsets and date-times without one, so intersect a pattern to keep rejecting them:
+`z.iso.date()` (and Valibot's `v.isoDate()`) is `string.date.iso.date`, which checks calendar-valid `YYYY-MM-DD` strings and writes `format: "date"` with its `pattern` in JSON Schema. `z.iso.datetime()` and `z.string().datetime()` require a `Z` and, from Zod 4.5, seconds. `string.date.iso` accepts all of those, plus offsets and date-times without one, so intersect a pattern to keep rejecting them:
 
 ```ts
 // z.iso.datetime()
@@ -1855,16 +1863,16 @@ const Zoned = type("string.date.iso").and(
 )
 
 // z.iso.date()
-const Day = type("string.date.iso").and(/^\d{4}-\d{2}-\d{2}$/)
+const Day = type("string.date.iso.date")
 ```
 
 Zod 3, and Zod 4 before 4.5, also take `2025-01-01T10:00Z`, so write the seconds as optional there: `/T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/`.
 
-Valibot's `v.isoDate()` is `Day` and `v.isoTimestamp()` is `Zoned`. Its `v.isoDateTime()` takes only minutes and no offset, like `2025-01-01T10:00`, so its pattern is `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/`.
+Valibot's `v.isoDate()` is `string.date.iso.date` and `v.isoTimestamp()` is `Zoned`. Its `v.isoDateTime()` takes only minutes and no offset, like `2025-01-01T10:00`, so its pattern is `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/`.
 
-`string.date.iso` checks the calendar as Zod does, so `2020-02-30` fails and `2024-02-29` passes.
+`string.date.iso` and `string.date.iso.date` check the calendar as Zod does, so `2020-02-30` fails and `2024-02-29` passes.
 
-`toJsonSchema()` throws for these, since it writes one `pattern` for a string, and the schema a tool reads through Standard Schema keeps both, the second in an `allOf`. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`, or `format: "date"` for `Day`.
+`toJsonSchema()` throws for `Instant` and `Zoned`, since it writes one `pattern` for a string, and the schema a tool reads through Standard Schema keeps both, the second in an `allOf`. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`. `string.date.iso.date` already writes `format: "date"` and a single `pattern`.
 
 In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
 
@@ -1905,7 +1913,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - If `package.json` sets `"sideEffects": false`, list the config file there instead, like `"sideEffects": ["./src/arktype.config.ts"]`. A bundler otherwise drops the import, and the built app runs without the config while unbundled tests pass.
    - Migrating from another library? Set what its column of [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) says instead.
 3. **Convert each schema in place,** using the [tables](https://arktype.io/docs/migrating#zod). Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. The migrated schemas should accept, reject and return what the old ones did:
-   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. A union throws a `ParseError` saying it's indeterminate where one of its objects overlaps another branch, like a second object with no literal key to tell them apart, or an array of the same object: write it as [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) shows. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](https://arktype.io/docs/migrating#composing-objects).
+   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. Where objects of a union overlap, like two with no literal key to tell them apart, data both accept keeps the keys of each, where Zod returns the first match's, and the union throws a `ParseError` saying it's indeterminate if one has a default, a transform at a key or a recursive type: [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) shows both. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](https://arktype.io/docs/migrating#composing-objects).
    - **Optional keys.** Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"` and a `z.any()` key is `"key?": "unknown.any"`; from 4.4, only `.optional()` and defaults let a key be missing, so they stay `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, as does `.partial()` on a key with a default, so it's `key: T.default(x)`. In Zod 3 neither does: write the first as `"key?": "T"`, and for the second, call `.partial()` on a Type of the keys without their defaults, and `.merge()` the defaults into the full object. `"unknown.any"` infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - **Coercions and refinements,** literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#coercion-is-a-parse). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema, with its `path` as `relativePath`. A `.refine()` that only rejects a literal, like `z.boolean().refine(v => v, "Accept the terms")`, becomes that literal with a `message`; [Refinements](https://arktype.io/docs/migrating#refinements) has both.
    - **Custom messages,** each as a `message`, as in [Custom messages](https://arktype.io/docs/migrating#custom-messages): a message beside a check goes beside the same check, so `.min(1, "Name is required")` is `type.string.atLeastLength(1, "Name is required")`, a check without a method, like `.email("...")`'s, names its code, as in `.message("...", "pattern")`, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.mustBe()`, to `ctx.error()` as a string, to `.describe()` or as `expected`, each of which writes `must be` before it.
@@ -1919,7 +1927,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - An issue also holds the rejected value as `data`, which Zod's leaves out unless `reportInput` is set. Where code logs issues or returns them to a client, as `c.json(result.error)` does, send each issue's `path` and `message` instead, so a password that failed a check isn't written out.
    - `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
    - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodType`, `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. One typed by what its schema returns, like `<T>(schema: z.ZodType<T>): T` or a `class Repo<T>`, keeps `T` and names what it calls: `schema: { assert: (data: unknown) => T }`, or `schema: (data: unknown) => T | ArkErrors` where it calls the Type. Every Type whose output is `T` fits, and call sites keep their type arguments. A `type.Any<T>` isn't that: its `T` isn't the output type once a Type has a default or a transform. Where the helper needs the Type itself, use `<S extends type.Any>(schema: S): S["infer"]`; there `schema(data)` is `any`, so annotate it: `const out: S["infer"] | type.errors = schema(data)`. A function that builds a schema from another, like `<T extends z.ZodType>(s: T) => s.nullable()`, becomes a generic, like `type("<t>", "t | null")`, as in [Schema factories](https://arktype.io/docs/migrating#schema-factories). Written as a method call on a `type.Any` parameter, `s.or("null")` type-checks and infers `any`.
-   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. A `.strict()` object's unrecognized key is a form error in Zod, and in ArkType an error at that key, `must be removed`. Group `out.issues` the same way, which also works in a [precompiled](https://arktype.io/docs/precompile) build, where `flatByPath` isn't available, and build `z.treeifyError(error)`'s tree from each issue's `path`:
+   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. A `.strict()` object's unrecognized key is a form error in Zod, and in ArkType an error at that key, `must be removed`. Group `out.issues` the same way, and build `z.treeifyError(error)`'s tree from each issue's `path`:
 
 ```ts
 // error.flatten() or z.flattenError(error)
@@ -2093,7 +2101,7 @@ Valibot's defaults are Zod's: `v.object` removes undeclared keys, and `v.optiona
 | `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty` | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"` |
 | `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf` | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"` |
 | `v.url`, `v.uuid`, `v.regex(r)` | `"string.url"`, `"string.uuid"`, `/r/` |
-| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp` | `"string.date.iso"` with a pattern for each, see [Dates and formats](https://arktype.io/docs/migrating#dates-and-formats) |
+| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp` | `"string.date.iso.date"`, and `"string.date.iso"` with a pattern for the others; see [Dates and formats](https://arktype.io/docs/migrating#dates-and-formats) |
 | `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()` | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"` |
 | `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | `.message("Message", "domain")`, `.message("Message", "pattern")`, `.atLeastLength(8, "Message")`: see [Custom messages](https://arktype.io/docs/migrating#custom-messages) |
 | `v.check(fn, msg)`, `v.rawCheck` | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))` |
@@ -2375,7 +2383,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use function defaults, or morphs on defaults? [They run on each call](https://arktype.io/docs/upgrading#defaults-run-each-time-theyre-applied).
 - Do you chain two right bounds, like `number < 5 < 6`? [Group them](https://arktype.io/docs/upgrading#a-second-right-bound-throws).
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](https://arktype.io/docs/upgrading#standard-schemas-must-validate-synchronously).
-- Do you reflect on a Type's own keys or prototype, freeze a Type, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](https://arktype.io/docs/upgrading#types-are-built-when-theyre-first-read).
+- Do you reflect on a Type's own keys or prototype, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](https://arktype.io/docs/upgrading#types-are-built-when-theyre-first-read).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](https://arktype.io/docs/upgrading#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
 - Do you use `arktype/schema` (previously `@ark/schema`) without `arktype`? [Import `arktype`](https://arktype.io/docs/upgrading#arkschema).
@@ -2501,7 +2509,7 @@ if (out instanceof type.errors) {
 
 It lists each error's `message`, so a key with a `message` you configured holds that text, where `flatProblemsByPath` held what ArkType would have written.
 
-A [precompiled](https://arktype.io/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString`, so there group `out.issues` by `issue.path` instead.
+A [precompiled](https://arktype.io/docs/precompile/validators#errors) build's `arktype/runtime` exports `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue` and `lineOf` as well (though its errors still have no `propString`); only `messageIn` is unsupported.
 
 A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
 
@@ -2570,7 +2578,7 @@ A [Standard Schema](https://arktype.io/docs/standard-schema) failure is `{ issue
 ```ts
 const T = type({ name: "string > 1" })
 
-// [{ message: "must be at least length 2", path: ["name"], ... }]
+// [{ message: "must be at least 2 characters", path: ["name"], ... }]
 // before: "name must be at least length 2 (was 1)"
 T["~standard"].validate({ name: "x" })
 ```
@@ -2896,6 +2904,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 - An arktype Type embedded through `~standard`: `user.age must be an integer`, before: `user.age age must be ...`.
 - Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
 - `""` and a length of `0` read as `empty`, mirroring `non-empty`: `"string.email | ''"` reads `must be an email address or empty` (before: `must be an email address or ""`), and `"string == 0"` reads `must be empty` (before: `must be exactly length 0`).
+- Length bounds on strings and arrays include their unit: `"string >= 5"` reads `must be at least 5 characters` (before: `must be at least length 5`), and `"string[] <= 10"` reads `must be at most 10 items` (before: `must be at most length 10`). Custom units can also be configured on length and numeric bound schemas via `unit`.
 - A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
 - A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true"`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
 - `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.
@@ -3172,9 +3181,9 @@ import { type } from "arktype"
 scope({}, { numberAllowsInfinity: true } as never)
 ```
 
-### onUndeclaredKey: "delete" rejects overlapping object unions
+### "delete" keeps each key an overlapping union's branches declare
 
-With `onUndeclaredKey: "delete"` configured, a union of objects whose inputs overlap throws a `ParseError`, as it already did with `"+": "delete"` in each object. Before, data both allowed came out as whichever branch sorted first:
+Where objects that delete undeclared keys overlap in a union, data more than one of them allows keeps each key any of them declares. Before, with `onUndeclaredKey: "delete"` configured it came out as whichever branch sorted first, and with `"+": "delete"` in each object the union threw a `ParseError`:
 
 ```ts
 import { configure } from "arktype/config"
@@ -3183,12 +3192,16 @@ configure({ onUndeclaredKey: "delete" })
 ```
 
 ```ts
-// throws ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
-// before: { uri: "u", blob: "b" } for { uri: "u", text: "t", blob: "b" }
-type({ uri: "string", text: "string" }).or({ uri: "string", blob: "string" })
+const Contents = type({ uri: "string", text: "string" }).or({
+	uri: "string",
+	blob: "string"
+})
+
+// { uri: "u", blob: "b", text: "t" }, before: { uri: "u", blob: "b" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
 ```
 
-Give the branches a key that tells them apart, like a literal `kind`, or delete outside the union.
+A union still throws that `ParseError` where an overlapping object also has a default or another morph at a key, or holds a recursive type. Give those branches a key that tells them apart, like a literal `kind`, or choose the branch in a `.pipe()`.
 
 ### meta.keyword is reserved
 
@@ -3252,7 +3265,7 @@ Object.keys(User) // its node's keys
 
 - `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading see only a function's `length` and `name`, and `key in User` answers for a key the Type holds itself as it would for `type.object`.
 - `Object.getPrototypeOf()` returns a prototype every unread Type shares. `instanceof` builds the Type, so it answers as before.
-- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make the first read throw a `TypeError`, where they made the Type throw once it compiled.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` work on unread, eager and `@ark/aot` precompiled Types without throwing on first read or compilation. Freezing an unread Type leaves it the function it is — it's called and read as the Type it builds, while its own keys and prototype stay an unread Type's — and a Type frozen after its first read but before compiling is checked without compiling.
 - `type.Record` is a function that calls and reads through to the `Record` generic, so `type.Record === type.keywords.Record` is `false`.
 - Two spellings of one Type can be two equal Types, depending on which is created and read first, as with `type("string")` and `type.keywords.string.root`, or `type("'b'")` and `type('"b"')`, and `/a/` and `"string & /a/"` always are. Definitions written alike are still one Type, as are union order, `.array()` and `[]`, and `type.string` and `"string"`.
 
@@ -3443,6 +3456,8 @@ const User = type({
 | `string.base58` | base58-encoded |
 | `string.base64` | base64-encoded |
 | `string.base64.url` | base64url-encoded |
+| `string.boolean` | "false" or "true" |
+| `string.boolean.parse` | a morph from "false" or "true" to boolean |
 | `string.capitalize` | a morph from a string to capitalized |
 | `string.capitalize.preformatted` | capitalized |
 | `string.creditCard` | a credit card number |
@@ -3450,6 +3465,7 @@ const User = type({
 | `string.date.epoch` | an integer string representing a safe Unix timestamp |
 | `string.date.epoch.parse` | a morph from an integer string representing a safe Unix timestamp to a Date |
 | `string.date.iso` | an ISO 8601 date or date-time |
+| `string.date.iso.date` | an ISO 8601 date |
 | `string.date.iso.parse` | a morph from an ISO 8601 date or date-time to a Date |
 | `string.date.parse` | a morph from a parsable date to a Date |
 | `string.digits` | only digits 0-9 |
@@ -3589,7 +3605,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 // 4 to 6 digits
 const Pin = type("4 <= string.digits <= 6")
 
-// ArkErrors: must be at least length 4
+// ArkErrors: must be at least 4 characters
 Pin("123")
 ```
 
@@ -3599,7 +3615,7 @@ Pin("123")
 // 4 to 6 digits
 const Pin = type.keywords.string.digits.atLeastLength(4).atMostLength(6)
 
-// ArkErrors: must be at least length 4
+// ArkErrors: must be at least 4 characters
 Pin("123")
 ```
 
@@ -4001,16 +4017,17 @@ const MyObj = type({
 MyObj({})
 ```
 
-`= []` and `= {}` give each output its own new array or object, so mutating one never changes another:
+`= []`, `= {}` and unit-literal arrays like `= ['localhost']` or `= [1, 2]` give each output its own new array or object, so mutating one never changes another:
 
 ```ts
 const MyObj = type({
 	values: "string[] = []",
+	hosts: "string[] = ['localhost']",
 	meta: "object = {}"
 })
 ```
 
-For any other object, default to a function that returns it, e.g. `type.Date.default(() => new Date())`.
+For any other object or array, default to a function that returns it, e.g. `type.Date.default(() => new Date())`.
 
 > **Optional and default only work in objects and tuples**
 >
@@ -4112,7 +4129,20 @@ Both act on string keys: `"reject"` checks only an object's string keys, and `"d
 
 `"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
-Deleting keys makes an object a [morph](https://arktype.io/docs/expressions#pipe), so a union holding one throws a `ParseError` if another branch accepts the same data, as an array, a `Date` or a second object with no literal key to tell them apart does. [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) shows how to write such a union.
+Deleting keys makes an object a [morph](https://arktype.io/docs/expressions#pipe). In a union, data more than one branch accepts keeps each key any of them declares, the keys of one branch and then those only another declares:
+
+```ts
+const Contents = type({
+	"+": "delete",
+	uri: "string",
+	"text?": "string"
+}).or({ "+": "delete", uri: "string", "blob?": "string" })
+
+// { uri: "u", blob: "b", text: "t" }
+Contents({ uri: "u", text: "t", blob: "b", extra: 1 })
+```
+
+A union still throws a `ParseError` where such an object also has a default or another morph at a key, or holds a recursive type, and a second branch accepts the same data. [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) shows how to write that union.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
@@ -4180,7 +4210,7 @@ A key in both objects takes its value from the merged object. An [intersection](
 
 > **A spread doesn't carry a narrow**
 >
-> Like the other [structural transformations](https://arktype.io/docs/objects#properties-structural), `merge` and `"..."` build a new object from the properties, so a narrow on the object itself is dropped, along with its metadata. This is the case that most often catches people out: a check across two fields written on a base object, then spread into a larger one.
+> Like the other [structural transformations](https://arktype.io/docs/objects#properties-structural), `merge` and `"..."` build a new object from the properties, so a narrow on the object itself is dropped, along with its metadata. This is the case that most often catches people out: a check across two fields written on a base object, then spread into a larger one. `@ark/aot` warns when a structural operation drops a root `.narrow()`; add `// @ark-allow-drop-narrow` on the line before or as a trailing comment on the same line if dropping it is intended.
 >
 > ```ts
 > const Dates = type({
@@ -4361,7 +4391,7 @@ The key can also be a union, a literal or an index signature, and the object can
 
 > **Only properties are carried over**
 >
-> Anything attached to the object itself is dropped: most importantly a root [narrow](https://arktype.io/docs/expressions#narrow) or [filter](https://arktype.io/docs/expressions#filter), but also [metadata](https://arktype.io/docs/configuration#metadata) like `.describe(...)`. Constraints on the properties are kept.
+> Anything attached to the object itself is dropped: most importantly a root [narrow](https://arktype.io/docs/expressions#narrow) or [filter](https://arktype.io/docs/expressions#filter), but also [metadata](https://arktype.io/docs/configuration#metadata) like `.describe(...)`. Constraints on the properties are kept. `@ark/aot` warns when `"..."`, `.merge()`, `.pick()`, `.omit()`, `.partial()`, `.required()`, `.map()` or their generic equivalents drop a root `.narrow()` (suppress with `// @ark-allow-drop-narrow` if intended).
 >
 > ```ts
 > const Signup = type({
@@ -4437,7 +4467,7 @@ const types = type.module({
 
 ### required / partial
 
-Make every named property required or optional:
+Make every named property — or only the keys you pass — required or optional:
 
 ```ts
 const User = type({
@@ -4449,8 +4479,14 @@ const User = type({
 // Type<{ name: string; email: string; age: number }>
 const RequiredUser = User.required()
 
+// Type<{ name: string; email: string; age?: number }>
+const WithEmail = User.required("email")
+
 // Type<{ name?: string; email?: string; age?: number }>
 const PartialUser = User.partial()
+
+// Type<{ name?: string; email?: string; age?: number }>
+const OptionalName = User.partial("name")
 ```
 
 `partial` makes keys optional, which isn't the same as allowing `undefined`: under [`exactOptionalPropertyTypes`](https://arktype.io/docs/configuration#exactoptionalpropertytypes), the default, a key may be missing but not set to `undefined`. To match a type whose keys are present but may be `undefined`, like a form's state `{ name: string | undefined }`, add `| undefined` to each value instead.
@@ -4964,6 +5000,8 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.base58` | base58-encoded |
 | `string.base64` | base64-encoded |
 | `string.base64.url` | base64url-encoded |
+| `string.boolean` | "false" or "true" |
+| `string.boolean.parse` | a morph from "false" or "true" to boolean |
 | `string.capitalize` | a morph from a string to capitalized |
 | `string.capitalize.preformatted` | capitalized |
 | `string.creditCard` | a credit card number |
@@ -4971,6 +5009,7 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | `string.date.epoch` | an integer string representing a safe Unix timestamp |
 | `string.date.epoch.parse` | a morph from an integer string representing a safe Unix timestamp to a Date |
 | `string.date.iso` | an ISO 8601 date or date-time |
+| `string.date.iso.date` | an ISO 8601 date |
 | `string.date.iso.parse` | a morph from an ISO 8601 date or date-time to a Date |
 | `string.date.parse` | a morph from a parsable date to a Date |
 | `string.digits` | only digits 0-9 |
@@ -5057,7 +5096,7 @@ These are all the keywords `type` resolves. To define your own, see [scopes](htt
 | Alias | Description |
 | - | - |
 | `Array` | an array |
-| `Array.index` | matched by ^(?:0\|\[1-9]\d\*)$ |
+| `Array.index` | an array index |
 | `Array.liftFrom` | a generic type for liftFromHkt |
 | `Array.readonly` | an array |
 | `ArrayBuffer` | an ArrayBuffer instance |
@@ -5692,6 +5731,9 @@ const SpecialString = type("string").configure({
 // .describe() is shorthand for a description
 const SpecialNumber = type("number").describe("a special number")
 
+// .label() names a field in built-in messages and writes JSON Schema `title`
+const UnitPrice = type("number > 0").label("Unit price")
+
 // ArkErrors: must be a special number
 SpecialNumber("five")
 ```
@@ -5874,7 +5916,7 @@ const types = scope({
 }).export()
 ```
 
-Define recursive Types once, at module scope: each stays in memory for the life of the process.
+Define recursive Types once at module scope so they aren't recreated on each call.
 
 # Match
 
@@ -6221,6 +6263,25 @@ const superScope = scope({
 })
 ```
 
+To infer every exported alias's output or input type at once — recursing into nested submodules and skipping generic aliases — use `Module.infer` / `Module.infer.In` or `Scope.infer` / `Scope.infer.In`:
+
+```ts
+import { scope, type Module, type Scope } from "arktype"
+
+const $ = scope({
+	id: "string",
+	user: { id: "id", age: "number = 0" }
+})
+
+const types = $.export()
+
+// { id: string; user: { id: string; age: number } }
+type Outputs = Module.infer<typeof types>
+
+// { id: string; user: { id: string; age?: number } }
+type Inputs = Scope.infer.In<typeof $>
+```
+
 ## Cyclic types
 
 Aliases can reference themselves and each other:
@@ -6258,7 +6319,7 @@ types.Package(arktype)
 
 A cycle must pass through an object, array or morph. An alias that resolves to itself without one, like `a` in `scope({ a: "a | string" })`, is a type error and throws a `ParseError`.
 
-For a single recursive `Type`, you don't need a scope: use the [`this`](https://arktype.io/docs/expressions#this) keyword. Define cyclic scopes and recursive Types once, at module scope: each stays in memory for the life of the process.
+For a single recursive `Type`, you don't need a scope: use the [`this`](https://arktype.io/docs/expressions#this) keyword. Define cyclic scopes and recursive Types once at module scope so they aren't recreated on each call.
 
 > **Cyclic types may display as any**
 >
@@ -6917,24 +6978,25 @@ if (out instanceof type.errors) {
 | `throw()` | throws a [`TraversalError`](https://arktype.io/docs/errors#traversalerror) |
 | `[Symbol.iterator]()` | each error in `issues`, for `for...of` and spread |
 
-`arktype` exports functions that read an `ArkErrors`, most grouping it by path:
+`arktype` exports functions that read an `ArkErrors` or an `ArkError`, most grouping errors by path:
 
 | function | what it returns |
 | - | - |
 | `firstIssue(out)` | the first error in `issues`, found [without the rest](https://arktype.io/docs/errors#finding-only-the-first) where it can be |
+| `lineOf(error)` | one error formatted as its line in `summary`, e.g. `name must be a string` |
 | `byPath(out)` | an object mapping each path's `propString` to its first error |
 | `flatByPath(out)` | like `byPath`, but each value is an array of every error at the path |
 | `flatMessagesByPath(out)` | like `flatByPath`, but with each error's `message` |
 | `byAncestorPath(out)` | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's `message`, without its path, in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
 
-A [precompiled](https://arktype.io/docs/precompile/validators#errors) build has `firstIssue` but not the others, and fails on a call to one, naming it. There, group `out.issues` by each error's `path`.
+`firstIssue`, `lineOf`, `byPath`, `flatByPath`, `flatMessagesByPath` and `byAncestorPath` all work in a [precompiled](https://arktype.io/docs/precompile/validators#errors) build. `messageIn` does not — standalone validators write English only, and calling `messageIn` fails the build.
 
 To change what an error says, see [Error messages](https://arktype.io/docs/configuration#error-messages).
 
 ### Summary lines
 
-`summary` writes one line for each error:
+`summary` writes one line for each error, and `lineOf(error)` formats a single `ArkError` the same way:
 
 | error | its line | example |
 | - | - | - |
@@ -7048,7 +7110,7 @@ An error's `code` tells you its other fields:
 | `notEqual` | `rule`, a number or `Date` |
 | `notEqualLength` | `rule` |
 | `predicate` | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
-| `required` | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description |
+| `required` | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description (honoring any user-authored `.describe()`) |
 | `undeclared` | none; its `data` is the value of a key `"+": "reject"` disallows |
 | `discriminant` | `discriminantKind`, `cases`, `onKey` and `absent` |
 | `union` | `errors`, one per branch, or none where each branch fails at what it is, like `Date \| RegExp` given `1`, which expects `a Date or a RegExp` |
@@ -7499,7 +7561,7 @@ User({ name: "", age: 3, email: "x", seats: 12 })
 
 ### description
 
-What follows "must be" in a message. Because it fits into ArkType's template, it composes cleanly across unions and is reused by the Type's `.description` and JSON Schema output — reach for it when you want `must be ___` errors that compose:
+What follows "must be" in a message. Because it fits into ArkType's template, it composes cleanly across unions and is reused by the Type's `.description`, missing required property messages (e.g. `email must be a valid email (was missing)`) and JSON Schema output — reach for it when you want `must be ___` errors that compose:
 
 ```ts
 const Email = type("string.email").describe("a valid email")
@@ -7510,7 +7572,6 @@ const Contact = type.or(Email, Username, Phone)
 // ArkErrors: must be a phone number, a username or a valid email
 Contact("!")
 ```
-- A narrow saying what its value must be is labeled too: `type("string").narrow((s, ctx) => isPercent(s) || ctx.mustBe("between 0 and 100")).label("Percent")` reads `Percent must be between 0 and 100`, as does `ctx.reject({ expected })`. `ctx.reject({ message })` is said as written.
 
 ### label
 
@@ -7529,6 +7590,7 @@ LineItem({ unitPriceCents: 0 })
 
 - The label is part of each error's `message`, at `unitPriceCents`, so a form library, [`flatMessagesByPath`](https://arktype.io/docs/errors), a toast and `summary` all say it. The error's `path` keeps the key, and a summary leaves out only the key the label names, keeping where it is: `items[0]: Unit price must be positive`.
 - A [message](https://arktype.io/docs/configuration#message), whether passed to a constraint method or set with `.message()`, is said as written. A label names the checks that have none, so `type.number.moreThan(0, "Enter a price").label("Price")` reads `Enter a price` for `0` and `Price must be a number` for `"1"`.
+- A narrow saying what its value must be is labeled too: `type("string").narrow((s, ctx) => isPercent(s) || ctx.mustBe("between 0 and 100")).label("Percent")` reads `Percent must be between 0 and 100`, as does `ctx.reject({ expected })`. `ctx.reject({ message })` is said as written.
 - Like `.describe()`, `.label()` applies to the Type it's called on, not to the Types inside it: a label on an object names what isn't an object, and each key keeps its own. A union of branches labeled alike names them together.
 - `toJsonSchema` writes a label as the schema's `title` unless it has one.
 
@@ -7661,8 +7723,6 @@ Entry({ age: "5" })
 ```
 
 Each function also receives the active [locale](https://arktype.io/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in. A [locale](https://arktype.io/docs/i18n#writing-a-locale) also decides how a summary places a path before a message.
-Customize a field only when its copy has to differ. Where a message would exist only to name the field, like `Unit price must be greater than 0` for `unitPriceCents`, write a [label](https://arktype.io/docs/configuration#label) instead. A field whose message you wouldn't otherwise write needs neither.
-
 
 ### Form fields
 
@@ -7680,6 +7740,8 @@ const Booking = type({
 //            seats must be at most 10
 Booking({ name: "", email: "x", seats: 12 })
 ```
+
+Customize a field only when its copy has to differ. Where a message would exist only to name the field, like `Unit price must be greater than 0` for `unitPriceCents`, write a [label](https://arktype.io/docs/configuration#label) instead. A field whose message you wouldn't otherwise write needs neither.
 
 For copy of your own, a field's empty state is usually `""` or `undefined`, so choose a required field's message by which of those it should cover:
 
@@ -8708,8 +8770,6 @@ const t = initTRPC.create({
 	})
 })
 ```
-
-A [precompiled](https://arktype.io/docs/precompile/validators#errors) build doesn't have `flatMessagesByPath`, so there, group `error.cause.arkErrors.issues` by `path`.
 
 ## oRPC
 
@@ -9950,7 +10010,7 @@ const Admin = Member.merge({ role: "'admin'", since: "Date" })
 
 ### `required`
 
-copy with every key required
+copy with every key (or only the given keys) required
 
 - warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
 - like TS's `Required`, an array or tuple base is preserved and applied to its elements, e.g. `type(["string", "number"]).required()`
@@ -9959,11 +10019,13 @@ copy with every key required
 const Draft = type({ "title?": "string", "body?": "string" })
 // Type<{ title: string; body: string }>
 const Post = Draft.required()
+// Type<{ title: string; body?: string }>
+const Titled = Draft.required("title")
 ```
 
 ### `partial`
 
-copy with every key optional
+copy with every key (or only the given keys) optional
 
 - warning: returns a new object built from the properties it extracts, so a root narrow, filter or metadata on this `Type` is not carried over ([docs](https://arktype.io/docs/objects#properties-structural))
 - like TS's `Partial`, an array or tuple base is preserved and applied to its elements, e.g. `type(["string", "number"]).partial()`
@@ -9972,6 +10034,8 @@ copy with every key optional
 const User = type({ name: "string", email: "string.email" })
 // Type<{ name?: string; email?: string }>
 const UserPatch = User.partial()
+// Type<{ name: string; email?: string }>
+const OptionalEmail = User.partial("email")
 ```
 
 ### `map`
@@ -10250,7 +10314,7 @@ These entrypoints are `arktype`'s whole public surface. Any other subpath it exp
 - `regex`, the same function `arkregex` exports.
 - `Type`, `Module` and `Generic` to check a value with `instanceof`, and `Hkt` to write a [higher-kinded generic](https://arktype.io/docs/generics#hkt).
 - `ArkErrors`, `TraversalError` and `ParseError`, the [errors](https://arktype.io/docs/errors) ArkType returns and throws, `ArkError`, the type of one issue, and `Traversal`, the type of the `ctx` a [narrow or morph](https://arktype.io/docs/traversal-api) receives.
-- `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue` and `messageIn`, which [read an `ArkErrors`](https://arktype.io/docs/errors#arkerrors).
+- `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue`, `lineOf` and `messageIn`, which [read an `ArkErrors` or `ArkError`](https://arktype.io/docs/errors#arkerrors).
 - `annotatingFallback`, a [JSON Schema fallback](https://arktype.io/docs/json-schema/to-json-schema#annotatingfallback), and `inferred`, the symbol key a Type's inferred type is declared under.
 - types such as `Out`, `Brand`, `Json`, `JsonSchema`, `ArkErrorCode`, `Locale`, `Scope`, `BaseType` and `inferDefinition`/`validateDefinition` for [wrapping `type`](https://arktype.io/docs/generics#external).
 
@@ -10271,7 +10335,7 @@ import { type } from "arktype"
 
 ## Other packages
 
-- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). Its CLI commands run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`), and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). Its CLI commands run through `ark` (`ark check`, `ark emit`, `ark declare`, or `npx arktype check`/`emit`/`declare`), and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 (or TypeScript 7.1+ via `tsgo` or `tsrs`) for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
@@ -10377,7 +10441,7 @@ npx arktype declare
 
 It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.
 
-For a [cyclic scope](https://arktype.io/docs/scopes#cyclic-types), it's required: TypeScript can't write an inferred cycle in a `.d.ts`, so `tsc` declares it as `any` or fails with `TS5088`, where `--declare` names each cycle for its alias.
+For a [cyclic scope](https://arktype.io/docs/scopes#cyclic-types), it's required: TypeScript can't write an inferred cycle in a `.d.ts`, so `tsc` declares it as `any` or fails with `TS5088`, where `ark declare` names each cycle for its alias.
 
 ## Can I get error messages in another language?
 

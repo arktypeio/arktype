@@ -86,7 +86,7 @@ See the [migration guide](https://arktype.io/docs/migrating) for Zod, Valibot, T
 ```sh
 npx arktype init     # create ark.json and install the bundled skill
 npx arktype migrate  # install the skill and print a migration prompt
-npx arktype check    # run @ark/aot --check
+npx arktype check    # check definitions with @ark/aot
 ```
 
 ## Contributions

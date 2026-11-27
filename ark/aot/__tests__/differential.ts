@@ -865,7 +865,8 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 	)
 	const line =
 		isLabeled ?
-			reportedParent ? `${reportedParent}: ${issue.message}` : issue.message
+			reportedParent ? `${reportedParent}: ${issue.message}`
+			:	issue.message
 		: prop ? `${prop}${isCustom ? ":" : ""} ${issue.message}`
 		: issue.message
 	return {

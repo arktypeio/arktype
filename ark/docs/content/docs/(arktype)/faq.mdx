@@ -96,7 +96,7 @@ npx arktype declare
 
 It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.
 
-For a [cyclic scope](/docs/scopes#cyclic-types), it's required: TypeScript can't write an inferred cycle in a `.d.ts`, so `tsc` declares it as `any` or fails with `TS5088`, where `--declare` names each cycle for its alias.
+For a [cyclic scope](/docs/scopes#cyclic-types), it's required: TypeScript can't write an inferred cycle in a `.d.ts`, so `tsc` declares it as `any` or fails with `TS5088`, where `ark declare` names each cycle for its alias.
 
 ## Can I get error messages in another language?
 

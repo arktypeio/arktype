@@ -127,7 +127,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 // 4 to 6 digits
 const Pin = type("4 <= string.digits <= 6")
 
-// ArkErrors: must be at least length 4
+// ArkErrors: must be at least 4 characters
 Pin("123")
 ```
 
@@ -139,7 +139,7 @@ Pin("123")
 // 4 to 6 digits
 const Pin = type.keywords.string.digits.atLeastLength(4).atMostLength(6)
 
-// ArkErrors: must be at least length 4
+// ArkErrors: must be at least 4 characters
 Pin("123")
 ```
 
