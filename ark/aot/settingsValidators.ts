@@ -75,12 +75,12 @@ var ReadIssues = class {
 	/** @internal */
 	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const stops =
+		const stops2 =
 			missing.length && !(key in data) ?
 				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
-		return stops
+		return stops2
 	}
 }
 var UnreadIssues = class {
@@ -111,12 +111,12 @@ var UnreadIssues = class {
 	}
 	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const stops =
+		const stops2 =
 			missing.length && !(key in data) ?
 				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
-		return stops
+		return stops2
 	}
 }
 var failsSite = (ctx, context, data) =>
@@ -161,17 +161,17 @@ var Issues =
 				}
 				_k(apply, data, key, ...missing) {
 					this._p.push(key)
-					const stops =
+					const stops2 =
 						missing.length && !(key in data) ?
 							this._e(data, "required", ...missing)
 						:	!apply(data[key], this)
 					this._p.pop()
-					return stops
+					return stops2
 				}
 				get summary() {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + issueLineOf(issue)
+						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
 				summaryIn(locale) {
@@ -213,17 +213,17 @@ var Issues =
 				}
 				_k(apply, data, key, ...missing) {
 					this._p.push(key)
-					const stops =
+					const stops2 =
 						missing.length && !(key in data) ?
 							this._e(data, "required", ...missing)
 						:	!apply(data[key], this)
 					this._p.pop()
-					return stops
+					return stops2
 				}
 				get summary() {
 					let summary = ""
 					for (const issue of this._)
-						summary += (summary && "\n") + issueLineOf(issue)
+						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
 				summaryIn(locale) {
@@ -257,8 +257,7 @@ var Issues =
 		class extends (findsOnRead ? UnreadIssues : ReadIssues) {
 			get summary() {
 				let summary = ""
-				for (const issue of this._)
-					summary += (summary && "\n") + issueLineOf(issue)
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
@@ -323,19 +322,42 @@ var pathOf = issue => {
 	}
 	return path
 }
-var issueLineOf = issue => {
-	const message = (issue.message ??= messageOf(issue))
+var formatArkError
+var isLabeledIssue = (issue, message, defaultMessage) => {
+	if (issue._n !== void 0) return true
+	const meta = issue.code === "required" ? issue.valueMeta : issue.meta
+	if (
+		typeof meta?.label === "string" &&
+		meta.message === void 0 &&
+		message.startsWith(meta.label + " ")
+	)
+		return true
+	return (
+		(issue.expected !== void 0 || issue.code === "required") &&
+		message.length > defaultMessage.length + 1 &&
+		(message.endsWith(" " + defaultMessage) ||
+			message.includes(" " + defaultMessage + " "))
+	)
+}
+var lineOf = issue => {
+	if (formatArkError) {
+		const formatted = formatArkError(issue)
+		if (formatted !== void 0) return formatted
+	}
+	const defaultMessage = messageOf(issue)
+	const message = issue.message ?? defaultMessage
 	const path =
 		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== void 0 ? issue._l
-		: labelsValues && issue._n !== void 0 ? labeledPathOf(issue) + message
+		: labelsValues && isLabeledIssue(issue, message, defaultMessage) ?
+			labeledPathOf(issue) + message
 		: path ?
 			path +
 			((
 				writesText &&
 				!(message === "is invalid" && issue.expected === "valid") &&
-				!message.startsWith(messageOf(issue))
+				!message.startsWith(defaultMessage)
 			) ?
 				": "
 			:	" ") +
@@ -387,26 +409,36 @@ var TransformErrors = class _TransformErrors {
 		return gathered
 	}
 }
+var copiedInPlace
+var deletableKeysOf = data => [
+	...Object.keys(data),
+	...Object.getOwnPropertySymbols(data)
+]
 var copyOf = data => {
 	if (isArray(data)) {
-		const copy = Array.prototype.slice.call(data)
+		const copy2 = Array.prototype.slice.call(data)
 		const keys = Object.keys(data)
 		return (
-				keys.length !== copy.length ||
-					keys[copy.length - 1] !== `${copy.length - 1}` ||
+				keys.length !== copy2.length ||
+					keys[copy2.length - 1] !== `${copy2.length - 1}` ||
 					Object.getOwnPropertySymbols(data).length
 			) ?
 				Object.defineProperties(
-					copy,
+					copy2,
 					Object.getOwnPropertyDescriptors({ ...data })
 				)
-			:	copy
+			:	copy2
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
-	return Object.prototype.toString.call(data) === "[object Object]" ?
-			Object.setPrototypeOf({ ...data }, prototype)
-		:	data
+	if (copiedInPlace?.has(data)) return data
+	if (Object.prototype.toString.call(data) === "[object Object]")
+		return Object.setPrototypeOf({ ...data }, prototype)
+	if (!copiedInPlace) return data
+	const copy = /* @__PURE__ */ Object.create(null)
+	for (const k of deletableKeysOf(data)) copy[k] = data[k]
+	copiedInPlace.set(copy, data)
+	return copy
 }
 
 // ark/schema/shared/traversal.ts
@@ -414,6 +446,10 @@ var errorsOf = ctx => (ctx._errors ??= ctx.createErrors())
 var receive = (ctx, data) => {
 	ctx.recv = data
 	ctx.recvAt = ctx.path.length
+}
+var transformsValid = ctx => ctx.branches.length === 0 && !ctx.chkOnly
+var transformedInApply = (ctx, result) => {
+	if (result instanceof TransformErrors) addMorphErrs(ctx, result)
 }
 var callContext
 var inContext = (context, run) => {
@@ -465,7 +501,20 @@ var addMorphErrs = (ctx, errors, key) => {
 	ctx.recvAt = recvAt
 }
 
+// ark/schema/structure/shared.ts
+var arrayIndexSource = `^(?:0|[1-9]\\d*)$`
+var arrayIndexMatcher = /* @__PURE__ */ new RegExp(arrayIndexSource)
+var maxArrayLength = 4294967295
+var arrayPathKeyOf = k =>
+	typeof k === "string" && arrayIndexMatcher.test(k) && +k < maxArrayLength ?
+		+k
+	:	k
+
 // ark/type/checkers.ts
+var transformedBy = ({ t }, data, ctx) =>
+	!t ? data
+	: t.c ? t(data, ctx)
+	: t(data)
 var holdingMorphs = (t, held) => {
 	for (const checker of held) {
 		t.e ??= checker.t?.e
@@ -502,7 +551,7 @@ var moreThan = (
 ) => check("min", description, data => data > rule)
 var minLength = (
 	rule,
-	description = rule === 1 ? "non-empty" : `at least length ${rule}`
+	description = rule === 1 ? "non-empty" : `at least ${rule} characters`
 ) => check("minLength", description, data => data.length >= rule)
 var divisor = (
 	rule,
@@ -608,8 +657,11 @@ var closedProps = (declared, description = "removed") => {
 var recordOf = value => {
 	const checker = (data, ctx) => {
 		if (!objectCheck.test(data)) return !failsAt(ctx, objectCheck, data)
-		for (const k of Object.keys(data))
-			if (failsValue(ctx, value, data, k, data[k])) return false
+		const isArray2 = Array.isArray(data)
+		for (const k of Object.keys(data)) {
+			const pathKey = isArray2 ? arrayPathKeyOf(k) : k
+			if (failsValue(ctx, value, data, pathKey, data[k])) return false
+		}
 		return true
 	}
 	checker.description = objectCheck.description
@@ -794,7 +846,20 @@ var freed = values => {
 }
 var readingValues = (t, held, withCtx) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	if (held.some(({ w }) => w)) t.e = applyMorphAt
 	return holdingMorphs(t, held)
+}
+var applyMorphAt = (ctx, checker, value, k) => {
+	ctx.path.push(k)
+	const passes =
+		(
+			transformsValid(ctx) &&
+			(checker.a ? checker.a(value, ctx) : checker(value))
+		) ?
+			(transformedInApply(ctx, transformedBy(checker, value, ctx)), true)
+		:	checker(value, ctx)
+	ctx.path.pop()
+	return !passes
 }
 var units = (
 	values,
@@ -1344,8 +1409,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("dihdgb0qumxg0", () =>
-					create1q5hta0h0lh5t(intersectionielnw11y5lwhc, "zokowg0r")
+				const validator0 = interned("j27pj9070cym7", () =>
+					create1q5hta0h0lh5t(intersectionielnw11y5lwhc, "12wu7wd0")
 				)
 				return validator0
 			})())
@@ -1354,8 +1419,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("1x3u6900kz0z2t", () =>
-					create1q5hta0h0lh5t(intersection128xenx0krshz5, "1p25wxc1")
+				const validator0 = interned("3szwik1gnqx9x", () =>
+					create1q5hta0h0lh5t(intersection128xenx0krshz5, "ixdf2s01")
 				)
 				return validator0
 			})())
@@ -1364,8 +1429,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("116rgl111vng2h", () =>
-					create1q5hta0h0lh5t(intersection1w95fmx179ztfg, "i3dt9i04")
+				const validator0 = interned("1l0po1w04w90hs", () =>
+					create1q5hta0h0lh5t(intersection1w95fmx179ztfg, "1b6rquc1")
 				)
 				return validator0
 			})())

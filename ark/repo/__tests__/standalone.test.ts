@@ -410,8 +410,66 @@ c must be a number`)
 				).summary
 			).snap(`name must be non-empty
 age must be an integer
-tags must be at most length 3
+tags must be at most 3 items
 nick must be a string or null`)
+		})
+
+		it("matches arktype's bound unit messages for strings, arrays, and custom units", async () => {
+			const T = type({
+				minStr: "string > 5",
+				maxOneStr: "string <= 1",
+				exactOneStr: "string == 1",
+				notEqOneStr: "string != 1",
+				nonEmptyStr: "string >= 1",
+				emptyStr: "string == 0",
+				minArr: "string[] >= 2",
+				maxOneArr: "string[] <= 1",
+				notEqOneArr: "string[] != 1",
+				tuple: ["string", "number"],
+				bareMin: type.schema({ minLength: 3 }),
+				customMinOne: type.string.atLeastLength({ rule: 1, unit: "byte" }),
+				customExactZero: type.string.exactlyLength({ rule: 0, unit: "byte" }),
+				custom: type.number.moreThan({ rule: 5, unit: "second" })
+			})
+			const bad = {
+				minStr: "abc",
+				maxOneStr: "ab",
+				exactOneStr: "ab",
+				notEqOneStr: "a",
+				nonEmptyStr: "",
+				emptyStr: "a",
+				minArr: ["a"],
+				maxOneArr: ["a", "b"],
+				notEqOneArr: ["a"],
+				tuple: ["a"],
+				bareMin: "ab",
+				customMinOne: "",
+				customExactZero: "a",
+				custom: 3
+			}
+			const expected = (T(bad) as type.errors).summary
+			attest(expected).snap(`minStr must be at least 6 characters
+maxOneStr must be at most 1 character
+exactOneStr must be exactly 1 character
+notEqOneStr must be other than 1 character
+nonEmptyStr must be non-empty
+emptyStr must be empty
+minArr must be at least 2 items
+maxOneArr must be at most 1 item
+notEqOneArr must be other than 1 item
+tuple must be exactly 2 items
+bareMin must be at least length 3
+customMinOne must be at least 1 byte
+customExactZero must be exactly 0 bytes
+custom must be more than 5 seconds`)
+			for (const options of [
+				{ optimize: "speed" as const },
+				{ optimize: "size" as const, shapes: true },
+				{ optimize: "size" as const, shapes: false }
+			]) {
+				const { T: Built } = await load({ T }, options)
+				attest((Built(bad) as type.errors).summary).equals(expected)
+			}
 		})
 
 		it("check data holding no case by the branches lacking the key", async () => {
@@ -978,7 +1036,7 @@ nick must be a string or null`)
 		]).snap([
 			"must be a URL string",
 			"must be a parsable date",
-			"a must be at least length 2\na must be empty"
+			"a must be at least 2 items\na must be empty"
 		])
 	})
 
@@ -2074,7 +2132,7 @@ age must be a number (was missing)`)
 		attest(errors.summary).equals((T(input) as type.errors).summary)
 		// a message is a sentence set apart from its path, unlike one written
 		// from what's expected
-		attest(errors.summary).snap(`a: 1 isn't at least length 2
+		attest(errors.summary).snap(`a: 1 isn't at least 2 characters
 b: string isn't a number
 c must be a number (was string)
 d must be a number, as written`)
@@ -2083,8 +2141,8 @@ d must be a number, as written`)
 				code: "minLength",
 				path: ["a"],
 				data: "x",
-				expected: "at least length 2",
-				message: "1 isn't at least length 2"
+				expected: "at least 2 characters",
+				message: "1 isn't at least 2 characters"
 			},
 			{
 				code: "domain",
@@ -2133,7 +2191,7 @@ d must be a number, as written`)
 		const errors = create(message)(input)
 		attest(errors.summary).equals((T(input) as type.errors).summary)
 		attest(errors.summary).snap(`domain: isn't a string (a number)
-length: isn't at least length 2 (1)
+length: isn't at least 2 characters (1)
 unit: isn't "x" ("y")
 proto: isn't a Date (Array)
 after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
@@ -2216,7 +2274,7 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 		]
 		attest(textOf(validators, cases)).equals(textOf(types, cases))
 		attest(textOf(validators, cases)).snap([
-			"email: Enter your email.\npassword must be at least length 8",
+			"email: Enter your email.\npassword must be at least 8 characters",
 			"Enter your login.",
 			"Enter a number below 3.",
 			"a: Enter text.",

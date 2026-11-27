@@ -13,11 +13,13 @@ import {
 	isResolutionFinal,
 	queueUnchecked,
 	reachesDefault,
+	sameBoundUnit,
 	type Alias,
 	type BaseNode,
 	type BaseRange,
 	type BaseRoot,
 	type BaseScope,
+	type BoundUnit,
 	type CaseContext,
 	type CaseDiscriminant,
 	type CaseKey,
@@ -56,7 +58,13 @@ import {
 	type setImplementationOf
 } from "../implement.ts"
 import { sortSiblings } from "../constraint.ts"
-import { intersectNodesRoot, intersectOrPipeNodes } from "../intersections.ts"
+import {
+	boundUnitOf,
+	hasCustomBoundUnit,
+	intersectNodesRoot,
+	intersectOrPipeNodes,
+	sameBoundUnits
+} from "../intersections.ts"
 
 export const unionImplementation: setImplementationOf<Union.Declaration> = {
 	sort: inner => {
@@ -929,7 +937,7 @@ export const intersectBranches = (
 				// will not yield any distinct intersection
 				continue
 			}
-			if (l[lIndex].equals(r[rIndex])) {
+			if (l[lIndex].equals(r[rIndex]) && sameBoundUnits(l[lIndex], r[rIndex])) {
 				// Combination of subtype and supertype cases
 				batchesByR[rIndex] = null
 				candidatesByR = {}
@@ -945,11 +953,18 @@ export const intersectBranches = (
 				// If the current l branch is a subtype of r, intersections
 				// with previous and remaining branches of r won't lead to
 				// distinct intersections.
-				batchesByR[rIndex]!.push(l[lIndex])
+				batchesByR[rIndex]!.push(
+					sameBoundUnits(branchIntersection, l[lIndex]) ?
+						l[lIndex]
+					:	branchIntersection
+				)
 				candidatesByR = {}
 				break
 			}
-			if (branchIntersection.equals(r[rIndex])) {
+			if (
+				branchIntersection.equals(r[rIndex]) &&
+				sameBoundUnits(branchIntersection, r[rIndex])
+			) {
 				// If the current r branch is a subtype of l, set its batch to
 				// null, removing any previous intersections and preventing any
 				// of its remaining intersections from being computed.
@@ -1120,16 +1135,19 @@ export const reduceBranches = ({
 		if (readsInputs && requireDisjointProps(branches[i], branches[j], inputOf))
 			return
 		if (branches[i].equals(branches[j])) {
-			// if one copy has meta and the other does not, keep the undescribed copy
+			// if one copy has meta and the other does not, keep the undescribed copy;
+			// otherwise prefer a copy carrying a custom bound unit
 			if (
 				!ordered &&
-				!hasNoMeta(branches[i].meta) &&
-				hasNoMeta(branches[j].meta)
+				((!hasNoMeta(branches[i].meta) && hasNoMeta(branches[j].meta)) ||
+					(hasNoMeta(branches[i].meta) === hasNoMeta(branches[j].meta) &&
+						!hasCustomBoundUnit(branches[i]) &&
+						hasCustomBoundUnit(branches[j])))
 			) {
 				uniquenessByIndex[i] = false
 				return
 			}
-			// if the two branches are equal, only "j" is marked as
+			// if the two branches are equal, only one is marked as
 			// redundant so at least one copy could still be included in
 			// the final set of branches.
 			uniquenessByIndex[j] = false
@@ -1554,7 +1572,8 @@ const mergePropGroup = (
 				if (
 					!match ||
 					!hashesMatch(prop, match) ||
-					!sameSymbolMeta(prop.meta, match.meta)
+					!sameSymbolMeta(prop.meta, match.meta) ||
+					!sameBoundUnits(prop, match)
 				) {
 					otherPropsMatch = false
 					break
@@ -1564,7 +1583,7 @@ const mergePropGroup = (
 			const rProp = rStruct.byKey[propKey]!
 			if (
 				!sameSymbolMeta(leadProp.meta, rProp.meta) ||
-				hashesMatch(leadProp, rProp)
+				(hashesMatch(leadProp, rProp) && sameBoundUnits(leadProp, rProp))
 			)
 				continue
 			matchedIndices.push(idx)
@@ -1658,11 +1677,19 @@ const mergeRangeBranches = (
 			)
 	)
 	if (!sameMeta(bounds)) return
+	const rangeBounds = bounds.filter(bound => !bound.is("unit"))
+	const unit =
+		family.lower === "after" ? undefined : boundUnitOf(rangeBounds[0])
+	if (
+		family.lower !== "after" &&
+		!rangeBounds.every(bound => sameBoundUnit(boundUnitOf(bound), unit))
+	)
+		return
 	const inner: dict = { ...l.inner, meta: l.meta }
 	for (const kind of family.kinds) delete inner[kind]
 	return l.$.node(
 		"intersection",
-		Object.assign(inner, rangeInner(range, family, bounds[0].meta, l.$))
+		Object.assign(inner, rangeInner(range, family, bounds[0].meta, unit, l.$))
 	) as Union.ChildNode
 }
 
@@ -1803,6 +1830,7 @@ const rangeInner = (
 	range: Range,
 	family: RangeFamily,
 	meta: ArkEnv.meta,
+	unit: BoundUnit | undefined,
 	$: BaseScope
 ): object => {
 	const ruleOf = (value: number) =>
@@ -1811,7 +1839,8 @@ const rangeInner = (
 		$.node(kind, {
 			...constraintInputOf(kind, {
 				rule: ruleOf(limit.value),
-				exclusive: limit.exclusive
+				exclusive: limit.exclusive,
+				...(unit ? { unit } : {})
 			} as never),
 			meta
 		})
@@ -1824,7 +1853,11 @@ const rangeInner = (
 		...(range.upper && { [family.upper]: bound(family.upper, range.upper) }),
 		...(range.excluded.length && {
 			[family.excluded]: range.excluded.map(value =>
-				$.node(family.excluded, { rule: ruleOf(value), meta })
+				$.node(family.excluded, {
+					rule: ruleOf(value),
+					...(unit ? { unit } : {}),
+					meta
+				})
 			)
 		})
 	}
@@ -2087,7 +2120,8 @@ const branchWithRange = (
 	branch: Intersection.Node,
 	range: Range,
 	family: RangeFamily,
-	boundMeta: ArkEnv.meta
+	boundMeta: ArkEnv.meta,
+	unit: BoundUnit | undefined
 ): Union.ChildNode | undefined => {
 	if (
 		family.lower === "minLength" &&
@@ -2108,7 +2142,7 @@ const branchWithRange = (
 	}
 	const inner: dict = { ...branch.inner }
 	for (const kind of family.kinds) delete inner[kind]
-	Object.assign(inner, rangeInner(range, family, boundMeta, branch.$))
+	Object.assign(inner, rangeInner(range, family, boundMeta, unit, branch.$))
 	const reduced = $ark.sets!.reduce("intersection", inner, branch.$)
 	if (reduced instanceof Disjoint) return
 	return branch.$.node("intersection", {
@@ -2136,19 +2170,36 @@ const splitRangeBranch = (
 		family.kinds.includes(child.kind as RangeKind)
 	)
 	const boundMeta = sameMeta(bounds) ? (bounds[0]?.meta ?? {}) : {}
+	const boundUnit =
+		family.lower === "after" || !bounds.length ? undefined
+		: bounds.every(b => sameBoundUnit(boundUnitOf(b), boundUnitOf(bounds[0]))) ?
+			boundUnitOf(bounds[0])
+		:	undefined
 	for (const r of rNode.branches) {
 		if (!branch.overlaps(r)) continue
 		const rRange = rRangeOf(r, family)
 		if (!rRange) continue
 		const inRange = intersectRange(lRange, rRange, family)
 		if (!inRange) continue
-		const inNode = branchWithRange(branch, inRange, family, boundMeta)
+		const inNode = branchWithRange(
+			branch,
+			inRange,
+			family,
+			boundMeta,
+			boundUnit
+		)
 		if (!inNode || hashesMatch(inNode, branch) || !inNode.extends(rNode))
 			continue
 		const outRanges = subtractRange(lRange, rRange, family)
 		const outNodes: Union.ChildNode[] = []
 		for (const outRange of outRanges) {
-			const outNode = branchWithRange(branch, outRange, family, boundMeta)
+			const outNode = branchWithRange(
+				branch,
+				outRange,
+				family,
+				boundMeta,
+				boundUnit
+			)
 			if (outNode && !hashesMatch(outNode, branch)) outNodes.push(outNode)
 		}
 		if (!outNodes.length) continue
@@ -2323,16 +2374,22 @@ const splitPropBranch = (
 	}
 }
 
-// a merge keeps a node only if its counterpart has the same meta
+// a merge keeps a node only if its counterpart has the same meta and bound units
 const nodesEqual = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
 	arrayEquals(l, r, {
-		isEqual: (a, b) => hashesMatch(a, b) && sameSymbolMeta(a.meta, b.meta)
+		isEqual: (a, b) =>
+			hashesMatch(a, b) &&
+			sameSymbolMeta(a.meta, b.meta) &&
+			sameBoundUnits(a, b)
 	})
 
 const sequencesMatch = (
 	l: Sequence.Node | undefined,
 	r: Sequence.Node | undefined
-) => (l && r ? hashesMatch(l, r) && sameSymbolMeta(l.meta, r.meta) : l === r)
+) =>
+	l && r ?
+		hashesMatch(l, r) && sameSymbolMeta(l.meta, r.meta) && sameBoundUnits(l, r)
+	:	l === r
 
 const sameSymbolMeta = (l: object, r: object): boolean => {
 	const lSyms = Object.getOwnPropertySymbols(l)

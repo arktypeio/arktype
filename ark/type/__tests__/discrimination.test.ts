@@ -1002,7 +1002,7 @@ contextualize(() => {
 		it("reaches a default case at its own value", () => {
 			const T = $.type("'a' | 'b' | 'c'").or("string > 5")
 			attest(T("d").toString()).snap(
-				'must be "a", "b", "c" or at least length 6'
+				'must be "a", "b", "c" or at least 6 characters'
 			)
 		})
 
@@ -1148,7 +1148,7 @@ contextualize(() => {
 				"w?": "string"
 			})
 			attest(T({ v: { k: "c" } }).toString()).snap(
-				'v.k must be "a", "b" or at least length 5'
+				'v.k must be "a", "b" or at least 5 characters'
 			)
 		})
 

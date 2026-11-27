@@ -10,6 +10,7 @@ import {
 	type BuiltinObjectKind,
 	type Constructor
 } from "@ark/util"
+import { boundUnits, type BoundUnit } from "../refinements/unit.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
@@ -128,6 +129,9 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	get brief(): string {
 		return this.description
 	}
+
+	override readonly boundUnit: BoundUnit | undefined =
+		this.isArrayProto ? boundUnits.item : undefined
 }
 
 export const Proto = {

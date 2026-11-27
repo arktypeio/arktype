@@ -525,9 +525,13 @@ must be a digit`)
 		const out = T({ s: "b" }) as ArkErrors
 		attest(out.summary).snap(`s must be own
 s must be matched by ^a
-s must be at least length 5`)
+s must be at least 5 characters`)
 		attest(flatMessagesByPath(out)).snap({
-			s: ["must be own", "must be matched by ^a", "must be at least length 5"]
+			s: [
+				"must be own",
+				"must be matched by ^a",
+				"must be at least 5 characters"
+			]
 		})
 	})
 

@@ -82,7 +82,7 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			maxLength: 1
 		})
 		attest(T([0])).equals([0])
-		attest(T([0, 1]).toString()).snap("must be at most length 1")
+		attest(T([0, 1]).toString()).snap("must be at most 1 item")
 		const Empty = type({ "+": "reject" }).and("number[]")
 		attest(Empty.json).snap({
 			undeclared: "reject",
@@ -121,11 +121,11 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			attest(T([0]) as unknown).equals([0])
 			attest(T([0, 1, 0])).equals([0, 1, 0])
 			attest(T([0, 1]).toString()).equals(
-				"[1] must be 0 or must be exactly length 1"
+				"[1] must be 0 or must be exactly 1 item"
 			)
 			// each length still rejects a key that isn't an element's
 			attest(T(Object.assign([0], { extra: 1 })).toString()).equals(
-				"must be at least length 2 or extra must be removed"
+				"must be at least 2 items or extra must be removed"
 			)
 			// and holds a prop both declare
 			const WithProp = $.type({ a: "string" })

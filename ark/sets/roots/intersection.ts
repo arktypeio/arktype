@@ -19,7 +19,11 @@ import {
 	defineRightwardIntersections,
 	type setImplementationOf
 } from "../implement.ts"
-import { intersectOrPipeNodes, listsKeysAlike } from "../intersections.ts"
+import {
+	intersectOrPipeNodes,
+	listsKeysAlike,
+	sameBoundUnits
+} from "../intersections.ts"
 
 export const intersection: setImplementationOf<Intersection.Declaration> = {
 	// predicates keep their order, since each narrows the input of the next
@@ -96,7 +100,11 @@ export const constrainIntersection = (
 	if (result instanceof Disjoint) return result
 	return (
 		$ark.sets!.disjointOf?.(result) ??
-		(l.equals(result) && listsKeysAlike(l, result) ? l : result)
+		((
+			l.equals(result) && listsKeysAlike(l, result) && sameBoundUnits(l, result)
+		) ?
+			l
+		:	result)
 	)
 }
 

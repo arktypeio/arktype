@@ -13,6 +13,8 @@ import type { nodeOfKind } from "../kinds.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNodeDeclaration, BaseNodeInput } from "../shared/declare.ts"
 import type { RangeKind } from "./kinds.ts"
+import type { BoundUnitInput } from "./unit.ts"
+export * from "./unit.ts"
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind
@@ -121,6 +123,7 @@ export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 export interface UnknownExpandedRangeSchema extends BaseNodeInput {
 	readonly rule: LimitSchemaValue
 	readonly exclusive?: boolean
+	readonly unit?: BoundUnitInput
 }
 
 export type UnknownRangeSchema = LimitSchemaValue | UnknownExpandedRangeSchema
@@ -146,6 +149,7 @@ export type InclusiveDateRangeSchema =
 export interface ExclusiveNormalizedNumericRangeSchema extends BaseNodeInput {
 	rule: number
 	exclusive?: true
+	unit?: BoundUnitInput
 }
 
 export type ExclusiveNumericRangeSchema =
@@ -155,6 +159,7 @@ export type ExclusiveNumericRangeSchema =
 export interface InclusiveNormalizedNumericRangeSchema extends BaseNodeInput {
 	rule: number
 	exclusive?: false
+	unit?: BoundUnitInput
 }
 
 export type InclusiveNumericRangeSchema =

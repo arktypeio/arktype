@@ -141,9 +141,9 @@ contextualize(() => {
 			}
 		}
 		attest(textOf(type({ y: { z: "string >= 2" } }), { y: { z: "a" } })).snap({
-			summary: "y.z must be at least length 2",
-			errors: ["must be at least length 2"],
-			issues: ["must be at least length 2"]
+			summary: "y.z must be at least 2 characters",
+			errors: ["must be at least 2 characters"],
+			issues: ["must be at least 2 characters"]
 		})
 		// a union's message writes its branches' paths from its own
 		attest(
@@ -948,11 +948,11 @@ contextualize(() => {
 					{
 						code: "minLength",
 						path: ["password"],
-						expected: "at least length 12",
-						message: "must be at least length 12"
+						expected: "at least 12 characters",
+						message: "must be at least 12 characters"
 					}
 				],
-				message: "password must be at least length 12"
+				message: "password must be at least 12 characters"
 			})
 			attest(parsed.issues).equals(directJson)
 			attest(JSON.stringify(result.issues)).equals(JSON.stringify(direct))

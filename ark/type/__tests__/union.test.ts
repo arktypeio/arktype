@@ -95,7 +95,7 @@ s must be a string or undefined`)
 			"[0] must be a number or [1] must be a string"
 		)
 		attest(type(["number", "number"]).or(["string"])([1]).toString()).snap(
-			"must be exactly length 2 or [0] must be a string"
+			"must be exactly 2 items or [0] must be a string"
 		)
 	})
 

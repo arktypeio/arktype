@@ -222,7 +222,7 @@ minLength non-empty: Name is required.
 domain a string: Nickname is required.
 discriminant boolean: Agree to continue.
 discriminant "free" or "paid": Pick a plan.
-maxLength at most length 3: Note is too long.
+maxLength at most 3 characters: Note is too long.
 minLength non-empty: must be non-empty
 name: Name is required.
 nickname: Nickname is required.
@@ -991,14 +991,14 @@ handlers.Form7({ name7: "a", count7: -1, note7: 1 })
 			bundle(together, smallest)
 		])
 		attest(behaviorOf(colocated)).snap(`{"name":"abc"}
-name must be at least length 3
+name must be at least 3 characters
 age must be non-negative
 {"title":"t","author":{"name":"abc"},"tags":[]}
 title must be a string
-author.name must be at least length 3
+author.name must be at least 3 characters
 tags[0] must be a string
 {"name7":"abc","count7":0}
-name7 must be at least length 3
+name7 must be at least 3 characters
 count7 must be non-negative
 note7 must be a string
 `)

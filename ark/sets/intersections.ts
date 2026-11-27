@@ -1,15 +1,18 @@
 import {
 	$ark,
 	Disjoint,
+	isCustomBoundUnit,
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
 	reachesDefault,
 	rootKinds,
+	sameBoundUnit,
 	uncheckedDiscards,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
+	type BoundUnit,
 	type InternalNodeIntersection,
 	type IntersectionContext,
 	type Morph,
@@ -93,7 +96,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 
 		const isPureIntersection = !ctx.pipe || (!l.alters && !r.alters)
 
-		if (isPureIntersection && l.equals(r)) return l
+		if (isPureIntersection && l.equals(r) && sameBoundUnits(l, r)) return l
 
 		let result =
 			isPureIntersection ?
@@ -108,9 +111,19 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 			// returning the original reference
 			result =
 				$ark.sets!.disjointOf?.(result) ??
-				(l.equals(result) && listsKeysAlike(l, result) ? l
-				: r.equals(result) && listsKeysAlike(r, result) ? r
-				: result)
+				((
+					l.equals(result) &&
+					listsKeysAlike(l, result) &&
+					sameBoundUnits(l, result)
+				) ?
+					l
+				: (
+					r.equals(result) &&
+					listsKeysAlike(r, result) &&
+					sameBoundUnits(r, result)
+				) ?
+					r
+				:	result)
 		}
 
 		if (!cacheByR) cacheByL.set(l, (cacheByR = new WeakMap()))
@@ -147,6 +160,20 @@ export const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
 			(prop, i) => prop.key !== (r as Structure.Node).inOrder[i].key
 		) &&
 		l.children.every((child, i) => listsKeysAlike(child, r.children[i])))
+
+export const boundUnitOf = (node: BaseNode): BoundUnit | undefined =>
+	node.kind !== "unit" ? (node.inner as { unit?: BoundUnit }).unit : undefined
+
+export const hasCustomBoundUnit = (node: BaseNode): boolean =>
+	isCustomBoundUnit(boundUnitOf(node)) || node.children.some(hasCustomBoundUnit)
+
+// equal nodes can carry different bound units, since unit is unserialized
+export const sameBoundUnits = (l: BaseNode, r: BaseNode): boolean =>
+	l === r ||
+	(l.kind !== r.kind || l.children.length !== r.children.length ?
+		!hasCustomBoundUnit(l) && !hasCustomBoundUnit(r)
+	:	sameBoundUnit(boundUnitOf(l), boundUnitOf(r)) &&
+		l.children.every((child, i) => sameBoundUnits(child, r.children[i])))
 
 const _intersectNodes = (
 	l: BaseNode,

@@ -6,6 +6,7 @@ import {
 	throwParseError,
 	type Domain as _Domain
 } from "@ark/util"
+import { boundUnits, type BoundUnit } from "../refinements/unit.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
@@ -142,6 +143,9 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	get brief(): string {
 		return domainDescriptions[this.domain]
 	}
+
+	override readonly boundUnit: BoundUnit | undefined =
+		this.domain === "string" ? boundUnits.character : undefined
 }
 
 export const Domain = {

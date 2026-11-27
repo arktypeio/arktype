@@ -2769,7 +2769,7 @@ if (out instanceof type.errors) {
 			attest(run(written))
 				.snap(`email: must be an email address|["first-name"]: must be a string|items[0].id: must be even|items[1].id: must be a number
 email: pattern,minLength|["first-name"]: domain|items[0].id: divisor|items[1].id: domain
-{"email":["must be an email address","must be at least length 11"],"[\\"first-name\\"]":["must be a string"],"items[0].id":["must be even"],"items[1].id":["must be a number"]}
+{"email":["must be an email address","must be at least 11 characters"],"[\\"first-name\\"]":["must be a string"],"items[0].id":["must be even"],"items[1].id":["must be a number"]}
 : 5|email: 2|["first-name"]: 1|items: 2|items[0]: 1|items[0].id: 1|items[1]: 1|items[1].id: 1
 `)
 			// the same as arktype reads its own errors
@@ -2960,8 +2960,8 @@ console.log(JSON.stringify(Login["~standard"].validate({ password: "long-enough-
 			attest(defaultPruned).equals(unpruned)
 			attest(smallestPruned).equals(unpruned)
 			attest(defaultPruned)
-				.snap(`{"issues":[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}],"message":"password must be at least length 12\\namount must be a number"}
-[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]
+				.snap(`{"issues":[{"code":"minLength","path":["password"],"expected":"at least 12 characters","message":"must be at least 12 characters"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}],"message":"password must be at least 12 characters\\namount must be a number"}
+[{"code":"minLength","path":["password"],"expected":"at least 12 characters","message":"must be at least 12 characters"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]
 true hunter2 true
 {"value":{"password":"long-enough-pw","amount":1}}
 `)

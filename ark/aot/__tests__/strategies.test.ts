@@ -104,7 +104,7 @@ console.log(JSON.stringify([
 }
 
 // as a production build writes each message
-const appOutput = `[{"amount":5,"currency":"USD"},"amount must be positive",{"id":"a","total":{"amount":5,"currency":"USD"}},"id must be a string\\ntotal.currency must be exactly length 3"]
+const appOutput = `[{"amount":5,"currency":"USD"},"amount must be positive",{"id":"a","total":{"amount":5,"currency":"USD"}},"id must be a string\\ntotal.currency must be exactly 3 characters"]
 `
 
 const unitKind = /^(?:intersection|create|apply)/

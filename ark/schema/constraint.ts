@@ -1,6 +1,7 @@
 import {
 	arkKind,
 	capitalize,
+	isKeyOf,
 	throwParseError,
 	tryParseDate,
 	type array,
@@ -21,6 +22,7 @@ import type { MinLength } from "./refinements/minLength.ts"
 import type { NotEqual } from "./refinements/notEqual.ts"
 import type { NotEqualLength } from "./refinements/notEqualLength.ts"
 import type { Pattern } from "./refinements/pattern.ts"
+import { boundUnitKeys, normalizeBoundUnit } from "./refinements/unit.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -151,6 +153,8 @@ export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
 		if (exclusive) limit.setTime(limit.valueOf() + (kind === "after" ? 1 : -1))
 		return { ...input, rule: limit } as never
 	}
+	if (input.unit !== undefined && isKeyOf(kind, boundUnitKeys))
+		input.unit = normalizeBoundUnit(input.unit as never)
 	if (kind === "notEqual" && typeof input.rule === "string")
 		return { ...input, rule: tryParseDate(input.rule, true) } as never
 	if (kind === "pattern" && !input.flags) delete input.flags

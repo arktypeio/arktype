@@ -861,7 +861,7 @@ contextualize(() => {
 				type({
 					items: "string[] >= 2 = ['onlyOne']"
 				})
-			).throws.snap("ParseError: Default for items must be at least length 2")
+			).throws.snap("ParseError: Default for items must be at least 2 items")
 
 			attest(() =>
 				type({

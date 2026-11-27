@@ -7,6 +7,7 @@ import {
 	isArray,
 	isDate,
 	isEmptyObject,
+	isKeyOf,
 	nameOf,
 	printable,
 	throwInternalError,
@@ -26,7 +27,13 @@ import {
 	type nodeOfKind
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
+import {
+	boundUnitKeys,
+	normalizeBoundUnit,
+	type BoundUnit
+} from "./refinements/unit.ts"
 import type { AliasNode } from "./roots/alias.ts"
+import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -161,7 +168,10 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		if (v === undefined && !keyImpl.keepUndef) continue
 		// an empty list of children is none, except a union's branches
 		if (keyImpl.child && isArray(v) && !v.length && k !== "branches") continue
-		inner[k] = keyImpl.structural ? deferAliases(v, ctx.$) : v
+		inner[k] =
+			keyImpl.structural ? deferAliases(v, ctx.$)
+			: k === "unit" && ctx.kind !== "unit" ? normalizeBoundUnit(v as never)
+			: v
 	}
 
 	let unchecked = false
@@ -186,6 +196,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
+	if (ctx.kind === "intersection") attachBoundUnits(inner)
+
 	return createNode({
 		id: ctx.id,
 		alias: ctx.alias,
@@ -196,6 +208,35 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		unchecked
 	})
 }
+
+// bounds inside an intersection inherit their basis's unit (e.g. "character" for string, "item" for Array)
+const attachBoundUnits = (inner: dict): void => {
+	const basis = (inner.proto ?? inner.domain) as
+		| nodeOfKind<Intersection.BasisKind>
+		| undefined
+	const unit = basis?.boundUnit
+	if (!unit) return
+	for (const k in inner) {
+		if (!isKeyOf(k, boundUnitKeys)) continue
+		const v = inner[k] as listable<BaseNode>
+		if (isArray(v)) {
+			let updated: BaseNode[] | undefined
+			for (let i = 0; i < v.length; i++) {
+				const node = v[i]
+				if ((node.inner as { unit?: BoundUnit }).unit !== undefined) continue
+				updated ??= v.slice()
+				updated[i] = withBoundUnit(node, unit)
+			}
+			if (updated) inner[k] = updated
+		} else if ((v.inner as { unit?: BoundUnit }).unit === undefined)
+			inner[k] = withBoundUnit(v, unit)
+	}
+}
+
+const withBoundUnit = (node: BaseNode, unit: BoundUnit): BaseNode =>
+	node.$.node(node.kind, { ...node.inner, unit, meta: node.meta } as never, {
+		reduced: true
+	})
 
 // children after other values, in order of precedence
 export const compareInnerKeys = (l: string, r: string): number =>
@@ -333,8 +374,11 @@ const nodeKeyOf = (
 			impl.keys[k].child === true ?
 				isArray(v) ? `[${idsOf(v as BaseNode[], $)}]`
 				:	idOf(v as BaseNode, $)
-			: k === "unit" ? literalKeyOf(v)
-			: valueKeyOf(v, $)
+			: k === "unit" ?
+				kind === "unit" ?
+					literalKeyOf(v)
+				:	`${JSON.stringify((v as BoundUnit).singular)}/${JSON.stringify((v as BoundUnit).plural)}`
+			:	valueKeyOf(v, $)
 		}`
 	}
 	// an alias inlines a reference that has resolved when it's written
