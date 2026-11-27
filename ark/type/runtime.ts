@@ -163,6 +163,7 @@ export {
 	writeMessage,
 	writeNotEqualActual,
 	writeProtoActual,
+	writeRangeActual,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
 	writeUnitActual,

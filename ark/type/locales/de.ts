@@ -214,12 +214,27 @@ const boundMessage: Locale.MessageWriter<"min" | "max"> = (e, locale) =>
 		`darf nicht ${e.code === "min" ? "negativ" : "positiv"} sein${was(e)}`
 	:	mustBe(bound(e, locale), e)
 
+const boundValue = (
+	value: number | Date,
+	e: { readonly code: string; readonly unit?: BoundUnit },
+	locale: Locale.Info
+): string =>
+	typeof value === "number" && e.unit ?
+		count(value, locale, e.unit)
+	:	print(value, locale)
+
+const boundWriters = {
+	expected: bound,
+	actual: boundValue,
+	message: boundMessage
+}
+
 const dateWriters = (relation: string) => {
 	const expected: Locale.ExpectedWriter<"before" | "after"> = (e, locale) =>
 		`${relation} ${theDate(e.rule, locale)}`
 	return {
 		expected,
-		actual: (data, e, locale) => print(data, locale),
+		actual: boundValue,
 		message: (e, locale) => mustBe(expected(e, locale), e)
 	} satisfies Locale.CodeWriters<"before" | "after">
 }
@@ -467,8 +482,8 @@ export const de: Locale.Complete = {
 		actual: (data, e, locale) => actualAtPathOf(e) ?? printKind(data, locale),
 		message: e => (e.errors.length ? e.expected : mustBe(e.expected, e))
 	},
-	min: { expected: bound, message: boundMessage },
-	max: { expected: bound, message: boundMessage },
+	min: boundWriters,
+	max: boundWriters,
 	minLength: lengthWriters,
 	maxLength: lengthWriters,
 	exactLength: lengthWriters,
@@ -486,12 +501,8 @@ export const de: Locale.Complete = {
 	notEqual: {
 		// "ungleich" takes a dative
 		expected: (e, locale) =>
-			`ungleich ${
-				typeof e.rule === "number" && e.unit ?
-					count(e.rule, locale, e.unit)
-				:	print(e.rule, locale).replace(/^der /, "dem ")
-			}`,
-		actual: (data, e, locale) => print(data, locale),
+			`ungleich ${boundValue(e.rule, e, locale).replace(/^der /, "dem ")}`,
+		actual: boundValue,
 		message: e => mustBe(e.expected, e)
 	},
 	notEqualLength: {

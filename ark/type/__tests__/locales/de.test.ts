@@ -680,5 +680,37 @@ next fehlt (muss ein Wert gemäß der Beschreibung „the next node“ sein)`
 			"darf nicht 2 Bytes lang sein",
 			"muss mindestens 2 Einträge lang sein"
 		])
+
+		const DescribedMin = type.number
+			.atLeast({ rule: 5, unit: sekunde })
+			.configure({
+				description: "ein langer Timeout",
+				message: ctx => `${ctx.actual} ist nicht ${ctx.expected}`
+			})
+		const DescribedMax = type.number
+			.atMost({ rule: 5, unit: sekunde })
+			.configure({
+				description: "ein kurzer Timeout",
+				message: ctx => `${ctx.actual} ist nicht ${ctx.expected}`
+			})
+		const DescribedNot1 = type.number
+			.lessThan({ rule: 1, unit: sekunde })
+			.or(type.number.moreThan({ rule: 1, unit: sekunde }))
+			.configure({
+				description: "nicht eine Sekunde",
+				message: ctx => `${ctx.actual} ist nicht ${ctx.expected}`
+			})
+		attest((DescribedMin(1) as ArkErrors).summaryIn(de)).snap(
+			"1 Sekunde ist nicht ein Wert gemäß der Beschreibung „ein langer Timeout“"
+		)
+		attest((DescribedMin(1.5) as ArkErrors).summaryIn(de)).snap(
+			"1,5 Sekunden ist nicht ein Wert gemäß der Beschreibung „ein langer Timeout“"
+		)
+		attest((DescribedMax(10) as ArkErrors).summaryIn(de)).snap(
+			"10 Sekunden ist nicht ein Wert gemäß der Beschreibung „ein kurzer Timeout“"
+		)
+		attest((DescribedNot1(1) as ArkErrors).summaryIn(de)).snap(
+			"1 Sekunde ist nicht ein Wert gemäß der Beschreibung „nicht eine Sekunde“"
+		)
 	})
 })

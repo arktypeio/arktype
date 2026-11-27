@@ -92,8 +92,23 @@ export const writeUnitActual: ActualWriter<"unit"> = data =>
 		describeCollapsibleDate(data)
 	:	printKind(data)
 
-export const writeNotEqualActual: ActualWriter<"notEqual"> = data =>
-	data instanceof Date ? describeCollapsibleDate(data) : printKind(data)
+// text replacing a bound's, like a description, doesn't say its unit
+export const writeRangeActual: ActualWriter<"min" | "max"> = (data, e) =>
+	(
+		(e.meta?.description !== undefined || e.meta?.expected !== undefined) &&
+		e.unit
+	) ?
+		`${data} ${data === 1 ? e.unit.singular : e.unit.plural}`
+	:	printKind(data)
+
+export const writeNotEqualActual: ActualWriter<"notEqual"> = (data, e) =>
+	data instanceof Date ? describeCollapsibleDate(data)
+	: (
+		(e.meta?.description !== undefined || e.meta?.expected !== undefined) &&
+		e.unit
+	) ?
+		`${data} ${data === 1 ? e.unit.singular : e.unit.plural}`
+	:	printKind(data)
 
 export const writeDomainActual: ActualWriter<"domain"> = data =>
 	typeof data === "number" && !Number.isFinite(data) ?

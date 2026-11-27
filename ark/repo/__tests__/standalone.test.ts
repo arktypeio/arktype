@@ -4068,4 +4068,48 @@ export default shared`).js
 			attest(keepOut).equals(KeepInherited(new FrozenProto()))
 		}
 	})
+
+	it("formats unit-aware actual for min, max, and notEqual in standalone configured writers", async () => {
+		const message = standIn(
+			(ctx: MessageContext) => `${ctx.actual} isn't ${ctx.expected}`,
+			"message"
+		)
+		const T = type({
+			min: type.number
+				.atLeast({ rule: 5, unit: "second" })
+				.describe("a long timeout")
+				.configure({ message }),
+			max: type.number
+				.atMost({ rule: 5, unit: "second" })
+				.describe("a short timeout")
+				.configure({ message }),
+			notEqual: type.number
+				.lessThan({ rule: 1, unit: "second" })
+				.or(type.number.moreThan({ rule: 1, unit: "second" }))
+				.describe("not one second")
+				.configure({ message }),
+			plain: type.number
+				.atLeast({ rule: 5, unit: "second" })
+				.configure({ message })
+		})
+		const input = { min: 1, max: 10, notEqual: 1, plain: 2 }
+		const expectedSummary = (T(input) as type.errors).summary
+		for (const optimize of ["speed", "size"] as const) {
+			const { T: create } = await load(
+				{
+					T: {
+						type: T,
+						params: [{ kind: "function", label: "`message`", value: message }]
+					}
+				},
+				{ optimize }
+			)
+			const errors = create(message)(input)
+			attest(errors.summary).equals(expectedSummary)
+			attest(errors.summary).snap(`min: 1 second isn't a long timeout
+max: 10 seconds isn't a short timeout
+notEqual: 1 second isn't not one second
+plain: 2 isn't at least 5 seconds`)
+		}
+	})
 })

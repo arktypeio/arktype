@@ -1192,6 +1192,27 @@ contextualize(() => {
 			const Pair = type("string[] == 2").configure({ expected: "a pair" })
 			const pairErr = Pair(["a"]) as type.errors
 			attest(pairErr.issues[0].actual).snap("1 item")
+
+			const LongTimeout = type.number
+				.atLeast({ rule: 5, unit: "second" })
+				.describe("a long timeout")
+			attest((LongTimeout(1) as type.errors).issues[0].actual).snap("1 second")
+			attest((LongTimeout(2) as type.errors).issues[0].actual).snap("2 seconds")
+			const ShortTimeout = type.number
+				.atMost({ rule: 5, unit: "second" })
+				.configure({ expected: "a short timeout" })
+			attest((ShortTimeout(10) as type.errors).issues[0].actual).snap(
+				"10 seconds"
+			)
+			const NotOneSecond = type.number
+				.lessThan({ rule: 1, unit: "second" })
+				.or(type.number.moreThan({ rule: 1, unit: "second" }))
+				.describe("not one second")
+			attest((NotOneSecond(1) as type.errors).issues[0].actual).snap("1 second")
+
+			// without replacing text, actual stays the bare value
+			const PlainMin = type.number.atLeast({ rule: 5, unit: "second" })
+			attest((PlainMin(1) as type.errors).issues[0].actual).snap("1")
 		})
 
 		it("preserves custom units across chained constraints, unions, and exclusions", () => {
