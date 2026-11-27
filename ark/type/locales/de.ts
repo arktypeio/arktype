@@ -4,9 +4,11 @@ import {
 	describeCause,
 	describeMissing,
 	groupByPath,
+	isCustomBoundUnit,
 	labelOf,
 	printedActualOf,
-	writeKeywordExpected
+	writeKeywordExpected,
+	type BoundUnit
 } from "@ark/schema/i18n"
 import {
 	domainOf,
@@ -110,23 +112,30 @@ const mustBe = (expected: string, e: { readonly actual: string }) =>
 // what a missing key or discriminant was
 const absent = "nicht vorhanden"
 
+const count = (n: number, locale: Locale.Info, unit?: BoundUnit) =>
+	unit ?
+		`${locale.number(n)} ${locale.plural(n) === "one" ? unit.singular : unit.plural}`
+	:	locale.number(n)
+
 // dative after "mit", accusative after "enthält"
 const elements = (n: number, locale: Locale.Info, dative?: true) =>
-	`${locale.number(n)} ${
-		locale.plural(n) === "one" ? "Element"
-		: dative ? "Elementen"
-		: "Elemente"
-	}`
+	count(n, locale, {
+		singular: "Element",
+		plural: dative ? "Elementen" : "Elemente"
+	})
 
-const length = (
-	n: number,
-	data: string | readonly unknown[],
-	locale: Locale.Info,
-	bound = ""
-) =>
-	typeof data === "string" ?
-		`${bound}${locale.number(n)} Zeichen lang`
-	:	`ein Array mit ${bound}${elements(n, locale, true)}`
+type LengthTarget = {
+	readonly data: string | readonly unknown[]
+	readonly unit?: BoundUnit
+}
+
+const hasLengthUnit = (e: LengthTarget) =>
+	isCustomBoundUnit(e.unit) || typeof e.data === "string"
+
+const length = (n: number, e: LengthTarget, locale: Locale.Info, bound = "") =>
+	isCustomBoundUnit(e.unit) ? `${bound}${count(n, locale, e.unit)} lang`
+	: typeof e.data === "string" ? `${bound}${locale.number(n)} Zeichen lang`
+	: `ein Array mit ${bound}${elements(n, locale, true)}`
 
 type LengthCode = "minLength" | "maxLength" | "exactLength"
 
@@ -138,23 +147,25 @@ const lengthBounds = {
 
 // only a maxLength or exactLength can have a rule of 0
 const lengthExpected: Locale.ExpectedWriter<LengthCode> = (e, locale) =>
-	e.rule === 0 ?
+	e.rule === 0 && !isCustomBoundUnit(e.unit) ?
 		typeof e.data === "string" ?
 			"leer"
 		:	"ein leeres Array"
-	:	length(e.rule, e.data, locale, `${lengthBounds[e.code]} `)
+	:	length(e.rule, e, locale, `${lengthBounds[e.code]} `)
 
 // an empty value is described by expected text alone if it is too short
 const lengthActual: Locale.ActualWriter<LengthCode> = (data, e, locale) =>
-	data.length ? length(data.length, data, locale)
-	: e.code === "minLength" ? ""
+	!data.length && e.code === "minLength" ? ""
+	: data.length || isCustomBoundUnit(e.unit) ? length(data.length, e, locale)
 	: "leer"
 
 // a value that must be nonempty is negated, and a nonempty array is counted by what it contains
 const lengthMessage: Locale.MessageWriter<LengthCode> = (e, locale) => {
-	if (e.code === "minLength" && e.rule === 1)
+	const custom = isCustomBoundUnit(e.unit)
+	if (!custom && e.code === "minLength" && e.rule === 1)
 		return `darf nicht leer sein${was(e)}`
-	if (typeof e.data === "string") return mustBe(lengthExpected(e, locale), e)
+	if (custom || typeof e.data === "string")
+		return mustBe(lengthExpected(e, locale), e)
 	const rule =
 		e.rule === 0 ?
 			"muss leer sein"
@@ -184,17 +195,22 @@ const subjectOf = (
 }
 
 const bound: Locale.ExpectedWriter<"min" | "max"> = (e, locale) =>
-	e.rule === 0 && e.exclusive ?
+	e.rule === 0 && e.exclusive && !e.unit ?
 		e.code === "min" ?
 			"positiv"
 		:	"negativ"
-	: e.code === "min" ?
-		`${e.exclusive ? "größer als" : "mindestens"} ${locale.number(e.rule)}`
-	:	`${e.exclusive ? "kleiner als" : "höchstens"} ${locale.number(e.rule)}`
+	:	`${
+			e.code === "min" ?
+				e.exclusive ?
+					"größer als"
+				:	"mindestens"
+			: e.exclusive ? "kleiner als"
+			: "höchstens"
+		} ${count(e.rule, locale, e.unit)}`
 
 // "muss nicht" means "need not", so an inclusive bound of 0 is negated by "darf"
 const boundMessage: Locale.MessageWriter<"min" | "max"> = (e, locale) =>
-	e.rule === 0 && !e.exclusive ?
+	e.rule === 0 && !e.exclusive && !e.unit ?
 		`darf nicht ${e.code === "min" ? "negativ" : "positiv"} sein${was(e)}`
 	:	mustBe(bound(e, locale), e)
 
@@ -470,21 +486,25 @@ export const de: Locale.Complete = {
 	notEqual: {
 		// "ungleich" takes a dative
 		expected: (e, locale) =>
-			`ungleich ${print(e.rule, locale).replace(/^der /, "dem ")}`,
+			`ungleich ${
+				typeof e.rule === "number" && e.unit ?
+					count(e.rule, locale, e.unit)
+				:	print(e.rule, locale).replace(/^der /, "dem ")
+			}`,
 		actual: (data, e, locale) => print(data, locale),
 		message: e => mustBe(e.expected, e)
 	},
 	notEqualLength: {
 		expected: (e, locale) =>
-			typeof e.data === "string" ?
-				`nicht ${length(e.rule, e.data, locale)}`
+			hasLengthUnit(e) ?
+				`nicht ${length(e.rule, e, locale)}`
 			:	`kein Array mit ${elements(e.rule, locale, true)}`,
-		actual: (data, e, locale) => length(data.length, data, locale),
+		actual: (data, e, locale) => length(data.length, e, locale),
 		// "muss nicht" means "need not"
 		message: (e, locale) =>
 			`darf nicht ${
-				typeof e.data === "string" ?
-					`${length(e.rule, e.data, locale)} sein`
+				hasLengthUnit(e) ?
+					`${length(e.rule, e, locale)} sein`
 				:	`${elements(e.rule, locale)} enthalten`
 			}${was(e)}`
 	},

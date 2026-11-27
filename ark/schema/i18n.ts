@@ -1,3 +1,4 @@
+export { isCustomBoundUnit, type BoundUnit } from "./refinements/unit.ts"
 export { printedActualOf } from "./shared/enWriters.ts"
 export { authoredDescriptionOf } from "./shared/utils.ts"
 export {

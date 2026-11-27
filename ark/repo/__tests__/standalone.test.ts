@@ -3631,9 +3631,16 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 			})
 			attest([count("abc"), count.name, count.expression]).equals([
 				3,
-				"bound typed count",
+				"typed count",
 				"(string) => number"
 			])
+			const withThis = {
+				bias: 10,
+				count: create(function (this: { bias: number }, s: string) {
+					return this.bias + s.length
+				})
+			}
+			attest(withThis.count("abc")).equals(13)
 			attest(() => count(1)).throws.snap("TraversalError: [0] must be a string")
 			attest(() => create((s: string) => s)("b")).throws.snap(
 				"TraversalError: must be a number"

@@ -223,9 +223,9 @@ type validateArrayBranch<
 	ctx extends DeclareContext
 > =
 	"..." extends def[number] ?
-		validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+		validateArrayShallowInference<inferDefinition<def, $, args>, declared, ctx>
 	: number extends declared["length"] ?
-		validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+		validateArrayShallowInference<inferDefinition<def, $, args>, declared, ctx>
 	: ctx["assignable"] extends true ?
 		{
 			[i in keyof declared]: i extends keyof def ?
@@ -237,6 +237,24 @@ type validateArrayBranch<
 				validateExactTupleElement<def[i], declared, i, $, args, ctx>
 			:	declared[i]
 		}
+
+// tuple literals infer mutable arrays, so ignore top-level readonly on variadic
+// declared arrays just as the element-wise branch above does for fixed tuples
+type validateArrayShallowInference<
+	t,
+	declared extends array,
+	ctx extends DeclareContext,
+	inferred = ctx["side"] extends distill.Side ? distill<t, ctx["side"]> : t
+> =
+	(
+		ctx["assignable"] extends true ?
+			[inferred] extends [declared] ?
+				true
+			:	false
+		:	equals<inferred, declared extends unknown[] ? declared : [...declared]>
+	) extends true ?
+		unknown
+	:	show<declarationMismatch<inferred, declared>>
 
 type validateAssignableTupleElement<
 	elDef,

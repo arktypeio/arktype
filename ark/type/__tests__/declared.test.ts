@@ -820,6 +820,30 @@ contextualize(() => {
 			).type.errors(
 				"declared: [string, ...number[]]; inferred: [string, ...string[]]"
 			)
+
+			const ReadonlyRest = declare<readonly [string, ...number[]]>().type([
+				"string",
+				"...",
+				"number[]"
+			])
+			attest<readonly [string, ...number[]]>(ReadonlyRest.infer)
+			attest(ReadonlyRest(["a", 1, 2])).equals(["a", 1, 2])
+
+			const ReadonlyOptRest = declare<
+				readonly [string, number?, ...boolean[]]
+			>().type(["string", "number?", "...", "boolean[]"])
+			attest<readonly [string, number?, ...boolean[]]>(ReadonlyOptRest.infer)
+
+			attest(() =>
+				// @ts-expect-error
+				declare<readonly [string, ...number[]]>().type([
+					"string",
+					"...",
+					"string[]"
+				])
+			).type.errors(
+				"declared: readonly [string, ...number[]]; inferred: [string, ...string[]]"
+			)
 		})
 
 		it("assignable optional and variadic tuples", () => {

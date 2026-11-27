@@ -613,4 +613,72 @@ next fehlt (muss ein Wert gemäß der Beschreibung „the next node“ sein)`
 			"a fehlt (muss eine Instanz einer anonymen Klasse sein)"
 		)
 	})
+
+	it("respects custom bound units", () => {
+		const sekunde = { singular: "Sekunde", plural: "Sekunden" } as const
+		const byte = "Byte"
+		const MoreThan5 = type.number.moreThan({ rule: 5, unit: sekunde })
+		const AtLeast0 = type.number.atLeast({ rule: 0, unit: sekunde })
+		const MoreThan0 = type.number.moreThan({ rule: 0, unit: sekunde })
+		const AtMost1 = type.number.atMost({ rule: 1, unit: sekunde })
+		const AtMost0 = type.number.atMost({ rule: 0, unit: sekunde })
+		const LessThan0 = type.number.lessThan({ rule: 0, unit: sekunde })
+		const Not5 = type.number
+			.lessThan({ rule: 5, unit: sekunde })
+			.or(type.number.moreThan({ rule: 5, unit: sekunde }))
+		const Not1 = type.number
+			.lessThan({ rule: 1, unit: sekunde })
+			.or(type.number.moreThan({ rule: 1, unit: sekunde }))
+		const Min3Bytes = type.string.atLeastLength({ rule: 3, unit: byte })
+		const Min1Byte = type.string.atLeastLength({ rule: 1, unit: byte })
+		const Max2Bytes = type.string.atMostLength({ rule: 2, unit: byte })
+		const Max0Bytes = type.string.atMostLength({ rule: 0, unit: byte })
+		const Exact0Bytes = type.string.exactlyLength({ rule: 0, unit: byte })
+		const Exact1Byte = type.string.exactlyLength({ rule: 1, unit: byte })
+		const Not2Bytes = type.string
+			.lessThanLength({ rule: 2, unit: byte })
+			.or(type.string.moreThanLength({ rule: 2, unit: byte }))
+		const ArrMin2 = type("number[]").atLeastLength({
+			rule: 2,
+			unit: { singular: "Eintrag", plural: "Einträge" }
+		})
+
+		const errs = [
+			MoreThan5(5),
+			AtLeast0(-1),
+			MoreThan0(0),
+			AtMost1(2),
+			AtMost0(1),
+			LessThan0(0),
+			Not5(5),
+			Not1(1),
+			Min3Bytes("ab"),
+			Min1Byte(""),
+			Max2Bytes("abc"),
+			Max0Bytes("a"),
+			Exact0Bytes("a"),
+			Exact1Byte("ab"),
+			Not2Bytes("ab"),
+			ArrMin2([1])
+		] as ArkErrors[]
+
+		attest(errs.map(e => e.summaryIn(de))).snap([
+			"muss größer als 5 Sekunden sein",
+			"muss mindestens 0 Sekunden sein",
+			"muss größer als 0 Sekunden sein",
+			"muss höchstens 1 Sekunde sein",
+			"muss höchstens 0 Sekunden sein",
+			"muss kleiner als 0 Sekunden sein",
+			"muss ungleich 5 Sekunden sein",
+			"muss ungleich 1 Sekunde sein",
+			"muss mindestens 3 Bytes lang sein",
+			"muss mindestens 1 Byte lang sein",
+			"muss höchstens 2 Bytes lang sein",
+			"muss genau 0 Bytes lang sein",
+			"muss genau 0 Bytes lang sein",
+			"muss genau 1 Byte lang sein",
+			"darf nicht 2 Bytes lang sein",
+			"muss mindestens 2 Einträge lang sein"
+		])
+	})
 })

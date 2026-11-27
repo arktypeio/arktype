@@ -147,14 +147,14 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		const typedName = `typed ${functionNameOf(raw)}`
 		const typed = {
 			// assign to a key with the expected name to force it to be created that way
-			[typedName]: (...args: unknown[]) => {
+			[typedName](this: unknown, ...args: unknown[]) {
 				const validatedArgs = params.assert(args) as unknown[]
-				const returned = raw(...validatedArgs)
+				const returned = raw.apply(this, validatedArgs)
 				return returns.assert(returned)
 			}
 		}[typedName]
 
-		super(typed)
+		super(typed, { bind: null })
 		this.raw = raw
 		this.params = params
 		this.returns = returns

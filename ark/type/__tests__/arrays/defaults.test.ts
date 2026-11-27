@@ -98,6 +98,14 @@ contextualize(() => {
 		attest(T.in.expression).snap("[number?]")
 	})
 
+	it("defaulted morph element is optional in inferIn", () => {
+		const T = type(["string", ["string.numeric.parse", "=", "10"]])
+		attest<[string, string?]>(T.inferIn)
+		attest<[string, number]>(T.inferOut)
+		attest(T(["hi"])).equals(["hi", 10])
+		attest(T(["hi", "25"])).equals(["hi", 25])
+	})
+
 	it("output extracted as required", () => {
 		const T = type(["number = 5"])
 		attest<[number]>(T.out.t)

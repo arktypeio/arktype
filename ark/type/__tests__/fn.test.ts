@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
-import { type, type To } from "arktype"
+import { type, type Default, type To } from "arktype"
 import { badFnReturnTypeMessage, type TypedFn } from "arktype/internal/fn.ts"
 import {
 	multipleVariadicMesage,
@@ -325,7 +325,40 @@ contextualize(() => {
 
 	it("name", () => {
 		const f = type.fn("string")(function originalName() {})
-		attest(f.name).snap("bound typed originalName")
+		attest(f.name).snap("typed originalName")
+	})
+
+	it("preserves this binding when called as a method", () => {
+		const greeter = {
+			prefix: "hi, ",
+			greet: type.fn("string")(function (this: any, name) {
+				return `${this.prefix}${name}`
+			})
+		}
+		attest(greeter.greet("Ada")).equals("hi, Ada")
+		const other = { prefix: "hey, ", greet: greeter.greet }
+		attest(other.greet("Grace")).equals("hey, Grace")
+		attest(
+			Function.prototype.call.call(greeter.greet, { prefix: "yo, " }, "Lin")
+		).equals("yo, Lin")
+
+		class Counter {
+			value: number
+			constructor(value: number) {
+				this.value = value
+			}
+			add = type.fn(
+				"number",
+				":",
+				"number"
+			)(function (this: any, n) {
+				this.value += n
+				return this.value
+			})
+		}
+		const counter = new Counter(10)
+		attest(counter.add(5)).equals(15)
+		attest(counter.value).equals(15)
 	})
 
 	it("raw", () => {
@@ -477,6 +510,24 @@ contextualize(() => {
 			)((s, n, b) => `${s}${n}${b}`)
 
 			attest(f.expression).snap("(string, number = 5, boolean?) => unknown")
+		})
+
+		it("defaulted morph parameter", () => {
+			const f = type.fn("string", ["string.numeric.parse", "=", "10"])(
+				(s, n) => `${s}:${n * 2}`
+			)
+			attest<
+				TypedFn<
+					(s: string, n?: string) => string,
+					{},
+					{ params: [string, (In: Default<string, "10">) => To<number>] }
+				>
+			>(f)
+			attest(f("hi")).equals("hi:20")
+			attest(f("hi", "7")).equals("hi:14")
+			attest(() => f("hi", "nope")).throws.snap(
+				"TraversalError: [1] must be a well-formed numeric string"
+			)
 		})
 
 		it("non-variadic array", () => {
