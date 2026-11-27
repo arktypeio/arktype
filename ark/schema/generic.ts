@@ -111,6 +111,15 @@ export class GenericRoot<
 		alias?: string
 	) {
 		super((...args: any[]) => {
+			if (args.length !== this.names.length) {
+				return throwParseError(
+					writeArgCountMessage(
+						this.alias ?? "generic",
+						this.names,
+						args.map(arg => this.arg$.parse(arg).expression)
+					)
+				)
+			}
 			const argNodes = flatMorph(this.names, (i, name) => [
 				name,
 				this.arg$.parse(args[i])
@@ -340,6 +349,17 @@ const mayExtend = (l: BaseRoot, r: BaseRoot): boolean => {
 		isMutuallySimulated(l, intersection, false)
 	)
 }
+
+// as arktype's writeInvalidGenericArgCountMessage writes it for an
+// instantiation in a string, like box<a, b>, which is checked as it's parsed
+const writeArgCountMessage = (
+	name: string,
+	params: array<string>,
+	args: array<string>
+): string =>
+	`${name}<${params.join(", ")}> requires exactly ${params.length} args (got ${
+		args.length
+	}${args.length === 0 ? "" : `: ${args.join(", ")}`})`
 
 export const writeUnclosedGenericCycleMessage = (name: string): string =>
 	`Instantiating ${name} recursed with new arguments more than ${maxOpenInstantiations} times`

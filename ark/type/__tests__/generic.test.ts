@@ -184,16 +184,32 @@ contextualize(() => {
 		it("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
-			attest(() => pair("string")).type.errors(
-				"Expected 2 arguments, but got 1"
-			)
+			attest(() => pair("string"))
+				.throws(
+					writeInvalidGenericArgCountMessage("generic", ["t", "u"], ["string"])
+				)
+				.type.errors("Expected 2 arguments, but got 1")
 		})
 
 		it("too many args", () => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
-			attest(() => pair("string", "boolean", "number")).type.errors(
-				"Expected 2 arguments, but got 3"
+			attest(() => pair("string", "boolean", "number"))
+				.throws(
+					writeInvalidGenericArgCountMessage(
+						"generic",
+						["t", "u"],
+						["string", "boolean", "number"]
+					)
+				)
+				.type.errors("Expected 2 arguments, but got 3")
+			// @ts-expect-error
+			attest(() => type.keywords.Record("string", "number", "boolean")).throws(
+				writeInvalidGenericArgCountMessage(
+					"Record",
+					["K", "V"],
+					["string", "number", "boolean"]
+				)
 			)
 		})
 	})
