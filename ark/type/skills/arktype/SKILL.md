@@ -35,7 +35,7 @@ Follow https://arktype.io/docs/upgrading.md, whose checklist links each breaking
 | `ctx.errors.add(...)`                                          | `ctx.error(...)` or `ctx.reject(...)`                                                         |
 | `configure()` anywhere, the `clone` option                     | a config file imported before any Type is created; remove `clone`                             |
 
-Then update snapshots of error text: a message no longer says what the value was, like `(was a number)`. Replace adapters written for ArkType 2 as [Integrations](#integrations) says: they pass valid data and fail on the first invalid input.
+Then update snapshots of error text: a message no longer says what the value was, like `(was a number)`, and string/array length bounds now read in `characters` / `items` instead of `length N`. Replace adapters written for ArkType 2 as [Integrations](#integrations) says: they pass valid data and fail on the first invalid input.
 
 ## Precompiling
 

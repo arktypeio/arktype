@@ -7102,13 +7102,13 @@ An error's `code` tells you its other fields:
 | `domain` | `domain`, like `"string"` |
 | `unit` | `unit`, the expected value |
 | `proto` | `proto`, the expected constructor |
-| `min`, `max` | `rule`, and `exclusive` when the bound is exclusive |
-| `minLength`, `maxLength`, `exactLength` | `rule` |
+| `min`, `max` | `rule`, `exclusive` when the bound is exclusive, and `unit` (`BoundUnit`) when set |
+| `minLength`, `maxLength`, `exactLength` | `rule`, and `unit` (`BoundUnit`, e.g. `"character"` / `"item"` or custom) when set |
 | `divisor` | `rule` |
 | `pattern` | `rule` (the regex source) and `flags` |
 | `before`, `after` | `rule`, a `Date` |
-| `notEqual` | `rule`, a number or `Date` |
-| `notEqualLength` | `rule` |
+| `notEqual` | `rule` (a number or `Date`), and `unit` (`BoundUnit`) when set |
+| `notEqualLength` | `rule`, and `unit` (`BoundUnit`) when set |
 | `predicate` | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
 | `required` | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description (honoring any user-authored `.describe()`) |
 | `undeclared` | none; its `data` is the value of a key `"+": "reject"` disallows |

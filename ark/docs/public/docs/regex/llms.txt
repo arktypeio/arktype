@@ -12,7 +12,7 @@
 import { regex } from "arkregex"
 
 const ok = regex("^ok$", "i")
-// const ok: Regex<"ok" | "oK" | "Ok" | "OK", {
+// const ok: Regex<"ok" | "Ok" | "oK" | "OK", {
 //     flags: "i";
 // }>
 
@@ -279,7 +279,7 @@ Flags are inferred, and `i` expands every letter to both cases:
 
 ```ts
 const ok = regex("^ok$", "i")
-// const ok: Regex<"ok" | "oK" | "Ok" | "OK", {
+// const ok: Regex<"ok" | "Ok" | "oK" | "OK", {
 //     flags: "i";
 // }>
 ```
@@ -476,7 +476,7 @@ type Version = regex.infer<"^(\\d{1,3})\\.(\\d{1,3})$">
 // type Version = `${number}.${number}`
 
 type Ok = regex.infer<"^ok$", "i">
-// type Ok = "OK" | "Ok" | "oK" | "ok"
+// type Ok = "ok" | "Ok" | "oK" | "OK"
 ```
 
 ## `regex.parse` and `regex.validate`
@@ -556,7 +556,7 @@ A `Regex` can be used directly as a definition, with or without flags:
 
 ```ts
 const Ok = type(regex("^ok$", "i"))
-// const Ok: Type<"ok" | "oK" | "Ok" | "OK", {}>
+// const Ok: Type<"ok" | "Ok" | "oK" | "OK", {}>
 
 const Address = type({
 	street: "string",
