@@ -513,7 +513,9 @@ export abstract class BaseRoot<
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		return this._pipe(
 			...morphs.map(morph =>
-				hasArkKind(morph, "root") ? morph : makeMorph(tryMorph, morph)
+				hasArkKind(morph, "root") ? morph : (
+					makeMorph(tryMorph, assertMorph(morph))
+				)
 			)
 		)
 	}
@@ -547,6 +549,8 @@ export abstract class BaseRoot<
 				isInstanceOf(morph, BaseRoot) ? morph.internal : this.$.parseDef(morph)
 			)
 		}
+
+		assertMorph(morph)
 
 		return this.distribute(
 			branch =>
@@ -1242,6 +1246,16 @@ export type StructuralOperationBranchResultByName = {
 
 export type StructuralOperationName =
 	keyof StructuralOperationBranchResultByName
+
+// a morph is called with the data, so anything else would throw only once
+// the Type is used, or as it's registered
+const assertMorph = (morph: Morph): Morph =>
+	typeof morph === "function" ? morph : (
+		throwParseError(writeNonFunctionMorphMessage(typeof morph))
+	)
+
+export const writeNonFunctionMorphMessage = (kind: string): string =>
+	`Morph must be a function or a Type (was ${kind})`
 
 export const writeLiteralUnionEntriesMessage = (expression: string): string =>
 	`Props cannot be extracted from a union. Use .distribute to extract props from each branch instead. Received:

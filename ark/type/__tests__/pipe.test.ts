@@ -5,6 +5,7 @@ import {
 	intrinsic,
 	registeredReference,
 	writeInvalidOperandMessage,
+	writeNonFunctionMorphMessage,
 	type ArkErrors,
 	type BaseRoot
 } from "@ark/schema"
@@ -35,6 +36,21 @@ contextualize(() => {
 			return this === undefined
 		})
 		attest(T(1)).equals(true)
+	})
+
+	it("morph that isn't a function", () => {
+		// @ts-expect-error
+		attest(() => type("string").pipe(5)).throws(
+			writeNonFunctionMorphMessage("number")
+		)
+		// @ts-expect-error
+		attest(() => type.pipe("string")).throws(
+			writeNonFunctionMorphMessage("string")
+		)
+		// @ts-expect-error
+		attest(() => type("string").pipe.try({})).throws(
+			writeNonFunctionMorphMessage("object")
+		)
 	})
 
 	it("disjoint", () => {
