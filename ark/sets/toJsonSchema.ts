@@ -672,7 +672,7 @@ const innerToJsonSchemaByKind: {
 			(schema, child) => {
 				if (child.isBasis()) {
 					if (!dateBounds || !child.is("proto") || child.proto !== Date)
-						return toJsonSchemaRecurse(child, ctx)
+						return toResolvedJsonSchema(child, ctx)
 					return toResolvedJsonSchema(child, ctx, () => {
 						datesWritten = true
 						return dateToJsonSchema(dateBounds, ctx)
@@ -1163,7 +1163,10 @@ const reduceSequenceJsonSchema = (
 	if (node.leading.length) {
 		prefixSchemas = node.leading.map((el, i) => {
 			ctx.path = appendStringifiedKey(path, i)
-			const valueSchema = toJsonSchemaRecurse(el.node, ctx)
+			const valueSchema = toJsonSchemaRecurse(
+				el.kind === "prefix" ? el.node : withoutUndefined(el.node, ctx),
+				ctx
+			)
 			if (el.kind === "defaultables") writeDefault(valueSchema, el.default, ctx)
 			return valueSchema
 		})

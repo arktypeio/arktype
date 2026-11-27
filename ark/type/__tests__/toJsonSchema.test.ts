@@ -1252,4 +1252,57 @@ contextualize(() => {
 				.toJsonSchema({ dialect: null })
 		).snap({ type: "number" })
 	})
+
+	it("converts optional and defaultable tuple elements without crashing on undefined", () => {
+		attest(type(["string", "number?"]).toJsonSchema({ dialect: null })).snap({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			minItems: 1,
+			items: false
+		})
+		attest(
+			type(["string", ["number", "=", 0]]).toJsonSchema({ dialect: null })
+		).snap({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number", default: 0 }],
+			minItems: 1,
+			items: false
+		})
+	})
+
+	it("resolves intersection basis directly when aliasDefs names a basis alias", () => {
+		const $1 = scope({ AnyObj: "object", Box: { name: "string" } })
+		attest(
+			$1.export().Box.toJsonSchema({ aliasDefs: ["AnyObj"], dialect: null })
+		).snap({
+			type: "object",
+			properties: { name: { type: "string" } },
+			required: ["name"]
+		})
+
+		const $2 = scope({
+			Name: "string",
+			User: { name: "Name", id: "string >= 1" }
+		})
+		attest(
+			$2.export().User.toJsonSchema({ aliasDefs: ["Name"], dialect: null })
+		).snap({
+			type: "object",
+			properties: {
+				name: { $ref: "#/$defs/Name" },
+				id: { type: "string", minLength: 1 }
+			},
+			required: ["id", "name"],
+			$defs: { Name: { type: "string" } }
+		})
+
+		const $3 = scope({ Num: "number", Pos: "number > 0" })
+		attest(
+			$3.export().Pos.toJsonSchema({ aliasDefs: ["Num"], target: "draft-07" })
+		).snap({
+			$schema: "http://json-schema.org/draft-07/schema#",
+			type: "number",
+			exclusiveMinimum: 0
+		})
+	})
 })
