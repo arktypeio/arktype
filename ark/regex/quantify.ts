@@ -1,4 +1,5 @@
 import type { contains, parseNonNegativeInteger, Scanner } from "@ark/util"
+import type { isAsciiDigits } from "./escape.ts"
 import type { UnicodeFlag } from "./regex.ts"
 import type { appendString, s, State } from "./state.ts"
 
@@ -42,23 +43,29 @@ type parsePossibleRangeString<unscanned extends string> =
 	unscanned extends (
 		`${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}`
 	) ?
-		ParsedRange.from<{
-			min: parseNonNegativeInteger<l>
-			max: parseNonNegativeInteger<r>
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+		[isAsciiDigits<l>, isAsciiDigits<r>] extends [true, true] ?
+			ParsedRange.from<{
+				min: parseNonNegativeInteger<l>
+				max: parseNonNegativeInteger<r>
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+		:	null
 	: unscanned extends `${infer l extends `${number}`},}${infer next}` ?
-		ParsedRange.from<{
-			min: parseNonNegativeInteger<l>
-			max: null
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+		isAsciiDigits<l> extends true ?
+			ParsedRange.from<{
+				min: parseNonNegativeInteger<l>
+				max: null
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+		:	null
 	: unscanned extends `${infer l extends `${number}`}}${infer next}` ?
-		ParsedRange.from<{
-			min: parseNonNegativeInteger<l>
-			max: parseNonNegativeInteger<l>
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+		isAsciiDigits<l> extends true ?
+			ParsedRange.from<{
+				min: parseNonNegativeInteger<l>
+				max: parseNonNegativeInteger<l>
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+		:	null
 	:	null
 
 type GreaterDigits = {

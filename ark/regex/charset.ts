@@ -7,54 +7,123 @@ import type {
 	writeUnclosedGroupMessage
 } from "@ark/util"
 import type {
+	isHexDigits,
 	NonZeroDigit,
 	RegexClassChar,
+	shiftFourHexDigits,
+	shiftTwoHexDigits,
 	StringDigit,
 	UnicodePropertyChar,
 	writeInvalidUnicodePropertyMessage,
 	writeUnnecessaryEscapeMessage
 } from "./escape.ts"
-import type { UnicodeFlag } from "./regex.ts"
+import type { Flags, UnicodeFlag } from "./regex.ts"
 import type { CasedBudget, Control, s, State } from "./state.ts"
 
-export type parseCharset<s extends State, unscanned extends string> =
-	Scanner.shiftUntilEscapable<unscanned, "]", Backslash> extends (
+type CharsetMode = "" | UnicodeFlag
+
+type charsetModeOf<flags extends Flags> =
+	contains<flags, "v"> extends true ? "v"
+	: contains<flags, "u"> extends true ? "u"
+	: ""
+
+type UnicodeSetScanResult<
+	scanned extends string = string,
+	remaining extends string = string,
+	nested extends boolean = boolean
+> = [scanned: scanned, remaining: remaining, nested: nested]
+
+// Under the ES2024 `v` flag, `[` opens a nested character class, so scanning for
+// the closing `]` must track unescaped `[`/`]` nesting depth while preserving
+// backslash escapes for subsequent character/escape validation.
+type shiftUnicodeSetBody<
+	unscanned extends string,
+	depth extends 1[] = [1],
+	nested extends boolean = false,
+	acc extends string = ""
+> =
+	unscanned extends `${infer head}]${infer tail}` ?
+		head extends `${string}${Backslash}${string}` ?
+			unscanned extends `${infer beforeBs}${Backslash}${infer afterBs}` ?
+				beforeBs extends `${infer beforeBracket}[${infer afterBracket}` ?
+					shiftUnicodeSetBody<
+						`${afterBracket}${Backslash}${afterBs}`,
+						[...depth, 1],
+						true,
+						`${acc}${beforeBracket}[`
+					>
+				: afterBs extends Scanner.shift<infer escaped, infer rest> ?
+					shiftUnicodeSetBody<
+						rest,
+						depth,
+						nested,
+						`${acc}${beforeBs}${Backslash}${escaped}`
+					>
+				:	null
+			:	never
+		: head extends `${infer beforeBracket}[${infer afterBracket}` ?
+			shiftUnicodeSetBody<
+				`${afterBracket}]${tail}`,
+				[...depth, 1],
+				true,
+				`${acc}${beforeBracket}[`
+			>
+		: depth extends [1] ? UnicodeSetScanResult<`${acc}${head}`, tail, nested>
+		: depth extends [1, ...infer parentDepth extends 1[]] ?
+			shiftUnicodeSetBody<tail, parentDepth, nested, `${acc}${head}]`>
+		:	never
+	:	null
+
+export type parseCharset<
+	s extends State,
+	unscanned extends string,
+	mode extends CharsetMode = charsetModeOf<s["flags"]>
+> =
+	mode extends "v" ?
+		shiftUnicodeSetBody<unscanned> extends (
+			UnicodeSetScanResult<infer scanned, infer remaining, infer nested>
+		) ?
+			nested extends true ?
+				s.shiftQuantifiable<s, string, remaining>
+			:	parseScannedCharset<s, scanned, remaining, "v">
+		:	s.error<writeUnclosedGroupMessage<"]">>
+	: Scanner.shiftUntilEscapable<unscanned, "]", Backslash> extends (
 		Scanner.shiftResult<infer scanned, infer nextUnscanned>
 	) ?
 		nextUnscanned extends `]${infer remaining}` ?
-			// we don't care about the contents of the negated char set because we can't infer it
-			scanned extends Scanner.shift<"^", infer negatedBody> ?
-				parseNegatedCharset<
-					s,
-					negatedBody,
-					remaining,
-					contains<s["flags"], UnicodeFlag>
-				>
-			: parseNonNegatedCharset<
-				scanned,
-				never,
-				null,
-				contains<s["flags"], UnicodeFlag>
-			> extends infer result extends string ?
-				[result] extends [never] ? s.error<emptyCharacterSetMessage>
-				: result extends ErrorMessage ? s.error<result>
-				: s["caseInsensitive"] extends false ?
-					s.shiftQuantifiable<s, result, remaining>
-				:	shiftCaseInsensitiveCharset<s, result, remaining>
-			:	never
+			parseScannedCharset<s, scanned, remaining, mode>
 		:	s.error<writeUnclosedGroupMessage<"]">>
+	:	never
+
+type parseScannedCharset<
+	s extends State,
+	scanned extends string,
+	remaining extends string,
+	mode extends CharsetMode
+> =
+	// we don't care about the contents of the negated char set because we can't infer it
+	scanned extends Scanner.shift<"^", infer negatedBody> ?
+		parseNegatedCharset<s, negatedBody, remaining, mode>
+	: parseNonNegatedCharset<scanned, never, null, mode> extends (
+		infer result extends string
+	) ?
+		[result] extends [never] ? s.error<emptyCharacterSetMessage>
+		: result extends ErrorMessage ? s.error<result>
+		: s["caseInsensitive"] extends false ?
+			s.shiftQuantifiable<s, result, remaining>
+		:	shiftCaseInsensitiveCharset<s, result, remaining>
 	:	never
 
 type parseNegatedCharset<
 	s extends State,
 	body extends string,
 	remaining extends string,
-	unicode extends boolean
+	mode extends CharsetMode
 > =
 	body extends (
-		`${string}${unicode extends true ? "-" | Backslash : "-"}${string}`
+		`${string}${mode extends UnicodeFlag ? "-" | Backslash : "-"}${string}`
 	) ?
-		parseNonNegatedCharset<body, never, null, unicode> extends (
+		parseNonNegatedCharset<body, never, null, mode> extends (
 			infer result extends ErrorMessage
 		) ?
 			s.error<result>
@@ -83,45 +152,96 @@ type expandCharsetCasing<char extends string> =
 		:	Lowercase<char> | Uppercase<char>
 	:	never
 
+type ClassShorthand<t extends string = string> = {
+	shorthand: t
+}
+
+type UnicodeSetOpMarker = noSuggest<"unicodeSetOp">
+
+type unwrapRangeEndpoint<endpoint> =
+	endpoint extends ClassShorthand<infer t> ? t
+	: endpoint extends string ? endpoint
+	: string
+
 type parseNonNegatedCharset<
 	chars extends string,
 	set extends string,
-	lastChar extends string | null,
-	unicode extends boolean
+	lastChar extends string | ClassShorthand | null,
+	mode extends CharsetMode
 > =
-	parseChar<chars, unicode> extends (
-		Scanner.shiftResult<infer result, infer unscanned>
+	parseChar<chars, mode> extends (
+		[infer result, infer unscanned extends string]
 	) ?
 		result extends UnescapedDashMarker ?
-			parseDash<unscanned, set, lastChar, unicode>
+			parseDash<unscanned, set, lastChar, mode>
+		: result extends UnicodeSetOpMarker ? string
 		: result extends ErrorMessage ? result
-		: parseNonNegatedCharset<unscanned, set | result, result, unicode>
+		: result extends ClassShorthand<infer t> ?
+			parseNonNegatedCharset<unscanned, set | t, result, mode>
+		: result extends string ?
+			parseNonNegatedCharset<unscanned, set | result, result, mode>
+		:	never
 	:	set
 
 type parseDash<
 	unscanned extends string,
 	set extends string,
-	lastChar extends string | null,
-	unicode extends boolean
+	lastChar extends string | ClassShorthand | null,
+	mode extends CharsetMode
 > =
-	lastChar extends string ?
-		// we have a last character to use as range start
-		parseChar<unscanned, unicode> extends (
-			Scanner.shiftResult<infer rangeEnd, infer next>
-		) ?
-			rangeEnd extends ErrorMessage ? rangeEnd
-			: inferRange<
-				lastChar,
-				rangeEnd extends UnescapedDashMarker ? "-" : rangeEnd
-			> extends infer ranged extends string ?
-				ranged extends ErrorMessage ?
-					ranged
-				:	parseNonNegatedCharset<next, set | ranged, null, unicode>
-			:	never
-		:	// trailing -, treat as literal
-			set | "-"
-	:	// leading -, treat as literal (lastChar is null)
-		parseNonNegatedCharset<unscanned, set | "-", "-", unicode>
+	lastChar extends string | ClassShorthand ?
+		[mode, unscanned] extends ["v", `-${string}`] ?
+			unscanned extends "-" ?
+				parseRangeEnd<unscanned, set, lastChar, mode>
+			:	string
+		:	parseRangeEnd<unscanned, set, lastChar, mode>
+	:	// leading -, treat as literal
+		parseNonNegatedCharset<unscanned, set | "-", "-", mode>
+
+type parseRangeEnd<
+	unscanned extends string,
+	set extends string,
+	lastChar extends string | ClassShorthand,
+	mode extends CharsetMode
+> =
+	parseChar<unscanned, mode> extends (
+		[infer rangeEnd, infer next extends string]
+	) ?
+		rangeEnd extends ErrorMessage ? rangeEnd
+		: rangeEnd extends UnicodeSetOpMarker ? string
+		: mode extends UnicodeFlag ?
+			lastChar extends ClassShorthand ? ErrorMessage<invalidClassRangeMessage>
+			: rangeEnd extends ClassShorthand ? ErrorMessage<invalidClassRangeMessage>
+			: inferRangeAndContinue<
+					lastChar & string,
+					rangeEnd extends UnescapedDashMarker ? "-" : rangeEnd & string,
+					next,
+					set,
+					mode
+				>
+		:	inferRangeAndContinue<
+				unwrapRangeEndpoint<lastChar>,
+				rangeEnd extends UnescapedDashMarker ? "-"
+				:	unwrapRangeEndpoint<rangeEnd>,
+				next,
+				set,
+				mode
+			>
+	:	// trailing -, treat as literal
+		set | "-"
+
+type inferRangeAndContinue<
+	start extends string,
+	end extends string,
+	next extends string,
+	set extends string,
+	mode extends CharsetMode
+> =
+	inferRange<start, end> extends infer ranged extends string ?
+		ranged extends ErrorMessage ?
+			ranged
+		:	parseNonNegatedCharset<next, set | ranged, null, mode>
+	:	never
 
 type AsciiOrder =
 	"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007f"
@@ -146,52 +266,188 @@ type inferRange<start extends string, end extends string> =
 
 type UnescapedDashMarker = noSuggest<"dash">
 
-type parseChar<unscanned extends string, unicode extends boolean> =
+type OctalDigit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7"
+
+type LowOctalStart = "0" | "1" | "2" | "3"
+
+type AsciiLetter =
+	| "a"
+	| "b"
+	| "c"
+	| "d"
+	| "e"
+	| "f"
+	| "g"
+	| "h"
+	| "i"
+	| "j"
+	| "k"
+	| "l"
+	| "m"
+	| "n"
+	| "o"
+	| "p"
+	| "q"
+	| "r"
+	| "s"
+	| "t"
+	| "u"
+	| "v"
+	| "w"
+	| "x"
+	| "y"
+	| "z"
+	| "A"
+	| "B"
+	| "C"
+	| "D"
+	| "E"
+	| "F"
+	| "G"
+	| "H"
+	| "I"
+	| "J"
+	| "K"
+	| "L"
+	| "M"
+	| "N"
+	| "O"
+	| "P"
+	| "Q"
+	| "R"
+	| "S"
+	| "T"
+	| "U"
+	| "V"
+	| "W"
+	| "X"
+	| "Y"
+	| "Z"
+
+type ClassSetReservedPunctuator =
+	| "!"
+	| "#"
+	| "%"
+	| "&"
+	| ","
+	| ":"
+	| ";"
+	| "<"
+	| "="
+	| ">"
+	| "@"
+	| "`"
+	| "~"
+
+type consumeOctal0To3<s extends string> =
+	s extends `${OctalDigit}${OctalDigit}${infer rest}` ? rest
+	: s extends `${OctalDigit}${infer rest}` ? rest
+	: s
+
+type consumeOctal4To7<s extends string> =
+	s extends `${OctalDigit}${infer rest}` ? rest : s
+
+type parseChar<unscanned extends string, mode extends CharsetMode> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
 		lookahead extends Backslash ?
 			next extends Scanner.shift<infer escaped, infer postEscaped> ?
-				unicode extends true ?
-					escaped extends UnicodePropertyChar ?
-						postEscaped extends `{${infer prop}}${infer afterProp}` ?
-							prop extends "" ?
-								Scanner.shiftResult<
-									ErrorMessage<writeInvalidUnicodePropertyMessage<escaped>>,
-									""
-								>
-							:	Scanner.shiftResult<string, afterProp>
-						:	Scanner.shiftResult<
-								ErrorMessage<writeInvalidUnicodePropertyMessage<escaped>>,
-								""
-							>
-					:	Scanner.shiftResult<parseEscapedSetChar<escaped, true>, postEscaped>
-				:	Scanner.shiftResult<parseEscapedSetChar<escaped, false>, postEscaped>
+				parseEscapedSetSequence<escaped, postEscaped, mode>
 			:	never
-		:	Scanner.shiftResult<
-				lookahead extends "-" ? UnescapedDashMarker : lookahead,
-				next
-			>
+		: [mode, lookahead, next] extends ["v", "&", `&${string}`] ?
+			[UnicodeSetOpMarker, next]
+		:	[lookahead extends "-" ? UnescapedDashMarker : lookahead, next]
 	:	// return null if called on an empty string
 		null
 
-// in a set, \b is a backspace and an escape that's unnecessary elsewhere
-// matches its character, unless the u or v flag makes it a SyntaxError
-type parseEscapedSetChar<char extends string, unicode extends boolean> =
-	char extends "b" ? "\b"
-	: char extends "d" ? `${number}`
-	: char extends keyof EscapedControlChars ? EscapedControlChars[char]
-	: // these can match characters other than the one escaped
-	char extends "0" | "c" | "x" | "u" | "s" | RegexClassChar ? string
-	: char extends "p" | "P" ?
-		unicode extends true ?
-			string
-		:	char
-	: unicode extends true ?
-		char extends Control | "/" ?
-			char
-		:	ErrorMessage<writeUnnecessaryEscapeMessage<char>>
-	: // a legacy octal escape like \1
-	char extends NonZeroDigit ? string
-	: char
+type parseEscapedSetSequence<
+	escaped extends string,
+	postEscaped extends string,
+	mode extends CharsetMode
+> =
+	escaped extends UnicodePropertyChar ?
+		mode extends UnicodeFlag ?
+			postEscaped extends `{${infer prop}}${infer afterProp}` ?
+				prop extends "" ?
+					[ErrorMessage<writeInvalidUnicodePropertyMessage<escaped>>, ""]
+				:	[ClassShorthand<string>, afterProp]
+			:	[ErrorMessage<writeInvalidUnicodePropertyMessage<escaped>>, ""]
+		:	[escaped, postEscaped]
+	: escaped extends "q" ?
+		mode extends "v" ?
+			postEscaped extends `{${infer qBody}` ?
+				Scanner.shiftUntilEscapable<qBody, "}", Backslash> extends (
+					Scanner.shiftResult<string, infer nextQ>
+				) ?
+					nextQ extends `}${infer afterQ}` ?
+						[ClassShorthand<string>, afterQ]
+					:	[ErrorMessage<invalidClassStringDisjunctionMessage>, ""]
+				:	never
+			:	[ErrorMessage<invalidClassStringDisjunctionMessage>, ""]
+		: mode extends "u" ? [ErrorMessage<writeUnnecessaryEscapeMessage<"q">>, ""]
+		: ["q", postEscaped]
+	: escaped extends "x" ?
+		shiftTwoHexDigits<postEscaped> extends infer afterHex extends string ?
+			[string, afterHex]
+		: mode extends UnicodeFlag ? [ErrorMessage<invalidHexEscapeMessage>, ""]
+		: ["x", postEscaped]
+	: escaped extends "u" ?
+		mode extends UnicodeFlag ?
+			postEscaped extends `{${infer hex}}${infer afterBraced}` ?
+				isHexDigits<hex> extends true ?
+					[string, afterBraced]
+				:	[ErrorMessage<invalidUnicodeEscapeMessage>, ""]
+			: shiftFourHexDigits<postEscaped> extends infer afterU4 extends string ?
+				[string, afterU4]
+			:	[ErrorMessage<invalidUnicodeEscapeMessage>, ""]
+		: shiftFourHexDigits<postEscaped> extends infer afterU4 extends string ?
+			[string, afterU4]
+		:	["u", postEscaped]
+	: escaped extends "c" ?
+		mode extends UnicodeFlag ?
+			postEscaped extends Scanner.shift<infer ctrl, infer afterCtrl> ?
+				ctrl extends AsciiLetter ?
+					[string, afterCtrl]
+				:	[ErrorMessage<invalidControlEscapeMessage>, ""]
+			:	[ErrorMessage<invalidControlEscapeMessage>, ""]
+		: postEscaped extends Scanner.shift<infer ctrl, infer afterCtrl> ?
+			ctrl extends AsciiLetter | StringDigit | "_" ?
+				[string, afterCtrl]
+			:	["c", postEscaped]
+		:	["c", postEscaped]
+	: escaped extends "0" ?
+		mode extends UnicodeFlag ?
+			postEscaped extends `${StringDigit}${string}` ?
+				[ErrorMessage<invalidDecimalEscapeMessage>, ""]
+			:	["\0", postEscaped]
+		: postEscaped extends `${OctalDigit}${string}` ?
+			[string, consumeOctal0To3<postEscaped>]
+		:	["\0", postEscaped]
+	: escaped extends NonZeroDigit ?
+		mode extends UnicodeFlag ?
+			[ErrorMessage<writeUnnecessaryEscapeMessage<escaped>>, ""]
+		: escaped extends OctalDigit ?
+			[
+				string,
+				escaped extends LowOctalStart ? consumeOctal0To3<postEscaped>
+				:	consumeOctal4To7<postEscaped>
+			]
+		:	[escaped, postEscaped]
+	: escaped extends "d" ? [ClassShorthand<`${number}`>, postEscaped]
+	: escaped extends "s" | RegexClassChar ? [ClassShorthand<string>, postEscaped]
+	: // in a set, \b is a backspace and an escape that's unnecessary elsewhere
+	// matches its character, unless the u or v flag makes it a SyntaxError
+	escaped extends "b" ? ["\b", postEscaped]
+	: escaped extends keyof EscapedControlChars ?
+		[EscapedControlChars[escaped], postEscaped]
+	: mode extends "v" ?
+		escaped extends Control | "/" | ClassSetReservedPunctuator ?
+			[escaped, postEscaped]
+		:	[ErrorMessage<writeUnnecessaryEscapeMessage<escaped>>, ""]
+	: mode extends "u" ?
+		escaped extends Control | "/" ?
+			[escaped, postEscaped]
+		:	[ErrorMessage<writeUnnecessaryEscapeMessage<escaped>>, ""]
+	:	[escaped, postEscaped]
 
 type EscapedControlChars = {
 	n: "\n"
@@ -205,6 +461,44 @@ export const emptyCharacterSetMessage =
 	"Empty character set [] is unsatisfiable"
 
 export type emptyCharacterSetMessage = typeof emptyCharacterSetMessage
+
+export const invalidClassRangeMessage =
+	"Character class escape cannot be used as a range endpoint with the 'u' or 'v' flag"
+
+export type invalidClassRangeMessage = typeof invalidClassRangeMessage
+
+export const invalidDecimalEscapeMessage =
+	"Decimal escapes other than '\\0' are not allowed with the 'u' or 'v' flag"
+
+export type invalidDecimalEscapeMessage =
+	"Decimal escapes other than '\0' are not allowed with the 'u' or 'v' flag"
+
+export const invalidHexEscapeMessage =
+	"Invalid hexadecimal escape in character class"
+
+export type invalidHexEscapeMessage = typeof invalidHexEscapeMessage
+
+export const invalidUnicodeEscapeMessage =
+	"Invalid Unicode escape in character class"
+
+export type invalidUnicodeEscapeMessage = typeof invalidUnicodeEscapeMessage
+
+export const invalidControlEscapeMessage =
+	"Invalid control escape in character class"
+
+export type invalidControlEscapeMessage = typeof invalidControlEscapeMessage
+
+export const invalidClassStringDisjunctionMessage =
+	"\\\\q must be followed by {...} in character class with the 'v' flag"
+
+export type invalidClassStringDisjunctionMessage =
+	"\\q must be followed by {...} in character class with the 'v' flag"
+
+export const loneClosingBracketMessage =
+	"Lone character class bracket: escape ']' with '\\\\]' to match literally with the 'u' or 'v' flag"
+
+export type loneClosingBracketMessage =
+	"Lone character class bracket: escape ']' with '\\]' to match literally with the 'u' or 'v' flag"
 
 export const writeOutOfOrderRangeMessage = <
 	start extends string,

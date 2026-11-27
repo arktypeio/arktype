@@ -173,3 +173,55 @@ export type UnicodePropertyChar = "p" | "P"
 export type NonZeroDigit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 
 export type StringDigit = "0" | NonZeroDigit
+
+export type HexDigit =
+	| StringDigit
+	| "a"
+	| "b"
+	| "c"
+	| "d"
+	| "e"
+	| "f"
+	| "A"
+	| "B"
+	| "C"
+	| "D"
+	| "E"
+	| "F"
+
+export type isAsciiDigits<s extends string> =
+	s extends StringDigit ? true
+	: s extends `${infer head}${infer tail}` ?
+		head extends StringDigit ?
+			isAsciiDigits<tail>
+		:	false
+	:	false
+
+export type isHexDigits<s extends string> =
+	s extends `${HexDigit}${infer rest}` ?
+		rest extends "" ?
+			true
+		:	isHexDigits<rest>
+	:	false
+
+export type shiftTwoHexDigits<s extends string> =
+	s extends `${infer h1}${infer h2}${infer rest}` ?
+		h1 extends HexDigit ?
+			h2 extends HexDigit ?
+				rest
+			:	null
+		:	null
+	:	null
+
+export type shiftFourHexDigits<s extends string> =
+	s extends `${infer h1}${infer h2}${infer h3}${infer h4}${infer rest}` ?
+		h1 extends HexDigit ?
+			h2 extends HexDigit ?
+				h3 extends HexDigit ?
+					h4 extends HexDigit ?
+						rest
+					:	null
+				:	null
+			:	null
+		:	null
+	:	null

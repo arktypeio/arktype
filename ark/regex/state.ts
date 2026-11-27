@@ -332,6 +332,7 @@ export declare namespace s {
 					{
 						captures: EmptyCaptures
 						names: {}
+						priorBranchNames: never
 						flags: s["flags"]
 						errors: []
 					}
@@ -363,6 +364,7 @@ export declare namespace s {
 					rest
 				:	never
 				names: ctx["names"]
+				priorBranchNames: ctx["priorBranchNames"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}>
@@ -430,6 +432,11 @@ export declare namespace ReferenceNode {
 					pattern: inferReference<ctx["names"][to], self["caseInsensitive"]>
 					ctx: ctx
 				}>
+		: to extends ctx["priorBranchNames"] ?
+			FinalizationResult.from<{
+				pattern: ""
+				ctx: ctx
+			}>
 		:	FinalizationResult.error<ctx, writeUnresolvableBackreferenceMessage<to>>
 
 	type inferReference<
@@ -505,7 +512,7 @@ export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], [], ctx, ctx["captures"]>
+	> = _finalize<self["ast"], [], ctx, ctx["captures"], ctx["priorBranchNames"]>
 
 	type FinalizedBranch = {
 		pattern: string
@@ -522,19 +529,22 @@ export declare namespace UnionTree {
 		astBranches extends unknown[],
 		acc extends FinalizedBranch[],
 		ctx extends FinalizationContext,
-		priorCaptures extends IndexedCaptures
+		priorCaptures extends IndexedCaptures,
+		priorNames extends string
 	> =
 		astBranches extends [infer head, ...infer tail] ?
-			finalizeTree<head, branchContextOf<ctx, priorCaptures>> extends (
-				infer r extends FinalizationResult
-			) ?
+			finalizeTree<
+				head,
+				branchContextOf<ctx, priorCaptures, priorNames>
+			> extends infer r extends FinalizationResult ?
 				// a branch's results don't affect the next branch, so they're kept
 				// together rather than finalizing the rest once for each
 				_finalize<
 					tail,
 					[...acc, finalizeBranch<ctx, r>],
 					ctx,
-					r["ctx"]["captures"]
+					r["ctx"]["captures"],
+					priorNames | (unionKeyOf<r["ctx"]["names"]> & string)
 				>
 			:	never
 		:	finalizeBranches<
@@ -545,12 +555,17 @@ export declare namespace UnionTree {
 			>
 
 	// groups in previous branches can't participate in a match, so they are
-	// captured as undefined
+	// captured as undefined (and prior branch group names are tracked separately
+	// so ES2025 same-name groups across branches don't trigger duplicate errors)
 	type branchContextOf<
 		ctx extends FinalizationContext,
-		priorCaptures extends IndexedCaptures
+		priorCaptures extends IndexedCaptures,
+		priorNames extends string
 	> =
-		priorCaptures["length"] extends ctx["captures"]["length"] ? ctx
+		[priorCaptures["length"], priorNames] extends (
+			[ctx["captures"]["length"], ctx["priorBranchNames"]]
+		) ?
+			ctx
 		:	FinalizationContext.from<{
 				captures: {
 					[i in keyof priorCaptures]: i extends keyof ctx["captures"] ?
@@ -558,6 +573,7 @@ export declare namespace UnionTree {
 					:	undefined
 				}
 				names: ctx["names"]
+				priorBranchNames: priorNames
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}>
@@ -613,6 +629,7 @@ export declare namespace UnionTree {
 							branch["names"][k]
 						:	undefined
 					}
+					priorBranchNames: ctx["priorBranchNames"]
 					errors: branch["errors"]
 				}
 			}>
@@ -677,6 +694,7 @@ export declare namespace GroupTree {
 				// error on trying to reference it (will always be empty)
 				captures: [...ctx["captures"], IncompleteCaptureGroup]
 				names: ctx["names"] & { [_ in self["capture"]]: IncompleteCaptureGroup }
+				priorBranchNames: ctx["priorBranchNames"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}
@@ -684,6 +702,7 @@ export declare namespace GroupTree {
 			{
 				captures: [...ctx["captures"], IncompleteCaptureGroup]
 				names: ctx["names"]
+				priorBranchNames: ctx["priorBranchNames"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}
@@ -730,6 +749,7 @@ export declare namespace GroupTree {
 				result["names"][k]
 			:	undefined
 		}
+		priorBranchNames: base["priorBranchNames"]
 		flags: result["flags"]
 		errors: result["errors"]
 	}>
@@ -747,6 +767,7 @@ export declare namespace GroupTree {
 			[k in keyof ctx["names"]]: k extends name ? anchorsAway<pattern>
 			:	ctx["names"][k]
 		}
+		priorBranchNames: ctx["priorBranchNames"]
 		flags: ctx["flags"]
 		errors: ctx["errors"]
 	}>
@@ -758,6 +779,7 @@ export declare namespace GroupTree {
 	> = FinalizationContext.from<{
 		captures: setIndex<ctx["captures"], index, anchorsAway<pattern>>
 		names: ctx["names"]
+		priorBranchNames: ctx["priorBranchNames"]
 		flags: ctx["flags"]
 		errors: ctx["errors"]
 	}>
@@ -828,6 +850,7 @@ export declare namespace QuantifierTree {
 			]
 			flags: r["ctx"]["flags"]
 			names: zeroQuantifiedNames<ctx["names"], r["ctx"]["names"]>
+			priorBranchNames: ctx["priorBranchNames"]
 			errors: r["ctx"]["errors"]
 		}
 	}>
@@ -875,6 +898,7 @@ type extractNewCaptures<
 	:	[]
 
 export interface FinalizationContext extends Required<RegexContext> {
+	priorBranchNames: string
 	errors: ErrorMessage[]
 }
 
@@ -898,6 +922,7 @@ export declare namespace FinalizationResult {
 		ctx: {
 			captures: ctx["captures"]
 			names: ctx["names"]
+			priorBranchNames: ctx["priorBranchNames"]
 			flags: ctx["flags"]
 			errors: [...ctx["errors"], ErrorMessage<message>]
 		}

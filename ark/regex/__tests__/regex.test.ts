@@ -6,6 +6,10 @@ import {
 import { regex, type Regex } from "arkregex"
 import {
 	emptyCharacterSetMessage,
+	invalidClassRangeMessage,
+	invalidClassStringDisjunctionMessage,
+	invalidDecimalEscapeMessage,
+	loneClosingBracketMessage,
 	writeOutOfOrderRangeMessage
 } from "arkregex/internal/charset.ts"
 import {
@@ -89,7 +93,13 @@ type _Tree = SequenceTree<
 
 type _Result = finalizeTree<
 	_Tree,
-	{ errors: []; flags: ""; captures: [IndexedCaptureOffset]; names: {} }
+	{
+		errors: []
+		flags: ""
+		captures: [IndexedCaptureOffset]
+		names: {}
+		priorBranchNames: never
+	}
 >
 
 contextualize(() => {
@@ -430,6 +440,19 @@ contextualize(() => {
 			attest<Regex<"}", {}>>(regex("^}$"))
 		})
 
+		it("rejects lone closing bracket under u and v flags", () => {
+			// @ts-expect-error
+			attest(() => regex("]", "u"))
+				.throws("Lone quantifier brackets")
+				.type.errors(loneClosingBracketMessage)
+			// @ts-expect-error
+			attest(() => regex("]", "v"))
+				.throws("Lone quantifier brackets")
+				.type.errors(loneClosingBracketMessage)
+			attest<Regex<"]", { flags: "u" }>>(regex("^\\]$", "u"))
+			attest<Regex<"]", {}>>(regex("^]$"))
+		})
+
 		it("fallsback to literal on empty", () => {
 			const r = regex("^a{}$")
 			attest<Regex<"a{}", {}>>(r).type.toString.snap('Regex<"a{}", {}>')
@@ -499,25 +522,68 @@ contextualize(() => {
 			)
 		})
 
-		it("negative number", () => {
+		it("negative number falls back to literal unless u or v flag is set", () => {
+			const S = regex("^a{-1}$")
+			attest<Regex<"a{-1}", {}>>(S)
+			attest(S.test("a{-1}")).equals(true)
+
 			// @ts-expect-error
-			attest(() => regex("^a{-1}$")).type.errors(
-				writeUnnaturalNumberQuantifierError("{-1}")
-			)
+			attest(() => regex("^a{-1}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
 		})
 
-		it("decimal number", () => {
+		it("decimal number falls back to literal unless u or v flag is set", () => {
+			const S = regex("^a{1.5}$")
+			attest<Regex<`a{1${string}5}`, {}>>(S)
+			attest(S.test("a{1.5}")).equals(true)
+			attest(S.test("a{1x5}")).equals(true)
+
+			const EscapedDot = regex("^a{1\\.5}$")
+			attest<Regex<"a{1.5}", {}>>(EscapedDot)
+
 			// @ts-expect-error
-			attest(() => regex("^a{1.5}$")).type.errors(
-				writeUnnaturalNumberQuantifierError("{1.5}")
-			)
+			attest(() => regex("^a{1.5}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
 		})
 
-		it("spaced number", () => {
+		it("spaced number falls back to literal unless u or v flag is set", () => {
+			const S = regex("^a{ 1}$")
+			attest<Regex<"a{ 1}", {}>>(S)
+			attest(S.test("a{ 1}")).equals(true)
+
 			// @ts-expect-error
-			attest(() => regex("^a{ 1}$")).type.errors(
-				writeUnnaturalNumberQuantifierError("{ 1}")
-			)
+			attest(() => regex("^a{ 1}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
+		})
+
+		it("non-decimal numeric literals fall back to literal unless u or v flag is set", () => {
+			const Hex = regex("^a{0x10}$")
+			attest<Regex<"a{0x10}", {}>>(Hex)
+			attest(Hex.test("a{0x10}")).equals(true)
+			attest(Hex.test("a".repeat(16))).equals(false)
+
+			attest<Regex<"a{0b10}", {}>>(regex("^a{0b10}$"))
+			attest<Regex<"a{0o10}", {}>>(regex("^a{0o10}$"))
+			attest<Regex<"a{1e2}", {}>>(regex("^a{1e2}$"))
+			attest<Regex<"a{0x10,2}", {}>>(regex("^a{0x10,2}$"))
+			attest<Regex<"a{1,0x10}", {}>>(regex("^a{1,0x10}$"))
+			attest<Regex<"{0x10}", {}>>(regex("^{0x10}$"))
+
+			// @ts-expect-error
+			attest(() => regex("^a{0x10}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
+			// @ts-expect-error
+			attest(() => regex("^a{0x10}$", "v"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
+			// @ts-expect-error
+			attest(() => regex("^a{0x10,2}$", "u"))
+				.throws("Incomplete quantifier")
+				.type.errors(incompleteQuantifierMessage)
 		})
 
 		it("equal min and max", () => {
@@ -762,6 +828,155 @@ contextualize(() => {
 			attest<Regex<string, {}>>(regex("^[a-a]$"))
 			attest<Regex<string, {}>>(regex("^[!--]$"))
 			attest<Regex<string, {}>>(regex("^[a-\\d]$"))
+		})
+
+		it("ES2024 v flag nested character classes and set operations", () => {
+			const Subtract = regex("^[[a-z]--[aeiou]]$", "v")
+			attest<Regex<string, { flags: "v" }>>(Subtract)
+			attest(Subtract.test("b")).equals(true)
+			attest(Subtract.test("a")).equals(false)
+			attest(Subtract.test("--[aeiou]]")).equals(false)
+
+			const Wrapped = regex("^a[[a-z]--[aeiou]]b$", "v")
+			attest<Regex<`a${string}b`, { flags: "v" }>>(Wrapped)
+			attest(Wrapped.test("axb")).equals(true)
+
+			const NegatedNested = regex("^[^[a-z]--[aeiou]]$", "v")
+			attest<Regex<string, { flags: "v" }>>(NegatedNested)
+			attest(NegatedNested.test("a")).equals(true)
+			attest(NegatedNested.test("b")).equals(false)
+
+			const Intersect = regex("^[[a-z]&&[aeiou]]+$", "v")
+			attest<Regex<string, { flags: "v" }>>(Intersect)
+			attest(Intersect.test("ea")).equals(true)
+
+			const EscapedBracket = regex("^[\\[[a-z]\\]]$", "v")
+			attest<Regex<string, { flags: "v" }>>(EscapedBracket)
+			attest(EscapedBracket.test("[")).equals(true)
+			attest(EscapedBracket.test("]")).equals(true)
+
+			const SingleEscapedBracket = regex("^[\\[]$", "v")
+			attest<Regex<"[", { flags: "v" }>>(SingleEscapedBracket)
+
+			const FlatSubtract = regex("^[\\w--_]$", "v")
+			attest<Regex<string, { flags: "v" }>>(FlatSubtract)
+			attest(FlatSubtract.test("a")).equals(true)
+			attest(FlatSubtract.test("_")).equals(false)
+
+			const ReverseSubtract = regex("^[z--a]$", "v")
+			attest<Regex<string, { flags: "v" }>>(ReverseSubtract)
+
+			const FlatIntersect = regex("^[a&&b]$", "v")
+			attest<Regex<string, { flags: "v" }>>(FlatIntersect)
+
+			const EscapedAmp = regex("^[a\\&&b]$", "v")
+			attest<Regex<"a" | "&" | "b", { flags: "v" }>>(EscapedAmp)
+
+			// @ts-expect-error
+			attest(() => regex("^[[a-z]", "v"))
+				.throws("Unterminated character class")
+				.type.errors(writeUnclosedGroupMessage("]"))
+
+			// @ts-expect-error
+			attest(() => regex("^[a-\\-b]$", "v"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("a", "-"))
+		})
+
+		it("character class escapes and range endpoint validation", () => {
+			const BracedUnicodeRange = regex("^[\\u{61}-z]$", "u")
+			attest<Regex<string, { flags: "u" }>>(BracedUnicodeRange)
+			attest(BracedUnicodeRange.test("m")).equals(true)
+
+			const BracedUnicodeRangeV = regex("^[\\u{61}-z]$", "v")
+			attest<Regex<string, { flags: "v" }>>(BracedUnicodeRangeV)
+
+			// without u/v, \u{61}-z treats '}' as range start after literal 'u{61'
+			// @ts-expect-error
+			attest(() => regex("^[\\u{61}-z]$"))
+				.throws("Range out of order in character class")
+				.type.errors(writeOutOfOrderRangeMessage("}", "z"))
+
+			const HexRange = regex("^[\\x3b-A]$")
+			attest<Regex<string, {}>>(HexRange)
+			attest(HexRange.test(";")).equals(true)
+			attest(HexRange.test("A")).equals(true)
+
+			attest<Regex<string, {}>>(regex("^[\\u003b-A]$"))
+			attest<Regex<string, {}>>(regex("^[\\cA-Z]$"))
+			attest<Regex<string, {}>>(regex("^[\\01-a]$"))
+
+			const ClassString = regex("^[\\q{a|bc}]$", "v")
+			attest<Regex<string, { flags: "v" }>>(ClassString)
+			attest(ClassString.test("bc")).equals(true)
+
+			const EscapedClassString = regex("^[\\q{\\}}]$", "v")
+			attest<Regex<string, { flags: "v" }>>(EscapedClassString)
+			attest(EscapedClassString.test("}")).equals(true)
+
+			const ReservedPunctuators = regex("^[\\&\\!\\=\\<\\>\\~]$", "v")
+			attest<Regex<"&" | "!" | "=" | "<" | ">" | "~", { flags: "v" }>>(
+				ReservedPunctuators
+			)
+
+			// @ts-expect-error
+			attest(() => regex("^[\\&]$", "u"))
+				.throws("Invalid escape")
+				.type.errors(writeUnnecessaryEscapeMessage("&"))
+
+			// @ts-expect-error
+			attest(() => regex("^[\\q{a}]$", "u"))
+				.throws("Invalid escape")
+				.type.errors(writeUnnecessaryEscapeMessage("q"))
+
+			// @ts-expect-error
+			attest(() => regex("^[\\q]$", "v"))
+				.throws("Invalid escape")
+				.type.errors(invalidClassStringDisjunctionMessage)
+
+			// @ts-expect-error
+			attest(() => regex("^[\\d-a]$", "u"))
+				.throws("Invalid character class")
+				.type.errors(invalidClassRangeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[a-\\d]$", "u"))
+				.throws("Invalid character class")
+				.type.errors(invalidClassRangeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[\\d-a]$", "v"))
+				.throws("Invalid character class")
+				.type.errors(invalidClassRangeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[a-\\d]$", "v"))
+				.throws("Invalid character class")
+				.type.errors(invalidClassRangeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[\\p{ASCII}-a]$", "u"))
+				.throws("Invalid character class")
+				.type.errors(invalidClassRangeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[\\q{a}-z]$", "v"))
+				.throws("Invalid character class")
+				.type.errors(invalidClassRangeMessage)
+
+			attest<Regex<`${number}` | "-", { flags: "u" }>>(regex("^[\\d-]$", "u"))
+			attest<Regex<"-" | `${number}`, { flags: "u" }>>(regex("^[-\\d]$", "u"))
+
+			// @ts-expect-error
+			attest(() => regex("^[\\01]$", "u"))
+				.throws("Invalid decimal escape")
+				.type.errors(invalidDecimalEscapeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[\\01]$", "v"))
+				.throws("Invalid decimal escape")
+				.type.errors(invalidDecimalEscapeMessage)
+			// @ts-expect-error
+			attest(() => regex("^[^\\01]$", "u"))
+				.throws("Invalid decimal escape")
+				.type.errors(invalidDecimalEscapeMessage)
+
+			attest<Regex<"\0", { flags: "u" }>>(regex("^[\\0]$", "u"))
+			attest<Regex<"\0" | "a", { flags: "u" }>>(regex("^[\\0a]$", "u"))
 		})
 	})
 
@@ -1545,12 +1760,37 @@ contextualize(() => {
 			attest(() => regex("^(?<a b>x)$"))
 				.throws("Invalid capture group name")
 				.type.errors(writeInvalidCaptureGroupNameMessage("a b"))
+			// @ts-expect-error
+			attest(() => regex("(?<a\\b>1)"))
+				.throws("Invalid capture group name")
+				.type.errors(writeInvalidCaptureGroupNameMessage("a\\\\b"))
+			// @ts-expect-error
+			attest(() => regex("(?<\\b>1)"))
+				.throws("Invalid capture group name")
+				.type.errors(writeInvalidCaptureGroupNameMessage("\\\\b"))
+			// @ts-expect-error
+			attest(() => regex("(?<a\\u12>1)"))
+				.throws("Invalid Unicode escape")
+				.type.errors(writeInvalidCaptureGroupNameMessage("a\\\\u12"))
+			// @ts-expect-error
+			attest(() => regex("(?<a\\u{}>1)"))
+				.throws("Invalid Unicode escape")
+				.type.errors(writeInvalidCaptureGroupNameMessage("a\\\\u{}"))
 
 			attest<Regex<"x", { captures: ["x"]; names: { $a_1: "x" } }>>(
 				regex("^(?<$a_1>x)$")
 			)
 			attest<Regex<"x", { captures: ["x"]; names: { é: "x" } }>>(
 				regex("^(?<é>x)$")
+			)
+			attest<Regex<"1", { captures: ["1"]; names: { "a\\u0062": "1" } }>>(
+				regex("^(?<a\\u0062>1)$")
+			)
+			attest<Regex<"1", { captures: ["1"]; names: { "a\\u{62}": "1" } }>>(
+				regex("^(?<a\\u{62}>1)$")
+			)
+			attest<Regex<"1", { captures: ["1"]; names: { "\\u{61}1": "1" } }>>(
+				regex("^(?<\\u{61}1>1)$")
 			)
 		})
 
@@ -1607,6 +1847,82 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => regex("\\k<>")).type.errors(
 				writeUnresolvableBackreferenceMessage("")
+			)
+		})
+
+		it("reference to named group in previous branch", () => {
+			const Unanchored = regex("(?<x>a)|b\\k<x>")
+			attest<
+				Regex<
+					`${string}a${string}` | `${string}b${string}`,
+					{
+						captures: ["a"] | [undefined]
+						names: { x: "a" } | { x: undefined }
+					}
+				>
+			>(Unanchored)
+			attest(Unanchored.test("b")).equals(true)
+
+			const Grouped = regex("^(?:(?<x>a)|b\\k<x>)$")
+			attest<
+				Regex<
+					"a" | "b",
+					{
+						captures: ["a"] | [undefined]
+						names: { x: "a" } | { x: undefined }
+					}
+				>
+			>(Grouped)
+			attest(Grouped.test("b")).equals(true)
+
+			const MultiBranch = regex("^(?:(?<x>a)|(?<y>b)|c\\k<x>\\k<y>)$")
+			attest<
+				Regex<
+					"a" | "b" | "c",
+					{
+						captures:
+							| ["a", undefined]
+							| [undefined, "b"]
+							| [undefined, undefined]
+						names:
+							| { x: "a"; y: undefined }
+							| { x: undefined; y: "b" }
+							| { x: undefined; y: undefined }
+					}
+				>
+			>(MultiBranch)
+
+			const Shadowed = regex("^(?:(?<x>a)|(?<x>b)\\k<x>)$")
+			attest<
+				Regex<
+					"a" | "bb",
+					{
+						captures: ["a", undefined] | [undefined, "b"]
+						names: { x: "a" } | { x: "b" }
+					}
+				>
+			>(Shadowed)
+			attest(Shadowed.test("bb")).equals(true)
+
+			const NestedShadowed = regex("^(?:(?<x>a)|(?:(?<x>b)|c)\\k<x>)$")
+			attest<
+				Regex<
+					"a" | "bb" | "c",
+					{
+						captures:
+							| ["a", undefined]
+							| [undefined, "b"]
+							| [undefined, undefined]
+						names: { x: "a" } | { x: "b" } | { x: undefined }
+					}
+				>
+			>(NestedShadowed)
+			attest(NestedShadowed.test("bb")).equals(true)
+			attest(NestedShadowed.test("c")).equals(true)
+
+			// @ts-expect-error
+			attest(() => regex("^(?:b\\k<x>|(?<x>a))$")).type.errors(
+				writeUnresolvableBackreferenceMessage("x")
 			)
 		})
 

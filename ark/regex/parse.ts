@@ -1,5 +1,5 @@
 import type { Backslash, contains, ErrorMessage, Scanner } from "@ark/util"
-import type { parseCharset } from "./charset.ts"
+import type { loneClosingBracketMessage, parseCharset } from "./charset.ts"
 import type { parseEscape } from "./escape.ts"
 import type { parseGroup } from "./group.ts"
 import type {
@@ -37,6 +37,10 @@ export type next<s extends State> =
 				s.error<loneClosingBraceMessage>
 			:	s.shiftQuantifiable<s, "}", unscanned>
 		: lookahead extends "[" ? parseCharset<s, unscanned>
+		: lookahead extends "]" ?
+			contains<s["flags"], UnicodeFlag> extends true ?
+				s.error<loneClosingBracketMessage>
+			:	s.shiftQuantifiable<s, "]", unscanned>
 		: s["caseInsensitive"] extends false ?
 			s.shiftQuantifiable<s, lookahead, unscanned>
 		:	shiftCaseInsensitiveChar<s, lookahead, unscanned>

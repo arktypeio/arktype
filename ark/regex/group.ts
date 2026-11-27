@@ -1,9 +1,10 @@
 import type {
+	Backslash,
 	ErrorMessage,
 	Scanner,
 	writeUnclosedGroupMessage
 } from "@ark/util"
-import type { StringDigit } from "./escape.ts"
+import type { isHexDigits, shiftFourHexDigits, StringDigit } from "./escape.ts"
 import type { State, s } from "./state.ts"
 
 type LookaroundChar = "=" | "!"
@@ -198,16 +199,50 @@ type InvalidGroupName =
 	| `${StringDigit}${string}`
 	| `${string}${InvalidGroupNameChar}${string}`
 
+type isValidGroupName<name extends string> =
+	name extends `${string}${Backslash}${string}` ? validateEscapedGroupName<name>
+	: name extends InvalidGroupName ? false
+	: true
+
+type validateEscapedGroupName<
+	remaining extends string,
+	isStart extends boolean = true
+> =
+	remaining extends `${infer head}${Backslash}${infer afterBs}` ?
+		(
+			isStart extends true ?
+				head extends "" ? true
+				: head extends InvalidGroupName ? false
+				: true
+			: head extends `${string}${InvalidGroupNameChar}${string}` ? false
+			: true
+		) extends true ?
+			afterBs extends `u{${infer hex}}${infer tail}` ?
+				isHexDigits<hex> extends true ?
+					validateEscapedGroupName<tail, false>
+				:	false
+			: afterBs extends `u${infer rest}` ?
+				shiftFourHexDigits<rest> extends infer tail extends string ?
+					validateEscapedGroupName<tail, false>
+				:	false
+			:	false
+		:	false
+	: isStart extends true ?
+		remaining extends InvalidGroupName ?
+			false
+		:	true
+	: remaining extends `${string}${InvalidGroupNameChar}${string}` ? false
+	: true
+
 type shiftNamedGroup<unscanned extends string> =
 	unscanned extends `${infer name}>${infer next}` ?
 		name extends "" ?
 			Scanner.shiftResult<"", ErrorMessage<unnamedCaptureGroupMessage>>
-		: name extends InvalidGroupName ?
-			Scanner.shiftResult<
+		: isValidGroupName<name> extends true ? Scanner.shiftResult<name, next>
+		: Scanner.shiftResult<
 				"",
 				ErrorMessage<writeInvalidCaptureGroupNameMessage<name>>
 			>
-		:	Scanner.shiftResult<name, next>
 	:	Scanner.shiftResult<"", ErrorMessage<writeUnclosedGroupMessage<">">>>
 
 export const writeInvalidCaptureGroupNameMessage = <name extends string>(
